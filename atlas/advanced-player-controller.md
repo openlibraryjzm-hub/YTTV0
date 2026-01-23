@@ -3,6 +3,7 @@
 The Advanced Player Controller is a comprehensive UI component positioned at the top of the application layout. It provides centralized control for playlist navigation, video playback, folder management, and preview functionality through an orb-based design with surrounding menu rectangles.
 
 **Related Documentation:**
+- **App Banner**: See `app-banner.md` for the banner background that the Player Controller sits on
 - **Navigation Flows**: See `navigation-routing.md` for detailed playlist/video navigation flows, preview navigation, and state preservation
 - **State Management**: See `state-management.md` for `playlistStore` (current playlist/video state, preview state) and `pinStore` (pinned videos)
 - **Video Player**: See `videoplayer.md` for YouTube player integration and progress tracking
@@ -11,12 +12,8 @@ The Advanced Player Controller is a comprehensive UI component positioned at the
 ---
 
 #### ### 1.1 Central Orb
-**NOTE: Banner Feature Status**
-The Top Banner supports an infinite horizontal scroll animation for seamless looping backgrounds. 
-*   **Infinite Scroll**: The banner image automatically scrolls from left to right in an infinite loop (60s duration).
-*   **Upload Feature**: A "Change Banner" button in the Settings Page allows users to upload a custom image (PNG/JPG/WEBP/GIF).
-    *   **Static Images**: Scroll infinitely.
-    *   **GIFs**: Play natively without scrolling.
+
+**Note**: For comprehensive documentation about the App Banner that the Player Controller sits on, see `app-banner.md`.
 
 **1: User-Perspective Description**
 

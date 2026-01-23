@@ -3,9 +3,10 @@
 This document covers all page components in the UI system. For card components, see ui-cards.md. For modal components, see ui-modals.md.
 
 **Related Documentation:**
-- **Layout**: See ui-layout.md for layout system and side menu
-- **Cards**: See ui-cards.md for card component details
-- **Modals**: See ui-modals.md for modal components
+- **Layout**: See `ui-layout.md` for layout system and side menu
+- **Page Banner**: See `page-banner.md` for comprehensive Page Banner documentation
+- **Cards**: See `ui-cards.md` for card component details
+- **Modals**: See `ui-modals.md` for modal components
 
 ---
 
@@ -92,13 +93,8 @@ Users see a 3-column grid of video cards showing videos from the current playlis
 
 - **Page Banner**: 
   - **Location**: Displayed at the very top of the scrollable content area.
-  - **Unified Banner System**: Connects visually with the Sticky Toolbar below it. Both components display the same **Custom Banner Image** (if set) and use synchronized, GPU-accelerated horizontal scrolling animations to create the illusion of a single continuous surface without performance stutter.
-  - **Seamless Integration**: Connects seamlessly with the content area.
-  - **Content**: Shows the title (Playlist Name, "{Color} Folder", custom folder name, or "Unsorted Videos") and description text.
-  - **Metadata**: Displays video count, creation year (hardcoded 2026), and **Author Identity** (user avatar and name).
-  - **Styling**: Uses vibrant gradients (matching folder color) or custom image background.
-  - **Edit Button**: Small pen icon in the top-left corner (on hover) allows renaming the playlist or colored folder, updating its description, and **setting a Custom Page Banner** via `EditPlaylistModal`. Custom folder names and banners persist in `folder_metadata`. (Not available for Unsorted Videos).
-  - **Continue Watching**: A "CONTINUE?" section appears in the bottom-right corner if the playlist/folder has a recently watched video.
+  - **Comprehensive Documentation**: See `page-banner.md` for complete details on the Page Banner system, including Unified Banner System, Sticky Toolbar integration, customization options, and technical implementation.
+  - **Quick Reference**: Shows playlist/folder title, metadata (video count, year, author), description, ASCII avatar, and optional continue watching thumbnail. Supports custom images, animated patterns, and folder color gradients.
 
 - **Sticky Toolbar**: Sits below the Page Banner and sticks to the top of the viewport when scrolling.
   - **Compact Layout**: Features a streamlined single-row design to maximize vertical screen real estate.

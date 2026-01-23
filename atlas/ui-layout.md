@@ -7,6 +7,8 @@ The UI system provides a consistent layout shell with a side menu that displays 
 **Related Documentation:**
 - **Navigation**: See `navigation-routing.md` for page routing flows and navigation state management
 - **State Management**: See `state-management.md` for `navigationStore` (page routing), `layoutStore` (view modes), and `folderStore` (folder filtering)
+- **App Banner**: See `app-banner.md` for the top-level application banner
+- **Page Banner**: See `page-banner.md` for page-level banners on Videos/Playlists pages
 - **Playlists**: See `playlist&tab.md` Section 2.1 for playlist grid details
 - **Videos**: See `playlist&tab.md` Section 2.2 for video grid and folder filtering
 - **History**: See `history.md` for history page details
@@ -42,28 +44,16 @@ The application employs a high-contrast, structured design with distinct borders
     - **Static Images**: Scroll indefinitely.
     - **GIFs**: Play natively without scrolling (to avoid motion issues).
   - **Separator**: Features a "Solid" separator line (12px) with the Light Blue Pattern, separating the banner from the app content.
+  - **Comprehensive Documentation**: See `app-banner.md` for complete details.
 
 - **Page Banner ("Videos Banner")**:
   - Located on the Videos, Playlists, and Colored Folders views.
   - **Height**: Fixed height of 220px ensures consistent layout and prevents resizing jitter.
-  - **Dynamic Title**:
-    - **Playlists Page**: Displays "All", preset name (e.g., "Gaming"), or appended tab name (e.g., "All - Favorites").
-    - **Videos Page**: Displays Playlist Name or Folder Name.
-  - **Top-Aligned Layout**: Content (Title, Metadata, Description) is aligned to the top-left (`items-start`) for a cleaner presentation.
-  - **Visual Elements**:
-    - **ASCII Avatar**: Vertically centered within the banner.
-    - **Metadata Trio**: Displays Video Count (dynamic label), Year, and Author Pseudonym below the title.
-    - **Description**: Truncated to 2 lines (`line-clamp-2`) with generous right padding to avoid overlap.
-    - **Continue Watching**: Thumbnail positioned at the top-right (`top-12`) to align horizontally with the centered ASCII art.
-  - **Dynamic Patterns**: Features selectable animated background patterns (Diagonal, Dots, Mesh, Solid).
-  - **Custom Uploads**: Supports changing the background to a custom uploaded image.
-    - **Sticky Toolbar**:
-    - A translucent, glassmorphic toolbar (`backdrop-blur-xl`) that sits below the banner and sticks to the top of the viewport on scroll.
-    - **Unified Design**: Shares the banner's background image and scroll animation for a seamless look.
-    - **Structure**:
-      - **Left**: Sort controls (Videos) or Tab Bar (Playlists).
-      - **Right**: Action buttons (Filter, Add, etc.).
-      - **Color Bar Prism (Videos)**: A unified, stretchable "prism" bar of colored folder rectangles. Displays video counts inside the colors.
+  - **Dynamic Title**: Displays contextual titles based on current view (playlist name, folder name, page name).
+  - **Visual Elements**: ASCII avatar, metadata (video count, year, author), description, and optional continue watching thumbnail.
+  - **Background Options**: Color gradients (matching folder colors), animated patterns, or custom uploaded images.
+  - **Sticky Toolbar Integration**: Seamlessly connects with Sticky Toolbar below using Unified Banner System.
+  - **Comprehensive Documentation**: See `page-banner.md` for complete details on content, customization, and Sticky Toolbar integration.
 
 - **Video Player**:
   - Wrapped in a `.layout-shell__player` container.

@@ -122,9 +122,15 @@ yttv2/
 ├── atlas/                        # Comprehensive documentation
 │   ├── README.md                 # This file - documentation index
 │   ├── advanced-player-controller.md
+│   ├── app-banner.md             # App Banner (top-level banner for Player Controller)
+│   ├── page-banner.md            # Page Banner (Videos, Playlists, etc. pages)
 │   ├── playlist&tab.md
 │   ├── importexport.md
-│   ├── ui.md
+│   ├── ui.md                     # UI documentation index
+│   ├── ui-layout.md              # Layout & Side Menu
+│   ├── ui-pages.md               # Page components
+│   ├── ui-cards.md               # Card components
+│   ├── ui-modals.md              # Modal components
 │   ├── history.md
 │   ├── videoplayer.md
 │   ├── local-videos.md
@@ -133,7 +139,8 @@ yttv2/
 │   ├── state-management.md
 │   ├── database-schema.md
 │   ├── api-bridge.md
-│   └── navigation-routing.md
+│   ├── navigation-routing.md
+│   └── session-updates.md        # Development session logs
 │
 ├── dev-logs/                     # Development change logs
 │   ├── README.md                 # Dev logs guide
@@ -164,7 +171,8 @@ yttv2/
 | **Video Player** | `videoplayer.md` | `database-schema.md`, `api-bridge.md`, `state-management.md` |
 | **Local Videos** | `local-videos.md` | `videoplayer.md`, `database-schema.md`, `api-bridge.md`, `importexport.md` |
 | **Audio Visualizer** | `audio-visualizer.md` | `advanced-player-controller.md`, `api-bridge.md` |
-| **Banners (ASCII & Unified)** | `banner.md` | `ui.md`, `state-management.md` |
+| **App Banner** | `app-banner.md` | `advanced-player-controller.md`, `ui-layout.md`, `state-management.md` |
+| **Page Banner** | `page-banner.md` | `ui-pages.md`, `ui-layout.md`, `state-management.md` |
 | **Debug/Testing** | `debug.md` | `ui.md` (inspect mode, debug bounds) |
 
 ### By Technical Domain
@@ -220,10 +228,15 @@ yttv2/
 **Key Topics**: Rust audio capture, thread safety, frequency mapping, performance tuning
 **Cross-References**: See `advanced-player-controller.md` for UI integration, `api-bridge.md` for commands
 
-#### `banner.md`
-**Covers**: Unified Banner System, PageBanner component, Sticky Toolbar integration
-**Key Topics**: Visual stitching, intelligent background scaling, horizontal scroll animation, future refactoring plans
-**Cross-References**: See `ui.md` for layout integration
+#### `app-banner.md`
+**Covers**: Top-level application banner that serves as background for Player Controller
+**Key Topics**: Infinite scroll animation, custom image uploads, GIF support, window controls integration, draggable region
+**Cross-References**: See `advanced-player-controller.md` for controller details, `ui-layout.md` for layout system
+
+#### `page-banner.md`
+**Covers**: Contextual page banners on Videos, Playlists, Likes, Pins pages with metadata and customization
+**Key Topics**: Unified Banner System, PageBanner component, Sticky Toolbar integration, custom folder banners, animated patterns
+**Cross-References**: See `ui-pages.md` for page components, `ui-layout.md` for layout system
 
 #### `debug.md`
 **Covers**: Debug bounds, inspect mode, layout debugging, ruler overlay (non-functional)
