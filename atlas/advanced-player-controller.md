@@ -1,14 +1,5 @@
 ###1: Advanced Player Controller
 
-> **CRITICAL WARNING / REGRESSION ALERT**
-> The Advanced Player Controller menu layout was previously compromised ("wrecked") but has been largely restored.
-> **Current Status: RESTORED / USABLE**
-> - Layout has been rebuilt with fixed dimensions (102px height, 340px width) and absolute positioning.
-> - **Top Video Menu:** Buttons aligned on 40px grid. Navigation controls clustered left, actions right.
-> - **Top Playlist Menu:** Thumbnail removed. Title moved inside, with video metadata (Author | Views) displayed below it.
-> - **Metadata Bubbles:** Video metadata has been moved into the playlist menu, removing the floating bubble above the video menu.
-> - **Action Required:** Minor visual tuning may still be desired, but the critical regression is resolved. The default values in `configStore.js` now match this restored state.
-
 The Advanced Player Controller is a comprehensive UI component positioned at the top of the application layout. It provides centralized control for playlist navigation, video playback, folder management, and preview functionality through an orb-based design with surrounding menu rectangles.
 
 **Related Documentation:**
