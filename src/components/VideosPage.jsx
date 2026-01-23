@@ -832,6 +832,31 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
       return sorted;
     }
 
+    if (sortBy === 'lastViewed') {
+      const sorted = [...baseVideos].sort((a, b) => {
+        const idA = extractVideoId(a.video_url) || a.video_id;
+        const idB = extractVideoId(b.video_url) || b.video_id;
+
+        const dataA = videoProgress.get(idA);
+        const dataB = videoProgress.get(idB);
+
+        // Get last_updated timestamps
+        const lastUpdatedA = dataA && typeof dataA === 'object' && dataA.last_updated
+          ? new Date(dataA.last_updated).getTime()
+          : 0; // Never viewed = 0 (will sort to end)
+        const lastUpdatedB = dataB && typeof dataB === 'object' && dataB.last_updated
+          ? new Date(dataB.last_updated).getTime()
+          : 0; // Never viewed = 0 (will sort to end)
+
+        // Sort descending by default (most recently viewed first)
+        // Videos without last_updated (0) will be at the end
+        return sortDirection === 'asc'
+          ? lastUpdatedA - lastUpdatedB
+          : lastUpdatedB - lastUpdatedA;
+      });
+      return sorted;
+    }
+
     return baseVideos;
   }, [selectedFolder, displayedVideos, activePlaylistItems, sortBy, sortDirection, videoProgress, includeUnwatched, showOnlyCompleted, shuffleStates, activePlaylistId]);
 
@@ -1046,6 +1071,7 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
                       <option value="shuffle">Default</option>
                       <option value="chronological">Date</option>
                       <option value="progress">Progress</option>
+                      <option value="lastViewed">Last Viewed</option>
                     </select>
                   </div>
 

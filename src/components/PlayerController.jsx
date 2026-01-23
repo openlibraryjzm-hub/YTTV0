@@ -1979,9 +1979,17 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
                       {/* Video Grid Button - Center of Cluster */}
                       <button
                         onClick={handleVideosGrid}
+                        onContextMenu={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          if (viewMode === 'full') {
+                            setViewMode('half');
+                          }
+                          setCurrentPage('history');
+                        }}
                         className="absolute left-1/2 top-1/2 flex items-center justify-center group/tool"
                         style={{ transform: `translate(calc(-50% - 120px), -50%)` }}
-                        title={getInspectTitle('View videos grid')}
+                        title={getInspectTitle('View videos grid (Right-click for history)')}
                       >
                         <div className="rounded-full flex items-center justify-center border-2 shadow-sm bg-white" style={{ width: `${bottomIconSize}px`, height: `${bottomIconSize}px`, borderColor: '#334155' }}>
                           <svg
@@ -1989,17 +1997,18 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
                             height={Math.round(bottomIconSize * 0.55)}
                             viewBox="0 0 24 24"
                             fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2.5"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
                             className="text-slate-600"
                           >
-                            <path d="M2 8 Q 7 3 12 8 T 22 8" />
-                            <path d="M2 18 Q 7 13 12 18 T 22 18" />
-                            <path d="M7 5.5 V 15.5" />
-                            <path d="M12 8 V 18" />
-                            <path d="M17 10.5 V 20.5" />
+                            {/* 3x3 grid of dots like a dice face */}
+                            <circle cx="6" cy="6" r="2" fill="currentColor" />
+                            <circle cx="12" cy="6" r="2" fill="currentColor" />
+                            <circle cx="18" cy="6" r="2" fill="currentColor" />
+                            <circle cx="6" cy="12" r="2" fill="currentColor" />
+                            <circle cx="12" cy="12" r="2" fill="currentColor" />
+                            <circle cx="18" cy="12" r="2" fill="currentColor" />
+                            <circle cx="6" cy="18" r="2" fill="currentColor" />
+                            <circle cx="12" cy="18" r="2" fill="currentColor" />
+                            <circle cx="18" cy="18" r="2" fill="currentColor" />
                           </svg>
                         </div>
                       </button>

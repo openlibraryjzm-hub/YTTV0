@@ -173,9 +173,9 @@ Users see a 3-column grid of video cards showing videos from the current playlis
 - `src/components/VideosPage.jsx` (local state):
   - `displayedVideos`: Array of videos to show (filtered by folder)
   - `selectedVideoIndex`: Currently selected video index
-  - `sortBy`: Sort option ('default', 'unwatched', 'watched', 'partially-watched')
+  - `sortBy`: Sort option ('shuffle', 'chronological', 'progress', 'lastViewed')
   - `watchedVideoIds`: Set of video IDs with ≥85% progress
-  - `videoProgress`: Map of video ID to progress percentage
+  - `videoProgress`: Map of video ID to progress data (includes `percentage`, `hasFullyWatched`, `last_updated`)
 
 **API/Bridge:**
 - `src/api/playlistApi.js`:
@@ -220,6 +220,7 @@ Users see a 3-column grid of video cards showing videos from the current playlis
       - **Default**: Randomizes video order (Shuffle behavior). Order persists per playlist for the current session.
       - **Chronological**: Original playlist order.
       - **Watch Progress**: Sorts by progress (Unwatched/Partially Watched/Watched).
+      - **Last Viewed**: Sorts by `last_updated` timestamp from `video_progress` table. Most recently viewed videos appear first. Videos that have never been viewed are placed at the end.
    - Grid re-renders with sorted videos
 
 4. **Bulk Tag Mode Flow:**

@@ -5,7 +5,7 @@ import { useTabStore } from '../store/tabStore';
 
 const TabPresetsDropdown = ({ align = 'left' }) => {
   const { presets, activePresetId, setActivePreset, createPreset, deletePreset, updatePreset } = useTabPresetStore();
-  const { tabs } = useTabStore();
+  const { tabs, setActiveTab, activeTabId } = useTabStore();
   const [isOpen, setIsOpen] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [newPresetName, setNewPresetName] = useState('');
@@ -127,26 +127,41 @@ const TabPresetsDropdown = ({ align = 'left' }) => {
 
   return (
     <>
-      <button
+      <div
         ref={buttonRef}
-        onClick={(e) => {
-          e.stopPropagation();
-          setIsOpen(!isOpen);
-        }}
-        className={`h-9 px-4 rounded-full text-xs font-bold uppercase tracking-wide transition-colors flex items-center justify-center gap-2 border-2 shadow-sm ${activePresetId === 'all'
-          ? 'bg-slate-800 text-white border-slate-700 hover:bg-slate-700'
-          : 'bg-white text-slate-600 border-[#334155] hover:bg-slate-50'
+        className={`h-9 rounded-full text-xs font-bold uppercase tracking-wide transition-colors flex items-center border-2 shadow-sm overflow-hidden ${activePresetId && activeTabId === 'all'
+          ? 'bg-white text-sky-600 border-sky-500'
+          : 'bg-white text-slate-600 border-[#334155]'
           }`}
-        title="Tab Presets"
       >
-        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-        </svg>
-        <span>{activePreset.name}</span>
-        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-        </svg>
-      </button>
+        {/* Main button area - click to view all */}
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            setActiveTab('all');
+          }}
+          className="flex items-center justify-center gap-2 px-4 h-full hover:bg-slate-50 transition-colors flex-1"
+          title="View All"
+        >
+          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+          </svg>
+          <span>{activePreset.name}</span>
+        </button>
+        {/* Arrow button - click to open dropdown */}
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            setIsOpen(!isOpen);
+          }}
+          className="px-2 h-full border-l border-sky-500/30 hover:bg-slate-50 transition-colors flex items-center justify-center flex-shrink-0"
+          title="Tab Presets"
+        >
+          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+          </svg>
+        </button>
+      </div>
 
       {isOpen && dropdownPosition && ReactDOM.createPortal(
         <div

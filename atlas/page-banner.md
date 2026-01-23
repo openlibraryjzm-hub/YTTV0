@@ -288,10 +288,11 @@ The Sticky Toolbar is a dynamic toolbar component that sits directly below the P
 **3: Videos Page Sticky Toolbar Layout**
 
 **Left Side - Folder Selection & Sort:**
-- **Sort Dropdown**: Compact sort selector with three options:
+- **Sort Dropdown**: Compact sort selector with four options:
   - "Default" (shuffle order)
   - "Date" (chronological)
   - "Progress" (by watch progress)
+  - "Last Viewed" (by last viewed timestamp - most recently viewed first)
   - Styled with dark background (`bg-slate-800/80`), small text (`text-[10px]`), uppercase, bold
 - **All/Unsorted Buttons**: Two compact buttons:
   - **"All"**: Shows all videos (selected state: `bg-sky-500`, unselected: `bg-slate-800/80`)

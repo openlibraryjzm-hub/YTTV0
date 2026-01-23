@@ -426,7 +426,11 @@ Users see a horizontal tab bar integrated into the Sticky Toolbar on the Playlis
 
 Users see a dropdown button on the right side of the Tab Bar (within the Sticky Toolbar) labeled with the current preset name:
 
-- **Preset Dropdown**: Clicking opens a dropdown menu showing:
+- **Preset Button Structure**: The button is split into two clickable areas:
+  - **Main Button Area** (left): Contains the preset icon and name. Clicking this area acts as a "View All" button, setting `activeTabId` to `'all'` to show all playlists.
+  - **Arrow Button** (right): Separate button with down arrow icon. Clicking opens the dropdown menu.
+
+- **Preset Dropdown**: Clicking the arrow button opens a dropdown menu showing:
   - List of all presets with name and tab count
   - Active preset highlighted with blue background
   - Edit button (pencil icon) on hover for each preset
@@ -446,6 +450,11 @@ Users see a dropdown button on the right side of the Tab Bar (within the Sticky 
 - **Preset Functionality**: When a preset is active, the tab bar only shows tabs included in that preset (plus the "All" tab which always shows). This allows users to create different workspace configurations.
 
 - **Preset Switching**: Clicking a preset in the dropdown immediately switches to that preset, filtering the visible tabs.
+
+- **Visual Styling**: 
+  - All presets (including "All") use the same light color scheme: white background, sky blue text (`text-sky-600`), and sky blue border (`border-sky-500`) when selected.
+  - The light blue border (`border-sky-500`) only appears when a preset is selected AND no tab is selected (`activeTabId === 'all'`). This ensures only one element (either a tab or the preset button) has the light blue highlight at a time.
+  - When a tab is selected, the preset button uses the default slate border (`border-[#334155]`).
 
 
 **2: File Manifest**

@@ -212,7 +212,9 @@ Users see a bottom toolbar in the video menu rectangle with distinct, grouped ac
 
 - **Navigation Controls (Left-Aligned Cluster)**:
   - **Previous Video** (chevron left): Navigates to previous video (-148px offset).
-  - **Grid Button** (center): Opens the Videos page grid view. Icon: **Custom Curvy Film Strip SVG**. Positioned between chevrons (-120px offset).
+  - **Grid Button** (center): Opens the Videos page grid view. Icon: **3x3 Grid of Dots** (dice face pattern). Positioned between chevrons (-120px offset).
+    - **Left-Click**: Opens the Videos page grid view.
+    - **Right-Click**: Navigates to the History Page. *Auto-switches to Half View if in Full View.*
   - **Next Video** (chevron right): Navigates to next video (-92px offset).
   - **Play Button (Folder Cycle)** (right of next): A centralized play/pause/reset control (-60px offset).
     - **Logic**: Cycles through colored folders within the playlist that actually contain videos.
