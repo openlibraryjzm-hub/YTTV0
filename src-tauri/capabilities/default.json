@@ -1,0 +1,17 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "Capability for the main window",
+  "windows": [
+    "main"
+  ],
+  "permissions": [
+    "core:default",
+    "opener:default",
+    "mpv:default",
+    "mpv:allow-init",
+    "mpv:allow-command",
+    "mpv:allow-destroy",
+    "mpv:allow-set-video-margin-ratio"
+  ]
+}
