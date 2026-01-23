@@ -335,6 +335,15 @@ The following features exist in the codebase but are currently non-functional:
 - **Advanced Player Controller Layout**:
   - **Status: RESOLVED**. The top menu layout has been restored with fixed dimensions and absolute positioning.
   - Minor visual tuning may still be desired, but the critical regression is fixed.
+- **Mega Shuffle (Right-Click on Playlist Title)**: 
+  - **Status: NON-FUNCTIONAL**. The `handleShufflePlaylist()` function exists and works correctly when called programmatically, but right-click events on the playlist title are not being captured.
+  - Multiple implementation attempts were made:
+    - React `onContextMenu` and `onMouseDown` handlers
+    - Direct `addEventListener` with capture phase
+    - Event handlers on both container and h1 elements
+  - None of these approaches successfully capture right-click events - no console logs appear when right-clicking
+  - Possible causes: Overlay element blocking events, CSS `pointer-events` issues, or Tauri-specific event handling
+  - The function itself is functional and can be triggered via other means (e.g., programmatic call or alternative UI trigger)
 
 ## Theme Documentation
 

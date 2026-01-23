@@ -79,6 +79,7 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
   const playButtonRightClickRef = useRef(0); // Track right clicks for double-click detection
   const pinLongPressTimerRef = useRef(null); // Track long press for pin button
   const hoverTimerRef = useRef(null);
+  const playlistTitleRef = useRef(null); // Ref for playlist title element
 
   // Store hooks
   const {
@@ -281,6 +282,8 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
 
   const [isAdjustingImage, setIsAdjustingImage] = useState(false);
   const [isVisualizerEnabled, setIsVisualizerEnabled] = useState(false);
+  const [showViewCount, setShowViewCount] = useState(true); // Toggle between view count and publish year
+  const [metadataOpacity, setMetadataOpacity] = useState(1); // For fade animation
 
 
 
@@ -304,6 +307,36 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
       console.error('Failed to save visualizer state to localStorage:', error);
     }
   }, [isVisualizerEnabled]);
+
+  // Attach right-click handler to playlist title using ref
+  useEffect(() => {
+    const titleElement = playlistTitleRef.current;
+    if (!titleElement) return;
+
+    const handleRightClick = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      console.log('Mega shuffle triggered via addEventListener');
+      handleShufflePlaylist();
+    };
+
+    const handleMouseDown = (e) => {
+      if (e.button === 2) {
+        e.preventDefault();
+        e.stopPropagation();
+        console.log('Mega shuffle triggered via mousedown addEventListener');
+        handleShufflePlaylist();
+      }
+    };
+
+    titleElement.addEventListener('contextmenu', handleRightClick, true); // Use capture phase
+    titleElement.addEventListener('mousedown', handleMouseDown, true); // Use capture phase
+
+    return () => {
+      titleElement.removeEventListener('contextmenu', handleRightClick, true);
+      titleElement.removeEventListener('mousedown', handleMouseDown, true);
+    };
+  }, []); // Empty deps - handleShufflePlaylist is stable
 
 
 
@@ -1493,6 +1526,38 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
     index: idx
   }));
 
+  // Determine if author name is long (threshold: 18 characters)
+  const isAuthorLong = displayVideo.author.length > 18;
+  const hasViewCount = displayVideo.viewers && displayVideo.viewers !== '0 live';
+  const hasPublishedYear = displayVideo.publishedYear !== null;
+  const shouldUseMergedView = isAuthorLong && hasViewCount && hasPublishedYear;
+
+  // Cycle between view count and publish year every 12 seconds (only if using merged view)
+  useEffect(() => {
+    // Reset to show view count when video changes
+    setShowViewCount(true);
+    setMetadataOpacity(1);
+    
+    // Only cycle if using merged view (long author name with both metadata available)
+    if (shouldUseMergedView) {
+      const interval = setInterval(() => {
+        // Fade out
+        setMetadataOpacity(0);
+        // After fade out completes, switch content and fade in
+        setTimeout(() => {
+          setShowViewCount(prev => !prev);
+          setMetadataOpacity(1);
+        }, 600); // Half of transition duration (1200ms total)
+      }, 12000); // 12 seconds
+      
+      return () => clearInterval(interval);
+    } else {
+      // If not using merged view, show view count if available
+      setShowViewCount(hasViewCount);
+      setMetadataOpacity(1);
+    }
+  }, [shouldUseMergedView, hasViewCount, hasPublishedYear, finalDisplayVideoItem?.id]);
+
   const getOrbButtonStyle = (index) => {
     const totalButtons = 8; const centerIndex = 3.5; const relativeIndex = index - centerIndex; const angle = 90 + (relativeIndex * orbButtonSpread); const radius = 50; const rad = (angle * Math.PI) / 180; const x = 50 + radius * Math.cos(rad); const y = 50 + radius * Math.sin(rad);
     return { left: `${x}%`, top: `${y}%`, transform: 'translate(-50%, -50%)' };
@@ -1586,12 +1651,29 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
                 </div>
               </div>
               <div className={`border-4 shadow-2xl flex flex-col relative overflow-visible transition-all duration-300 group/playlist ${isEditMode ? 'ring-4 ring-sky-400/30' : theme.orbBorder + ' ' + theme.menuBg + ' backdrop-blur-2xl rounded-2xl overflow-hidden'}`} style={{ width: `${menuWidth}px`, height: `${menuHeight}px` }}>
-                <div className="flex-grow flex flex-col items-center justify-center px-4 relative z-10 overflow-hidden w-full h-full">
+                <div 
+                  className="flex-grow flex flex-col items-center justify-center px-4 relative z-10 overflow-hidden w-full h-full"
+                  onMouseDown={(e) => {
+                    if (e.button === 2) { // Right mouse button
+                      e.preventDefault();
+                      e.stopPropagation();
+                      console.log('Mega shuffle triggered from container (mouseDown)');
+                      handleShufflePlaylist();
+                    }
+                  }}
+                  onContextMenu={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('Mega shuffle triggered from container (contextMenu)');
+                    handleShufflePlaylist();
+                  }}
+                >
                   <h1
-                    className="font-black text-sky-950 text-center leading-tight line-clamp-3 tracking-tight transition-all pb-1 cursor-pointer hover:text-sky-700"
-                    style={{ fontSize: `${titleFontSize}px` }}
+                    ref={playlistTitleRef}
+                    className="font-black text-sky-950 text-center leading-tight line-clamp-3 tracking-tight transition-all pb-1 cursor-pointer hover:text-sky-700 select-none"
+                    style={{ fontSize: `${titleFontSize}px`, pointerEvents: 'auto' }}
                     onClick={handlePlaylistsGrid}
-                    title={playlistTitle}
+                    title={`${playlistTitle} (Right-click for mega shuffle)`}
                   >
                     {playlistTitle}
                   </h1>
@@ -1655,17 +1737,41 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
                 <div className={`border-t flex items-center px-3 shrink-0 relative rounded-b-2xl ${theme.bottomBar}`} style={{ height: `${bottomBarHeight}px` }}>
                   <div className="w-full h-full relative">
                     {/* Left Side: Video Metadata */}
-                    <div className={`absolute left-4 top-1/2 -translate-y-1/2 flex items-center gap-1 ${theme.accent} font-bold uppercase tracking-widest opacity-80`} style={{ fontSize: `${metadataFontSize}px`, maxWidth: '210px' }}>
-                      <span className="truncate">{displayVideo.author}</span>
-                      {displayVideo.verified && <CheckCircle2 size={metadataFontSize} className="fill-current shrink-0" />}
-                      <span className="mx-1 opacity-50 shrink-0">|</span>
-                      <span className="shrink-0">{displayVideo.viewers}</span>
-                      {displayVideo.publishedYear && (
-                        <>
-                          <span className="mx-1 opacity-50 shrink-0">|</span>
-                          <span className="shrink-0">{displayVideo.publishedYear}</span>
-                        </>
-                      )}
+                    <div className={`absolute left-4 top-1/2 -translate-y-1/2 flex items-center ${shouldUseMergedView ? 'justify-between' : 'gap-1'} gap-1 ${theme.accent} font-bold uppercase tracking-widest opacity-80`} style={{ fontSize: `${metadataFontSize}px`, width: '210px' }}>
+                      <div className="flex items-center gap-1 min-w-0">
+                        <span className="truncate">{displayVideo.author}</span>
+                        {displayVideo.verified && <CheckCircle2 size={metadataFontSize} className="fill-current shrink-0" />}
+                      </div>
+                      {(hasViewCount || hasPublishedYear) ? (
+                        shouldUseMergedView ? (
+                          // Merged view: Cycle between view count and publish year (for long author names)
+                          <div className="flex items-center gap-1 shrink-0">
+                            <span className="opacity-50 shrink-0">|</span>
+                            <span 
+                              className="shrink-0 transition-opacity ease-in-out"
+                              style={{ opacity: metadataOpacity, transitionDuration: '1200ms' }}
+                            >
+                              {showViewCount ? displayVideo.viewers : displayVideo.publishedYear}
+                            </span>
+                          </div>
+                        ) : (
+                          // Separate view: Show both view count and publish year side by side (for short author names)
+                          <div className="flex items-center gap-1 shrink-0">
+                            {hasViewCount && (
+                              <>
+                                <span className="mx-1 opacity-50 shrink-0">|</span>
+                                <span className="shrink-0">{displayVideo.viewers}</span>
+                              </>
+                            )}
+                            {hasPublishedYear && (
+                              <>
+                                <span className="mx-1 opacity-50 shrink-0">|</span>
+                                <span className="shrink-0">{displayVideo.publishedYear}</span>
+                              </>
+                            )}
+                          </div>
+                        )
+                      ) : null}
                     </div>
 
                     {/* Right Components: Action & Navigation Buttons */}
