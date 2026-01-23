@@ -100,8 +100,10 @@ Users see a 3-column grid of video cards showing videos from the current playlis
   - **Compact Layout**: Features a streamlined single-row design to maximize vertical screen real estate.
   - **Unified Background**: Inherits the **Custom Page Banner Image** (if set) and continues the same horizontal scroll animation, maintaining visual alignment with the top banner.
   - **Videos Page Layout**:
-    - **Left**: Compact Folder Selector (horizontal scrollable list) + Sort Controls.
-    - **Right**: Action controls (Bulk Tag Mode toggle, Add Button).
+    - **Left**: All/Unsorted buttons + Colored Folder Prism (16-color horizontal bar).
+    - **Right**: Sort Dropdown (Default/Date/Progress/Last Viewed) + Save/Cancel buttons (when in bulk tag mode) + Bulk Tag Mode toggle + Add Button.
+    - **Sort Dropdown**: Compact design with reduced padding (`pl-1.5 pr-4`) and minimum width constraint for space efficiency.
+    - **Bulk Tag Controls**: When bulk tag mode is active, Save (green) and Cancel (red) buttons appear between the sort dropdown and bulk tag toggle, providing clear workflow actions.
   - **Playlists Page Layout**:
     - **Left**: Tab Bar navigation.
     - **Right**: Control cluster (Tab Presets, Folder Toggle, Add Playlist).
@@ -176,6 +178,8 @@ Users see a 3-column grid of video cards showing videos from the current playlis
   - `sortBy`: Sort option ('shuffle', 'chronological', 'progress', 'lastViewed')
   - `watchedVideoIds`: Set of video IDs with ≥85% progress
   - `videoProgress`: Map of video ID to progress data (includes `percentage`, `hasFullyWatched`, `last_updated`)
+  - `allFolderMetadata`: Map of folder color ID to metadata object (`{ name, description }`) - Loaded when playlist changes for custom name display in bulk tag grid
+  - `savingBulkTags`: Boolean indicating bulk tag save operation in progress
 
 **API/Bridge:**
 - `src/api/playlistApi.js`:
@@ -186,6 +190,7 @@ Users see a 3-column grid of video cards showing videos from the current playlis
   - `removeVideoFromPlaylist(playlistId, itemId)` - Removes video from playlist
   - `getWatchedVideoIds()` - Gets video IDs with ≥85% progress
   - `getAllVideoProgress()` - Gets all video progress data
+  - `getFolderMetadata(playlistId, folderColor)` - Gets folder metadata (custom name, description) for custom name display in bulk tag grid
 
 **Backend:**
 - `src-tauri/src/commands.rs`: Tauri command handlers
@@ -226,13 +231,17 @@ Users see a 3-column grid of video cards showing videos from the current playlis
 4. **Bulk Tag Mode Flow:**
    - User clicks "Bulk Tag Mode" → `setBulkTagMode(true)` (line 30)
    - Cards enter bulk tag mode → Hover shows color grid overlay
-   - User hovers video → `BulkTagColorGrid` appears
+   - **Save/Cancel buttons appear** in toolbar → Provides clear workflow actions
+   - User hovers video → `BulkTagColorGrid` appears (4x4 grid perfectly covering thumbnail)
+   - **Custom folder names displayed** → If a folder has a custom name (different from default color name), it appears as overlay text on the square
    - User clicks colors → `toggleBulkTagSelection(videoId, folderColor)` (line 288)
-   - Updates `bulkTagSelections` → Visual feedback (checkmarks)
-   - User clicks "Save" → `handleSaveBulkTags()` (line 291)
+   - Updates `bulkTagSelections` → Visual feedback (checkmarks on selected squares)
+   - **Thumbnail border updates** → Border color changes to match selected folder color (first selected if multiple)
+   - User clicks "Save" → `handleSaveBulkTags()` (line 571)
    - Loops through selections → `assignVideoToFolder()` / `unassignVideoFromFolder()`
    - Refreshes folder assignments → Grid updates
-   - Exits bulk tag mode → `setBulkTagMode(false)`
+   - Exits bulk tag mode → `setBulkTagMode(false)`, Save/Cancel buttons hidden
+   - User clicks "Cancel" → `handleCancelBulkTags()` (line 658) → Clears selections and exits mode
 
 5. **Video Click Flow:**
    - User clicks video card → `handleVideoClick(video, index)` (line 278)

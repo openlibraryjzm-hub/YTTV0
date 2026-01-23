@@ -122,7 +122,9 @@ Users see video cards built using the Card component system with video-specific 
     - **Hover Overlay**: 
       - **Top Right**: Pin button and Star button appear
       - **Bottom Right**: 3-dot menu appears
-    - **Bulk Tag Overlay**: When in bulk tag mode, color grid appears on hover
+    - **Bulk Tag Overlay**: When in bulk tag mode, 4x4 color grid appears on hover, perfectly covering the entire thumbnail
+    - **Custom Folder Names**: If a folder has a custom name (different from default color name), it appears as overlay text on the square
+    - **Bulk Tag Border**: When folders are selected in bulk tag mode, thumbnail border color changes to match the first selected folder color
     - **Star Color Picker Overlay**: When hovering over star icon for 1.2 seconds, a grid of 16 colored stars appears centered at the top of the thumbnail
 
 - **Content Area**:
@@ -135,6 +137,7 @@ Users see video cards built using the Card component system with video-specific 
   - **Default**: Gray border, thumbnail and title visible
   - **Selected**: Blue border (when video is selected)
   - **Playing**: **Vibrant Red Glow** (thick `ring-red-500` border + dual-layer shadow bleeding into/out of thumbnail)
+  - **Bulk Tag Selected**: Colored border matching first selected folder color (when in bulk tag mode with selections)
   - **Hover**: Lighter background, top-right controls (Pin/Star), bottom-right menu, and subtitle appear
 
 - **Interactive Elements**:
@@ -157,7 +160,12 @@ Users see video cards built using the Card component system with video-specific 
     - **Assign to Folder**: Opens submenu to assign video to color folder
     - **Quick Assign**: Sets specific folder color as quick assign preference
     - **Delete**: Removes video from playlist
-  - **Bulk Tag Grid** (hover in bulk mode): 16-color grid for bulk tagging
+  - **Bulk Tag Grid** (hover in bulk mode): 
+    - 16-color grid (4x4 pattern) that perfectly covers the entire thumbnail with no gaps
+    - Each square fills its grid cell completely (`w-full h-full`)
+    - Custom folder names displayed as overlay text on squares (only if name differs from default)
+    - Selected folders show checkmark icon
+    - Currently assigned folders have higher opacity (100% vs 70%)
 
 **2: File Manifest**
 
@@ -281,11 +289,15 @@ Users see video cards built using the Card component system with video-specific 
 7. **Bulk Tag Flow:**
    - User enters bulk tag mode → `bulkTagMode: true`
    - User hovers video → `setIsHovered(true)` (line 247)
-   - `BulkTagColorGrid` appears → Shows 16-color grid overlay
+   - `BulkTagColorGrid` appears → Shows 4x4 grid (16 colors) perfectly covering thumbnail
+   - **Grid Layout**: `grid-cols-4 grid-rows-4` with `gap-0`, each square uses `w-full h-full` to fill cell
+   - **Custom Names**: Folder metadata loaded → Custom names displayed as overlay text on squares (only if different from default)
    - User clicks color → `onBulkTagColorClick(video, folderColor)` (line 287)
    - Toggles selection → `toggleBulkTagSelection(video.id, folderColor)`
    - Visual feedback → Checkmark appears on selected colors
-   - User clicks "Save" → Parent handles bulk save (see VideosPage flow)
+   - **Border Update**: Thumbnail border color changes to match first selected folder color (via `getBulkTagBorderColor()`)
+   - User clicks "Save" in toolbar → Parent handles bulk save (see VideosPage flow)
+   - User clicks "Cancel" in toolbar → Clears selections and exits bulk tag mode
 
 **Source of Truth:**
 - Database `video_folder_assignments` table - Source of Truth for folder assignments

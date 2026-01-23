@@ -96,6 +96,7 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
   const [showUploader, setShowUploader] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [folderMetadata, setFolderMetadataState] = useState(null); // { custom_name, description }
+  const [allFolderMetadata, setAllFolderMetadata] = useState({}); // Map: folderColor -> { name, description }
 
   // Use preview items if available, otherwise use current playlist items
   const activePlaylistItems = previewPlaylistItems || currentPlaylistItems;
@@ -251,6 +252,44 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
 
     loadAssignments();
   }, [activePlaylistId, activePlaylistItems, loadVideoFolders]);
+
+  // Load all folder metadata when playlist changes
+  useEffect(() => {
+    const loadAllFolderMetadata = async () => {
+      if (!activePlaylistId) {
+        setAllFolderMetadata({});
+        return;
+      }
+
+      try {
+        // Fetch metadata for all 16 folder colors in parallel
+        const metadataPromises = FOLDER_COLORS.map(async (color) => {
+          try {
+            const metadata = await getFolderMetadata(activePlaylistId, color.id);
+            return { folderColor: color.id, metadata };
+          } catch (error) {
+            console.error(`Failed to load metadata for folder ${color.id}:`, error);
+            return { folderColor: color.id, metadata: null };
+          }
+        });
+
+        const results = await Promise.all(metadataPromises);
+        const metadataMap = {};
+        results.forEach(({ folderColor, metadata }) => {
+          if (metadata && metadata[0]) {
+            // metadata[0] is the custom name
+            metadataMap[folderColor] = { name: metadata[0], description: metadata[1] };
+          }
+        });
+        setAllFolderMetadata(metadataMap);
+      } catch (error) {
+        console.error('Failed to load folder metadata:', error);
+        setAllFolderMetadata({});
+      }
+    };
+
+    loadAllFolderMetadata();
+  }, [activePlaylistId]);
 
   // Initialize shuffle state when entering shuffle mode or playlist loading
   useEffect(() => {
@@ -1055,47 +1094,28 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
 
 
               {/* Folder Selection Row */}
-              {/* Left Side: Compact Folder Selector + Sort */}
-              {/* Left Side: Compact Folder Selector + Sort */}
+              {/* Left Side: All, Unsorted, and Colored Prism */}
               <div className="flex items-center gap-0 overflow-x-auto no-scrollbar mask-gradient-right flex-1 min-w-0 pr-0">
-
-                <div className="flex items-center gap-3 pr-3 shrink-0">
-                  {/* Compact Sort */}
-                  <div className="relative group shrink-0">
-                    <select
-                      value={sortBy}
-                      onChange={(e) => setSortBy(e.target.value)}
-                      className="bg-slate-800/80 border border-white/10 rounded-md py-1 pl-2 pr-5 text-[10px] font-bold uppercase tracking-wider text-slate-300 focus:outline-none focus:ring-1 focus:ring-sky-500 cursor-pointer hover:bg-slate-700 transition-colors appearance-none"
-                      title="Sort"
-                    >
-                      <option value="shuffle">Default</option>
-                      <option value="chronological">Date</option>
-                      <option value="progress">Progress</option>
-                      <option value="lastViewed">Last Viewed</option>
-                    </select>
-                  </div>
-
-                  {/* Compact Folder Buttons */}
-                  <div className="flex items-center gap-1.5 shrink-0">
-                    <button
-                      onClick={() => setSelectedFolder(null)}
-                      className={`px-2 py-0.5 rounded-md text-[10px] font-bold transition-all uppercase tracking-wider ${selectedFolder === null
-                        ? 'bg-sky-500 text-white shadow-sm'
-                        : 'bg-slate-800/80 text-slate-400 hover:bg-slate-700 hover:text-slate-200 border border-white/5'
-                        }`}
-                    >
-                      All
-                    </button>
-                    <button
-                      onClick={() => setSelectedFolder('unsorted')}
-                      className={`px-2 py-0.5 rounded-md text-[10px] font-bold transition-all uppercase tracking-wider ${selectedFolder === 'unsorted'
-                        ? 'bg-slate-500 text-white shadow-sm'
-                        : 'bg-slate-800/80 text-slate-400 hover:bg-slate-700 hover:text-slate-200 border border-white/5'
-                        }`}
-                    >
-                      Unsorted
-                    </button>
-                  </div>
+                {/* Compact Folder Buttons */}
+                <div className="flex items-center gap-1.5 shrink-0 pr-3">
+                  <button
+                    onClick={() => setSelectedFolder(null)}
+                    className={`px-2 py-0.5 rounded-md text-[10px] font-bold transition-all uppercase tracking-wider ${selectedFolder === null
+                      ? 'bg-sky-500 text-white shadow-sm'
+                      : 'bg-slate-800/80 text-slate-400 hover:bg-slate-700 hover:text-slate-200 border border-white/5'
+                      }`}
+                  >
+                    All
+                  </button>
+                  <button
+                    onClick={() => setSelectedFolder('unsorted')}
+                    className={`px-2 py-0.5 rounded-md text-[10px] font-bold transition-all uppercase tracking-wider ${selectedFolder === 'unsorted'
+                      ? 'bg-slate-500 text-white shadow-sm'
+                      : 'bg-slate-800/80 text-slate-400 hover:bg-slate-700 hover:text-slate-200 border border-white/5'
+                      }`}
+                  >
+                    Unsorted
+                  </button>
                 </div>
 
                 <div className="flex-1 flex items-center shrink-0 h-6 mr-3 border-2 border-black rounded-lg overflow-hidden">
@@ -1127,8 +1147,45 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
                 </div>
               </div>
 
-              {/* Right Side: Actions */}
+              {/* Right Side: Sort Dropdown + Actions */}
               <div className="flex items-center gap-2 shrink-0 ml-auto">
+                {/* Compact Sort */}
+                <div className="relative group shrink-0">
+                  <select
+                    value={sortBy}
+                    onChange={(e) => setSortBy(e.target.value)}
+                    className="bg-slate-800/80 border border-white/10 rounded-md py-1 pl-1.5 pr-4 text-[10px] font-bold uppercase tracking-wider text-slate-300 focus:outline-none focus:ring-1 focus:ring-sky-500 cursor-pointer hover:bg-slate-700 transition-colors appearance-none w-auto min-w-[70px]"
+                    title="Sort"
+                  >
+                    <option value="shuffle">Default</option>
+                    <option value="chronological">Date</option>
+                    <option value="progress">Progress</option>
+                    <option value="lastViewed">Last Viewed</option>
+                  </select>
+                </div>
+
+                {/* Save and Cancel buttons - only show in bulk tag mode */}
+                {bulkTagMode && (
+                  <>
+                    <button
+                      onClick={handleSaveBulkTags}
+                      disabled={savingBulkTags}
+                      className="px-2.5 py-1 bg-green-600 hover:bg-green-500 disabled:bg-green-700 disabled:opacity-50 text-white rounded-md transition-all shadow-lg hover:shadow-green-500/25 border border-white/10 text-[10px] font-bold uppercase tracking-wider"
+                      title="Save Bulk Tags"
+                    >
+                      {savingBulkTags ? 'Saving...' : 'Save'}
+                    </button>
+                    <button
+                      onClick={handleCancelBulkTags}
+                      disabled={savingBulkTags}
+                      className="px-2.5 py-1 bg-red-600 hover:bg-red-500 disabled:bg-red-700 disabled:opacity-50 text-white rounded-md transition-all shadow-lg hover:shadow-red-500/25 border border-white/10 text-[10px] font-bold uppercase tracking-wider"
+                      title="Cancel Bulk Tagging"
+                    >
+                      Cancel
+                    </button>
+                  </>
+                )}
+
                 {/* Bulk Tag */}
                 <button
                   onClick={() => setBulkTagMode(!bulkTagMode)}
@@ -1209,6 +1266,8 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
                           onBulkTagColorClick={(color) => handleBulkTagColorClick(video, color)}
                           onPinClick={() => { }} // Handled internally in VideoCard via store
                           isStickied={true} // It is stickied in this list
+                          playlistId={activePlaylistId}
+                          folderMetadata={allFolderMetadata}
                           progress={(() => {
                             const videoId = extractVideoId(video.video_url) || video.video_id;
                             const data = videoProgress.get(videoId);
@@ -1260,6 +1319,8 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
                         onBulkTagColorClick={(color) => handleBulkTagColorClick(video, color)}
                         onPinClick={() => { }} // Handled internally in VideoCard via store
                         isStickied={isContextStickied}
+                        playlistId={activePlaylistId}
+                        folderMetadata={allFolderMetadata}
                         progress={(() => {
                           const videoId = extractVideoId(video.video_url) || video.video_id;
                           const data = videoProgress.get(video.id) || videoProgress.get(extractVideoId(video.video_url));

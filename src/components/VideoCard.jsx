@@ -38,6 +38,8 @@ const VideoCard = ({
   progress = 0,
   isWatched = false,
   isStickied = false,
+  playlistId = null,
+  folderMetadata = {},
 }) => {
   const { inspectMode } = useLayoutStore();
   const { quickAssignFolder } = useFolderStore();
@@ -51,6 +53,19 @@ const VideoCard = ({
   const thumbnailUrl = getThumbnailUrl(video.video_id, 'medium');
   const primaryFolder = videoFolders.length > 0 ? getFolderColorById(videoFolders[0]) : null;
   const quickAssignColor = getFolderColorById(quickAssignFolder);
+
+  // Get border color for bulk tag selections
+  const getBulkTagBorderColor = () => {
+    if (!bulkTagMode || bulkTagSelections.size === 0) {
+      return null;
+    }
+    // Use the first selected folder color for the border
+    const firstSelectedFolder = Array.from(bulkTagSelections)[0];
+    const folderColor = getFolderColorById(firstSelectedFolder);
+    return folderColor ? folderColor.hex : null;
+  };
+
+  const bulkTagBorderColor = getBulkTagBorderColor();
 
 
   // FIX: Split selectors to prevent "Maximum update depth exceeded" error
@@ -364,7 +379,7 @@ const VideoCard = ({
       <div
         onMouseEnter={() => bulkTagMode && setIsHovered(true)}
         onMouseLeave={() => bulkTagMode && setIsHovered(false)}
-        className="relative group rounded-lg overflow-hidden"
+        className={`relative group rounded-lg ${bulkTagMode ? 'overflow-visible' : 'overflow-hidden'}`}
       >
         <CardThumbnail
           src={thumbnailUrl}
@@ -372,7 +387,8 @@ const VideoCard = ({
           overlay={playOverlay}
           badges={bulkTagMode ? badges.filter(b => b.position !== 'top-right') : badges}
           progress={progress}
-          className={`rounded-lg overflow-hidden border-2 border-black ${isCurrentlyPlaying ? 'ring-4 ring-red-500 ring-offset-2 ring-offset-black shadow-[0_0_40px_rgba(239,68,68,1),inset_0_0_40px_rgba(239,68,68,0.8)]' : ''}`} // Rounding thumbnail specifically
+          className={`rounded-lg overflow-hidden border-2 ${bulkTagBorderColor ? '' : 'border-black'} ${isCurrentlyPlaying ? 'ring-4 ring-red-500 ring-offset-2 ring-offset-black shadow-[0_0_40px_rgba(239,68,68,1),inset_0_0_40px_rgba(239,68,68,0.8)]' : ''}`} // Rounding thumbnail specifically
+          style={bulkTagBorderColor ? { borderColor: bulkTagBorderColor, borderWidth: '2px' } : undefined}
         />
 
         {/* Star color picker overlay */}
@@ -423,6 +439,8 @@ const VideoCard = ({
               currentFolders={videoFolders}
               selectedFolders={bulkTagSelections}
               onColorClick={onBulkTagColorClick}
+              playlistId={playlistId}
+              folderMetadata={folderMetadata}
             />
           </div>
         )}
