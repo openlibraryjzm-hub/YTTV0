@@ -283,9 +283,9 @@ Users see a vertical list of history cards showing the last 100 watched videos:
     - Red glow shadow matching VideosPage style
   - **Content** (Right):
     - **Title**: Video title, large and bold.
-    - **Metadata Row**: Contains timestamp badge and playlist/folder badges:
-      - **Timestamp Badge**: Relative time (e.g., "2 hours ago") with a Clock icon, styled with slate colors
-      - **Playlist/Folder Badges**: One badge per playlist the video belongs to, showing:
+    - **Pin Marker**: If the video is pinned or priority pinned, a pin icon appears in the top-right corner of the title area (amber for priority pins, sky for normal pins).
+    - **Metadata Rows**: Two separate rows for badges:
+      - **Top Row**: Playlist/Folder badges - One badge per playlist the video belongs to, showing:
         - **Format**: "Playlist Name - Folder Name" (or just "Playlist Name" if no folder)
         - **Coloring**: Badge uses the folder color (if folder exists) or default sky color
         - **Interactive Parts**: Badge is split into two clickable sections:
@@ -294,7 +294,8 @@ Users see a vertical list of history cards showing the last 100 watched videos:
         - **Hover Effects**: 
           - Playlist name: White highlight box appears on hover
           - Folder name: Colored highlight box (using folder color) appears on hover
-  - **Hover Overlay**: Play button appears centered on the thumbnail.
+      - **Bottom Row**: Time since watched - Relative time (e.g., "2 hours ago") styled to match the video title (large, bold, same color with hover effect).
+  - **Thumbnail**: No hover overlay effects - thumbnail displays without blur or play button on hover.
 
 - **Deduplication**: If a video is re-watched, it is moved to the top of the list (most recent) to prevent duplicates.
 
@@ -326,6 +327,9 @@ Users see a vertical list of history cards showing the last 100 watched videos:
   - `setPlaylistItems`: Function to set playlist items and navigate
 - `src/store/navigationStore.js`:
   - `setCurrentPage`: Function to navigate between pages
+- `src/store/pinStore.js`:
+  - `pinnedVideos`: Array of pinned videos (used to check if history entries are pinned)
+  - `priorityPinIds`: Array of priority pin IDs (used to distinguish priority pins from normal pins)
 
 **API/Bridge:**
 - `src/api/playlistApi.js`:
@@ -423,13 +427,12 @@ Users see a dedicated page for pinned videos, separating "Priority Pins" from "R
 
 - **Regular Pins Grid**: The main section displays normal pins (videos pinned via the standard pin button).
   - Presented in a standard 3-column grid.
-  - **Expiration Timer**: Each video card displays a prominent countdown timer (e.g., "23h 59m 59s") centered over the thumbnail.
-  - **24-Hour Expiration**: Regular pins expire and disappear 24 hours after being pinned.
+  - **Persistent**: Regular pins persist until manually removed (no expiration).
   - Sorted by **most recently pinned** (newest first).
 
 - **Visuals**:
   - Uses the standard `PageBanner` "Pinned Videos" header.
-  - `VideoCard` components are reused but with specific props (e.g., `showTimer={true}` for regular pins).
+  - `VideoCard` components are reused for both priority and regular pins.
 
 **2: File Manifest**
 
@@ -442,7 +445,7 @@ Users see a dedicated page for pinned videos, separating "Priority Pins" from "R
 - `src/store/pinStore.js`:
   - `pinnedVideos`: Array of all pins (includes timestamp)
   - `priorityPinIds`: Array of priority pin IDs
-  - `checkExpiration()`: Removes expired pins
+  - `checkExpiration()`: No-op function (pins no longer expire)
 
 **3: The Logic & State Chain**
 
@@ -452,12 +455,6 @@ Users see a dedicated page for pinned videos, separating "Priority Pins" from "R
    - Sorts `priorityVideos` by index in `priorityPinIds`.
    - Sorts `regularVideos` by `pinnedAt` descending (newest first).
    - Renders Carousel for priority, Grid for regular.
-
-2. **Timer Flow:**
-   - Regular `VideoCard` receives `showTimer={true}`.
-   - `VideoCard` calculates time remaining (`24h - (now - pinnedAt)`).
-   - Updates every second.
-   - Displays formatted "HHh MMm SSs" overlay.
 
 ---
 #### ### 4.1.6 Likes Page

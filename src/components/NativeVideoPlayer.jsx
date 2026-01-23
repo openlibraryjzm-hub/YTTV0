@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { updateVideoProgress } from '../api/playlistApi';
 import { invoke } from '@tauri-apps/api/core';
 import { getCurrentWindow } from '@tauri-apps/api/window';
+import { usePinStore } from '../store/pinStore';
 
 // Manually verify observeMpvProperties import or implement locally if needed.
 // Keeping it for now assuming it uses event system which might match.
@@ -67,10 +68,18 @@ const savePlaybackTime = (videoId, time) => {
   }
 };
 
-// Save video progress to database
-const saveVideoProgress = async (videoId, videoUrl, duration, currentTime) => {
+// Save video progress to database and auto-unpin if completed
+const saveVideoProgress = async (videoId, videoUrl, duration, currentTime, removePinByVideoId) => {
   try {
     await updateVideoProgress(videoId, videoUrl, duration, currentTime);
+    
+    // Auto-unpin if video reached completion (>=85%)
+    if (duration && duration > 0 && currentTime >= 0) {
+      const progressPercentage = (currentTime / duration) * 100;
+      if (progressPercentage >= 85 && removePinByVideoId) {
+        removePinByVideoId(videoId);
+      }
+    }
   } catch (error) {
     console.error('Failed to save video progress to database:', error);
   }
@@ -78,6 +87,7 @@ const saveVideoProgress = async (videoId, videoUrl, duration, currentTime) => {
 
 const NativeVideoPlayer = ({ videoUrl, videoId, playerId = 'default', onEnded, ...props }) => {
   const containerRef = useRef(null);
+  const { removePinByVideoId } = usePinStore();
   const saveIntervalRef = useRef(null);
   const unlistenRef = useRef(null);
   const initAttemptedRef = useRef(false); // Prevent multiple init attempts
@@ -298,7 +308,7 @@ const NativeVideoPlayer = ({ videoUrl, videoId, playerId = 'default', onEnded, .
                         const time = await getMpvProperty('time-pos');
                         const dur = await getMpvProperty('duration');
                         if (time && time > 0) {
-                          saveVideoProgress(id, videoUrl, dur || 0, time);
+                          saveVideoProgress(id, videoUrl, dur || 0, time, removePinByVideoId);
                         }
                       } catch (e) {
                         console.warn('Error saving progress:', e);
@@ -309,7 +319,7 @@ const NativeVideoPlayer = ({ videoUrl, videoId, playerId = 'default', onEnded, .
               } else {
                 // Save immediately on pause
                 if (currentTime > 0 && duration > 0) {
-                  saveVideoProgress(id, videoUrl, duration, currentTime);
+                  saveVideoProgress(id, videoUrl, duration, currentTime, removePinByVideoId);
                 }
                 if (saveIntervalRef.current) {
                   clearInterval(saveIntervalRef.current);
@@ -325,7 +335,8 @@ const NativeVideoPlayer = ({ videoUrl, videoId, playerId = 'default', onEnded, .
 
                 // Reset stored time so it starts from beginning next time
                 savePlaybackTime(id, 0);
-                saveVideoProgress(id, videoUrl, duration, 0);
+                // Video ended - mark as completed (100%) and unpin
+                saveVideoProgress(id, videoUrl, duration, duration, removePinByVideoId);
 
                 if (onEndedRef.current) {
                   onEndedRef.current();
@@ -405,7 +416,7 @@ const NativeVideoPlayer = ({ videoUrl, videoId, playerId = 'default', onEnded, .
           const duration = await getMpvProperty('duration');
           if (currentTime && duration && currentTime > 0 && duration > 0) {
             savePlaybackTime(id, currentTime);
-            saveVideoProgress(id, videoUrl, duration, currentTime);
+            saveVideoProgress(id, videoUrl, duration, currentTime, removePinByVideoId);
           }
         } catch (e) {
           // Ignore errors during cleanup

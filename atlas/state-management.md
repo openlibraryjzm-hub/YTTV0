@@ -215,7 +215,7 @@ The application uses **Zustand** (v5.0.9) for state management. Zustand is a lig
 
 ### 7. pinStore (`src/store/pinStore.js`)
 
-**Purpose**: Manages video pinning with 24-hour expiration for normal pins and persistent priority pins
+**Purpose**: Manages video pinning with persistent storage. All pins (normal and priority) persist until manually removed.
 
 **State:**
 - `pinnedVideos`: Array - Array of pinned video objects. Each object includes `pinnedAt` timestamp.
@@ -228,8 +228,9 @@ The application uses **Zustand** (v5.0.9) for state management. Zustand is a lig
 - `isPinned(videoId)` - Checks if video is a normal pin (and NOT a priority pin).
 - `isPriorityPin(videoId)` - Checks if video is a priority pin.
 - `removePin(videoId)` - Removes pin by video ID (from both lists).
+- `removePinByVideoId(videoId)` - Removes pin by YouTube video_id (used for auto-unpinning on completion).
 - `clearAllPins()` - Clears all pins and priority state.
-- `checkExpiration()` - Checks `pinnedAt` timestamps and removes normal pins older than 24 hours. Priority pins do not expire.
+- `checkExpiration()` - No-op function kept for backward compatibility. Pins no longer expire.
 - `getPinInfo(videoId)` - Returns object with `{ isPinned, isPriority, pinnedAt }`.
 
 **Persistence**: 
@@ -238,19 +239,27 @@ The application uses **Zustand** (v5.0.9) for state management. Zustand is a lig
 
 **Pin Behavior:**
 - **Normal Pins**: 
-  - Expire 24 hours after being pinned. 
-  - Show a countdown timer on the Pins Page.
+  - Persist until manually removed (no expiration).
+  - Displayed in the regular pins grid on the Pins Page.
+  - **Auto-unpin on completion**: Automatically removed when video reaches ≥85% progress or ends.
 - **Priority Pins**: 
-  - Do NOT expire.
+  - Persist until manually removed (no expiration).
   - Are mutually exclusive with normal pins (a video cannot be both).
   - Typically displayed in a separate "Priority" section (e.g., carousel).
+  - **Auto-unpin on completion**: Automatically removed when video reaches ≥85% progress or ends.
   - The store supports multiple priority pins via `priorityPinIds` array, though UI may treat the first one specially.
+
+**Auto-Unpin on Completion:**
+- When video progress is saved (every 5 seconds during playback, on pause, or on end), the system checks if progress ≥85%.
+- If completion threshold is met, `removePinByVideoId()` is called to automatically remove the pin (both normal and priority).
+- This ensures completed videos are automatically cleaned from the pins list.
 
 **Dependencies:**
 - When video pinned → VideoCard pin icon updates → Amber if pinned, gray if not
 - When `pinnedVideos` changes → PinsPage re-renders → Shows normal pins in grid
 - When `priorityPinIds` changes → PinsPage re-renders → Shows priority pins in carousel
-- When app mounts or interval triggers → `checkExpiration()` runs → Expired normal pins removed
+- When video progress updates → Auto-unpin check runs → Completed videos are unpinned
+- When video completed → Pin automatically removed → PinsPage and HistoryPage update
 
 ---
 

@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { updateVideoProgress } from '../api/playlistApi';
 import { useLayoutStore } from '../store/layoutStore';
+import { usePinStore } from '../store/pinStore';
 
 /**
  * Extracts video ID from YouTube URL
@@ -47,10 +48,18 @@ const savePlaybackTime = (videoId, time) => {
   }
 };
 
-// Save video progress to database
-const saveVideoProgress = async (videoId, videoUrl, duration, currentTime) => {
+// Save video progress to database and auto-unpin if completed
+const saveVideoProgress = async (videoId, videoUrl, duration, currentTime, removePinByVideoId) => {
   try {
     await updateVideoProgress(videoId, videoUrl, duration, currentTime);
+    
+    // Auto-unpin if video reached completion (>=85%)
+    if (duration && duration > 0 && currentTime >= 0) {
+      const progressPercentage = (currentTime / duration) * 100;
+      if (progressPercentage >= 85 && removePinByVideoId) {
+        removePinByVideoId(videoId);
+      }
+    }
   } catch (error) {
     console.error('Failed to save video progress to database:', error);
     // Don't throw - this is non-critical
@@ -65,6 +74,7 @@ const YouTubePlayer = ({ videoUrl, videoId, playerId = 'default', onEnded, ...pr
   const durationRef = useRef(null); // Store video duration
   const [apiReady, setApiReady] = useState(false);
   const { viewMode } = useLayoutStore();
+  const { removePinByVideoId } = usePinStore();
 
   // Create unique player ID using both video ID and player instance ID
   const uniquePlayerId = `youtube-player-${playerId}-${id}`;
@@ -173,7 +183,8 @@ const YouTubePlayer = ({ videoUrl, videoId, playerId = 'default', onEnded, ...pr
             // Reset progress
             savePlaybackTime(id, 0);
             const duration = durationRef.current || playerRef.current?.getDuration?.() || 0;
-            saveVideoProgress(id, videoUrl || `https://www.youtube.com/watch?v=${id}`, duration, 0);
+            // Video ended - mark as completed (100%) and unpin
+            saveVideoProgress(id, videoUrl || `https://www.youtube.com/watch?v=${id}`, duration, duration, removePinByVideoId);
 
             if (onEnded) {
               onEnded();
@@ -193,7 +204,7 @@ const YouTubePlayer = ({ videoUrl, videoId, playerId = 'default', onEnded, ...pr
                   savePlaybackTime(id, currentTime);
 
                   // Save to database with progress percentage
-                  saveVideoProgress(id, videoUrl || `https://www.youtube.com/watch?v=${id}`, duration, currentTime);
+                  saveVideoProgress(id, videoUrl || `https://www.youtube.com/watch?v=${id}`, duration, currentTime, removePinByVideoId);
                 } catch (e) {
                   // Ignore errors
                 }

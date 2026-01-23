@@ -104,8 +104,6 @@ const PinsPage = ({ onVideoSelect }) => {
                                     videoFolders={[]} // Pinned view doesn't show folder context usually
                                     onVideoSelect={onVideoSelect}
                                     onVideoClick={() => onVideoSelect(video.video_url)}
-                                    // ENABLE TIMER ONLY FOR REGULAR PINS ON THIS PAGE
-                                    showTimer={true}
                                 />
                             );
                         })}

@@ -2,11 +2,10 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
 /**
- * Pin Store - Persistent video pinning with expiration
- * Pins persist across sessions
+ * Pin Store - Persistent video pinning
+ * Pins persist across sessions until manually removed
  * Supports priority pins (always first/leftmost) set via yellow pin button
- * Normal pins expire after 24 hours
- * Priority pins do not expire
+ * All pins (normal and priority) persist until manually removed
  */
 export const usePinStore = create(
   persist(
@@ -68,7 +67,7 @@ export const usePinStore = create(
          * Toggle pin status for a video (normal pin from video card)
          * - If currently Priority: Unpin completely (remove from priority and pinned).
          * - If currently Normal: Unpin.
-         * - If Not Pinned: Pin as Normal (add timer).
+         * - If Not Pinned: Pin as Normal.
          * This enforces "Cannot be both" by ensuring check is exclusive and actions clear other state.
          * @param {Object} video - Video object to pin/unpin
          */
@@ -142,6 +141,26 @@ export const usePinStore = create(
         },
 
         /**
+         * Remove a pin by YouTube video_id (removes from both normal and priority pins)
+         * Used for auto-unpinning when videos are watched to completion
+         * @param {string} videoId - YouTube video_id to unpin
+         */
+        removePinByVideoId: (videoId) => {
+          const state = get();
+          // Find the pin by video_id (YouTube ID)
+          const pinToRemove = state.pinnedVideos.find(v => v.video_id === videoId);
+          if (pinToRemove) {
+            // Remove by database id
+            const newPins = state.pinnedVideos.filter(v => v.id !== pinToRemove.id);
+            const newPriorityIds = state.priorityPinIds.filter(id => id !== pinToRemove.id);
+            set({
+              pinnedVideos: newPins,
+              priorityPinIds: newPriorityIds,
+            });
+          }
+        },
+
+        /**
          * Clear all pins
          */
         clearAllPins: () => {
@@ -151,7 +170,7 @@ export const usePinStore = create(
         /**
          * Toggle a video as a priority pin (via yellow button)
          * - If currently Priority: Unpin completely (remove from priority and pinned).
-         * - If currently Normal: Promote to Priority (remove timer implicitly by becoming priority).
+         * - If currently Normal: Promote to Priority.
          * - If Not Pinned: Pin as Priority.
          * @param {Object} video - Video object to toggle as priority pin
          */
@@ -190,35 +209,12 @@ export const usePinStore = create(
 
         /**
          * Check and remove expired pins
-         * Standard pins expire after 24 hours
-         * Priority pins never expire
+         * NOTE: Pins no longer expire - this function is kept for backward compatibility
+         * but does nothing. All pins persist until manually removed.
          */
         checkExpiration: () => {
-          const state = get();
-          const now = Date.now();
-          const TWENTY_FOUR_HOURS = 24 * 60 * 60 * 1000;
-
-          const validPins = state.pinnedVideos.filter(pin => {
-            // Priority pins never expire
-            if (state.priorityPinIds.includes(pin.id)) {
-              return true;
-            }
-
-            // Check if pin has timestamp and is older than 24 hours
-            if (pin.pinnedAt && (now - pin.pinnedAt > TWENTY_FOUR_HOURS)) {
-              return false; // Remove expired
-            }
-
-            // Legacy pins without timestamp: Keep them? Or remove?
-            // Let's keep them safe.
-            return true;
-          });
-
-          // Only update if changes occurred ({pinnedVideos} array reference change triggers re-renders)
-          if (validPins.length !== state.pinnedVideos.length) {
-            set({ pinnedVideos: validPins });
-            console.log(`[PinStore] Removed ${state.pinnedVideos.length - validPins.length} expired pins.`);
-          }
+          // Pins no longer expire - function kept for backward compatibility
+          // No-op: all pins persist until manually removed
         },
       };
     },

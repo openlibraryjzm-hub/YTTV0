@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { updateVideoProgress } from '../api/playlistApi';
 import { invoke } from '@tauri-apps/api/core';
+import { usePinStore } from '../store/pinStore';
 
 // Get stored playback time for a video
 const getStoredPlaybackTime = (videoId) => {
@@ -21,10 +22,18 @@ const savePlaybackTime = (videoId, time) => {
   }
 };
 
-// Save video progress to database
-const saveVideoProgress = async (videoId, videoUrl, duration, currentTime) => {
+// Save video progress to database and auto-unpin if completed
+const saveVideoProgress = async (videoId, videoUrl, duration, currentTime, removePinByVideoId) => {
   try {
     await updateVideoProgress(videoId, videoUrl, duration, currentTime);
+    
+    // Auto-unpin if video reached completion (>=85%)
+    if (duration && duration > 0 && currentTime >= 0) {
+      const progressPercentage = (currentTime / duration) * 100;
+      if (progressPercentage >= 85 && removePinByVideoId) {
+        removePinByVideoId(videoId);
+      }
+    }
   } catch (error) {
     console.error('Failed to save video progress to database:', error);
     // Don't throw - this is non-critical
@@ -36,6 +45,7 @@ const LocalVideoPlayer = ({ videoUrl, videoId, playerId = 'default', onEnded, ..
   const saveIntervalRef = useRef(null);
   const [videoSrc, setVideoSrc] = useState(null);
   const [error, setError] = useState(null);
+  const { removePinByVideoId } = usePinStore();
 
   // Get streaming URL for local video file
   useEffect(() => {
@@ -105,7 +115,7 @@ const LocalVideoPlayer = ({ videoUrl, videoId, playerId = 'default', onEnded, ..
       if (!saveIntervalRef.current) {
         saveIntervalRef.current = setInterval(() => {
           if (video && !video.paused) {
-            saveVideoProgress(id, videoUrl, duration, video.currentTime);
+            saveVideoProgress(id, videoUrl, duration, video.currentTime, removePinByVideoId);
           }
         }, 5000);
       }
@@ -121,7 +131,7 @@ const LocalVideoPlayer = ({ videoUrl, videoId, playerId = 'default', onEnded, ..
           const currentTime = video.currentTime;
           const duration = video.duration;
           savePlaybackTime(id, currentTime);
-          saveVideoProgress(id, videoUrl, duration, currentTime);
+          saveVideoProgress(id, videoUrl, duration, currentTime, removePinByVideoId);
         }
       }, 5000);
     };
@@ -159,7 +169,8 @@ const LocalVideoPlayer = ({ videoUrl, videoId, playerId = 'default', onEnded, ..
     const handleEnded = () => {
       // Reset progress
       savePlaybackTime(id, 0);
-      saveVideoProgress(id, videoUrl, video.duration, 0);
+      // Video ended - mark as completed (100%) and unpin
+      saveVideoProgress(id, videoUrl, video.duration, video.duration, removePinByVideoId);
 
       if (onEnded) {
         onEnded();
@@ -184,7 +195,7 @@ const LocalVideoPlayer = ({ videoUrl, videoId, playerId = 'default', onEnded, ..
           const currentTime = video.currentTime;
           const duration = video.duration;
           savePlaybackTime(id, currentTime);
-          saveVideoProgress(id, videoUrl, duration, currentTime);
+          saveVideoProgress(id, videoUrl, duration, currentTime, removePinByVideoId);
         } catch (e) {
           // Ignore errors during cleanup
         }

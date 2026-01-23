@@ -260,7 +260,7 @@ Users see video cards built using the Card component system with video-specific 
    - User clicks pin icon → `handlePinClick()` (line 151)
    - Calls `togglePin(video)` → Updates `pinStore.pinnedVideos`
    - Pin icon updates → Amber if pinned, gray if not
-   - Persisted → Normal pins expire after 24 hours
+   - Persisted → Normal pins persist until manually removed or video reaches ≥85% completion (auto-unpin)
 
 5. **Priority Pin Click Flow:**
    - User clicks priority pin button in hover overlay → `handlePriorityPinClick()` (line 170)

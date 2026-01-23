@@ -123,9 +123,11 @@ Users see the main YouTube player as the primary video playback area:
      - Gets duration → `durationRef.current || playerRef.current.getDuration()`
      - Saves to localStorage → `savePlaybackTime(id, currentTime)` (quick access)
      - Saves to database → `saveVideoProgress(id, videoUrl, duration, currentTime)`
+     - **Auto-unpin on completion**: If progress ≥85%, automatically removes pin (both normal and priority) via `removePinByVideoId()`
      - **Sticky Status**: Backend calculates `has_fully_watched`. If currently ≥85% OR previously fully watched, status remains persistent.
-   - If state is paused/stopped → Clears interval, saves immediately
-   - On unmount → Cleanup function saves final progress
+   - If state is paused/stopped → Clears interval, saves immediately (also checks for auto-unpin)
+   - On unmount → Cleanup function saves final progress (also checks for auto-unpin)
+   - On video end → Marks as 100% complete and triggers auto-unpin
 
 4. **Autoplay Flow (Video End):**
    - Video ends → `onStateChange` detects `ENDED` state

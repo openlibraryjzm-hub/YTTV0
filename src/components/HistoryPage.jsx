@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Clock } from 'lucide-react';
+import { Clock, Pin } from 'lucide-react';
 import { getWatchHistory, getPlaylistsForVideoIds, getAllPlaylists, getPlaylistItems, getVideoFolderAssignments, getFolderMetadata, getVideosInFolder } from '../api/playlistApi';
 import { getThumbnailUrl, extractVideoId } from '../utils/youtubeUtils';
 import { getFolderColorById } from '../utils/folderColors';
 import { useLayoutStore } from '../store/layoutStore';
 import { usePlaylistStore } from '../store/playlistStore';
 import { useNavigationStore } from '../store/navigationStore';
+import { usePinStore } from '../store/pinStore';
 import Card from './Card';
 import CardThumbnail from './CardThumbnail';
 import CardContent from './CardContent';
@@ -22,6 +23,8 @@ const HistoryPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
   const { currentPlaylistItems, currentVideoIndex } = usePlaylistStore();
   const { setCurrentPage } = useNavigationStore();
   const { setPlaylistItems } = usePlaylistStore();
+  const pinnedVideos = usePinStore(state => state.pinnedVideos);
+  const priorityPinIds = usePinStore(state => state.priorityPinIds);
 
   // Helper to get inspect label
   const getInspectTitle = (label) => inspectMode ? label : undefined;
@@ -230,6 +233,11 @@ const HistoryPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
               (item.video_url && extractVideoId(item.video_url) === extractVideoId(currentVideo.video_url))
             );
 
+            // Check if this video is pinned or priority pinned by video_id
+            const pinnedVideo = pinnedVideos.find(v => v.video_id === item.video_id);
+            const isPinnedVideo = pinnedVideo && !priorityPinIds.includes(pinnedVideo.id);
+            const isPriorityPinnedVideo = pinnedVideo && priorityPinIds.includes(pinnedVideo.id);
+
             return (
               <Card
                 key={item.id}
@@ -249,42 +257,39 @@ const HistoryPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
                   <CardThumbnail
                     src={thumbnailUrl}
                     alt={item.title || 'Video thumbnail'}
-                    overlay={
-                      <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-3 pointer-events-auto bg-black/40 backdrop-blur-[2px] absolute inset-0 justify-center">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleVideoClick(item);
-                          }}
-                          className="bg-sky-500 hover:bg-sky-400 rounded-full p-3 transition-all active:scale-90 shadow-lg hover:scale-110"
-                          style={{ color: '#052F4A' }}
-                          title={getInspectTitle('Play video') || 'Play video'}
-                        >
-                          <svg className="w-8 h-8" fill="currentColor" viewBox="0 0 20 20">
-                            <path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z" />
-                          </svg>
-                        </button>
-                      </div>
-                    }
                   />
                 </div>
 
                 {/* Right: Info */}
                 <div className="flex flex-col justify-center flex-1 min-w-0 py-2">
-                  <h3 className="text-lg font-bold mb-2 line-clamp-2 leading-tight transition-colors"
-                    style={{ color: '#052F4A' }}
-                    onMouseEnter={(e) => e.currentTarget.style.color = '#38bdf8'}
-                    onMouseLeave={(e) => e.currentTarget.style.color = '#052F4A'}>
-                    {item.title || 'Untitled Video'}
-                  </h3>
-                  <div className="flex flex-wrap items-center gap-2 text-sm">
-                    <span className="flex items-center gap-1.5 bg-slate-900/50 px-2 py-1 rounded-md border border-slate-700/50 text-slate-400 font-medium">
-                      <Clock size={14} className="text-sky-500/80" />
-                      {formatDate(item.watched_at)}
-                    </span>
-                    {/* Playlist badges */}
+                  <div className="relative">
+                    {/* Pin Marker - To the right of title, slightly above */}
+                    {(isPinnedVideo || isPriorityPinnedVideo) && (
+                      <div className="absolute -top-1 right-0 z-10">
+                        <div className={`p-1.5 rounded-lg backdrop-blur-md shadow-lg border ${
+                          isPriorityPinnedVideo
+                            ? 'bg-amber-500/20 border-amber-500/50 text-amber-500'
+                            : 'bg-sky-500/20 border-sky-500/50 text-sky-500'
+                        }`}>
+                          <Pin
+                            size={16}
+                            fill={isPriorityPinnedVideo || isPinnedVideo ? "currentColor" : "none"}
+                            strokeWidth={2}
+                          />
+                        </div>
+                      </div>
+                    )}
+                    <h3 className="text-lg font-bold mb-2 line-clamp-2 leading-tight transition-colors pr-8"
+                      style={{ color: '#052F4A' }}
+                      onMouseEnter={(e) => e.currentTarget.style.color = '#38bdf8'}
+                      onMouseLeave={(e) => e.currentTarget.style.color = '#052F4A'}>
+                      {item.title || 'Untitled Video'}
+                    </h3>
+                  </div>
+                  <div className="flex flex-col gap-2 text-sm">
+                    {/* Playlist badges - separate row on top */}
                     {playlistMap[item.video_id] && playlistMap[item.video_id].length > 0 && (
-                      <>
+                      <div className="flex flex-wrap items-center gap-2">
                         {playlistMap[item.video_id].map((playlistName, idx) => {
                           // Find playlist to get ID
                           const playlist = allPlaylists.find(p => p.name === playlistName);
@@ -378,8 +383,15 @@ const HistoryPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
                             </div>
                           );
                         })}
-                      </>
+                      </div>
                     )}
+                    {/* Time badge - own row on bottom, styled like title */}
+                    <div className="text-lg font-bold leading-tight transition-colors"
+                      style={{ color: '#052F4A' }}
+                      onMouseEnter={(e) => e.currentTarget.style.color = '#38bdf8'}
+                      onMouseLeave={(e) => e.currentTarget.style.color = '#052F4A'}>
+                      {formatDate(item.watched_at)}
+                    </div>
                   </div>
                 </div>
               </Card>
