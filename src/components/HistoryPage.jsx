@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Clock, Pin } from 'lucide-react';
-import { getWatchHistory, getPlaylistsForVideoIds, getAllPlaylists, getPlaylistItems, getVideoFolderAssignments, getFolderMetadata, getVideosInFolder } from '../api/playlistApi';
+import { getWatchHistory, getPlaylistsForVideoIds, getAllPlaylists, getPlaylistItems, getVideoFolderAssignments, getAllFolderAssignments, getFolderMetadata, getVideosInFolder } from '../api/playlistApi';
 import { getThumbnailUrl, extractVideoId } from '../utils/youtubeUtils';
 import { getFolderColorById } from '../utils/folderColors';
 import { useLayoutStore } from '../store/layoutStore';
@@ -19,6 +19,7 @@ const HistoryPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
   const [folderMap, setFolderMap] = useState({}); // Maps video_id -> playlist_id -> [folder_colors]
   const [folderNameMap, setFolderNameMap] = useState({}); // Maps video_id -> playlist_id -> folder_color -> folder_name
   const [allPlaylists, setAllPlaylists] = useState([]); // All playlists for name-to-ID lookup
+  const [filteredPlaylist, setFilteredPlaylist] = useState(null); // Currently filtered playlist name (null = show all)
   const { inspectMode } = useLayoutStore();
   const { currentPlaylistItems, currentVideoIndex } = usePlaylistStore();
   const { setCurrentPage } = useNavigationStore();
@@ -37,12 +38,13 @@ const HistoryPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
     try {
       setLoading(true);
       
-      // Load playlists first (needed for folder lookups)
-      const playlists = await getAllPlaylists();
-      setAllPlaylists(playlists || []);
+      // Load playlists and history in parallel
+      const [playlists, historyData] = await Promise.all([
+        getAllPlaylists(),
+        getWatchHistory(100)
+      ]);
       
-      // Load history
-      const historyData = await getWatchHistory(100);
+      setAllPlaylists(playlists || []);
       setHistory(historyData || []);
       
       // Fetch playlists for all videos in history
@@ -56,56 +58,139 @@ const HistoryPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
             const playlistsData = await getPlaylistsForVideoIds(videoIds);
             setPlaylistMap(playlistsData || {});
             
-            // Load folder assignments and folder names for each video in each playlist
-            const folderAssignments = {};
-            const folderNames = {};
-            
-            for (const videoId of videoIds) {
-              const playlistNames = playlistsData[videoId] || [];
-              folderAssignments[videoId] = {};
-              folderNames[videoId] = {};
-              
-              for (const playlistName of playlistNames) {
+            // Collect all unique playlists that contain history videos
+            const playlistIdsSet = new Set();
+            const playlistMapById = {};
+            Object.entries(playlistsData || {}).forEach(([videoId, playlistNames]) => {
+              playlistNames.forEach(playlistName => {
                 const playlist = playlists.find(p => p.name === playlistName);
-                if (!playlist) continue;
-                
-                try {
-                  // Get playlist items to find the item_id for this video
-                  const items = await getPlaylistItems(playlist.id);
-                  const videoItem = items.find(item => item.video_id === videoId);
-                  
-                  if (videoItem) {
-                    // Get folder assignments for this item
-                    const folders = await getVideoFolderAssignments(playlist.id, videoItem.id);
-                    folderAssignments[videoId][playlist.id] = folders || [];
-                    
-                    // Get folder names for each folder assignment
-                    folderNames[videoId][playlist.id] = {};
-                    for (const folderColor of folders || []) {
-                      try {
-                        const metadata = await getFolderMetadata(playlist.id, folderColor);
-                        if (metadata && metadata[0]) {
-                          // Custom folder name exists
-                          folderNames[videoId][playlist.id][folderColor] = metadata[0];
-                        } else {
-                          // Fallback to folder color name
-                          const folderColorInfo = getFolderColorById(folderColor);
-                          folderNames[videoId][playlist.id][folderColor] = folderColorInfo.name;
-                        }
-                      } catch (error) {
-                        // Fallback to folder color name on error
-                        const folderColorInfo = getFolderColorById(folderColor);
-                        folderNames[videoId][playlist.id][folderColor] = folderColorInfo.name;
-                      }
-                    }
-                  }
-                } catch (error) {
-                  console.error(`Failed to load folder assignments for video ${videoId} in playlist ${playlist.id}:`, error);
+                if (playlist) {
+                  playlistIdsSet.add(playlist.id);
+                  playlistMapById[playlist.id] = playlist;
                 }
+              });
+            });
+            
+            // Build video_id -> item_id map for each playlist (cache playlist items)
+            const playlistItemsCache = {}; // playlistId -> items array
+            const videoToItemMap = {}; // playlistId -> { videoId -> itemId }
+            
+            // Load all playlist items in parallel
+            const playlistItemsPromises = Array.from(playlistIdsSet).map(async (playlistId) => {
+              try {
+                const items = await getPlaylistItems(playlistId);
+                playlistItemsCache[playlistId] = items || [];
+                
+                // Build video_id -> item_id map for this playlist
+                const videoMap = {};
+                (items || []).forEach(item => {
+                  if (item.video_id) {
+                    videoMap[item.video_id] = item.id;
+                  }
+                });
+                videoToItemMap[playlistId] = videoMap;
+              } catch (error) {
+                console.error(`Failed to load items for playlist ${playlistId}:`, error);
+                playlistItemsCache[playlistId] = [];
+                videoToItemMap[playlistId] = {};
               }
-            }
+            });
+            
+            await Promise.all(playlistItemsPromises);
+            
+            // Load all folder assignments in parallel using batch API
+            const folderAssignmentsPromises = Array.from(playlistIdsSet).map(async (playlistId) => {
+              try {
+                const allAssignments = await getAllFolderAssignments(playlistId);
+                return { playlistId, assignments: allAssignments || {} };
+              } catch (error) {
+                console.error(`Failed to load folder assignments for playlist ${playlistId}:`, error);
+                return { playlistId, assignments: {} };
+              }
+            });
+            
+            const folderAssignmentsResults = await Promise.all(folderAssignmentsPromises);
+            
+            // Build folder assignments map: videoId -> playlistId -> [folderColors]
+            const folderAssignments = {};
+            folderAssignmentsResults.forEach(({ playlistId, assignments }) => {
+              // assignments is { itemId: [folderColors] }
+              Object.entries(assignments).forEach(([itemIdStr, folderColors]) => {
+                const itemId = parseInt(itemIdStr, 10);
+                // Find which video_id this item_id belongs to
+                const videoId = Object.keys(videoToItemMap[playlistId] || {}).find(
+                  vid => videoToItemMap[playlistId][vid] === itemId
+                );
+                
+                if (videoId) {
+                  if (!folderAssignments[videoId]) {
+                    folderAssignments[videoId] = {};
+                  }
+                  if (!folderAssignments[videoId][playlistId]) {
+                    folderAssignments[videoId][playlistId] = [];
+                  }
+                  // Add folder colors (avoid duplicates)
+                  const existingColors = new Set(folderAssignments[videoId][playlistId]);
+                  (folderColors || []).forEach(color => existingColors.add(color));
+                  folderAssignments[videoId][playlistId] = Array.from(existingColors);
+                }
+              });
+            });
             
             setFolderMap(folderAssignments);
+            
+            // Collect all unique folder colors per playlist for metadata fetching
+            const playlistFolderColors = {}; // playlistId -> Set of folderColors
+            Object.entries(folderAssignments).forEach(([videoId, playlists]) => {
+              Object.entries(playlists).forEach(([playlistIdStr, folderColors]) => {
+                const playlistId = parseInt(playlistIdStr, 10);
+                if (!playlistFolderColors[playlistId]) {
+                  playlistFolderColors[playlistId] = new Set();
+                }
+                folderColors.forEach(color => playlistFolderColors[playlistId].add(color));
+              });
+            });
+            
+            // Load all folder metadata in parallel
+            const folderMetadataPromises = [];
+            Object.entries(playlistFolderColors).forEach(([playlistIdStr, folderColors]) => {
+              const playlistId = parseInt(playlistIdStr, 10);
+              Array.from(folderColors).forEach(folderColor => {
+                folderMetadataPromises.push(
+                  getFolderMetadata(playlistId, folderColor)
+                    .then(metadata => ({ playlistId, folderColor, metadata }))
+                    .catch(error => {
+                      console.error(`Failed to load metadata for playlist ${playlistId}, folder ${folderColor}:`, error);
+                      return { playlistId, folderColor, metadata: null };
+                    })
+                );
+              });
+            });
+            
+            const folderMetadataResults = await Promise.all(folderMetadataPromises);
+            
+            // Build folder names map: videoId -> playlistId -> folderColor -> folderName
+            const folderNames = {};
+            folderMetadataResults.forEach(({ playlistId, folderColor, metadata }) => {
+              const folderName = metadata && metadata[0] 
+                ? metadata[0] 
+                : getFolderColorById(folderColor).name;
+              
+              // Find all videos in this playlist with this folder color
+              Object.entries(folderAssignments).forEach(([videoId, playlists]) => {
+                const folderColors = playlists[playlistId];
+                if (folderColors && folderColors.includes(folderColor)) {
+                  if (!folderNames[videoId]) {
+                    folderNames[videoId] = {};
+                  }
+                  if (!folderNames[videoId][playlistId]) {
+                    folderNames[videoId][playlistId] = {};
+                  }
+                  folderNames[videoId][playlistId][folderColor] = folderName;
+                }
+              });
+            });
+            
             setFolderNameMap(folderNames);
           } catch (error) {
             console.error('Failed to load playlists for history videos:', error);
@@ -121,8 +206,21 @@ const HistoryPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
     }
   };
 
-  const handlePlaylistBadgeClick = async (e, playlistName) => {
+  const handlePlaylistBadgeLeftClick = (e, playlistName) => {
     e.stopPropagation(); // Prevent triggering the card click
+    e.preventDefault();
+    
+    // Toggle filter: if already filtered to this playlist, clear filter; otherwise, filter to this playlist
+    if (filteredPlaylist === playlistName) {
+      setFilteredPlaylist(null);
+    } else {
+      setFilteredPlaylist(playlistName);
+    }
+  };
+
+  const handlePlaylistBadgeRightClick = async (e, playlistName) => {
+    e.stopPropagation(); // Prevent triggering the card click
+    e.preventDefault();
     
     // Find playlist by name
     const playlist = allPlaylists.find(p => p.name === playlistName);
@@ -195,6 +293,26 @@ const HistoryPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
     }
   };
 
+  // Extract unique playlists from all history videos (must be before conditional returns)
+  const uniquePlaylists = useMemo(() => {
+    const playlistSet = new Set();
+    Object.values(playlistMap).forEach(playlistNames => {
+      playlistNames.forEach(name => playlistSet.add(name));
+    });
+    return Array.from(playlistSet).sort();
+  }, [playlistMap]);
+
+  // Filter history based on selected playlist
+  const filteredHistory = useMemo(() => {
+    if (!filteredPlaylist) {
+      return history;
+    }
+    return history.filter(item => {
+      const playlists = playlistMap[item.video_id] || [];
+      return playlists.includes(filteredPlaylist);
+    });
+  }, [history, playlistMap, filteredPlaylist]);
+
   if (loading) {
     return (
       <div className="flex items-center justify-center w-full h-full">
@@ -211,17 +329,42 @@ const HistoryPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
     );
   }
 
+  if (filteredHistory.length === 0 && filteredPlaylist) {
+    return (
+      <div className="w-full h-full flex flex-col bg-transparent">
+        <div className="flex-1 overflow-y-auto p-6">
+          <PageBanner
+            title="History"
+            description={`No videos from "${filteredPlaylist}" in watch history.`}
+            color={null}
+            isEditable={false}
+            playlistBadges={uniquePlaylists}
+            onPlaylistBadgeLeftClick={handlePlaylistBadgeLeftClick}
+            onPlaylistBadgeRightClick={handlePlaylistBadgeRightClick}
+            allPlaylists={allPlaylists}
+            filteredPlaylist={filteredPlaylist}
+          />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="w-full h-full flex flex-col bg-transparent">
       <div className="flex-1 overflow-y-auto p-6">
         <PageBanner
           title="History"
-          description="Your recently watched videos."
+          description={filteredPlaylist ? `Videos from "${filteredPlaylist}"` : "Your recently watched videos."}
           color={null}
           isEditable={false}
+          playlistBadges={uniquePlaylists}
+          onPlaylistBadgeLeftClick={handlePlaylistBadgeLeftClick}
+          onPlaylistBadgeRightClick={handlePlaylistBadgeRightClick}
+          allPlaylists={allPlaylists}
+          filteredPlaylist={filteredPlaylist}
         />
         <div className="flex flex-col space-y-3 max-w-5xl mx-auto">
-          {history.map((item) => {
+          {filteredHistory.map((item) => {
             const thumbnailUrl = item.thumbnail_url || getThumbnailUrl(item.video_id, 'medium');
             
             // Check if this video is currently playing

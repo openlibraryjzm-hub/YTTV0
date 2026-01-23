@@ -274,6 +274,15 @@ Users see a 3-column grid of video cards showing videos from the current playlis
 
 Users see a vertical list of history cards showing the last 100 watched videos:
 
+- **Page Banner**: 
+  - **Playlist Badges**: Displays badges for all unique playlists that contain videos from the watch history
+  - **Badge Functionality**:
+    - **Left Click**: Filters the history page to show only videos from that playlist (click again to clear filter)
+    - **Right Click**: Navigates to the Videos page for that playlist in preview mode
+  - **Badge Styling**: Matches metadata row styling (text-white/80, font-medium, text-sm md:text-base)
+  - **Filtered State**: When a playlist is filtered, the badge is highlighted (brighter background/border) and the description updates to show "Videos from '[Playlist Name]'"
+  - **Badge Limit**: Badges are limited to 2 rows with an expand button (>>>) to show all playlists
+
 - **History Cards**: Each card displays in a horizontal layout:
   - **Card Border**: Each card has a `border-2 border-slate-700/50` that becomes `border-slate-600/70` on hover
   - **Thumbnail** (Left): Video thumbnail (16:9 aspect ratio, fixed width) with `border-2 border-black` outline matching VideosPage style
@@ -321,6 +330,7 @@ Users see a vertical list of history cards showing the last 100 watched videos:
   - `folderMap`: Maps video_id -> playlist_id -> [folder_colors]
   - `folderNameMap`: Maps video_id -> playlist_id -> folder_color -> folder_name
   - `allPlaylists`: All playlists for name-to-ID lookup
+  - `filteredPlaylist`: Currently filtered playlist name (null = show all)
 - `src/store/playlistStore.js`:
   - `currentPlaylistItems`: Array of videos in current playlist (for detecting currently playing video)
   - `currentVideoIndex`: Index of currently playing video
@@ -380,15 +390,21 @@ Users see a vertical list of history cards showing the last 100 watched videos:
    - If match found → Card displays red border, ring effect, and glow shadow
    - Updates in real-time as video changes
 
-4. **Badge Click Flow (Playlist):**
-   - User clicks playlist name in badge → `handlePlaylistBadgeClick(e, playlistName)` (line 97)
+4. **Badge Click Flow (Playlist - Left Click/Filter):**
+   - User left-clicks playlist badge → `handlePlaylistBadgeLeftClick(e, playlistName)`
+   - Toggles filter state → If already filtered to this playlist, clears filter; otherwise, filters to this playlist
+   - Updates `filteredPlaylist` state → History list filters to show only videos from that playlist
+   - Badge highlights when filtered → Visual feedback with brighter background/border
+
+5. **Badge Click Flow (Playlist - Right Click/Navigate):**
+   - User right-clicks playlist badge → `handlePlaylistBadgeRightClick(e, playlistName)`
    - Finds playlist by name → Looks up in `allPlaylists`
    - Gets playlist items → `getPlaylistItems(playlist.id)`
    - Sets playlist items → `setPlaylistItems(items, playlist.id, null, playlist.name)`
    - Navigates to videos page → `setCurrentPage('videos')`
    - **Preview Mode**: Does NOT call `onVideoSelect`, keeping current video playing
 
-5. **Badge Click Flow (Folder):**
+6. **Badge Click Flow (Folder):**
    - User clicks folder name in badge → `handleFolderBadgeClick(e, playlistName, folderColor)` (line 115)
    - Finds playlist by name → Looks up in `allPlaylists`
    - Gets folder videos → `getVideosInFolder(playlist.id, folderColor)`
@@ -396,7 +412,7 @@ Users see a vertical list of history cards showing the last 100 watched videos:
    - Navigates to videos page → `setCurrentPage('videos')`
    - **Preview Mode**: Does NOT call `onVideoSelect`, keeping current video playing
 
-6. **Video Click Flow:**
+7. **Video Click Flow:**
    - User clicks history card → `handleVideoClick(item)` (line 90)
    - Calls `onVideoSelect(item.video_url)` → Parent handles
    - `App.jsx` routes to main player via `handleVideoSelect()`:
@@ -411,7 +427,9 @@ Users see a vertical list of history cards showing the last 100 watched videos:
 - When component mounts → History and playlist/folder data loaded → Cards display with badges
 - When video played → New entry added to watch history → History page would update on next load
 - When playlist/folder data loads → Badges appear with correct colors and names
-- When badge clicked → Navigation occurs in preview mode (current video continues playing)
+- When badge left-clicked → Filter state toggles → History list filters/unfilters
+- When badge right-clicked → Navigation occurs in preview mode (current video continues playing)
+- When `filteredPlaylist` changes → `filteredHistory` recalculates → Displayed cards update
 
 ---
 #### ### 4.1.4 Pins Page
@@ -463,16 +481,25 @@ Users see a dedicated page for pinned videos, separating "Priority Pins" from "R
 
 Access specific videos that have been marked as "Liked". This page aggregates all videos from the special "Likes" playlist.
 
-- **Playlist Distribution Graph**: 
-  - A dynamic **Pie Chart** integrated into the **Page Banner** (right side) visualizes how the liked videos on the *current page* are distributed across your other playlists.
-  - Hovering over slices shows the playlist name and percentage.
-  - "Uncategorized" slice represents liked videos that are not in any other playlist.
-  - Powered by a custom SVG + Framer Motion component with animations.
+- **Page Banner**: 
+  - **Playlist Badges**: Displays badges for all unique playlists that contain liked videos (excluding "Likes" itself)
+  - **Badge Functionality**:
+    - **Left Click**: Filters the liked videos to show only videos from that playlist (click again to clear filter)
+    - **Right Click**: Navigates to the Videos page for that playlist in preview mode
+  - **Badge Styling**: Matches metadata row styling (text-white/80, font-medium, text-sm md:text-base)
+  - **Filtered State**: When a playlist is filtered, the badge is highlighted and the description updates to show "Liked videos from '[Playlist Name]'"
+  - **Badge Limit**: Badges are limited to 2 rows with an expand button (>>>) to show all playlists
+  - **Pagination Badge**: Compact pagination controls (`<< < 1/99 > >>`) replace the description text when multiple pages exist
+    - Format: First page (`<<`), Previous (`<`), Current/Total (`1/99`), Next (`>`), Last page (`>>`)
+    - Styled to match metadata row text styling
+    - Only visible when `totalPages > 1`
 
 - **Grid View with Pagination**: 
-  - Displays video cards in a standard grid layout.
-  - **Paginated**: Videos are displayed in pages of 24 items to improve performance and navigation.
-  - **Controls**: Pagination controls (Page X of Y, Prev/Next, Page Numbers) are available at both the top and bottom of the list.
+  - Displays video cards in a **3-column grid layout** (matching VideosPage)
+  - **Layout**: `grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-2` for larger cards
+  - **Paginated**: Videos are displayed in pages of 24 items to improve performance and navigation
+  - **Controls**: Pagination controls (Page Numbers, Prev/Next) are available at the bottom of the list
+  - **Filtering**: When a playlist is filtered, only liked videos from that playlist are shown
 
 - **Auto-Generated**: The "Likes" playlist is automatically created if it does not exist.
 - **Navigation**: Accessible via the "Like" (Heart) icon in the top navigation.
@@ -481,7 +508,8 @@ Access specific videos that have been marked as "Liked". This page aggregates al
 
 **UI/Components:**
 - `src/components/LikesPage.jsx`: Page component fetching data and managing pagination state.
-- `src/components/PieGraph.jsx`: Reusable SVG pie/donut chart component with animations.
+- `src/components/PageBanner.jsx`: Banner component with playlist badges and pagination badge.
+- `src/components/VideoCard.jsx`: Video card component for displaying liked videos.
 
 **API/Bridge:**
 - `src/api/playlistApi.js`:
@@ -491,23 +519,44 @@ Access specific videos that have been marked as "Liked". This page aggregates al
 - `src-tauri/src/database.rs`: 
   - `get_playlists_for_video_ids`: Optimized query to find playlist memberships for given video IDs.
 
+**State Management:**
+- `src/components/LikesPage.jsx` (local state):
+  - `likesPlaylistId`: ID of the "Likes" playlist
+  - `likedVideos`: Array of all liked videos
+  - `loading`: Boolean for loading state
+  - `currentPage`: Current page number (1-indexed)
+  - `playlistMap`: Maps video_id to array of playlist names
+  - `allPlaylists`: All playlists for name-to-ID lookup
+  - `filteredPlaylist`: Currently filtered playlist name (null = show all)
+
 **3: The Logic & State Chain**
 
-**Initialization & Pagination:**
-- Component mounts → Fetches "Likes" playlist items.
-- Sets up pagination (24 items/page).
-- Derives `currentItems` based on `currentPage`.
+**Initialization & Data Loading:**
+- Component mounts → Fetches "Likes" playlist items
+- Loads all playlists → `getAllPlaylists()` → Stores in `allPlaylists`
+- Gets playlist associations → `getPlaylistsForVideoIds(videoIds)` for all liked videos → Maps each video to its playlists
+- Extracts unique playlists → Computes `uniquePlaylists` from `playlistMap` (excluding "Likes" itself)
+- Sets up pagination (24 items/page)
 
-**Distribution Calculation:**
-- When `currentItems` changes (page change):
-  - Extracts `video_id`s from the current page.
-  - Calls `getPlaylistsForVideoIds(videoIds)`.
-  - Backend performs a single SQL query to find all playlists containing these videos.
-  - Frontend aggregates the results:
-    - Counts occurrences per playlist (excluding "Likes").
-    - Identifies "Uncategorized" videos.
-    - Sorts by count and assigns colors.
-  - Renders `PieGraph` with the processed data.
+**Filtering Flow:**
+- User left-clicks playlist badge → `handlePlaylistBadgeLeftClick(e, playlistName)`
+- Toggles filter state → If already filtered to this playlist, clears filter; otherwise, filters to this playlist
+- Updates `filteredPlaylist` state → `filteredLikedVideos` recalculates
+- Resets to page 1 when filter changes
+- Pagination uses `filteredLikedVideos` instead of `likedVideos`
+
+**Navigation Flow:**
+- User right-clicks playlist badge → `handlePlaylistBadgeRightClick(e, playlistName)`
+- Finds playlist by name → Looks up in `allPlaylists`
+- Gets playlist items → `getPlaylistItems(playlist.id)`
+- Sets playlist items → `setPlaylistItems(items, playlist.id, null, playlist.name)`
+- Navigates to videos page → `setCurrentPageNav('videos')`
+- **Preview Mode**: Does NOT call `onVideoSelect`, keeping current video playing
+
+**Pagination Flow:**
+- User clicks pagination badge buttons → Updates `currentPage` state
+- `currentItems` recalculates based on `filteredLikedVideos` and `currentPage`
+- Grid re-renders with new page of videos
 
 ---
 #### ### 4.1.7 Pins Page

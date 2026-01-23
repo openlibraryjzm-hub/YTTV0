@@ -1,14 +1,16 @@
-import React from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { FOLDER_COLORS } from '../utils/folderColors';
-import { Pen, Play } from 'lucide-react';
+import { Pen, Play, ChevronRight } from 'lucide-react';
 import { getThumbnailUrl } from '../utils/youtubeUtils';
 
 
 import UnifiedBannerBackground from './UnifiedBannerBackground';
 import { useConfigStore } from '../store/configStore';
 
-const PageBanner = ({ title, description, folderColor, onEdit, videoCount, countLabel = 'Video', creationYear, author, avatar, continueVideo, onContinue, children, childrenPosition = 'right', topRightContent, seamlessBottom = false }) => {
+const PageBanner = ({ title, description, folderColor, onEdit, videoCount, countLabel = 'Video', creationYear, author, avatar, continueVideo, onContinue, children, childrenPosition = 'right', topRightContent, seamlessBottom = false, playlistBadges, onPlaylistBadgeLeftClick, onPlaylistBadgeRightClick, allPlaylists, filteredPlaylist, customDescription }) => {
     const { bannerPattern, customPageBannerImage, bannerBgSize, setBannerHeight, setBannerBgSize } = useConfigStore();
+    const [badgesExpanded, setBadgesExpanded] = useState(false);
+    const badgesContainerRef = useRef(null);
 
     // Find color config if folderColor is provided
     // If folderColor is 'unsorted', distinct gray style
@@ -90,8 +92,16 @@ const PageBanner = ({ title, description, folderColor, onEdit, videoCount, count
     // Check if custom image is a GIF
     const isGif = customPageBannerImage?.startsWith('data:image/gif');
 
+    // Simple approach: show all badges, but limit height with CSS when collapsed
+    const hasMoreBadges = playlistBadges && playlistBadges.length > 0;
+
+    // Dynamic banner height based on expansion
+    const bannerHeightClass = badgesExpanded && playlistBadges && playlistBadges.length > 0 
+        ? 'min-h-[220px]' 
+        : 'h-[220px]';
+
     return (
-        <div ref={bannerRef} className={`w-full relative animate-fade-in group mx-auto h-[220px] ${seamlessBottom ? 'mb-0' : 'mb-8'}`}>
+        <div ref={bannerRef} className={`w-full relative animate-fade-in group mx-auto ${bannerHeightClass} ${seamlessBottom ? 'mb-0' : 'mb-8'}`}>
 
             {/* Background Layer - Hides overflow for shapes/patterns/images */}
             <div
@@ -187,10 +197,143 @@ const PageBanner = ({ title, description, folderColor, onEdit, videoCount, count
                         )}
                     </div>
 
-                    {description && (
+                    {customDescription ? (
+                        <div className="mt-1">
+                            {customDescription}
+                        </div>
+                    ) : description && (
                         <p className="text-sm md:text-base text-white/90 font-medium max-w-4xl leading-relaxed drop-shadow-sm opacity-90 line-clamp-2" style={{ textShadow: '-1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0 2px 4px rgba(0,0,0,0.8)' }}>
                             {description}
                         </p>
+                    )}
+
+                    {/* Playlist Badges */}
+                    {playlistBadges && playlistBadges.length > 0 && (
+                        <div 
+                            ref={badgesContainerRef}
+                            className={`flex flex-wrap items-center gap-2 mt-3 relative ${!badgesExpanded ? 'max-h-[72px] overflow-hidden' : ''}`}
+                        >
+                            {playlistBadges.map((playlistName, idx) => {
+                                // Check if this playlist is currently filtered
+                                const isFiltered = filteredPlaylist === playlistName;
+                                
+                                // Default sky color for badges, brighter when filtered
+                                const badgeBg = isFiltered 
+                                    ? 'rgba(14, 165, 233, 0.25)' // sky-500/25 when filtered
+                                    : 'rgba(14, 165, 233, 0.1)'; // sky-500/10
+                                const badgeBorder = isFiltered
+                                    ? 'rgba(14, 165, 233, 0.6)' // sky-500/60 when filtered
+                                    : 'rgba(14, 165, 233, 0.3)'; // sky-500/30
+                                const badgeTextColor = '#38bdf8'; // sky-400
+                                const badgeHoverBg = 'rgba(14, 165, 233, 0.2)'; // sky-500/20
+                                const badgeHoverBorder = 'rgba(14, 165, 233, 0.5)'; // sky-500/50
+
+                                return (
+                                    <button
+                                        key={idx}
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            if (onPlaylistBadgeLeftClick) {
+                                                onPlaylistBadgeLeftClick(e, playlistName);
+                                            }
+                                        }}
+                                        onContextMenu={(e) => {
+                                            e.stopPropagation();
+                                            e.preventDefault();
+                                            if (onPlaylistBadgeRightClick) {
+                                                onPlaylistBadgeRightClick(e, playlistName);
+                                            }
+                                        }}
+                                        className="flex items-center gap-0.5 px-2 py-1 rounded-md border font-medium transition-all cursor-pointer"
+                                        style={{
+                                            backgroundColor: badgeBg,
+                                            borderColor: badgeBorder,
+                                        }}
+                                        onMouseEnter={(e) => {
+                                            e.currentTarget.style.backgroundColor = badgeHoverBg;
+                                            e.currentTarget.style.borderColor = badgeHoverBorder;
+                                            e.currentTarget.style.boxShadow = '0 0 0 2px rgba(255, 255, 255, 0.3)';
+                                        }}
+                                        onMouseLeave={(e) => {
+                                            e.currentTarget.style.backgroundColor = badgeBg;
+                                            e.currentTarget.style.borderColor = badgeBorder;
+                                            e.currentTarget.style.boxShadow = 'none';
+                                        }}
+                                        title={`Left click to filter | Right click to navigate: ${playlistName}`}
+                                    >
+                                        <span className="line-clamp-1 text-sm md:text-base font-medium text-white/80" style={{ textShadow: '-1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0 2px 4px rgba(0,0,0,0.9)' }}>
+                                            {playlistName}
+                                        </span>
+                                    </button>
+                                );
+                            })}
+                            
+                            {/* Expand Button - Appears at end of second row when collapsed */}
+                            {hasMoreBadges && !badgesExpanded && (
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        setBadgesExpanded(true);
+                                    }}
+                                    className="absolute bottom-0 right-0 flex items-center gap-1 px-2 py-1 rounded-md border font-medium transition-all cursor-pointer z-10"
+                                    style={{
+                                        backgroundColor: 'rgba(14, 165, 233, 0.1)',
+                                        borderColor: 'rgba(14, 165, 233, 0.3)',
+                                        color: '#38bdf8',
+                                    }}
+                                    onMouseEnter={(e) => {
+                                        e.currentTarget.style.backgroundColor = 'rgba(14, 165, 233, 0.2)';
+                                        e.currentTarget.style.borderColor = 'rgba(14, 165, 233, 0.5)';
+                                        e.currentTarget.style.boxShadow = '0 0 0 2px rgba(255, 255, 255, 0.3)';
+                                    }}
+                                    onMouseLeave={(e) => {
+                                        e.currentTarget.style.backgroundColor = 'rgba(14, 165, 233, 0.1)';
+                                        e.currentTarget.style.borderColor = 'rgba(14, 165, 233, 0.3)';
+                                        e.currentTarget.style.boxShadow = 'none';
+                                    }}
+                                    title={`Show all ${playlistBadges.length} playlists`}
+                                >
+                                    <span className="text-sm" style={{ textShadow: '-1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0 1px 2px rgba(0,0,0,0.8)' }}>
+                                        &gt;&gt;&gt;
+                                    </span>
+                                </button>
+                            )}
+                            {/* Collapse Button - Shows when expanded */}
+                            {hasMoreBadges && badgesExpanded && (
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        setBadgesExpanded(false);
+                                    }}
+                                    className="flex items-center gap-1 px-2 py-1 rounded-md border font-medium transition-all cursor-pointer"
+                                    style={{
+                                        backgroundColor: 'rgba(14, 165, 233, 0.1)',
+                                        borderColor: 'rgba(14, 165, 233, 0.3)',
+                                        color: '#38bdf8',
+                                    }}
+                                    onMouseEnter={(e) => {
+                                        e.currentTarget.style.backgroundColor = 'rgba(14, 165, 233, 0.2)';
+                                        e.currentTarget.style.borderColor = 'rgba(14, 165, 233, 0.5)';
+                                        e.currentTarget.style.boxShadow = '0 0 0 2px rgba(255, 255, 255, 0.3)';
+                                    }}
+                                    onMouseLeave={(e) => {
+                                        e.currentTarget.style.backgroundColor = 'rgba(14, 165, 233, 0.1)';
+                                        e.currentTarget.style.borderColor = 'rgba(14, 165, 233, 0.3)';
+                                        e.currentTarget.style.boxShadow = 'none';
+                                    }}
+                                    title="Show less"
+                                >
+                                    <span className="text-sm" style={{ textShadow: '-1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0 1px 2px rgba(0,0,0,0.8)' }}>
+                                        Show less
+                                    </span>
+                                    <ChevronRight 
+                                        size={14} 
+                                        className="rotate-90 transition-transform"
+                                        style={{ textShadow: '-1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0 1px 2px rgba(0,0,0,0.8)' }}
+                                    />
+                                </button>
+                            )}
+                        </div>
                     )}
 
                     {/* Bottom Content (e.g. Tabs) */}

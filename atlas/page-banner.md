@@ -20,12 +20,21 @@ Users see a contextual banner (220px fixed height) at the top of scrollable cont
 - **Dynamic Content**: Displays contextual information based on current view:
   - **Videos Page**: Shows playlist name, folder name (e.g., "Red Folder"), custom folder name, or "Unsorted Videos"
   - **Playlists Page**: Shows "All", preset name (e.g., "Gaming"), or tab name (e.g., "All - Favorites")
-  - **Likes Page**: Shows "Liked Videos" with distribution graph
+  - **Likes Page**: Shows "Liked Videos" with playlist badges and pagination badge
+  - **History Page**: Shows "History" with playlist badges
   - **Pins Page**: Shows "Pinned Videos"
 - **Visual Elements**:
   - **Title**: Large, bold text with dark text shadow for readability
   - **Metadata Row**: Video count, creation year, and author pseudonym
-  - **Description**: Truncated to 2 lines with generous right padding
+  - **Description**: Truncated to 2 lines with generous right padding (can be replaced with `customDescription` prop)
+  - **Playlist Badges**: Interactive badges showing playlists (History/Likes pages)
+    - **Styling**: Matches metadata row (text-white/80, font-medium, text-sm md:text-base)
+    - **Left Click**: Filters page content to that playlist
+    - **Right Click**: Navigates to Videos page for that playlist
+    - **Limit**: 2 rows with expand button (>>>) to show all
+  - **Pagination Badge**: Compact pagination controls (Likes page)
+    - Format: `<< < 1/99 > >>` (First, Previous, Current/Total, Next, Last)
+    - Styled to match metadata row text
   - **ASCII Avatar**: Vertically centered ASCII art (user signature)
   - **Continue Watching**: Optional thumbnail in top-right corner for recently watched videos
 - **Background Options**:
@@ -41,7 +50,8 @@ Users see a contextual banner (220px fixed height) at the top of scrollable cont
 - `src/components/UnifiedBannerBackground.jsx`: GPU-accelerated background layer for custom images
 - `src/components/VideosPage.jsx`: Uses PageBanner for playlist/folder context
 - `src/components/PlaylistsPage.jsx`: Uses PageBanner for playlist overview
-- `src/components/LikesPage.jsx`: Uses PageBanner with pie chart integration
+- `src/components/LikesPage.jsx`: Uses PageBanner with playlist badges and pagination badge
+- `src/components/HistoryPage.jsx`: Uses PageBanner with playlist badges
 - `src/components/PinsPage.jsx`: Uses PageBanner for pinned videos header
 - `src/components/EditPlaylistModal.jsx`: Allows uploading custom page banner images
 
@@ -120,7 +130,8 @@ Users see a contextual banner (220px fixed height) at the top of scrollable cont
 - `configStore.bannerPattern` - Selected animated pattern
 - Database `folder_metadata` table - Custom folder banners and ASCII art (per folder)
 - Database `playlists` table - Playlist descriptions and metadata
-- Props passed from parent page component - Title, description, video count, folder color
+- Props passed from parent page component - Title, description, video count, folder color, playlist badges, customDescription
+- Page component state - Filtered playlist state, pagination state (for badges and pagination badge)
 
 **State Dependencies:**
 - When `customPageBannerImage` changes → Banner background updates → UnifiedBannerBackground renders
@@ -128,6 +139,9 @@ Users see a contextual banner (220px fixed height) at the top of scrollable cont
 - When `folderColor` changes → Gradient colors update → Banner re-renders with new colors
 - When banner height changes → `setBannerHeight` called → Sticky Toolbar adjusts positioning
 - When custom image uploaded → Saved to database → Banner fetches and displays on next load
+- When `playlistBadges` changes → Badge list updates → Badges re-render
+- When `filteredPlaylist` changes → Badge highlighting updates → Filtered badge appears brighter
+- When `customDescription` provided → Description text replaced with custom content (e.g., pagination badge)
 
 **4: Technical Implementation Details**
 
@@ -177,8 +191,19 @@ Users see a contextual banner (220px fixed height) at the top of scrollable cont
 
 **Likes Page:**
 - Title: "Liked Videos"
-- Right-side content: Pie chart showing playlist distribution
-- Uses `children` prop with `childrenPosition='right'`
+- Playlist badges: Displays all unique playlists containing liked videos (excluding "Likes" itself)
+- Pagination badge: Compact navigation controls (`<< < 1/99 > >>`) in place of description when multiple pages exist
+- Badge interactions: Left-click to filter, right-click to navigate
+- Filtering: When filtered, description updates to "Liked videos from '[Playlist Name]'"
+- Badge limit: 2 rows with expand button (>>>) to show all playlists
+- Custom description: Uses `customDescription` prop for pagination badge
+
+**History Page:**
+- Title: "History"
+- Playlist badges: Displays all unique playlists containing videos from watch history
+- Badge interactions: Left-click to filter, right-click to navigate
+- Filtering: When filtered, description updates to "Videos from '[Playlist Name]'"
+- Badge limit: 2 rows with expand button (>>>) to show all playlists
 
 **Pins Page:**
 - Title: "Pinned Videos"
@@ -206,6 +231,23 @@ Users see a contextual banner (220px fixed height) at the top of scrollable cont
 - **ASCII Art**: Set via Settings → Signature, or per-folder via `folder_metadata.custom_ascii`
 - **Author Name**: Set via Settings → Signature → Pseudonym
 - **Folder Colors**: Automatically generate matching gradients
+
+**Playlist Badges:**
+- **Purpose**: Display interactive badges for playlists on History and Likes pages
+- **Styling**: Matches metadata row text (text-white/80, font-medium, text-sm md:text-base)
+- **Limit**: 2 rows maximum with expand button (>>>) to show all playlists
+- **Interactions**:
+  - **Left Click**: Filters page content to show only items from that playlist
+  - **Right Click**: Navigates to Videos page for that playlist in preview mode
+- **Filtered State**: Badge highlights with brighter background/border when active
+- **Props**: `playlistBadges` (array), `onPlaylistBadgeLeftClick`, `onPlaylistBadgeRightClick`, `filteredPlaylist`
+
+**Pagination Badge:**
+- **Purpose**: Compact pagination controls for Likes page (replaces description text)
+- **Format**: `<< < 1/99 > >>` (First, Previous, Current/Total, Next, Last)
+- **Styling**: Matches metadata row text styling
+- **Visibility**: Only shown when `totalPages > 1`
+- **Props**: `customDescription` prop accepts React node to replace description text
 
 ---
 

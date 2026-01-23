@@ -1,26 +1,11 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { usePlaylistStore } from '../store/playlistStore';
+import { useNavigationStore } from '../store/navigationStore';
 import { getAllPlaylists, getPlaylistItems, createPlaylist, getPlaylistsForVideoIds } from '../api/playlistApi';
 import VideoCard from './VideoCard';
 import PageBanner from './PageBanner';
 import { useLayoutStore } from '../store/layoutStore';
-import PieGraph from './PieGraph';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-
-const COLORS = [
-    '#3b82f6', // blue-500
-    '#ef4444', // red-500
-    '#10b981', // emerald-500
-    '#f59e0b', // amber-500
-    '#8b5cf6', // violet-500
-    '#ec4899', // pink-500
-    '#06b6d4', // cyan-500
-    '#84cc16', // lime-500
-    '#f43f5e', // rose-500
-    '#6366f1', // indigo-500
-    '#14b8a6', // teal-500
-    '#d946ef', // fuchsia-500
-];
 
 const ITEMS_PER_PAGE = 24;
 
@@ -29,12 +14,12 @@ const LikesPage = ({ onVideoSelect }) => {
     const [likedVideos, setLikedVideos] = useState([]);
     const [loading, setLoading] = useState(true);
     const [currentPage, setCurrentPage] = useState(1);
+    const [playlistMap, setPlaylistMap] = useState({}); // Maps video_id to array of playlist names
+    const [allPlaylists, setAllPlaylists] = useState([]); // All playlists for name-to-ID lookup
+    const [filteredPlaylist, setFilteredPlaylist] = useState(null); // Currently filtered playlist name (null = show all)
 
-    // Distribution state
-    const [distribution, setDistribution] = useState([]);
-    const [distLoading, setDistLoading] = useState(false);
-
-    const { currentVideoIndex, currentPlaylistItems } = usePlaylistStore();
+    const { currentVideoIndex, currentPlaylistItems, setPlaylistItems } = usePlaylistStore();
+    const { setCurrentPage: setCurrentPageNav } = useNavigationStore();
     const { inspectMode } = useLayoutStore();
 
     useEffect(() => {
@@ -42,6 +27,7 @@ const LikesPage = ({ onVideoSelect }) => {
             setLoading(true);
             try {
                 const playlists = await getAllPlaylists();
+                setAllPlaylists(playlists || []);
                 let likesPlaylist = playlists.find(p => p.name === 'Likes');
 
                 // Create if doesn't exist (consistency with PlayerController)
@@ -49,10 +35,27 @@ const LikesPage = ({ onVideoSelect }) => {
                     const newId = await createPlaylist('Likes', 'Videos you have liked');
                     setLikesPlaylistId(newId);
                     setLikedVideos([]);
+                    setPlaylistMap({});
                 } else {
                     setLikesPlaylistId(likesPlaylist.id);
                     const items = await getPlaylistItems(likesPlaylist.id);
                     setLikedVideos(items || []);
+                    
+                    // Load playlist associations for all liked videos
+                    if (items && items.length > 0) {
+                        const videoIds = items
+                            .map(item => item.video_id)
+                            .filter(id => id);
+                        
+                        if (videoIds.length > 0) {
+                            try {
+                                const playlistsData = await getPlaylistsForVideoIds(videoIds);
+                                setPlaylistMap(playlistsData || {});
+                            } catch (error) {
+                                console.error('Failed to load playlists for liked videos:', error);
+                            }
+                        }
+                    }
                 }
             } catch (error) {
                 console.error('Failed to load likes:', error);
@@ -63,67 +66,74 @@ const LikesPage = ({ onVideoSelect }) => {
         initLikes();
     }, []);
 
+    // Extract unique playlists from all liked videos (must be before conditional returns)
+    const uniquePlaylists = useMemo(() => {
+        const playlistSet = new Set();
+        Object.values(playlistMap).forEach(playlistNames => {
+            playlistNames.forEach(name => {
+                if (name !== 'Likes') { // Exclude 'Likes' itself
+                    playlistSet.add(name);
+                }
+            });
+        });
+        return Array.from(playlistSet).sort();
+    }, [playlistMap]);
+
+    // Filter liked videos based on selected playlist
+    const filteredLikedVideos = useMemo(() => {
+        if (!filteredPlaylist) {
+            return likedVideos;
+        }
+        return likedVideos.filter(video => {
+            const playlists = playlistMap[video.video_id] || [];
+            return playlists.includes(filteredPlaylist);
+        });
+    }, [likedVideos, playlistMap, filteredPlaylist]);
+
     // Pagination Logic
-    const totalPages = Math.ceil(likedVideos.length / ITEMS_PER_PAGE);
+    const totalPages = Math.ceil(filteredLikedVideos.length / ITEMS_PER_PAGE);
     const currentItems = useMemo(() => {
         const start = (currentPage - 1) * ITEMS_PER_PAGE;
-        return likedVideos.slice(start, start + ITEMS_PER_PAGE);
-    }, [likedVideos, currentPage]);
+        return filteredLikedVideos.slice(start, start + ITEMS_PER_PAGE);
+    }, [filteredLikedVideos, currentPage]);
 
-    // Fetch Distribution for CURRENT PAGE
+    // Reset to page 1 when filter changes
     useEffect(() => {
-        const fetchDistribution = async () => {
-            if (currentItems.length === 0) {
-                setDistribution([]);
-                return;
-            }
+        setCurrentPage(1);
+    }, [filteredPlaylist]);
 
-            setDistLoading(true);
-            try {
-                const videoIds = currentItems.map(v => v.video_id);
-                const map = await getPlaylistsForVideoIds(videoIds);
+    const handlePlaylistBadgeLeftClick = (e, playlistName) => {
+        e.stopPropagation();
+        e.preventDefault();
+        
+        // Toggle filter: if already filtered to this playlist, clear filter; otherwise, filter to this playlist
+        if (filteredPlaylist === playlistName) {
+            setFilteredPlaylist(null);
+        } else {
+            setFilteredPlaylist(playlistName);
+        }
+    };
 
-                // Process map to count playlist occurrences
-                const counts = {};
-                Object.values(map).flat().forEach(playlistName => {
-                    if (playlistName === 'Likes') return; // Exclude 'Likes' itself
-                    counts[playlistName] = (counts[playlistName] || 0) + 1;
-                });
+    const handlePlaylistBadgeRightClick = async (e, playlistName) => {
+        e.stopPropagation();
+        e.preventDefault();
+        
+        // Find playlist by name
+        const playlist = allPlaylists.find(p => p.name === playlistName);
+        if (!playlist) {
+            console.error(`Playlist "${playlistName}" not found`);
+            return;
+        }
 
-                // Track videos with NO other playlist
-                // Check if video_id has entries in map excluding 'Likes'
-                let uncategorizedCount = 0;
-                videoIds.forEach(id => {
-                    const playlists = map[id] || [];
-                    const otherPlaylists = playlists.filter(p => p !== 'Likes');
-                    if (otherPlaylists.length === 0) {
-                        uncategorizedCount++;
-                    }
-                });
-
-                if (uncategorizedCount > 0) {
-                    counts['Uncategorized'] = uncategorizedCount;
-                }
-
-                // Convert to array
-                const data = Object.entries(counts)
-                    .map(([name, value], index) => ({
-                        name,
-                        value,
-                        color: name === 'Uncategorized' ? '#475569' : COLORS[index % COLORS.length]
-                    }))
-                    .sort((a, b) => b.value - a.value);
-
-                setDistribution(data);
-            } catch (error) {
-                console.error('Failed to fetch distribution:', error);
-            } finally {
-                setDistLoading(false);
-            }
-        };
-
-        fetchDistribution();
-    }, [currentItems]);
+        try {
+            // Preview mode: Load playlist and navigate without changing the playing video
+            const items = await getPlaylistItems(playlist.id);
+            setPlaylistItems(items, playlist.id, null, playlist.name);
+            setCurrentPageNav('videos');
+        } catch (error) {
+            console.error('Failed to load playlist items:', error);
+        }
+    };
 
     // Render video cards
     const renderVideos = () => {
@@ -147,8 +157,20 @@ const LikesPage = ({ onVideoSelect }) => {
             );
         }
 
+        if (filteredLikedVideos.length === 0 && filteredPlaylist) {
+            return (
+                <div className="flex flex-col items-center justify-center p-12 text-slate-400">
+                    <svg className="w-16 h-16 mb-4 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                    </svg>
+                    <h3 className="text-xl font-medium mb-2">No Liked Videos</h3>
+                    <p>No liked videos from "{filteredPlaylist}".</p>
+                </div>
+            );
+        }
+
         return (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-2 animate-fade-in">
                 {currentItems.map((video, index) => {
                     const isCurrentlyPlaying = currentPlaylistItems?.[currentVideoIndex]?.id === video.id;
                     const displayIndex = (currentPage - 1) * ITEMS_PER_PAGE + index;
@@ -176,47 +198,71 @@ const LikesPage = ({ onVideoSelect }) => {
             <div className="flex-1 overflow-y-auto custom-scrollbar">
                 <PageBanner
                     title="Liked Videos"
-                    description="Your collection of liked videos."
+                    description={null}
                     color={null}
                     isEditable={false}
-                >
-                    {/* Graph in Banner */}
-                    {distribution.length > 0 && !loading && (
-                        <div className="flex justify-center">
-                            <PieGraph data={distribution} size={160} />
-                        </div>
-                    )}
-                </PageBanner>
-
-                <div className="p-6 space-y-8">
-
-
-
-                    {/* Pagination Controls (Top) */}
-                    {totalPages > 1 && (
-                        <div className="flex justify-between items-center bg-slate-900/40 p-3 rounded-lg border border-white/5 backdrop-blur-sm">
-                            <div className="text-sm text-slate-400">
-                                Page <span className="text-white font-medium">{currentPage}</span> of <span className="text-white font-medium">{totalPages}</span>
-                            </div>
-                            <div className="flex gap-2">
+                    playlistBadges={uniquePlaylists}
+                    onPlaylistBadgeLeftClick={handlePlaylistBadgeLeftClick}
+                    onPlaylistBadgeRightClick={handlePlaylistBadgeRightClick}
+                    allPlaylists={allPlaylists}
+                    filteredPlaylist={filteredPlaylist}
+                    customDescription={
+                        totalPages > 1 ? (
+                            <div className="flex items-center gap-1 px-3 py-1.5 rounded-md border transition-all"
+                                style={{
+                                    backgroundColor: 'rgba(14, 165, 233, 0.1)',
+                                    borderColor: 'rgba(14, 165, 233, 0.3)',
+                                }}
+                            >
+                                <button
+                                    onClick={() => setCurrentPage(1)}
+                                    disabled={currentPage === 1}
+                                    className="px-1 disabled:opacity-30 disabled:cursor-not-allowed hover:opacity-80 transition-opacity"
+                                    title="First page"
+                                >
+                                    <span className="text-sm md:text-base font-medium text-white/80" style={{ textShadow: '-1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0 2px 4px rgba(0,0,0,0.9)' }}>
+                                        &lt;&lt;
+                                    </span>
+                                </button>
                                 <button
                                     onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                                     disabled={currentPage === 1}
-                                    className="p-2 rounded hover:bg-white/10 disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
+                                    className="px-1 disabled:opacity-30 disabled:cursor-not-allowed hover:opacity-80 transition-opacity"
+                                    title="Previous page"
                                 >
-                                    <ChevronLeft className="w-5 h-5" />
+                                    <span className="text-sm md:text-base font-medium text-white/80" style={{ textShadow: '-1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0 2px 4px rgba(0,0,0,0.9)' }}>
+                                        &lt;
+                                    </span>
                                 </button>
+                                <span className="px-2 text-sm md:text-base font-medium text-white/80" style={{ textShadow: '-1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0 2px 4px rgba(0,0,0,0.9)' }}>
+                                    {currentPage}/{totalPages}
+                                </span>
                                 <button
                                     onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                                     disabled={currentPage === totalPages}
-                                    className="p-2 rounded hover:bg-white/10 disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
+                                    className="px-1 disabled:opacity-30 disabled:cursor-not-allowed hover:opacity-80 transition-opacity"
+                                    title="Next page"
                                 >
-                                    <ChevronRight className="w-5 h-5" />
+                                    <span className="text-sm md:text-base font-medium text-white/80" style={{ textShadow: '-1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0 2px 4px rgba(0,0,0,0.9)' }}>
+                                        &gt;
+                                    </span>
+                                </button>
+                                <button
+                                    onClick={() => setCurrentPage(totalPages)}
+                                    disabled={currentPage === totalPages}
+                                    className="px-1 disabled:opacity-30 disabled:cursor-not-allowed hover:opacity-80 transition-opacity"
+                                    title="Last page"
+                                >
+                                    <span className="text-sm md:text-base font-medium text-white/80" style={{ textShadow: '-1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0 2px 4px rgba(0,0,0,0.9)' }}>
+                                        &gt;&gt;
+                                    </span>
                                 </button>
                             </div>
-                        </div>
-                    )}
+                        ) : null
+                    }
+                />
 
+                <div className="px-4 pb-8">
                     {renderVideos()}
 
                     {/* Pagination Controls (Bottom) */}
