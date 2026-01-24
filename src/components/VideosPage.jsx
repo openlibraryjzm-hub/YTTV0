@@ -1135,7 +1135,7 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
                           : 'opacity-60 hover:opacity-100'
                           } ${isFirst ? 'rounded-l-md' : ''} ${isLast ? 'rounded-r-md' : ''}`}
                         style={{ backgroundColor: color.hex }}
-                        title={`${color.name} (${count})`}
+                        title={`${allFolderMetadata[color.id]?.name || color.name} (${count})`}
                       >
                         {count > 0 && (
                           <span className="text-sm font-bold text-white/90 drop-shadow-md">

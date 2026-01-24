@@ -152,6 +152,7 @@ Users see video cards built using the Card component system with video-specific 
     - **Hover (1.2s delay)**: Shows star color picker menu with 16 colored stars
       - **Left Click on Color Star**: Assigns/unassigns video to that folder color
       - **Right Click on Color Star**: Sets that color as the new quick assign default
+    - **Tooltip**: Shows "Assigned to: [folder names]" with custom folder names if renamed (e.g., "Assigned to: Gaming, Watch Later")
     - Star outline color reflects the current quick assign folder color (when video has no folder assignments)
 
   - **3-Dot Menu** (bottom-right on thumbnail):
@@ -246,6 +247,7 @@ Users see video cards built using the Card component system with video-specific 
      - Assigned folders: White ring, filled star icon
      - Quick assign folder: Blue ring indicator with blue dot badge
      - Unassigned folders: Outline star icon
+     - **Tooltips**: Display custom folder name if renamed, otherwise default color name (e.g., "Gaming" or "Red") - uses `folderMetadata[color.id]?.name` with fallback to `color.name`
    - **Left Click on Color Star:**
      - Calls `onStarColorLeftClick(video, folderColor)` → `handleStarColorLeftClick()` (VideosPage.jsx)
      - Toggles folder assignment → `assignVideoToFolder()` or `unassignVideoFromFolder()`

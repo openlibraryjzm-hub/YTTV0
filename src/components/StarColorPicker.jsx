@@ -11,7 +11,8 @@ const StarColorPicker = ({
   currentFolders = [], 
   quickAssignFolder,
   onColorLeftClick,
-  onColorRightClick
+  onColorRightClick,
+  folderMetadata = {}
 }) => {
   return (
     <div 
@@ -28,6 +29,7 @@ const StarColorPicker = ({
         {FOLDER_COLORS.map((color) => {
           const isCurrentlyAssigned = currentFolders.includes(color.id);
           const isQuickAssign = color.id === quickAssignFolder;
+          const displayName = folderMetadata[color.id]?.name || color.name;
           
           return (
             <button
@@ -55,8 +57,8 @@ const StarColorPicker = ({
               `}
               style={{ backgroundColor: color.hex }}
               title={isQuickAssign 
-                ? `${color.name} (Quick Assign - Right click to change)` 
-                : `${color.name} (Right click to set as Quick Assign)`
+                ? `${displayName} (Quick Assign - Right click to change)` 
+                : `${displayName} (Right click to set as Quick Assign)`
               }
             >
               <svg

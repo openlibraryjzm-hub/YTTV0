@@ -316,7 +316,7 @@ The Sticky Toolbar is a dynamic toolbar component that sits directly below the P
     - **Content**: Displays raw number (e.g., "5", "12", "0" - but 0 is hidden)
     - **Calculation**: Counts videos assigned to each folder from `videoFolderAssignments` data
     - **Update**: Recalculates via `useMemo` when `videoFolderAssignments` changes
-  - **Tooltip**: Shows folder name and count on hover (e.g., "Red (5)") - includes count even if number not visible
+  - **Tooltip**: Shows custom folder name (if renamed) or default color name, plus count on hover (e.g., "Gaming (5)" or "Red (5)") - uses `allFolderMetadata[color.id]?.name` with fallback to `color.name`
   - **First/Last**: First segment has `rounded-l-md`, last segment has `rounded-r-md`
   - **Click Action**: Clicking a color segment filters videos to that folder
 - **Horizontal Scroll**: Left side uses `overflow-x-auto` with `mask-gradient-right` for fade-out effect on scroll

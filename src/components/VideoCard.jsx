@@ -322,11 +322,11 @@ const VideoCard = ({
               className="p-1.5 rounded-lg bg-black/70 hover:bg-black/90 transition-all block"
               title={getInspectTitle(
                 videoFolders.length > 0
-                  ? `Assigned to: ${videoFolders.map(f => getFolderColorById(f).name).join(', ')}`
+                  ? `Assigned to: ${videoFolders.map(f => folderMetadata[f]?.name || getFolderColorById(f).name).join(', ')}`
                   : 'Click to assign to folder'
               ) || (
                   videoFolders.length > 0
-                    ? `Assigned to: ${videoFolders.map(f => getFolderColorById(f).name).join(', ')}`
+                    ? `Assigned to: ${videoFolders.map(f => folderMetadata[f]?.name || getFolderColorById(f).name).join(', ')}`
                     : 'Click to assign to folder'
                 )}
               style={{ color: primaryFolder ? primaryFolder.hex : quickAssignColor.hex }}
@@ -411,6 +411,7 @@ const VideoCard = ({
               <StarColorPicker
                 currentFolders={videoFolders}
                 quickAssignFolder={quickAssignFolder}
+                folderMetadata={folderMetadata}
                 onColorLeftClick={(folderColor) => {
                   if (onStarColorLeftClick) {
                     onStarColorLeftClick(video, folderColor);
