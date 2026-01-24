@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { createPlaylist, getAllPlaylists, getPlaylistItems, deletePlaylist, deletePlaylistByName, getAllFoldersWithVideos, exportPlaylist, getFoldersForPlaylist, toggleStuckFolder, getAllStuckFolders, getVideosInFolder, getAllVideoProgress, getAllPlaylistMetadata } from '../api/playlistApi';
+import { createPlaylist, getAllPlaylists, getPlaylistItems, deletePlaylist, deletePlaylistByName, getAllFoldersWithVideos, exportPlaylist, getFoldersForPlaylist, toggleStuckFolder, getAllStuckFolders, getVideosInFolder, getAllVideoProgress, getAllPlaylistMetadata, addVideoToPlaylist, getFolderMetadata } from '../api/playlistApi';
 import { getThumbnailUrl } from '../utils/youtubeUtils';
 import { usePlaylistStore } from '../store/playlistStore';
 import { Eye, Play, Shuffle } from 'lucide-react';
@@ -40,6 +40,7 @@ const PlaylistsPage = ({ onVideoSelect }) => {
   const [expandedPlaylists, setExpandedPlaylists] = useState(new Set()); // Track which playlists are expanded
   const [playlistFolders, setPlaylistFolders] = useState({}); // Store folders for each playlist: { playlistId: [folders] }
   const [stuckFolders, setStuckFolders] = useState(new Set()); // Track stuck folders: Set of "playlistId:folderColor" strings
+  const [folderMetadata, setFolderMetadata] = useState({}); // Store folder custom names: { "playlistId:folderColor": { name, description } }
   const { setPlaylistItems, currentPlaylistItems, setCurrentFolder, setPreviewPlaylist, setAllPlaylists, activePlaylistId } = usePlaylistStore();
   const { showColoredFolders, setShowColoredFolders } = useFolderStore();
   const [imageLoadErrors, setImageLoadErrors] = useState(new Set());
@@ -110,6 +111,23 @@ const PlaylistsPage = ({ onVideoSelect }) => {
       if (Array.isArray(bulk)) {
         console.log('Loaded folders (batch):', bulk.length);
         setFolders(bulk);
+        
+        // Load metadata for each folder to get custom names
+        const metadataMap = {};
+        await Promise.all(
+          bulk.map(async (folder) => {
+            try {
+              const metadata = await getFolderMetadata(folder.playlist_id, folder.folder_color);
+              if (metadata) {
+                const key = `${folder.playlist_id}:${folder.folder_color}`;
+                metadataMap[key] = { name: metadata[0], description: metadata[1] };
+              }
+            } catch (e) {
+              // Ignore errors for individual folder metadata
+            }
+          })
+        );
+        setFolderMetadata(metadataMap);
       } else {
         setFolders([]);
       }
@@ -623,126 +641,363 @@ const PlaylistsPage = ({ onVideoSelect }) => {
 
             {/* Grid */}
             <div className="grid grid-cols-2 gap-4 px-8 pb-8">
-              {/* Colored Folders - Filtered by active tab (only show if showColoredFolders is true) */}
-              {showColoredFolders && folders
-                .filter((folder) => {
-                  // Don't show folders that are stuck (they'll be shown in the playlist section)
+              {/* Colored Folders - Grouped by playlist with headers */}
+              {showColoredFolders && (() => {
+                // Filter folders
+                const filteredFolders = folders.filter((folder) => {
                   const folderKey = `${folder.playlist_id}:${folder.folder_color}`;
                   if (stuckFolders.has(folderKey)) return false;
-
                   if (activeTabId === 'all') return true;
                   const activeTab = tabs.find(t => t.id === activeTabId);
                   return activeTab && activeTab.playlistIds.includes(folder.playlist_id);
-                })
-                .map((folder, index) => {
-                  const folderColor = getFolderColorById(folder.folder_color);
-                  const folderImageKey = `folder-${folder.playlist_id}-${folder.folder_color}`;
-                  const thumbUrls = folder.first_video ? {
-                    max: getThumbnailUrl(folder.first_video.video_id, 'max'),
-                    standard: getThumbnailUrl(folder.first_video.video_id, 'standard')
-                  } : null;
+                });
 
-                  const useFallback = imageLoadErrors.has(folderImageKey);
-                  const activeThumbnailUrl = thumbUrls ? (useFallback ? thumbUrls.standard : thumbUrls.max) : null;
+                // Group folders by playlist_id
+                const groupedFolders = {};
+                filteredFolders.forEach((folder) => {
+                  if (!groupedFolders[folder.playlist_id]) {
+                    groupedFolders[folder.playlist_id] = [];
+                  }
+                  groupedFolders[folder.playlist_id].push(folder);
+                });
+
+                // Get playlist order for consistent sorting
+                const playlistOrder = playlists.map(p => p.id);
+
+                // Sort groups by playlist order
+                const sortedPlaylistIds = Object.keys(groupedFolders)
+                  .map(id => parseInt(id))
+                  .sort((a, b) => playlistOrder.indexOf(a) - playlistOrder.indexOf(b));
+
+                // Render grouped folders with headers
+                return sortedPlaylistIds.map((playlistId) => {
+                  const playlistFoldersGroup = groupedFolders[playlistId];
+                  const parentPlaylist = playlists.find(p => p.id === playlistId);
+                  const playlistName = parentPlaylist?.name || 'Unknown Playlist';
 
                   return (
-                    <div
-                      key={`folder-${folder.playlist_id}-${folder.folder_color}-${index}`}
-                      onClick={async (e) => {
-                        e.stopPropagation();
-                        try {
-                          const items = await getVideosInFolder(folder.playlist_id, folder.folder_color);
-                          setPlaylistItems(items, folder.playlist_id, { playlist_id: folder.playlist_id, folder_color: folder.folder_color });
-                          if (items.length > 0 && onVideoSelect) {
-                            onVideoSelect(items[0].video_url);
-                          } else if (folder.first_video && onVideoSelect) {
-                            onVideoSelect(folder.first_video.video_url);
-                          }
-                        } catch (error) {
-                          console.error('Failed to load folder items:', error);
-                        }
-                      }}
-                      className="cursor-pointer group relative"
-                    >
-                      {/* Thumbnail with colored border - Rounded */}
-                      <div className="relative aspect-video overflow-hidden rounded-lg" style={{ backgroundColor: '#0f172a' }}>
-                        {/* Colored left border indicator */}
-                        <div
-                          className="absolute left-0 top-0 bottom-0 w-2 z-10"
-                          style={{ backgroundColor: folderColor.hex }}
-                        />
-                        {activeThumbnailUrl ? (
-                          <img
-                            src={activeThumbnailUrl}
-                            alt={folder.first_video?.title || 'Folder thumbnail'}
-                            className="w-full h-full object-cover pl-2"
-                            onError={() => {
-                              if (!useFallback) {
-                                setImageLoadErrors(prev => new Set(prev).add(folderImageKey));
+                    <React.Fragment key={`folder-group-${playlistId}`}>
+                      {/* Playlist Header - spans full width */}
+                      <div className="col-span-2 flex items-center gap-3 mt-2 mb-1">
+                        <div className="h-px flex-1 bg-gradient-to-r from-transparent via-slate-600/50 to-transparent" />
+                        <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wider px-2">
+                          {playlistName}
+                        </h2>
+                        <div className="h-px flex-1 bg-gradient-to-r from-transparent via-slate-600/50 to-transparent" />
+                      </div>
+
+                      {/* Folder cards for this playlist */}
+                      {playlistFoldersGroup.map((folder, index) => {
+                        const folderColor = getFolderColorById(folder.folder_color);
+                        const folderMetadataKey = `${folder.playlist_id}:${folder.folder_color}`;
+                        const customFolderName = folderMetadata[folderMetadataKey]?.name;
+                        const displayFolderName = customFolderName || folderColor.name;
+                        const folderImageKey = `folder-${folder.playlist_id}-${folder.folder_color}`;
+                        const thumbUrls = folder.first_video ? {
+                          max: getThumbnailUrl(folder.first_video.video_id, 'max'),
+                          standard: getThumbnailUrl(folder.first_video.video_id, 'standard')
+                        } : null;
+
+                        const useFallback = imageLoadErrors.has(folderImageKey);
+                        const activeThumbnailUrl = thumbUrls ? (useFallback ? thumbUrls.standard : thumbUrls.max) : null;
+
+                        return (
+                          <div
+                            key={`folder-${folder.playlist_id}-${folder.folder_color}-${index}`}
+                            onClick={async (e) => {
+                              if (e.target.closest('[data-card-menu="true"]')) {
+                                return;
+                              }
+                              e.stopPropagation();
+                              try {
+                                const items = await getVideosInFolder(folder.playlist_id, folder.folder_color);
+                                setPlaylistItems(items, folder.playlist_id, { playlist_id: folder.playlist_id, folder_color: folder.folder_color });
+                                if (items.length > 0 && onVideoSelect) {
+                                  onVideoSelect(items[0].video_url);
+                                } else if (folder.first_video && onVideoSelect) {
+                                  onVideoSelect(folder.first_video.video_url);
+                                }
+                              } catch (error) {
+                                console.error('Failed to load folder items:', error);
                               }
                             }}
-                            style={{
-                              display: 'block',
-                              width: '100%',
-                              height: '100%',
-                              objectFit: 'cover',
-                              paddingLeft: '8px',
-                              position: 'relative',
-                              zIndex: 1
-                            }}
-                          />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center pl-2">
-                            <svg
-                              className="w-12 h-12 text-slate-500"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"
-                              />
-                            </svg>
-                          </div>
-                        )}
-                        {/* Play overlay on hover */}
-                        <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 transition-all duration-200 flex items-center justify-center">
-                          <div className="opacity-0 group-hover:opacity-100 transition-opacity">
-                            <svg
-                              className="w-16 h-16"
-                              style={{ color: '#052F4A' }}
-                              fill="currentColor"
-                              viewBox="0 0 20 20"
-                            >
-                              <path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z" />
-                            </svg>
-                          </div>
-                        </div>
-                      </div>
+                            className="cursor-pointer group relative"
+                          >
+                            <div className="border-2 border-slate-700/50 rounded-xl p-2 bg-slate-800/20 hover:border-sky-500/50 transition-colors h-full flex flex-col">
+                              {/* Folder Title Bar */}
+                              <div className="mb-2 flex items-center justify-between border-2 border-[#052F4A] rounded-md p-1 bg-slate-100/90 shadow-sm relative overflow-hidden h-[38px]">
+                                <div className="flex items-center gap-2 pl-1 flex-1 min-w-0">
+                                  <div
+                                    className="w-3 h-3 rounded-full flex-shrink-0"
+                                    style={{ backgroundColor: folderColor.hex }}
+                                  />
+                                  <h3 className="font-bold text-lg truncate transition-colors text-left"
+                                    style={{ color: '#052F4A' }}
+                                    onMouseEnter={(e) => e.currentTarget.style.color = '#38bdf8'}
+                                    onMouseLeave={(e) => e.currentTarget.style.color = '#052F4A'}
+                                    title={displayFolderName}>
+                                    {displayFolderName}
+                                  </h3>
+                                </div>
 
-                      {/* Folder Info */}
-                      <div className="mt-2 relative">
-                        <div className="flex items-center gap-2 mb-1">
-                          {/* Colored dot indicator */}
-                          <div
-                            className="w-3 h-3 rounded-full flex-shrink-0"
-                            style={{ backgroundColor: folderColor.hex }}
-                          />
-                          <h3 className="font-medium text-sm truncate transition-colors"
-                            style={{ color: '#052F4A' }}
-                            onMouseEnter={(e) => e.currentTarget.style.color = '#38bdf8'}
-                            onMouseLeave={(e) => e.currentTarget.style.color = '#052F4A'}>
-                            {folderColor.name} Folder
-                          </h3>
-                        </div>
+                                {/* Hover Controls */}
+                                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity absolute right-1 top-0 bottom-0 pr-1 pl-4 bg-gradient-to-l from-slate-100 via-slate-100 to-transparent">
+                                  <button
+                                    onClick={async (e) => {
+                                      e.stopPropagation();
+                                      try {
+                                        const items = await getVideosInFolder(folder.playlist_id, folder.folder_color);
+                                        setPreviewPlaylist(items, folder.playlist_id, { playlist_id: folder.playlist_id, folder_color: folder.folder_color });
+                                        setCurrentPage('videos');
+                                        if (viewMode === 'full') {
+                                          setViewMode('half');
+                                        }
+                                      } catch (error) {
+                                        console.error('Failed to load folder items for preview:', error);
+                                      }
+                                    }}
+                                    className="p-1 hover:bg-slate-200 rounded text-[#052F4A] hover:text-sky-600 transition-colors"
+                                    title="Preview folder"
+                                  >
+                                    <Eye size={18} strokeWidth={2.5} />
+                                  </button>
+                                  <button
+                                    onClick={async (e) => {
+                                      e.stopPropagation();
+                                      try {
+                                        const items = await getVideosInFolder(folder.playlist_id, folder.folder_color);
+                                        setPlaylistItems(items, folder.playlist_id, { playlist_id: folder.playlist_id, folder_color: folder.folder_color });
+                                        if (items.length > 0 && onVideoSelect) {
+                                          onVideoSelect(items[0].video_url);
+                                        }
+                                      } catch (error) {
+                                        console.error('Failed to load folder items:', error);
+                                      }
+                                    }}
+                                    onContextMenu={async (e) => {
+                                      e.stopPropagation();
+                                      e.preventDefault();
+                                      try {
+                                        const items = await getVideosInFolder(folder.playlist_id, folder.folder_color);
+                                        setPlaylistItems(items, folder.playlist_id, { playlist_id: folder.playlist_id, folder_color: folder.folder_color });
 
-                      </div>
-                    </div>
+                                        if (items.length > 0 && onVideoSelect) {
+                                          let targetVideo = items[0];
+
+                                          if (activeThumbnailUrl) {
+                                            const coverMatch = items.find(item => {
+                                              const maxThumb = getThumbnailUrl(item.video_id, 'max');
+                                              const stdThumb = getThumbnailUrl(item.video_id, 'standard');
+                                              return maxThumb === activeThumbnailUrl || stdThumb === activeThumbnailUrl;
+                                            });
+
+                                            if (coverMatch) {
+                                              targetVideo = coverMatch;
+                                            }
+                                          }
+
+                                          onVideoSelect(targetVideo.video_url);
+                                        }
+                                      } catch (error) {
+                                        console.error('Failed to play cover video:', error);
+                                      }
+                                    }}
+                                    className="p-1 hover:bg-slate-200 rounded text-[#052F4A] hover:text-sky-600 transition-colors"
+                                    title="Play folder (Right-click for cover video)"
+                                  >
+                                    <Play size={18} fill="currentColor" />
+                                  </button>
+                                  <button
+                                    onClick={async (e) => {
+                                      e.stopPropagation();
+                                      try {
+                                        const items = await getVideosInFolder(folder.playlist_id, folder.folder_color);
+                                        const shuffled = [...items].sort(() => Math.random() - 0.5);
+                                        setPlaylistItems(shuffled, folder.playlist_id, { playlist_id: folder.playlist_id, folder_color: folder.folder_color });
+                                        if (shuffled.length > 0 && onVideoSelect) {
+                                          onVideoSelect(shuffled[0].video_url);
+                                        }
+                                      } catch (error) {
+                                        console.error('Failed to shuffle folder:', error);
+                                      }
+                                    }}
+                                    className="p-1 hover:bg-slate-200 rounded text-[#052F4A] hover:text-sky-600 transition-colors"
+                                    title="Shuffle folder"
+                                  >
+                                    <Shuffle size={18} />
+                                  </button>
+                                </div>
+                              </div>
+
+                              {/* Thumbnail */}
+                              <div className="rounded-lg overflow-hidden relative group mt-auto" style={{
+                                width: '100%',
+                                paddingBottom: '56.25%',
+                                backgroundColor: '#0f172a',
+                              }}>
+                                {activeThumbnailUrl ? (
+                                  <img
+                                    src={activeThumbnailUrl}
+                                    alt={folder.first_video?.title || 'Folder thumbnail'}
+                                    onError={() => {
+                                      if (!useFallback) {
+                                        setImageLoadErrors(prev => new Set(prev).add(folderImageKey));
+                                      }
+                                    }}
+                                    style={{
+                                      position: 'absolute',
+                                      top: 0,
+                                      left: 0,
+                                      width: '100%',
+                                      height: '100%',
+                                      objectFit: 'cover',
+                                      display: 'block'
+                                    }}
+                                  />
+                                ) : (
+                                  <div style={{
+                                    position: 'absolute',
+                                    top: 0,
+                                    left: 0,
+                                    width: '100%',
+                                    height: '100%',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center'
+                                  }}>
+                                    <svg
+                                      className="w-12 h-12 text-slate-500"
+                                      fill="none"
+                                      stroke="currentColor"
+                                      viewBox="0 0 24 24"
+                                    >
+                                      <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        strokeWidth={2}
+                                        d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"
+                                      />
+                                    </svg>
+                                  </div>
+                                )}
+
+                                {/* 3-dot menu */}
+                                <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-30" onClick={(e) => e.stopPropagation()}>
+                                  <CardMenu
+                                    options={[
+                                      {
+                                        label: stuckFolders.has(`${folder.playlist_id}:${folder.folder_color}`) ? 'Unstick Folder' : 'Stick Folder',
+                                        icon: stuckFolders.has(`${folder.playlist_id}:${folder.folder_color}`) ? (
+                                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                          </svg>
+                                        ) : (
+                                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+                                          </svg>
+                                        ),
+                                        action: 'toggleStick',
+                                      },
+                                      {
+                                        label: 'Convert to Playlist',
+                                        icon: (
+                                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                          </svg>
+                                        ),
+                                        action: 'convertToPlaylist',
+                                      },
+                                    ]}
+                                    onOptionClick={async (option) => {
+                                      if (option.action === 'toggleStick') {
+                                        try {
+                                          const newStuckStatus = await toggleStuckFolder(folder.playlist_id, folder.folder_color);
+                                          const folderKey = `${folder.playlist_id}:${folder.folder_color}`;
+                                          setStuckFolders((prev) => {
+                                            const next = new Set(prev);
+                                            if (newStuckStatus) {
+                                              next.add(folderKey);
+                                            } else {
+                                              next.delete(folderKey);
+                                            }
+                                            return next;
+                                          });
+                                        } catch (error) {
+                                          console.error('Failed to toggle stick folder:', error);
+                                        }
+                                      } else if (option.action === 'convertToPlaylist') {
+                                        try {
+                                          const parentPlaylist = playlists.find(p => p.id === folder.playlist_id);
+                                          const parentName = parentPlaylist ? parentPlaylist.name : 'Unknown';
+                                          const defaultName = `${parentName} - ${displayFolderName}`;
+                                          
+                                          const playlistName = window.prompt(
+                                            'Enter a name for the new playlist:',
+                                            defaultName
+                                          );
+                                          
+                                          if (!playlistName) return;
+                                          
+                                          const folderVideos = await getVideosInFolder(folder.playlist_id, folder.folder_color);
+                                          
+                                          if (!folderVideos || folderVideos.length === 0) {
+                                            alert('No videos found in this folder.');
+                                            return;
+                                          }
+                                          
+                                          const newPlaylistId = await createPlaylist(playlistName, `Converted from ${parentName} - ${displayFolderName} folder`);
+                                          
+                                          let addedCount = 0;
+                                          for (const video of folderVideos) {
+                                            try {
+                                              await addVideoToPlaylist(
+                                                newPlaylistId,
+                                                video.video_url,
+                                                video.video_id,
+                                                video.title,
+                                                video.thumbnail_url,
+                                                video.author || null,
+                                                video.view_count || null,
+                                                video.published_at || null,
+                                                video.is_local || false
+                                              );
+                                              addedCount++;
+                                            } catch (videoError) {
+                                              console.error('Failed to add video:', videoError);
+                                            }
+                                          }
+                                          
+                                          await loadPlaylists();
+                                          
+                                          alert(`Successfully created playlist "${playlistName}" with ${addedCount} videos!`);
+                                        } catch (error) {
+                                          console.error('Failed to convert folder to playlist:', error);
+                                          alert(`Failed to convert folder: ${error.message || 'Unknown error'}`);
+                                        }
+                                      }
+                                    }}
+                                  />
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </React.Fragment>
                   );
-                })}
+                });
+              })()}
+
+              {/* Source Playlists Header - only show when colored folders are visible */}
+              {showColoredFolders && (
+                <div className="col-span-2 flex items-center gap-3 mt-4 mb-2">
+                  <div className="h-px flex-1 bg-gradient-to-r from-transparent via-sky-600/50 to-transparent" />
+                  <h2 className="text-sm font-semibold text-sky-400 uppercase tracking-wider px-2">
+                    Source Playlists
+                  </h2>
+                  <div className="h-px flex-1 bg-gradient-to-r from-transparent via-sky-600/50 to-transparent" />
+                </div>
+              )}
 
               {/* Regular Playlists - Filtered by active tab */}
               {(() => {

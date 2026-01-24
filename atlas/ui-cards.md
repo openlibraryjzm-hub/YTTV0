@@ -8,7 +8,11 @@ This document covers the reusable Card component system used throughout the appl
 
 ---
 
-#### ### 4.1.1.1 Playlist Cards
+#### ### 4.1.1.1 Playlist Cards & Folder Cards
+
+Playlist cards and Colored Folder cards share the same card schema and structure. Folder cards appear on the Playlists Page when the folder toggle is enabled.
+
+#### ### 4.1.1.1a Playlist Cards
 
 **1: User-Perspective Description**
 
@@ -96,6 +100,61 @@ Users see playlist cards built using the reusable Card component system:
 - When parent's data changes → Cards re-render with new props
 - When card clicked → Parent's handler updates state → May trigger navigation or API call
 - When menu option selected → Parent's handler executes → May update database, refresh grid
+
+---
+
+#### ### 4.1.1.1b Colored Folder Cards
+
+**1: User-Perspective Description**
+
+Colored Folder cards use the exact same visual structure as Playlist cards, appearing on the Playlists Page when the folder toggle is enabled. Folders are grouped by their parent playlist with section headers.
+
+- **Card Structure** (identical to Playlist Cards):
+  - **Container**: Bordered card (`border-2 border-slate-700/50 rounded-xl`) with hover highlight
+  - **Title Bar**: Dark blue border with light background, contains:
+    - **Colored Dot**: Circle indicator matching the folder color
+    - **Folder Name**: Shows custom name if renamed, otherwise shows color name (e.g., "Gaming" or "Red")
+    - **Hover Actions**: Eye (Preview), Play, Shuffle buttons appear on hover
+  - **Thumbnail Area**: 16:9 aspect ratio below title bar
+    - Image: First video's thumbnail from the folder
+    - **3-Dot Menu**: Top-right on hover with folder-specific options
+
+- **3-Dot Menu Options**:
+  - **Stick/Unstick Folder**: Pins folder to always show in playlist section
+  - **Convert to Playlist**: Creates a new playlist from folder contents
+    - Prompts for playlist name (default: "Playlist Name - Folder Name")
+    - Copies all videos to new playlist
+    - New playlist functions independently with its own folders
+
+- **Grouping & Headers**:
+  - Folders are grouped by parent playlist
+  - Each group has a header showing the playlist name (uppercase, with gradient divider lines)
+  - "Source Playlists" header separates folder section from regular playlists (only visible when folders are shown)
+
+- **Interactive Elements**:
+  - **Card Click**: Loads folder videos and starts playing
+  - **Preview Button**: Opens folder in preview mode on Videos Page
+  - **Play Button**: Left-click plays from first video, right-click plays cover video
+  - **Shuffle Button**: Shuffles folder contents and plays
+
+**2: File Manifest**
+
+**UI/Components:**
+- `src/components/PlaylistsPage.jsx`: Renders folder cards inline with playlists
+
+**State Management:**
+- `src/components/PlaylistsPage.jsx` (local state):
+  - `folders`: Array of folder objects from `getAllFoldersWithVideos()`
+  - `folderMetadata`: Map of `"playlistId:folderColor"` to `{ name, description }`
+  - `stuckFolders`: Set of stuck folder keys
+
+**API/Bridge:**
+- `src/api/playlistApi.js`:
+  - `getAllFoldersWithVideos()` - Gets all folders with video data
+  - `getFolderMetadata(playlistId, folderColor)` - Gets custom folder name/description
+  - `getVideosInFolder(playlistId, folderColor)` - Gets videos in a folder
+  - `toggleStuckFolder(playlistId, folderColor)` - Toggles sticky state
+  - `createPlaylist()`, `addVideoToPlaylist()` - Used for Convert to Playlist
 
 ---
 #### ### 4.1.2.1 Videos Card

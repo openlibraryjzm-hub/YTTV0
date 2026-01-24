@@ -33,7 +33,13 @@ Users see a 2-column grid of playlist cards. For detailed description of playlis
     - **Folder Toggle (Icon)**: Toggles inline folder display.
     - **Add Playlist (Icon)**: Opens playlist import/create modal.
 
-- **Colored Folders**: When folder toggle is on, folder cards appear in grid (see Section 2.2)
+- **Colored Folders**: When folder toggle is on, folder cards appear in grid above playlists:
+  - **Grouped by Playlist**: Folders are organized under their parent playlist with section headers
+  - **Playlist Headers**: Each group has an uppercase header with gradient divider lines showing the playlist name
+  - **Folder Card Schema**: Folder cards use the same structure as playlist cards (bordered container, title bar with colored dot + name, hover controls, thumbnail with 3-dot menu)
+  - **Custom Names**: Folders display custom names if renamed, otherwise show the color name
+  - **3-Dot Menu**: Options include "Stick/Unstick Folder" and "Convert to Playlist"
+  - **"Source Playlists" Header**: Separates folder section from regular playlists (only visible when folders are shown)
 
 **2: File Manifest**
 
@@ -51,6 +57,9 @@ Users see a 2-column grid of playlist cards. For detailed description of playlis
   - `playlists`: Array of playlist objects
   - `playlistThumbnails`: Map of playlist ID to thumbnail URL
   - `playlistItemCounts`: Map of playlist ID to video count
+  - `folders`: Array of folder objects (from `getAllFoldersWithVideos()`)
+  - `folderMetadata`: Map of `"playlistId:folderColor"` to `{ name, description }` for custom folder names
+  - `stuckFolders`: Set of stuck folder keys (`"playlistId:folderColor"`)
 
 **API/Bridge:**
 - See Section 2.1 for full API details
