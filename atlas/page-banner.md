@@ -341,6 +341,13 @@ The Sticky Toolbar is a dynamic toolbar component that sits directly below the P
 
 **Right Side - Control Cluster:**
 - **Border Separator**: Vertical border (`border-l border-white/10`) separates controls from tabs
+- **Global Info Toggle Button**:
+  - Icon: Info SVG icon (Lucide `Info`)
+  - Active state: Sky blue (`bg-sky-600`), white text, shadow
+  - Inactive state: Dark background (`bg-slate-800/80`), gray text, border
+  - Toggles video title overlays on ALL playlist/folder card thumbnails
+  - State persisted to `localStorage` (`playlistsPage_globalInfoToggle`)
+  - Tooltip: "Hide all video titles" / "Show all video titles"
 - **Folder Toggle Button**:
   - Icon: Folder SVG icon
   - Active state: Sky blue (`bg-sky-600`), white text, shadow

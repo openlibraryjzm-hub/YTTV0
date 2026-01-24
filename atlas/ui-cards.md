@@ -37,12 +37,16 @@ Users see playlist cards built using the reusable Card component system:
 
 - **Interactive Elements**:
   - **Card Click**: Loads playlist and starts playing first video
-  - **Play Button** (Title Bar hover): 
-    - **Left Click**: Plays playlist from beginning
-    - **Right Click**: Plays the specific video matching the card's cover image
-  - **Shuffle Button** (Title Bar hover): Shuffles playlist items and plays immediately
-  - **Preview Button** (Title Bar hover): Opens playlist in preview mode
-  - **Folder Menu Button** (Title Bar hover): Tag icon button that toggles the Folder Pie Chart Menu
+  - **Hover Controls** (Title Bar): Organized into 3 segments separated by vertical dividers:
+    - **Segment 1 (Preview)**: Grid3x3 icon - Opens playlist in preview mode on Videos Page
+    - **Segment 2 (Thumbnail Navigation)**:
+      - **Refresh Button** (conditional): RotateCcw icon - Only appears after shuffle has been clicked. Resets thumbnail to default/established playlist cover.
+      - **Shuffle Button**: Shuffle icon - Changes thumbnail to random video from playlist (does NOT play). The displayed video becomes the target for the Play button.
+    - **Segment 3 (Actions)**:
+      - **Play Button**: Plays the video currently shown in the thumbnail (after shuffle) or first video (default)
+      - **Folder Menu Button**: Tag icon - Toggles the Folder Pie Chart Menu expansion
+      - **Info Button**: Info icon - Toggles video title overlay on the thumbnail. Shows the title of the currently displayed video.
+  - **Global Info Toggle** (Sticky Top Bar): Info icon button that toggles video title overlays for ALL playlist/folder cards. State persisted to localStorage.
   - **3-Dot Menu** (inline with title): Expand, Export, Add to Tab, Delete options
 
 #### ### 4.1.1.1c Folder Pie Chart Menu (Playlist Card Expansion)
@@ -220,9 +224,14 @@ Colored Folder cards use the exact same visual structure as Playlist cards, appe
 
 - **Interactive Elements**:
   - **Card Click**: Loads folder videos and starts playing
-  - **Preview Button**: Opens folder in preview mode on Videos Page
-  - **Play Button**: Left-click plays from first video, right-click plays cover video
-  - **Shuffle Button**: Shuffles folder contents and plays
+  - **Hover Controls** (Title Bar): Organized into 3 segments (same as Playlist Cards):
+    - **Segment 1 (Preview)**: Grid3x3 icon - Opens folder in preview mode on Videos Page
+    - **Segment 2 (Thumbnail Navigation)**:
+      - **Refresh Button** (conditional): Only appears after shuffle. Resets to default folder thumbnail.
+      - **Shuffle Button**: Changes thumbnail to random video from folder (does NOT play)
+    - **Segment 3 (Actions)**:
+      - **Play Button**: Plays the video currently shown in the thumbnail
+      - **Info Button**: Toggles video title overlay on the thumbnail
 
 **2: File Manifest**
 

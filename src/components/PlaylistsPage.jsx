@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { createPlaylist, getAllPlaylists, getPlaylistItems, deletePlaylist, deletePlaylistByName, getAllFoldersWithVideos, exportPlaylist, getFoldersForPlaylist, toggleStuckFolder, getAllStuckFolders, getVideosInFolder, getAllVideoProgress, getAllPlaylistMetadata, addVideoToPlaylist, getFolderMetadata } from '../api/playlistApi';
 import { getThumbnailUrl } from '../utils/youtubeUtils';
 import { usePlaylistStore } from '../store/playlistStore';
-import { Eye, Play, Shuffle } from 'lucide-react';
+import { Play, Shuffle, Grid3x3, RotateCcw, Info } from 'lucide-react';
 import { useFolderStore } from '../store/folderStore';
 import { useTabStore } from '../store/tabStore';
 import { useTabPresetStore } from '../store/tabPresetStore';
@@ -46,6 +46,16 @@ const PlaylistsPage = ({ onVideoSelect }) => {
   const pieChartRefs = useRef({}); // Refs for pie chart containers to handle wheel events
   const pieDataRef = useRef({ hoveredPieSegment: {}, playlistFolders: {} }); // Ref to hold latest state for wheel handler
   
+  // Preview thumbnails - tracks shuffled thumbnail previews (presence indicates shuffle was used, for showing refresh button)
+  const [previewThumbnails, setPreviewThumbnails] = useState({}); // { key: { videoId, url, videoUrl, title } } - temporary preview thumbnails
+  const [showThumbnailInfo, setShowThumbnailInfo] = useState(new Set()); // Set of card keys with info overlay visible
+  
+  // Global info toggle - shows video titles on all cards (persisted to localStorage)
+  const [globalInfoToggle, setGlobalInfoToggle] = useState(() => {
+    const saved = localStorage.getItem('playlistsPage_globalInfoToggle');
+    return saved === 'true';
+  });
+  
   // Keep ref in sync with state
   pieDataRef.current.hoveredPieSegment = hoveredPieSegment;
   pieDataRef.current.playlistFolders = playlistFolders;
@@ -87,6 +97,55 @@ const PlaylistsPage = ({ onVideoSelect }) => {
     loadPlaylists();
     loadStuckFolders();
   }, []);
+
+  // Persist global info toggle to localStorage
+  useEffect(() => {
+    localStorage.setItem('playlistsPage_globalInfoToggle', globalInfoToggle.toString());
+  }, [globalInfoToggle]);
+
+  // Fetch titles for all playlists when global info toggle is on and playlists have loaded
+  useEffect(() => {
+    const fetchTitlesForGlobalToggle = async () => {
+      if (!globalInfoToggle || playlists.length === 0) return;
+      
+      for (const playlist of playlists) {
+        const playlistKey = `playlist-${playlist.id}`;
+        if (!previewThumbnails[playlistKey]?.title) {
+          try {
+            const items = await getPlaylistItems(playlist.id);
+            if (items.length > 0) {
+              const thumbData = playlistThumbnails[playlist.id];
+              const activeThumbnailUrl = thumbData?.max || thumbData?.standard;
+              let targetVideo = items[0];
+              if (activeThumbnailUrl) {
+                const coverMatch = items.find(item => {
+                  const maxThumb = getThumbnailUrl(item.video_id, 'max');
+                  const stdThumb = getThumbnailUrl(item.video_id, 'standard');
+                  return maxThumb === activeThumbnailUrl || stdThumb === activeThumbnailUrl;
+                });
+                if (coverMatch) targetVideo = coverMatch;
+              }
+              setPreviewThumbnails(prev => ({
+                ...prev,
+                [playlistKey]: { 
+                  ...prev[playlistKey],
+                  title: targetVideo.title,
+                  videoId: targetVideo.video_id,
+                  videoUrl: targetVideo.video_url,
+                  url: prev[playlistKey]?.url || activeThumbnailUrl,
+                  isShuffled: prev[playlistKey]?.isShuffled || false // Preserve shuffled state
+                }
+              }));
+            }
+          } catch (error) {
+            console.error('Failed to fetch video title for playlist:', playlist.id, error);
+          }
+        }
+      }
+    };
+    
+    fetchTitlesForGlobalToggle();
+  }, [globalInfoToggle, playlists.length, playlistThumbnails]);
 
   const loadStuckFolders = async () => {
     try {
@@ -618,6 +677,59 @@ const PlaylistsPage = ({ onVideoSelect }) => {
                 {/* Right: Controls */}
                 <div className="flex items-center gap-2 ml-4 shrink-0 pl-3 border-l border-white/10">
 
+                  {/* Global Info Toggle - Shows video titles on all cards */}
+                  <button
+                    onClick={async () => {
+                      const newState = !globalInfoToggle;
+                      setGlobalInfoToggle(newState);
+                      
+                      // If turning on and we have cards without titles, fetch them
+                      if (newState) {
+                        // Fetch titles for all playlists that don't have preview thumbnails
+                        for (const playlist of playlists) {
+                          const playlistKey = `playlist-${playlist.id}`;
+                          if (!previewThumbnails[playlistKey]?.title) {
+                            try {
+                              const items = await getPlaylistItems(playlist.id);
+                              if (items.length > 0) {
+                                const thumbData = playlistThumbnails[playlist.id];
+                                const activeThumbnailUrl = thumbData?.max || thumbData?.standard;
+                                let targetVideo = items[0];
+                                if (activeThumbnailUrl) {
+                                  const coverMatch = items.find(item => {
+                                    const maxThumb = getThumbnailUrl(item.video_id, 'max');
+                                    const stdThumb = getThumbnailUrl(item.video_id, 'standard');
+                                    return maxThumb === activeThumbnailUrl || stdThumb === activeThumbnailUrl;
+                                  });
+                                  if (coverMatch) targetVideo = coverMatch;
+                                }
+                                setPreviewThumbnails(prev => ({
+                                  ...prev,
+                                  [playlistKey]: { 
+                                    ...prev[playlistKey],
+                                    title: targetVideo.title,
+                                    videoId: targetVideo.video_id,
+                                    videoUrl: targetVideo.video_url,
+                                    url: prev[playlistKey]?.url || activeThumbnailUrl
+                                  }
+                                }));
+                              }
+                            } catch (error) {
+                              console.error('Failed to fetch video title for playlist:', playlist.id, error);
+                            }
+                          }
+                        }
+                      }
+                    }}
+                    className={`p-1.5 rounded-md transition-all ${globalInfoToggle
+                      ? 'bg-sky-600 text-white shadow-sm'
+                      : 'bg-slate-800/80 text-slate-400 hover:bg-slate-700 hover:text-white border border-white/10'
+                      }`}
+                    title={globalInfoToggle ? "Hide All Video Titles" : "Show All Video Titles"}
+                  >
+                    <Info size={16} />
+                  </button>
+
                   {/* Folder Toggle - Icon Only */}
                   <button
                     onClick={() => setShowColoredFolders(!showColoredFolders)}
@@ -707,7 +819,11 @@ const PlaylistsPage = ({ onVideoSelect }) => {
                         } : null;
 
                         const useFallback = imageLoadErrors.has(folderImageKey);
-                        const activeThumbnailUrl = thumbUrls ? (useFallback ? thumbUrls.standard : thumbUrls.max) : null;
+                        // Check for preview thumbnail first (when preview shuffle mode is active)
+                        const previewThumb = previewThumbnails[folderImageKey];
+                        const activeThumbnailUrl = previewThumb 
+                          ? previewThumb.url 
+                          : (thumbUrls ? (useFallback ? thumbUrls.standard : thumbUrls.max) : null);
 
                         return (
                           <div
@@ -748,92 +864,175 @@ const PlaylistsPage = ({ onVideoSelect }) => {
                                   </h3>
                                 </div>
 
-                                {/* Hover Controls */}
-                                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity absolute right-1 top-0 bottom-0 pr-1 pl-4 bg-gradient-to-l from-slate-100 via-slate-100 to-transparent">
-                                  <button
-                                    onClick={async (e) => {
-                                      e.stopPropagation();
-                                      try {
-                                        const items = await getVideosInFolder(folder.playlist_id, folder.folder_color);
-                                        setPreviewPlaylist(items, folder.playlist_id, { playlist_id: folder.playlist_id, folder_color: folder.folder_color });
-                                        setCurrentPage('videos');
-                                        if (viewMode === 'full') {
-                                          setViewMode('half');
+                                {/* Hover Controls - 3 Segments */}
+                                <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity absolute right-1 top-0 bottom-0 pr-1 pl-4 bg-gradient-to-l from-slate-100 via-slate-100 to-transparent">
+                                  {/* Segment 1: Preview (Grid Icon) */}
+                                  <div className="flex items-center">
+                                    <button
+                                      onClick={async (e) => {
+                                        e.stopPropagation();
+                                        try {
+                                          const items = await getVideosInFolder(folder.playlist_id, folder.folder_color);
+                                          setPreviewPlaylist(items, folder.playlist_id, { playlist_id: folder.playlist_id, folder_color: folder.folder_color });
+                                          setCurrentPage('videos');
+                                          if (viewMode === 'full') {
+                                            setViewMode('half');
+                                          }
+                                        } catch (error) {
+                                          console.error('Failed to load folder items for preview:', error);
                                         }
-                                      } catch (error) {
-                                        console.error('Failed to load folder items for preview:', error);
-                                      }
-                                    }}
-                                    className="p-1 hover:bg-slate-200 rounded text-[#052F4A] hover:text-sky-600 transition-colors"
-                                    title="Preview folder"
-                                  >
-                                    <Eye size={18} strokeWidth={2.5} />
-                                  </button>
-                                  <button
-                                    onClick={async (e) => {
-                                      e.stopPropagation();
-                                      try {
-                                        const items = await getVideosInFolder(folder.playlist_id, folder.folder_color);
-                                        setPlaylistItems(items, folder.playlist_id, { playlist_id: folder.playlist_id, folder_color: folder.folder_color });
-                                        if (items.length > 0 && onVideoSelect) {
-                                          onVideoSelect(items[0].video_url);
+                                      }}
+                                      className="p-1 hover:bg-slate-200 rounded text-[#052F4A] hover:text-sky-600 transition-colors"
+                                      title="Preview folder"
+                                    >
+                                      <Grid3x3 size={18} strokeWidth={2.5} />
+                                    </button>
+                                  </div>
+
+                                  {/* Separator */}
+                                  <div className="w-px h-5 bg-slate-300 mx-0.5" />
+
+                                  {/* Segment 2: Refresh (conditional) + Shuffle */}
+                                  <div className="flex items-center gap-0.5">
+                                    {/* Refresh button - only visible after shuffle has been used */}
+                                    {previewThumbnails[folderImageKey]?.isShuffled && (
+                                      <button
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          // Reset to default thumbnail
+                                          setPreviewThumbnails(prev => {
+                                            const { [folderImageKey]: _, ...rest } = prev;
+                                            return rest;
+                                          });
+                                        }}
+                                        className="p-1 hover:bg-slate-200 rounded text-[#052F4A] hover:text-sky-600 transition-colors"
+                                        title="Reset to default cover"
+                                      >
+                                        <RotateCcw size={18} strokeWidth={2.5} />
+                                      </button>
+                                    )}
+                                    <button
+                                      onClick={async (e) => {
+                                        e.stopPropagation();
+                                        try {
+                                          const items = await getVideosInFolder(folder.playlist_id, folder.folder_color);
+                                          if (items.length === 0) return;
+                                          
+                                          // Shuffle only changes thumbnail preview
+                                          const randomVideo = items[Math.floor(Math.random() * items.length)];
+                                          const thumbUrl = getThumbnailUrl(randomVideo.video_id, 'max');
+                                          setPreviewThumbnails(prev => ({
+                                            ...prev,
+                                            [folderImageKey]: { videoId: randomVideo.video_id, url: thumbUrl, videoUrl: randomVideo.video_url, title: randomVideo.title, isShuffled: true }
+                                          }));
+                                        } catch (error) {
+                                          console.error('Failed to shuffle thumbnail:', error);
                                         }
-                                      } catch (error) {
-                                        console.error('Failed to load folder items:', error);
-                                      }
-                                    }}
-                                    onContextMenu={async (e) => {
-                                      e.stopPropagation();
-                                      e.preventDefault();
-                                      try {
-                                        const items = await getVideosInFolder(folder.playlist_id, folder.folder_color);
-                                        setPlaylistItems(items, folder.playlist_id, { playlist_id: folder.playlist_id, folder_color: folder.folder_color });
+                                      }}
+                                      className="p-1 hover:bg-slate-200 rounded text-[#052F4A] hover:text-sky-600 transition-colors"
+                                      title="Preview random thumbnail"
+                                    >
+                                      <Shuffle size={18} />
+                                    </button>
+                                  </div>
 
-                                        if (items.length > 0 && onVideoSelect) {
-                                          let targetVideo = items[0];
+                                  {/* Separator */}
+                                  <div className="w-px h-5 bg-slate-300 mx-0.5" />
 
-                                          if (activeThumbnailUrl) {
-                                            const coverMatch = items.find(item => {
-                                              const maxThumb = getThumbnailUrl(item.video_id, 'max');
-                                              const stdThumb = getThumbnailUrl(item.video_id, 'standard');
-                                              return maxThumb === activeThumbnailUrl || stdThumb === activeThumbnailUrl;
-                                            });
-
-                                            if (coverMatch) {
-                                              targetVideo = coverMatch;
+                                  {/* Segment 3: Play + Info */}
+                                  <div className="flex items-center gap-0.5">
+                                    <button
+                                      onClick={async (e) => {
+                                        e.stopPropagation();
+                                        try {
+                                          const items = await getVideosInFolder(folder.playlist_id, folder.folder_color);
+                                          setPlaylistItems(items, folder.playlist_id, { playlist_id: folder.playlist_id, folder_color: folder.folder_color });
+                                          
+                                          if (items.length > 0 && onVideoSelect) {
+                                            // If we have a preview thumbnail, play that video
+                                            const previewThumb = previewThumbnails[folderImageKey];
+                                            if (previewThumb?.videoUrl) {
+                                              onVideoSelect(previewThumb.videoUrl);
+                                            } else {
+                                              // Otherwise find video matching current cover or play first
+                                              let targetVideo = items[0];
+                                              if (activeThumbnailUrl) {
+                                                const coverMatch = items.find(item => {
+                                                  const maxThumb = getThumbnailUrl(item.video_id, 'max');
+                                                  const stdThumb = getThumbnailUrl(item.video_id, 'standard');
+                                                  return maxThumb === activeThumbnailUrl || stdThumb === activeThumbnailUrl;
+                                                });
+                                                if (coverMatch) targetVideo = coverMatch;
+                                              }
+                                              onVideoSelect(targetVideo.video_url);
                                             }
                                           }
-
-                                          onVideoSelect(targetVideo.video_url);
+                                        } catch (error) {
+                                          console.error('Failed to load folder items:', error);
                                         }
-                                      } catch (error) {
-                                        console.error('Failed to play cover video:', error);
-                                      }
-                                    }}
-                                    className="p-1 hover:bg-slate-200 rounded text-[#052F4A] hover:text-sky-600 transition-colors"
-                                    title="Play folder (Right-click for cover video)"
-                                  >
-                                    <Play size={18} fill="currentColor" />
-                                  </button>
-                                  <button
-                                    onClick={async (e) => {
-                                      e.stopPropagation();
-                                      try {
-                                        const items = await getVideosInFolder(folder.playlist_id, folder.folder_color);
-                                        const shuffled = [...items].sort(() => Math.random() - 0.5);
-                                        setPlaylistItems(shuffled, folder.playlist_id, { playlist_id: folder.playlist_id, folder_color: folder.folder_color });
-                                        if (shuffled.length > 0 && onVideoSelect) {
-                                          onVideoSelect(shuffled[0].video_url);
+                                      }}
+                                      className="p-1 hover:bg-slate-200 rounded text-[#052F4A] hover:text-sky-600 transition-colors"
+                                      title="Play thumbnail video"
+                                    >
+                                      <Play size={18} fill="currentColor" />
+                                    </button>
+                                    {/* Info Button */}
+                                    <button
+                                      onClick={async (e) => {
+                                        e.stopPropagation();
+                                        const isCurrentlyShowing = showThumbnailInfo.has(folderImageKey);
+                                        
+                                        if (!isCurrentlyShowing && !previewThumbnails[folderImageKey]?.title) {
+                                          // Toggling ON and no title yet - fetch it
+                                          try {
+                                            const items = await getVideosInFolder(folder.playlist_id, folder.folder_color);
+                                            if (items.length > 0) {
+                                              // Find the video matching the current thumbnail
+                                              let targetVideo = items[0];
+                                              if (activeThumbnailUrl) {
+                                                const coverMatch = items.find(item => {
+                                                  const maxThumb = getThumbnailUrl(item.video_id, 'max');
+                                                  const stdThumb = getThumbnailUrl(item.video_id, 'standard');
+                                                  return maxThumb === activeThumbnailUrl || stdThumb === activeThumbnailUrl;
+                                                });
+                                                if (coverMatch) targetVideo = coverMatch;
+                                              }
+                                              // Store the title without changing the thumbnail
+                                              setPreviewThumbnails(prev => ({
+                                                ...prev,
+                                                [folderImageKey]: { 
+                                                  ...prev[folderImageKey],
+                                                  title: targetVideo.title,
+                                                  videoId: targetVideo.video_id,
+                                                  videoUrl: targetVideo.video_url,
+                                                  url: prev[folderImageKey]?.url || activeThumbnailUrl
+                                                }
+                                              }));
+                                            }
+                                          } catch (error) {
+                                            console.error('Failed to fetch video title:', error);
+                                          }
                                         }
-                                      } catch (error) {
-                                        console.error('Failed to shuffle folder:', error);
-                                      }
-                                    }}
-                                    className="p-1 hover:bg-slate-200 rounded text-[#052F4A] hover:text-sky-600 transition-colors"
-                                    title="Shuffle folder"
-                                  >
-                                    <Shuffle size={18} />
-                                  </button>
+                                        
+                                        setShowThumbnailInfo(prev => {
+                                          const next = new Set(prev);
+                                          if (next.has(folderImageKey)) {
+                                            next.delete(folderImageKey);
+                                          } else {
+                                            next.add(folderImageKey);
+                                          }
+                                          return next;
+                                        });
+                                      }}
+                                      className={`p-1 rounded transition-colors ${(showThumbnailInfo.has(folderImageKey) || globalInfoToggle)
+                                        ? 'bg-sky-500 text-white'
+                                        : 'hover:bg-slate-200 text-[#052F4A] hover:text-sky-600'
+                                        }`}
+                                      title={globalInfoToggle ? "Global info ON" : "Show video title"}
+                                    >
+                                      <Info size={18} />
+                                    </button>
+                                  </div>
                                 </div>
                               </div>
 
@@ -886,6 +1085,18 @@ const PlaylistsPage = ({ onVideoSelect }) => {
                                         d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"
                                       />
                                     </svg>
+                                  </div>
+                                )}
+
+                                {/* Video Title Overlay - shown when info button is toggled or global toggle is on */}
+                                {(showThumbnailInfo.has(folderImageKey) || globalInfoToggle) && previewThumbnails[folderImageKey]?.title && (
+                                  <div 
+                                    className="absolute bottom-0 left-0 right-0 bg-black/80 px-2 py-1.5 z-20"
+                                    style={{ backdropFilter: 'blur(4px)' }}
+                                  >
+                                    <p className="text-white text-sm font-medium truncate">
+                                      {previewThumbnails[folderImageKey].title}
+                                    </p>
                                   </div>
                                 )}
 
@@ -1069,7 +1280,11 @@ const PlaylistsPage = ({ onVideoSelect }) => {
                     const thumbData = playlistThumbnails[playlist.id];
                     const playlistImageKey = `playlist-${playlist.id}`;
                     const useFallback = imageLoadErrors.has(playlistImageKey);
-                    const activeThumbnailUrl = thumbData ? (useFallback ? thumbData.standard : thumbData.max) : null;
+                    // Check for preview thumbnail first (when preview shuffle mode is active)
+                    const previewThumb = previewThumbnails[playlistImageKey];
+                    const activeThumbnailUrl = previewThumb 
+                      ? previewThumb.url 
+                      : (thumbData ? (useFallback ? thumbData.standard : thumbData.max) : null);
 
                     const recentVideo = playlistRecentVideos[playlist.id];
                     const itemCount = playlistItemCounts[playlist.id] || 0;
@@ -1112,134 +1327,213 @@ const PlaylistsPage = ({ onVideoSelect }) => {
                               {playlist.name}
                             </h3>
 
-                            {/* Hover Controls - Moved to Title Bar */}
-                            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity absolute right-1 top-0 bottom-0 pr-1 pl-4 bg-gradient-to-l from-slate-100 via-slate-100 to-transparent">
-                              <button
-                                onClick={async (e) => {
-                                  e.stopPropagation();
-                                  try {
-                                    const items = await getPlaylistItems(playlist.id);
-                                    setPreviewPlaylist(items, playlist.id, null);
-                                    setCurrentPage('videos');
-                                    if (viewMode === 'full') {
-                                      setViewMode('half');
+                            {/* Hover Controls - 3 Segments */}
+                            <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity absolute right-1 top-0 bottom-0 pr-1 pl-4 bg-gradient-to-l from-slate-100 via-slate-100 to-transparent">
+                              {/* Segment 1: Preview (Grid Icon) */}
+                              <div className="flex items-center">
+                                <button
+                                  onClick={async (e) => {
+                                    e.stopPropagation();
+                                    try {
+                                      const items = await getPlaylistItems(playlist.id);
+                                      setPreviewPlaylist(items, playlist.id, null);
+                                      setCurrentPage('videos');
+                                      if (viewMode === 'full') {
+                                        setViewMode('half');
+                                      }
+                                    } catch (error) {
+                                      console.error('Failed to load playlist items for preview:', error);
                                     }
-                                  } catch (error) {
-                                    console.error('Failed to load playlist items for preview:', error);
-                                  }
-                                }}
-                                className="p-1 hover:bg-slate-200 rounded text-[#052F4A] hover:text-sky-600 transition-colors"
-                                title="Preview playlist"
-                              >
-                                <Eye size={18} strokeWidth={2.5} />
-                              </button>
-                              <button
-                                onClick={async (e) => {
-                                  e.stopPropagation();
-                                  try {
-                                    const items = await getPlaylistItems(playlist.id);
-                                    setPlaylistItems(items, playlist.id, null, playlist.name);
-                                    if (items.length > 0 && onVideoSelect) {
-                                      onVideoSelect(items[0].video_url);
+                                  }}
+                                  className="p-1 hover:bg-slate-200 rounded text-[#052F4A] hover:text-sky-600 transition-colors"
+                                  title="Preview playlist"
+                                >
+                                  <Grid3x3 size={18} strokeWidth={2.5} />
+                                </button>
+                              </div>
+
+                              {/* Separator */}
+                              <div className="w-px h-5 bg-slate-300 mx-0.5" />
+
+                              {/* Segment 2: Refresh (conditional) + Shuffle */}
+                              <div className="flex items-center gap-0.5">
+                                {/* Refresh button - only visible after shuffle has been used */}
+                                {previewThumbnails[playlistImageKey]?.isShuffled && (
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      // Reset to default thumbnail
+                                      setPreviewThumbnails(prev => {
+                                        const { [playlistImageKey]: _, ...rest } = prev;
+                                        return rest;
+                                      });
+                                    }}
+                                    className="p-1 hover:bg-slate-200 rounded text-[#052F4A] hover:text-sky-600 transition-colors"
+                                    title="Reset to default cover"
+                                  >
+                                    <RotateCcw size={18} strokeWidth={2.5} />
+                                  </button>
+                                )}
+                                <button
+                                  onClick={async (e) => {
+                                    e.stopPropagation();
+                                    try {
+                                      const items = await getPlaylistItems(playlist.id);
+                                      if (items.length === 0) return;
+                                      
+                                      // Shuffle only changes thumbnail preview
+                                      const randomVideo = items[Math.floor(Math.random() * items.length)];
+                                      const thumbUrl = getThumbnailUrl(randomVideo.video_id, 'max');
+                                      setPreviewThumbnails(prev => ({
+                                        ...prev,
+                                        [playlistImageKey]: { videoId: randomVideo.video_id, url: thumbUrl, videoUrl: randomVideo.video_url, title: randomVideo.title, isShuffled: true }
+                                      }));
+                                    } catch (error) {
+                                      console.error('Failed to shuffle thumbnail:', error);
                                     }
-                                  } catch (error) {
-                                    console.error('Failed to load playlist items:', error);
-                                  }
-                                }}
-                                onContextMenu={async (e) => {
-                                  e.stopPropagation();
-                                  e.preventDefault();
-                                  try {
-                                    const items = await getPlaylistItems(playlist.id);
-                                    setPlaylistItems(items, playlist.id, null, playlist.name);
+                                  }}
+                                  className="p-1 hover:bg-slate-200 rounded text-[#052F4A] hover:text-sky-600 transition-colors"
+                                  title="Preview random thumbnail"
+                                >
+                                  <Shuffle size={18} />
+                                </button>
+                              </div>
 
-                                    if (items.length > 0 && onVideoSelect) {
-                                      // Find video that matches the current cover
-                                      // activeThumbnailUrl is available in scope
-                                      let targetVideo = items[0];
+                              {/* Separator */}
+                              <div className="w-px h-5 bg-slate-300 mx-0.5" />
 
-                                      if (activeThumbnailUrl) {
-                                        const coverMatch = items.find(item => {
-                                          const maxThumb = getThumbnailUrl(item.video_id, 'max');
-                                          const stdThumb = getThumbnailUrl(item.video_id, 'standard');
-                                          return maxThumb === activeThumbnailUrl || stdThumb === activeThumbnailUrl;
-                                        });
-
-                                        if (coverMatch) {
-                                          targetVideo = coverMatch;
-                                          console.log('Playing cover video:', targetVideo.title);
+                              {/* Segment 3: Play + Folder Menu + Info */}
+                              <div className="flex items-center gap-0.5">
+                                <button
+                                  onClick={async (e) => {
+                                    e.stopPropagation();
+                                    try {
+                                      const items = await getPlaylistItems(playlist.id);
+                                      setPlaylistItems(items, playlist.id, null, playlist.name);
+                                      
+                                      if (items.length > 0 && onVideoSelect) {
+                                        // If we have a preview thumbnail, play that video
+                                        const previewThumb = previewThumbnails[playlistImageKey];
+                                        if (previewThumb?.videoUrl) {
+                                          onVideoSelect(previewThumb.videoUrl);
+                                        } else {
+                                          // Otherwise find video matching current cover or play first
+                                          let targetVideo = items[0];
+                                          if (activeThumbnailUrl) {
+                                            const coverMatch = items.find(item => {
+                                              const maxThumb = getThumbnailUrl(item.video_id, 'max');
+                                              const stdThumb = getThumbnailUrl(item.video_id, 'standard');
+                                              return maxThumb === activeThumbnailUrl || stdThumb === activeThumbnailUrl;
+                                            });
+                                            if (coverMatch) targetVideo = coverMatch;
+                                          }
+                                          onVideoSelect(targetVideo.video_url);
                                         }
                                       }
-
-                                      onVideoSelect(targetVideo.video_url);
+                                    } catch (error) {
+                                      console.error('Failed to load playlist items:', error);
                                     }
-                                  } catch (error) {
-                                    console.error('Failed to play cover video:', error);
-                                  }
-                                }}
-                                className="p-1 hover:bg-slate-200 rounded text-[#052F4A] hover:text-sky-600 transition-colors"
-                                title="Play playlist (Right-click for cover video)"
-                              >
-                                <Play size={18} fill="currentColor" />
-                              </button>
-                              <button
-                                onClick={async (e) => {
-                                  e.stopPropagation();
-                                  try {
-                                    const items = await getPlaylistItems(playlist.id);
-                                    // Simple shuffle
-                                    const shuffled = [...items].sort(() => Math.random() - 0.5);
-                                    setPlaylistItems(shuffled, playlist.id, null, playlist.name);
-                                    if (shuffled.length > 0 && onVideoSelect) {
-                                      onVideoSelect(shuffled[0].video_url);
-                                    }
-                                  } catch (error) {
-                                    console.error('Failed to shuffle playlist:', error);
-                                  }
-                                }}
-                                className="p-1 hover:bg-slate-200 rounded text-[#052F4A] hover:text-sky-600 transition-colors"
-                                title="Shuffle playlist"
-                              >
-                                <Shuffle size={18} />
-                              </button>
-                              {/* Folder Menu Toggle */}
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  const isOpen = openFolderMenuIds.has(playlist.id);
-                                  if (isOpen) {
-                                    // Clean up ref so it re-attaches when reopened
-                                    delete pieChartRefs.current[playlist.id];
-                                  } else {
-                                    // Auto-select first folder when opening
-                                    const folders = playlistFolders[playlist.id] || [];
-                                    if (folders.length > 0) {
-                                      setHoveredPieSegment(prev => ({
-                                        ...prev,
-                                        [playlist.id]: folders[0].folder_color
-                                      }));
-                                    }
-                                  }
-                                  setOpenFolderMenuIds(prev => {
-                                    const next = new Set(prev);
-                                    if (next.has(playlist.id)) {
-                                      next.delete(playlist.id);
+                                  }}
+                                  className="p-1 hover:bg-slate-200 rounded text-[#052F4A] hover:text-sky-600 transition-colors"
+                                  title="Play thumbnail video"
+                                >
+                                  <Play size={18} fill="currentColor" />
+                                </button>
+                                {/* Folder Menu Toggle */}
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    const isOpen = openFolderMenuIds.has(playlist.id);
+                                    if (isOpen) {
+                                      // Clean up ref so it re-attaches when reopened
+                                      delete pieChartRefs.current[playlist.id];
                                     } else {
-                                      next.add(playlist.id);
+                                      // Auto-select first folder when opening
+                                      const folders = playlistFolders[playlist.id] || [];
+                                      if (folders.length > 0) {
+                                        setHoveredPieSegment(prev => ({
+                                          ...prev,
+                                          [playlist.id]: folders[0].folder_color
+                                        }));
+                                      }
                                     }
-                                    return next;
-                                  });
-                                }}
-                                className={`p-1 rounded transition-colors ${openFolderMenuIds.has(playlist.id)
-                                  ? 'bg-sky-500 text-white'
-                                  : 'hover:bg-slate-200 text-[#052F4A] hover:text-sky-600'
-                                  }`}
-                                title="Folder colors"
-                              >
-                                <svg className="w-[18px] h-[18px]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A2 2 0 013 12V7a4 4 0 014-4z" />
-                                </svg>
-                              </button>
+                                    setOpenFolderMenuIds(prev => {
+                                      const next = new Set(prev);
+                                      if (next.has(playlist.id)) {
+                                        next.delete(playlist.id);
+                                      } else {
+                                        next.add(playlist.id);
+                                      }
+                                      return next;
+                                    });
+                                  }}
+                                  className={`p-1 rounded transition-colors ${openFolderMenuIds.has(playlist.id)
+                                    ? 'bg-sky-500 text-white'
+                                    : 'hover:bg-slate-200 text-[#052F4A] hover:text-sky-600'
+                                    }`}
+                                  title="Folder colors"
+                                >
+                                  <svg className="w-[18px] h-[18px]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A2 2 0 013 12V7a4 4 0 014-4z" />
+                                  </svg>
+                                </button>
+                                {/* Info Button */}
+                                <button
+                                  onClick={async (e) => {
+                                    e.stopPropagation();
+                                    const isCurrentlyShowing = showThumbnailInfo.has(playlistImageKey);
+                                    
+                                    if (!isCurrentlyShowing && !previewThumbnails[playlistImageKey]?.title) {
+                                      // Toggling ON and no title yet - fetch it
+                                      try {
+                                        const items = await getPlaylistItems(playlist.id);
+                                        if (items.length > 0) {
+                                          // Find the video matching the current thumbnail
+                                          let targetVideo = items[0];
+                                          if (activeThumbnailUrl) {
+                                            const coverMatch = items.find(item => {
+                                              const maxThumb = getThumbnailUrl(item.video_id, 'max');
+                                              const stdThumb = getThumbnailUrl(item.video_id, 'standard');
+                                              return maxThumb === activeThumbnailUrl || stdThumb === activeThumbnailUrl;
+                                            });
+                                            if (coverMatch) targetVideo = coverMatch;
+                                          }
+                                          // Store the title without changing the thumbnail
+                                          setPreviewThumbnails(prev => ({
+                                            ...prev,
+                                            [playlistImageKey]: { 
+                                              ...prev[playlistImageKey],
+                                              title: targetVideo.title,
+                                              videoId: targetVideo.video_id,
+                                              videoUrl: targetVideo.video_url,
+                                              url: prev[playlistImageKey]?.url || activeThumbnailUrl
+                                            }
+                                          }));
+                                        }
+                                      } catch (error) {
+                                        console.error('Failed to fetch video title:', error);
+                                      }
+                                    }
+                                    
+                                    setShowThumbnailInfo(prev => {
+                                      const next = new Set(prev);
+                                      if (next.has(playlistImageKey)) {
+                                        next.delete(playlistImageKey);
+                                      } else {
+                                        next.add(playlistImageKey);
+                                      }
+                                      return next;
+                                    });
+                                  }}
+                                  className={`p-1 rounded transition-colors ${(showThumbnailInfo.has(playlistImageKey) || globalInfoToggle)
+                                    ? 'bg-sky-500 text-white'
+                                    : 'hover:bg-slate-200 text-[#052F4A] hover:text-sky-600'
+                                    }`}
+                                  title={globalInfoToggle ? "Global info ON" : "Show video title"}
+                                >
+                                  <Info size={18} />
+                                </button>
+                              </div>
                             </div>
                           </div>
 
@@ -1292,6 +1586,18 @@ const PlaylistsPage = ({ onVideoSelect }) => {
                                     d="M4 6h16M4 12h16M4 18h16"
                                   />
                                 </svg>
+                              </div>
+                            )}
+
+                            {/* Video Title Overlay - shown when info button is toggled or global toggle is on */}
+                            {(showThumbnailInfo.has(playlistImageKey) || globalInfoToggle) && previewThumbnails[playlistImageKey]?.title && (
+                              <div 
+                                className="absolute bottom-0 left-0 right-0 bg-black/80 px-2 py-1.5 z-20"
+                                style={{ backdropFilter: 'blur(4px)' }}
+                              >
+                                <p className="text-white text-sm font-medium truncate">
+                                  {previewThumbnails[playlistImageKey].title}
+                                </p>
                               </div>
                             )}
 
@@ -1655,7 +1961,11 @@ const PlaylistsPage = ({ onVideoSelect }) => {
                       standard: getThumbnailUrl(folder.first_video.video_id, 'standard')
                     } : null;
                     const useFallback = imageLoadErrors.has(folderImageKey);
-                    const activeThumbnailUrl = thumbUrls ? (useFallback ? thumbUrls.standard : thumbUrls.max) : null;
+                    // Check for preview thumbnail first (when preview shuffle mode is active)
+                    const previewThumb = previewThumbnails[folderImageKey];
+                    const activeThumbnailUrl = previewThumb 
+                      ? previewThumb.url 
+                      : (thumbUrls ? (useFallback ? thumbUrls.standard : thumbUrls.max) : null);
 
                     const folderKey = `${folder.playlist_id}:${folder.folder_color}`;
 
@@ -1704,76 +2014,178 @@ const PlaylistsPage = ({ onVideoSelect }) => {
                               </h3>
                             </div>
 
-                            {/* Hover Controls - Moved to Title Bar */}
-                            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity absolute right-1 top-0 bottom-0 pr-1 pl-4 bg-gradient-to-l from-slate-100 via-slate-100 to-transparent">
-                              <button
-                                onClick={async (e) => {
-                                  e.stopPropagation();
-                                  try {
-                                    const items = await getVideosInFolder(folder.playlist_id, folder.folder_color);
-                                    // Use parentPlaylist name if available (it should be attach to item in the list builder)
-                                    const playlistTitle = item.parentPlaylist ? item.parentPlaylist.name : null;
-                                    setPlaylistItems(items, folder.playlist_id, { playlist_id: folder.playlist_id, folder_color: folder.folder_color }, playlistTitle);
-                                    if (items.length > 0 && onVideoSelect) {
-                                      onVideoSelect(items[0].video_url);
-                                    }
-                                  } catch (error) {
-                                    console.error('Failed to load folder playlist items:', error);
-                                  }
-                                }}
-                                onContextMenu={async (e) => {
-                                  e.stopPropagation();
-                                  e.preventDefault();
-                                  try {
-                                    const items = await getVideosInFolder(folder.playlist_id, folder.folder_color);
-                                    const playlistTitle = item.parentPlaylist ? item.parentPlaylist.name : null;
-                                    setPlaylistItems(items, folder.playlist_id, { playlist_id: folder.playlist_id, folder_color: folder.folder_color }, playlistTitle);
-
-                                    if (items.length > 0 && onVideoSelect) {
-                                      let targetVideo = items[0];
-
-                                      if (activeThumbnailUrl) {
-                                        const coverMatch = items.find(v => {
-                                          const maxThumb = getThumbnailUrl(v.video_id, 'max');
-                                          const stdThumb = getThumbnailUrl(v.video_id, 'standard');
-                                          return maxThumb === activeThumbnailUrl || stdThumb === activeThumbnailUrl;
-                                        });
-                                        if (coverMatch) targetVideo = coverMatch;
+                            {/* Hover Controls - 3 Segments */}
+                            <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity absolute right-1 top-0 bottom-0 pr-1 pl-4 bg-gradient-to-l from-slate-100 via-slate-100 to-transparent">
+                              {/* Segment 1: Preview (Grid Icon) */}
+                              <div className="flex items-center">
+                                <button
+                                  onClick={async (e) => {
+                                    e.stopPropagation();
+                                    try {
+                                      const items = await getVideosInFolder(folder.playlist_id, folder.folder_color);
+                                      const playlistTitle = item.parentPlaylist ? item.parentPlaylist.name : null;
+                                      setPreviewPlaylist(items, folder.playlist_id, { playlist_id: folder.playlist_id, folder_color: folder.folder_color });
+                                      setCurrentPage('videos');
+                                      if (viewMode === 'full') {
+                                        setViewMode('half');
                                       }
-                                      onVideoSelect(targetVideo.video_url);
+                                    } catch (error) {
+                                      console.error('Failed to load folder items for preview:', error);
                                     }
-                                  } catch (error) {
-                                    console.error('Failed to play folder cover:', error);
-                                  }
-                                }}
-                                className="p-1 hover:bg-slate-200 rounded text-[#052F4A] hover:text-sky-600 transition-colors"
-                                title="Play folder (Right-click for cover video)"
-                              >
-                                <Play size={18} fill="currentColor" />
-                              </button>
-                              <button
-                                onClick={async (e) => {
-                                  e.stopPropagation();
-                                  try {
-                                    const items = await getVideosInFolder(folder.playlist_id, folder.folder_color);
-                                    const shuffled = [...items].sort(() => Math.random() - 0.5);
+                                  }}
+                                  className="p-1 hover:bg-slate-200 rounded text-[#052F4A] hover:text-sky-600 transition-colors"
+                                  title="Preview folder"
+                                >
+                                  <Grid3x3 size={18} strokeWidth={2.5} />
+                                </button>
+                              </div>
 
-                                    // Use parentPlaylist name if available
-                                    const playlistTitle = item.parentPlaylist ? item.parentPlaylist.name : null;
-                                    setPlaylistItems(shuffled, folder.playlist_id, { playlist_id: folder.playlist_id, folder_color: folder.folder_color }, playlistTitle);
+                              {/* Separator */}
+                              <div className="w-px h-5 bg-slate-300 mx-0.5" />
 
-                                    if (shuffled.length > 0 && onVideoSelect) {
-                                      onVideoSelect(shuffled[0].video_url);
+                              {/* Segment 2: Refresh (conditional) + Shuffle */}
+                              <div className="flex items-center gap-0.5">
+                                {/* Refresh button - only visible after shuffle has been used */}
+                                {previewThumbnails[folderImageKey]?.isShuffled && (
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      // Reset to default thumbnail
+                                      setPreviewThumbnails(prev => {
+                                        const { [folderImageKey]: _, ...rest } = prev;
+                                        return rest;
+                                      });
+                                    }}
+                                    className="p-1 hover:bg-slate-200 rounded text-[#052F4A] hover:text-sky-600 transition-colors"
+                                    title="Reset to default cover"
+                                  >
+                                    <RotateCcw size={18} strokeWidth={2.5} />
+                                  </button>
+                                )}
+                                <button
+                                  onClick={async (e) => {
+                                    e.stopPropagation();
+                                    try {
+                                      const items = await getVideosInFolder(folder.playlist_id, folder.folder_color);
+                                      if (items.length === 0) return;
+                                      
+                                      // Shuffle only changes thumbnail preview
+                                      const randomVideo = items[Math.floor(Math.random() * items.length)];
+                                      const thumbUrl = getThumbnailUrl(randomVideo.video_id, 'max');
+                                      setPreviewThumbnails(prev => ({
+                                        ...prev,
+                                        [folderImageKey]: { videoId: randomVideo.video_id, url: thumbUrl, videoUrl: randomVideo.video_url, title: randomVideo.title, isShuffled: true }
+                                      }));
+                                    } catch (error) {
+                                      console.error('Failed to shuffle thumbnail:', error);
                                     }
-                                  } catch (error) {
-                                    console.error('Failed to shuffle folder:', error);
-                                  }
-                                }}
-                                className="p-1 hover:bg-slate-200 rounded text-[#052F4A] hover:text-sky-600 transition-colors"
-                                title="Shuffle folder"
-                              >
-                                <Shuffle size={18} />
-                              </button>
+                                  }}
+                                  className="p-1 hover:bg-slate-200 rounded text-[#052F4A] hover:text-sky-600 transition-colors"
+                                  title="Preview random thumbnail"
+                                >
+                                  <Shuffle size={18} />
+                                </button>
+                              </div>
+
+                              {/* Separator */}
+                              <div className="w-px h-5 bg-slate-300 mx-0.5" />
+
+                              {/* Segment 3: Play + Info */}
+                              <div className="flex items-center gap-0.5">
+                                <button
+                                  onClick={async (e) => {
+                                    e.stopPropagation();
+                                    try {
+                                      const items = await getVideosInFolder(folder.playlist_id, folder.folder_color);
+                                      // Use parentPlaylist name if available
+                                      const playlistTitle = item.parentPlaylist ? item.parentPlaylist.name : null;
+                                      setPlaylistItems(items, folder.playlist_id, { playlist_id: folder.playlist_id, folder_color: folder.folder_color }, playlistTitle);
+                                      
+                                      if (items.length > 0 && onVideoSelect) {
+                                        // If we have a preview thumbnail, play that video
+                                        const previewThumb = previewThumbnails[folderImageKey];
+                                        if (previewThumb?.videoUrl) {
+                                          onVideoSelect(previewThumb.videoUrl);
+                                        } else {
+                                          // Otherwise find video matching current cover or play first
+                                          let targetVideo = items[0];
+                                          if (activeThumbnailUrl) {
+                                            const coverMatch = items.find(v => {
+                                              const maxThumb = getThumbnailUrl(v.video_id, 'max');
+                                              const stdThumb = getThumbnailUrl(v.video_id, 'standard');
+                                              return maxThumb === activeThumbnailUrl || stdThumb === activeThumbnailUrl;
+                                            });
+                                            if (coverMatch) targetVideo = coverMatch;
+                                          }
+                                          onVideoSelect(targetVideo.video_url);
+                                        }
+                                      }
+                                    } catch (error) {
+                                      console.error('Failed to load folder playlist items:', error);
+                                    }
+                                  }}
+                                  className="p-1 hover:bg-slate-200 rounded text-[#052F4A] hover:text-sky-600 transition-colors"
+                                  title="Play thumbnail video"
+                                >
+                                  <Play size={18} fill="currentColor" />
+                                </button>
+                                {/* Info Button */}
+                                <button
+                                  onClick={async (e) => {
+                                    e.stopPropagation();
+                                    const isCurrentlyShowing = showThumbnailInfo.has(folderImageKey);
+                                    
+                                    if (!isCurrentlyShowing && !previewThumbnails[folderImageKey]?.title) {
+                                      // Toggling ON and no title yet - fetch it
+                                      try {
+                                        const items = await getVideosInFolder(folder.playlist_id, folder.folder_color);
+                                        if (items.length > 0) {
+                                          // Find the video matching the current thumbnail
+                                          let targetVideo = items[0];
+                                          if (activeThumbnailUrl) {
+                                            const coverMatch = items.find(v => {
+                                              const maxThumb = getThumbnailUrl(v.video_id, 'max');
+                                              const stdThumb = getThumbnailUrl(v.video_id, 'standard');
+                                              return maxThumb === activeThumbnailUrl || stdThumb === activeThumbnailUrl;
+                                            });
+                                            if (coverMatch) targetVideo = coverMatch;
+                                          }
+                                          // Store the title without changing the thumbnail
+                                          setPreviewThumbnails(prev => ({
+                                            ...prev,
+                                            [folderImageKey]: { 
+                                              ...prev[folderImageKey],
+                                              title: targetVideo.title,
+                                              videoId: targetVideo.video_id,
+                                              videoUrl: targetVideo.video_url,
+                                              url: prev[folderImageKey]?.url || activeThumbnailUrl
+                                            }
+                                          }));
+                                        }
+                                      } catch (error) {
+                                        console.error('Failed to fetch video title:', error);
+                                      }
+                                    }
+                                    
+                                    setShowThumbnailInfo(prev => {
+                                      const next = new Set(prev);
+                                      if (next.has(folderImageKey)) {
+                                        next.delete(folderImageKey);
+                                      } else {
+                                        next.add(folderImageKey);
+                                      }
+                                      return next;
+                                    });
+                                  }}
+                                  className={`p-1 rounded transition-colors ${(showThumbnailInfo.has(folderImageKey) || globalInfoToggle)
+                                    ? 'bg-sky-500 text-white'
+                                    : 'hover:bg-slate-200 text-[#052F4A] hover:text-sky-600'
+                                    }`}
+                                  title={globalInfoToggle ? "Global info ON" : "Show video title"}
+                                >
+                                  <Info size={18} />
+                                </button>
+                              </div>
                             </div>
 
                             {/* 3-dot menu - removed from bottom right */}
@@ -1838,9 +2250,22 @@ const PlaylistsPage = ({ onVideoSelect }) => {
                                 </svg>
                               </div>
                             )}
+
+                            {/* Video Title Overlay - shown when info button is toggled or global toggle is on */}
+                            {(showThumbnailInfo.has(folderImageKey) || globalInfoToggle) && previewThumbnails[folderImageKey]?.title && (
+                              <div 
+                                className="absolute bottom-0 left-0 right-0 bg-black/80 px-2 py-1.5 z-20"
+                                style={{ backdropFilter: 'blur(4px)' }}
+                              >
+                                <p className="text-white text-sm font-medium truncate">
+                                  {previewThumbnails[folderImageKey].title}
+                                </p>
+                              </div>
+                            )}
+
                             {/* Play overlay on hover - REMOVED */}
                             {/* 3-dot menu - moved to hover overlay (Top Right) */}
-                            <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-20">
+                            <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-30">
                               <CardMenu
                                 options={[
                                   {
