@@ -299,8 +299,12 @@ Users see video cards built using the Card component system with video-specific 
   - **Card Click**: Plays video in main player
 
   - **Pin Button** (top-right):
-    - **Short Click**: Pins/unpins video (session-only, normal pin). Icon outline/filled blue.
-    - **Long Click (>600ms)**: Sets video as priority pin. Icon outline/filled amber.
+    - **Click unpinned**: Adds normal pin (filled blue icon).
+    - **Click normal pin**: Adds follower modifier (double-pin icon - 2 pins stacked diagonally).
+    - **Click follower pin**: Removes follower modifier (returns to single pin).
+    - **Hold (>600ms)**: Sets as priority pin (filled amber icon).
+    - **Double-click any pinned**: Unpins completely (returns to outline icon).
+    - **Follower Pin**: When video completes (≥85%), pin auto-transfers to next video in playlist.
 
   - **Star Icon** (top-right): 
     - **Quick Click**: Assigns/unassigns video to quick assign folder (uses quick assign color preference)
@@ -342,11 +346,15 @@ Users see video cards built using the Card component system with video-specific 
   - `bulkTagSelections`: Map of video ID to Set of folder colors
 - `src/store/pinStore.js`:
   - `pinnedVideos`: Array of pinned videos (persisted)
-  - `priorityPinIds`: Array of priority pin IDs
-  - `isPinned(videoId)`: Checks if video is pinned
+  - `priorityPinIds`: Array of priority pin IDs (persisted)
+  - `followerPinIds`: Array of follower pin IDs (persisted)
+  - `isPinned(videoId)`: Checks if video is normal pin
   - `isPriorityPin(videoId)`: Checks if video is priority pin
-  - `togglePin(video)`: Toggles pin status (normal pin)
-  - `setFirstPin(video)`: Sets video as priority pin
+  - `isFollowerPin(videoId)`: Checks if video has follower modifier
+  - `togglePin(video)`: Cycles: unpinned → normal → follower → normal
+  - `togglePriorityPin(video)`: Sets video as priority pin (idempotent)
+  - `removePin(videoId)`: Completely unpins video
+  - `handleFollowerPinCompletion(videoId, playlistItems)`: Transfers follower pin to next video
 - `src/components/VideoCard.jsx` (local state):
   - `isHovered`: Boolean for bulk tag hover state
   - `isStarHovered`: Boolean for star hover menu state
@@ -421,20 +429,28 @@ Users see video cards built using the Card component system with video-specific 
    - If video has folder assignments → Star shows primary folder color (filled)
    - Color updates when `quickAssignFolder` changes in `folderStore`
 
-4. **Pin Click Flow (Normal Pin):**
-   - User clicks pin icon → `handlePinClick()` (line 151)
-   - Calls `togglePin(video)` → Updates `pinStore.pinnedVideos`
-   - Pin icon updates → Amber if pinned, gray if not
-   - Persisted → Normal pins persist until manually removed or video reaches ≥85% completion (auto-unpin)
+4. **Pin Click Flow (cycles through states):**
+   - User clicks pin icon → `handlePinMouseUp()` checks for double-click
+   - If double-click (within 300ms) on pinned → `removePin(video.id)` → Completely unpins
+   - If single click:
+     - Unpinned → `togglePin(video)` → Adds normal pin (blue icon)
+     - Normal pin → `togglePin(video)` → Adds follower modifier (double-pin icon)
+     - Follower pin → `togglePin(video)` → Removes follower (back to single pin)
+   - Pin icon updates based on state (blue=normal, double-pin=follower)
 
-5. **Priority Pin Click Flow:**
-   - User clicks priority pin button in hover overlay → `handlePriorityPinClick()` (line 170)
-   - Calls `setFirstPin(video)` → Updates `pinStore.priorityPinId`
-   - If another priority pin exists → It's replaced (only one priority pin at a time)
-   - Priority pin button icon updates → Filled if video is priority pin, outline if not
-   - Priority pin appears first in pin track with larger size and amber border
+5. **Priority Pin Flow (Hold >600ms):**
+   - User holds pin icon → `pinLongPressTimerRef` timeout triggers after 600ms
+   - Calls `togglePriorityPin(video)` → Adds to `priorityPinIds` (idempotent)
+   - Pin icon updates → Amber filled icon
+   - Priority pins can also have follower modifier (amber double-pin)
 
-6. **Menu Option Flow:**
+6. **Follower Pin Transfer Flow (on video completion):**
+   - Video reaches ≥85% → `handleFollowerPinCompletion(videoId, playlistItems)` called
+   - If follower pin: Finds next video in playlist → Transfers pin with all modifiers
+   - If not follower or last video: Pin is removed normally
+   - Console logs transfer: `[FollowerPin] Transferred pin from "Video A" to "Video B"`
+
+7. **Menu Option Flow:**
    - User clicks 3-dot menu → `CardMenu` opens
    - User selects option → `onMenuOptionClick(option, video)` (VideosPage.jsx line 182)
    - Handles actions:
@@ -443,7 +459,7 @@ Users see video cards built using the Card component system with video-specific 
      - **Quick Assign**: Opens submenu, user selects color, sets as quick assign preference
    - Menu closes after selection
 
-7. **Bulk Tag Flow:**
+8. **Bulk Tag Flow:**
    - User enters bulk tag mode → `bulkTagMode: true`
    - User hovers video → `setIsHovered(true)` (line 247)
    - `BulkTagColorGrid` appears → Shows 4x4 grid (16 colors) perfectly covering thumbnail
@@ -458,8 +474,9 @@ Users see video cards built using the Card component system with video-specific 
 
 **Source of Truth:**
 - Database `video_folder_assignments` table - Source of Truth for folder assignments
-- `pinStore.pinnedVideos` - Session-only pin state (not persisted, priority pin always first)
-- `pinStore.priorityPinId` - Priority pin ID (session-only, not persisted)
+- `pinStore.pinnedVideos` - Persisted pin state (localStorage)
+- `pinStore.priorityPinIds` - Priority pin IDs (persisted)
+- `pinStore.followerPinIds` - Follower pin IDs (persisted)
 - `folderStore.quickAssignFolder` - Quick assign preference (persisted to localStorage)
 - Parent component's state - Video data and folder assignments
 
@@ -467,13 +484,14 @@ Users see video cards built using the Card component system with video-specific 
 - When `videoFolders` changes → Star icon updates → Filled if assigned, outline if not
 - When `quickAssignFolder` changes → Star outline color updates (when video has no folders)
 - When `isStarHovered` changes → Star color picker menu appears/disappears
-- When `isPinned` changes → Pin icon updates → Amber if pinned, gray if not
-- When `isPriorityPin` changes → Priority pin button icon updates → Filled if priority, outline if not
+- When `isPinned` changes → Pin icon updates → Blue filled if normal pin
+- When `isPriorityPin` changes → Pin icon updates → Amber filled if priority
+- When `isFollower` changes → Pin icon updates → Double-pin icon if follower modifier active
 - When `isCurrentlyPlaying` changes → "Now Playing" badge appears/disappears
 - When `bulkTagMode` changes → Hover behavior changes → Color grid appears on hover, star menu hidden
 - When folder assigned → Parent updates `videoFolderAssignments` → Star icon updates, menu reflects changes
-- When video pinned → `pinStore` updates → Pin icon updates
-- When priority pin set → `pinStore.priorityPinId` updates → Priority pin button icon updates
+- When video pinned → `pinStore` updates → Pin icon updates (blue=normal, amber=priority, double-pin=follower)
+- When follower video completes → Pin transfers to next video → Both old and new video icons update
 
 ---
 

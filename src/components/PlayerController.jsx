@@ -78,6 +78,7 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
   const fileInputRef = useRef(null);
   const playButtonRightClickRef = useRef(0); // Track right clicks for double-click detection
   const pinLongPressTimerRef = useRef(null); // Track long press for pin button
+  const lastPinClickTimeRef = useRef(0); // Track clicks for double-click detection on pin button
   const hoverTimerRef = useRef(null);
   const playlistTitleRef = useRef(null); // Ref for playlist title element
 
@@ -110,7 +111,7 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
   } = usePlaylistStore();
 
   const { setCurrentPage } = useNavigationStore();
-  const { pinnedVideos, togglePriorityPin, removePin, isPriorityPin, isPinned, togglePin } = usePinStore();
+  const { pinnedVideos, togglePriorityPin, removePin, isPriorityPin, isPinned, isFollowerPin, togglePin } = usePinStore();
   const { viewMode, setViewMode, inspectMode, toggleMenuQuarterMode, menuQuarterMode, showDebugBounds, toggleDebugBounds, toggleInspectMode, showRuler, toggleRuler, showDevToolbar, toggleDevToolbar } = useLayoutStore();
   const { showColoredFolders } = useFolderStore();
   const { tabs, activeTabId, setActiveTab } = useTabStore();
@@ -1222,30 +1223,27 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
     if (!targetVideo) return;
 
     if (pinLongPressTimerRef.current) {
-      // Timer still running -> Short Click -> Toggle Normal Pin
+      // Timer still running -> Short Click
       clearTimeout(pinLongPressTimerRef.current);
       pinLongPressTimerRef.current = null;
 
-      // We only toggle normal pin here. If it's already a priority pin, maybe we want to unpin it or convert to normal?
-      // Logic: if pinned (any type), unpin. If not pinned, pin normal.
-      // But user said: "single click makes it normal pin".
-
-      // Let's rely on standard toggle behavior, but ensure it sets to normal pin if adding.
-      // togglePin handles adding as normal pin.
-
-      // Special case: If it is currently a Priority Pin, should short click make it a normal pin?
-      // User request: "single click makes it normal pin". 
-      // If it's priority, togglePin(targetVideo) might remove "pin" status or add duplicate?
-      // usePinStore.togglePin adds if not present, removes if present.
-      // If it is priority pin, it IS pinned. So togglePin would remove it. 
-      // This seems correct: click -> toggles pin status.
-
-      // Wait, "single click makes it normal pin" implies if unpinned -> normal pin.
-      // If already pinned (normal) -> togglePin removes it.
-      // If already pinned (priority) -> togglePin removes it?
-
-      // Let's stick to togglePin for short click.
-      togglePin(targetVideo);
+      // Check for double-click (within 300ms)
+      const now = Date.now();
+      const timeSinceLastClick = now - lastPinClickTimeRef.current;
+      lastPinClickTimeRef.current = now;
+      
+      const isCurrentlyPinned = isPinned(targetVideo.id) || isPriorityPin(targetVideo.id);
+      
+      if (timeSinceLastClick < 300 && isCurrentlyPinned) {
+        // Double-click on pinned video → Unpin completely
+        removePin(targetVideo.id);
+      } else {
+        // Single click → Toggle pin/follower status
+        // - If unpinned → Normal pin
+        // - If pinned (not follower) → Add follower modifier
+        // - If follower → Remove follower modifier (keep pin)
+        togglePin(targetVideo);
+      }
     }
   };
 
@@ -2122,12 +2120,13 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
                         }}
                         className="absolute left-1/2 top-1/2 flex items-center justify-center group/tool"
                         style={{ transform: `translate(calc(-50% + ${pinFirstButtonX}px), -50%)` }}
-                        title={getInspectTitle('Pin Video (Click: Normal Pin, Hold: Priority Pin, Right-click: Pins Page)')}
+                        title={getInspectTitle('Pin Video (Click: Pin/Follower, Hold: Priority, Double-click: Unpin, Right-click: Pins Page)')}
                       >
                         {(() => {
                           const targetVideo = activeVideoItem || currentVideo;
                           const isPriority = targetVideo && isPriorityPin(targetVideo.id);
                           const isNormalPinned = targetVideo && isPinned(targetVideo.id) && !isPriority;
+                          const isFollower = targetVideo && isFollowerPin(targetVideo.id);
 
                           // Visual Logic
                           // Priority: Amber border (#fbbf24), Amber fill
@@ -2151,9 +2150,27 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
                             strokeWidth = 1.5; // Stroke needed for needle visibility
                           }
 
+                          const iconSize = Math.round(bottomIconSize * 0.5);
+
                           return (
                             <div className="rounded-full flex items-center justify-center border-2 shadow-sm bg-white" style={{ width: `${bottomIconSize}px`, height: `${bottomIconSize}px`, borderColor }}>
-                              <Pin size={Math.round(bottomIconSize * 0.5)} color={iconColor} fill={iconFill} strokeWidth={strokeWidth} />
+                              {isFollower ? (
+                                /* Follower Pin Icon - 2 pins stacked diagonally */
+                                <svg width={iconSize} height={iconSize} viewBox="0 0 24 24" fill="none" stroke={iconColor} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round">
+                                  {/* Back pin (offset up-left) */}
+                                  <g transform="translate(-3, -3) scale(0.75)">
+                                    <path d="M12 17v5" fill={iconFill} />
+                                    <path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6a3 3 0 0 0-6 0v4.76Z" fill={iconFill} />
+                                  </g>
+                                  {/* Front pin (offset down-right) */}
+                                  <g transform="translate(3, 3) scale(0.75)">
+                                    <path d="M12 17v5" fill={iconFill} />
+                                    <path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6a3 3 0 0 0-6 0v4.76Z" fill={iconFill} />
+                                  </g>
+                                </svg>
+                              ) : (
+                                <Pin size={iconSize} color={iconColor} fill={iconFill} strokeWidth={strokeWidth} />
+                              )}
                             </div>
                           );
                         })()}

@@ -216,51 +216,74 @@ The application uses **Zustand** (v5.0.9) for state management. Zustand is a lig
 
 ### 7. pinStore (`src/store/pinStore.js`)
 
-**Purpose**: Manages video pinning with persistent storage. All pins (normal and priority) persist until manually removed.
+**Purpose**: Manages video pinning with persistent storage. Supports normal pins, priority pins, and follower pins (a modifier that enables auto-transfer to next video).
 
 **State:**
 - `pinnedVideos`: Array - Array of pinned video objects. Each object includes `pinnedAt` timestamp.
-- `priorityPinIds`: Array - Array of video IDs that are priority pins (mutually exclusive with normal pins).
+- `priorityPinIds`: Array - Array of video IDs that are priority pins.
+- `followerPinIds`: Array - Array of video IDs that have the follower modifier (can be combined with normal or priority).
 
 **Actions:**
-- `togglePin(video)` - Toggles normal pin status. If becoming pinned, sets `pinnedAt` timestamp. Enforces exclusivity (unpins from priority if needed).
-- `setFirstPin(video)` - Sets video as priority pin. Enforces exclusivity (unpins from normal if needed).
-- `togglePriorityPin(video)` - Toggles priority pin status.
+- `togglePin(video)` - Cycles pin/follower status:
+  - If unpinned → Add as normal pin
+  - If pinned (not follower) → Add follower modifier
+  - If follower → Remove follower modifier (keep pin)
+- `togglePriorityPin(video)` - Sets video as priority pin (idempotent - does nothing if already priority).
 - `isPinned(videoId)` - Checks if video is a normal pin (and NOT a priority pin).
 - `isPriorityPin(videoId)` - Checks if video is a priority pin.
-- `removePin(videoId)` - Removes pin by video ID (from both lists).
+- `isFollowerPin(videoId)` - Checks if video has the follower modifier.
+- `toggleFollowerPin(videoId)` - Toggles follower status for an already pinned video.
+- `setFollowerPin(videoId)` - Sets a video as a follower pin.
+- `removeFollowerStatus(videoId)` - Removes follower status from a video.
+- `removePin(videoId)` - Removes pin by video ID (from all lists).
 - `removePinByVideoId(videoId)` - Removes pin by YouTube video_id (used for auto-unpinning on completion).
-- `clearAllPins()` - Clears all pins and priority state.
-- `checkExpiration()` - No-op function kept for backward compatibility. Pins no longer expire.
-- `getPinInfo(videoId)` - Returns object with `{ isPinned, isPriority, pinnedAt }`.
+- `handleFollowerPinCompletion(videoId, playlistItems)` - Handles follower pin transfer when video completes.
+- `clearAllPins()` - Clears all pins, priority, and follower state.
+- `getPinInfo(videoId)` - Returns object with `{ isPinned, isPriority, isFollower, pinnedAt }`.
 
 **Persistence**: 
 - Persisted to localStorage: `pin-storage`
-- Persists both `pinnedVideos` and `priorityPinIds`.
+- Persists `pinnedVideos`, `priorityPinIds`, and `followerPinIds`.
 
-**Pin Behavior:**
+**Pin Types:**
 - **Normal Pins**: 
   - Persist until manually removed (no expiration).
   - Displayed in the regular pins grid on the Pins Page.
-  - **Auto-unpin on completion**: Automatically removed when video reaches ≥85% progress or ends.
+  - Icon: Single blue pin (filled).
+  - **Auto-unpin on completion**: Removed when video reaches ≥85% progress.
 - **Priority Pins**: 
   - Persist until manually removed (no expiration).
-  - Are mutually exclusive with normal pins (a video cannot be both).
-  - Typically displayed in a separate "Priority" section (e.g., carousel).
-  - **Auto-unpin on completion**: Automatically removed when video reaches ≥85% progress or ends.
-  - The store supports multiple priority pins via `priorityPinIds` array, though UI may treat the first one specially.
+  - Typically displayed prominently (e.g., top-right of playlist menu).
+  - Icon: Single amber pin (filled).
+  - **Auto-unpin on completion**: Removed when video reaches ≥85% progress.
+- **Follower Pins** (modifier):
+  - Can be applied to either normal or priority pins.
+  - Icon: Two pins stacked diagonally (blue for normal, amber for priority).
+  - **Auto-transfer on completion**: When video reaches ≥85%, pin transfers to next chronological video in playlist instead of being removed.
+  - Ideal for watching series - pin episode 1, and it automatically moves to episode 2 when you finish.
 
-**Auto-Unpin on Completion:**
-- When video progress is saved (every 5 seconds during playback, on pause, or on end), the system checks if progress ≥85%.
-- If completion threshold is met, `removePinByVideoId()` is called to automatically remove the pin (both normal and priority).
-- This ensures completed videos are automatically cleaned from the pins list.
+**Follower Pin Transfer Logic:**
+- When video progress reaches ≥85%, `handleFollowerPinCompletion()` is called.
+- If video is a follower pin:
+  1. Finds the next video in the playlist (by position/index).
+  2. Transfers the pin to the next video, preserving priority and follower status.
+  3. Removes pin from completed video.
+  4. Logs transfer to console: `[FollowerPin] Transferred pin from "Video A" to "Video B"`.
+- If video is NOT a follower pin or is the last video, just unpins normally.
+
+**User Interactions:**
+- **Click unpinned** → Normal pin
+- **Click normal pin** → Normal + Follower
+- **Click follower pin** → Normal (removes follower)
+- **Hold (>600ms)** → Priority pin
+- **Double-click any pinned** → Unpin completely
 
 **Dependencies:**
-- When video pinned → VideoCard pin icon updates → Amber if pinned, gray if not
-- When `pinnedVideos` changes → PinsPage re-renders → Shows normal pins in grid
-- When `priorityPinIds` changes → PinsPage re-renders → Shows priority pins in carousel
-- When video progress updates → Auto-unpin check runs → Completed videos are unpinned
-- When video completed → Pin automatically removed → PinsPage and HistoryPage update
+- When video pinned → VideoCard pin icon updates (blue=normal, amber=priority, double-pin=follower)
+- When `pinnedVideos` changes → PinsPage re-renders → Shows pins in grid
+- When `priorityPinIds` changes → Priority pin styling updates
+- When `followerPinIds` changes → Follower icon (double-pin) appears
+- When follower video completes → Pin transfers to next video → Console logs transfer
 
 ---
 
@@ -436,17 +459,19 @@ VideoCard (folder indicators)
 - `activePresetId` - Active preset
 - `quickAssignFolder` - Quick assign folder preference
 - `showColoredFolders` - Folder display toggle
+- `pin-storage` - Pin state (pinnedVideos, priorityPinIds, followerPinIds)
 - `last_video_index_{playlistId}` - Last video index per playlist
 - `shuffled_order_{playlistId}` - Shuffled order per playlist
 - `last_video_index_{playlistId}_{folderColor}` - Last video index per folder
 - `playback_time_{videoId}` - Quick access playback time (non-authoritative)
 
 ### Session-Only State
-- `pinStore.pinnedVideos` - Cleared on app restart
 - `layoutStore` - All state resets on app restart
 - `navigationStore` - Resets to 'playlists' on app start
 - `folderStore.bulkTagMode` - Resets on mode exit
 - `folderStore.bulkTagSelections` - Cleared on mode exit
+
+Note: `pinStore` (pinnedVideos, priorityPinIds, followerPinIds) is now persisted to localStorage (`pin-storage`) and survives app restarts.
 
 ---
 

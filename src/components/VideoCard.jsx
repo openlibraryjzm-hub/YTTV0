@@ -69,17 +69,23 @@ const VideoCard = ({
 
 
   // FIX: Split selectors to prevent "Maximum update depth exceeded" error
-  // FIX: Split selectors to prevent "Maximum update depth exceeded" error
   const isPinnedVideo = usePinStore(state =>
     state.pinnedVideos.some(v => v.id === video.id) && !state.priorityPinIds.includes(video.id)
   );
 
   const isPriority = usePinStore(state => state.priorityPinIds.includes(video.id));
-  const { togglePin, togglePriorityPin } = usePinStore();
+  const isFollower = usePinStore(state => state.followerPinIds.includes(video.id));
+  const { togglePin, togglePriorityPin, removePin } = usePinStore();
   const pinLongPressTimerRef = useRef(null); // Timer for long press logic
+  const lastClickTimeRef = useRef(0); // For double-click detection
   const [activePin, setActivePin] = useState(null); // For visual feedback
 
-  // Handle pin interactions (dual action: click=normal, long=priority)
+  // Handle pin interactions:
+  // - Click unpinned → Normal pin
+  // - Click pinned (normal/priority, not follower) → Add follower modifier
+  // - Click follower pin → Remove follower modifier (keep pin)
+  // - Hold (>600ms) → Priority pin
+  // - Double-click → Unpin completely
   const handlePinMouseDown = (e) => {
     e.stopPropagation();
     setActivePin('pressing');
@@ -96,9 +102,21 @@ const VideoCard = ({
     if (pinLongPressTimerRef.current) {
       clearTimeout(pinLongPressTimerRef.current);
       pinLongPressTimerRef.current = null;
-      // Short click -> Normal pin
-      togglePin(video);
-      if (onPinClick) onPinClick(video);
+      
+      // Check for double-click (within 300ms)
+      const now = Date.now();
+      const timeSinceLastClick = now - lastClickTimeRef.current;
+      lastClickTimeRef.current = now;
+      
+      if (timeSinceLastClick < 300 && (isPinnedVideo || isPriority)) {
+        // Double-click on pinned video → Unpin completely
+        removePin(video.id);
+        if (onPinClick) onPinClick(video);
+      } else {
+        // Single click → Toggle pin/follower status
+        togglePin(video);
+        if (onPinClick) onPinClick(video);
+      }
     }
   };
 
@@ -251,13 +269,45 @@ const VideoCard = ({
             style={{
               borderWidth: (isPriority || isPinnedVideo) ? '1px' : '0px',
             }}
-            title={getInspectTitle(isPriority ? 'Remove priority pin' : isPinnedVideo ? 'Unpin video' : 'Pin (Click) / Priority (Hold)') || (isPriority ? 'Remove priority pin' : isPinnedVideo ? 'Unpin video' : 'Pin (Click) / Priority (Hold)')}
+            title={getInspectTitle(
+              isFollower 
+                ? (isPriority ? 'Priority Follower Pin (Double-click to unpin)' : 'Follower Pin (Double-click to unpin)')
+                : isPriority 
+                  ? 'Priority Pin (Click for follower, Double-click to unpin)' 
+                  : isPinnedVideo 
+                    ? 'Pinned (Click for follower, Double-click to unpin)' 
+                    : 'Pin (Click) / Priority (Hold)'
+            ) || (
+              isFollower 
+                ? (isPriority ? 'Priority Follower Pin (Double-click to unpin)' : 'Follower Pin (Double-click to unpin)')
+                : isPriority 
+                  ? 'Priority Pin (Click for follower, Double-click to unpin)' 
+                  : isPinnedVideo 
+                    ? 'Pinned (Click for follower, Double-click to unpin)' 
+                    : 'Pin (Click) / Priority (Hold)'
+            )}
           >
-            <Pin
-              size={20}
-              fill={isPriority || isPinnedVideo ? "currentColor" : "none"}
-              strokeWidth={2}
-            />
+            {isFollower ? (
+              /* Follower Pin Icon - 2 pins stacked diagonally */
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                {/* Back pin (offset up-left) */}
+                <g transform="translate(-3, -3) scale(0.75)">
+                  <path d="M12 17v5" fill={isPriority || isPinnedVideo ? "currentColor" : "none"} />
+                  <path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6a3 3 0 0 0-6 0v4.76Z" fill={isPriority || isPinnedVideo ? "currentColor" : "none"} />
+                </g>
+                {/* Front pin (offset down-right) */}
+                <g transform="translate(3, 3) scale(0.75)">
+                  <path d="M12 17v5" fill={isPriority || isPinnedVideo ? "currentColor" : "none"} />
+                  <path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6a3 3 0 0 0-6 0v4.76Z" fill={isPriority || isPinnedVideo ? "currentColor" : "none"} />
+                </g>
+              </svg>
+            ) : (
+              <Pin
+                size={20}
+                fill={isPriority || isPinnedVideo ? "currentColor" : "none"}
+                strokeWidth={2}
+              />
+            )}
           </button>
 
           {/* Quick Actions Badge (Star) */}

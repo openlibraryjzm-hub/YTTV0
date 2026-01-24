@@ -120,87 +120,112 @@ The Top Video Menu is the right rectangle in the PlayerController, displaying vi
 
 **1: User-Perspective Description**
 
-Users see a centralized display of pinned videos, split between a dedicated Priority Pin and a flexible list of Normal Pins:
+Users see a centralized display of pinned videos with support for three pin types: Normal, Priority, and Follower (a modifier).
 
-- **Normal Pins Track**: Removed from the Video Menu (previously positioned underneath). Normal pins are now displayed exclusively on the Pins Page.
-- **Priority Pin**: The "Priority Pin" is no longer displayed in this track. It has been relocated to the **Top Playlist Menu** (see Section 1.4) to serve as a prominent visual anchor.
-- **Eye Toggle Button**: Removed.
-- **Active Pin Indicator**: The currently playing video's pin is highlighted with a ring and scale effect.
-- **Hover Preview**: On hover over a pin, after 2 seconds a preview image appears.
-- **Unpin Button**: On hover over a pin, a small X button appears in the top-right corner to unpin the video.
-- **Click Behavior**: Clicking a pin switches playback to that video. If the video is in the current playlist, it navigates within the playlist. If not, it searches all playlists to find and load the containing playlist.
+- **Pin Types:**
+  - **Normal Pin**: Blue filled pin icon. Persists until manually removed or video completes.
+  - **Priority Pin**: Amber filled pin icon. Displayed prominently in the Top Playlist Menu.
+  - **Follower Pin** (modifier): Double-pin icon (2 pins stacked diagonally). Can be applied to normal or priority pins. When video completes, pin automatically transfers to the next video in the playlist - perfect for watching series.
+
+- **Pin Button Interactions:**
+  - **Click unpinned video** → Normal pin
+  - **Click normal pin** → Normal + Follower modifier (double-pin icon)
+  - **Click follower pin** → Normal pin (removes follower)
+  - **Hold (>600ms)** → Priority pin
+  - **Double-click any pinned** → Unpin completely
+
+- **Follower Pin Behavior:**
+  - When a follower-pinned video reaches ≥85% completion, the pin automatically transfers to the next chronological video in the playlist.
+  - Priority and follower status are preserved during transfer.
+  - Ideal for series: pin episode 1 as a follower, and the pin moves to episode 2, then 3, etc.
+  - If video is the last in playlist, pin is simply removed.
+
+- **Display Locations:**
+  - Normal pins displayed on the Pins Page grid.
+  - Priority pin displayed in the Top Playlist Menu (top-right).
+  - Active pin highlighted with ring and scale effect.
 
 **2: File Manifest**
 
 **UI/Components:**
-- `src/components/PlayerController.jsx` (lines 1544-1577): Pin track rendering, thumbnail display, priority pin styling, eye toggle button
-- `src/components/PlayerController.jsx` (lines 1705-1714): Priority pin button in video menu toolbar (yellow pin button)
+- `src/components/PlayerController.jsx`: Pin button in video menu toolbar, priority pin display
+- `src/components/VideoCard.jsx`: Pin button on video cards with click/hold/double-click handling
+- `src/components/YouTubePlayer.jsx`: Calls `handleFollowerPinCompletion` on video completion
+- `src/components/NativeVideoPlayer.jsx`: Same follower pin handling for native videos
+- `src/components/LocalVideoPlayer.jsx`: Same follower pin handling for local videos
 
 **State Management:**
-- `src/store/pinStore.js`: Global pin state (session-only, no persistence)
-  - `pinnedVideos`: Array of video objects (priority pin always first)
-  - `priorityPinId`: ID of the priority pin (null if none) - only one priority pin can exist
-  - `togglePin(video)`: Adds/removes video from pins (normal pin, not priority)
-  - `setFirstPin(video)`: Sets video as priority pin (replaces existing priority pin if any)
-  - `isPinned(videoId)`: Checks if video is pinned
-  - `isPriorityPin(videoId)`: Checks if video is the priority pin
-  - `removePin(videoId)`: Removes pin (clears priority if it was the priority pin)
-  - `clearAllPins()`: Clears all pins and priority state
+- `src/store/pinStore.js`: Global pin state (persisted to localStorage)
+  - `pinnedVideos`: Array of video objects with `pinnedAt` timestamp
+  - `priorityPinIds`: Array of priority pin IDs
+  - `followerPinIds`: Array of follower pin IDs (modifier, can combine with normal/priority)
+  - `togglePin(video)`: Cycles unpinned → normal → follower → normal
+  - `togglePriorityPin(video)`: Sets as priority (idempotent)
+  - `isPinned(videoId)`: Checks if normal pin
+  - `isPriorityPin(videoId)`: Checks if priority pin
+  - `isFollowerPin(videoId)`: Checks if follower modifier is active
+  - `removePin(videoId)`: Removes pin completely
+  - `handleFollowerPinCompletion(videoId, playlistItems)`: Handles follower pin transfer
+  - `clearAllPins()`: Clears all pin state
 - `src/components/PlayerController.jsx` (local state):
-  - `showPins` (line 199): Boolean controlling pin visibility
-  - `previewPinIndex` (line 200): Index of pin being previewed (for hover preview)
-  - `activePin` (line 202): ID of currently active pin
+  - `lastPinClickTimeRef`: Ref for double-click detection
+  - `pinLongPressTimerRef`: Ref for hold detection
+- `src/components/VideoCard.jsx` (local state):
+  - `lastClickTimeRef`: Ref for double-click detection
+  - `pinLongPressTimerRef`: Ref for hold detection
 
 **API/Bridge:**
-- No Tauri commands - pins are session-only
+- No Tauri commands - pins stored in localStorage
 
 **Backend:**
-- No database tables - pins are not persisted
+- No database tables - pins persisted to localStorage (`pin-storage`)
 
 **3: The Logic & State Chain**
 
 **Trigger → Action → Persistence Flow:**
 
-1. **Pin a Video (Normal Pin):**
-   - User clicks pin icon on video card → `togglePin(video)` called from `VideoCard.jsx`
-   - `pinStore.togglePin` checks if video already pinned → If not, adds to `pinnedVideos` array (after priority pin if exists)
-   - PlayerController reads `pinnedVideos` from `usePinStore()` (line 130) → Re-renders pin track
-   - Pins converted to display format (line 1349-1354): `{ id, icon, video, index }`
-   - Priority pin always appears first due to `_sortPinsWithPriority()` helper
+1. **Pin a Video (Click on unpinned):**
+   - User clicks pin icon → `togglePin(video)` called
+   - Video added to `pinnedVideos` with timestamp
+   - Pin icon shows filled blue pin
 
-2. **Set Priority Pin:**
-   - User clicks yellow pin button in video menu toolbar → `handleFirstPinClick()` (line 1112)
-   - Calls `setFirstPin(targetVideo)` → Updates `pinStore.priorityPinId`
-   - If another priority pin exists → It's replaced (only one priority pin at a time)
-   - If video already pinned normally → It becomes the priority pin and moves to front
-   - If video not pinned → It's added as priority pin at the front
-   - Priority pin rendered with larger size (1.3x) and amber border (3px solid #fbbf24)
+2. **Add Follower Modifier (Click on normal/priority pin):**
+   - User clicks pin icon on already-pinned video → `togglePin(video)` called
+   - Video added to `followerPinIds`
+   - Pin icon changes to double-pin (2 pins stacked diagonally)
 
-3. **Click Pin to Play:**
-   - User clicks pin thumbnail → `handlePinClick(pinnedVideo)` (line 815)
-   - Function searches `currentPlaylistItems` for video → If found, sets index and calls `onVideoSelect`
-   - If not in current playlist → Loops through `allPlaylists`, loads each playlist's items, searches for video
-   - When found → `setPlaylistItems(items, playlist.id)`, `setCurrentVideoIndex(foundIndex)`, `onVideoSelect(video_url)`
+3. **Remove Follower Modifier (Click on follower pin):**
+   - User clicks pin icon on follower pin → `togglePin(video)` called
+   - Video removed from `followerPinIds`
+   - Pin icon returns to single pin
 
-4. **Unpin a Video:**
-   - User clicks X button on pin hover → `handleUnpin(e, pinnedVideo)` (line 849)
-   - Calls `removePin(pinnedVideo.id)` → Removes from `pinnedVideos` array
-   - If it was the priority pin → `priorityPinId` is cleared to null
+4. **Set Priority Pin (Hold >600ms):**
+   - User holds pin icon → `pinLongPressTimerRef` triggers after 600ms
+   - `togglePriorityPin(video)` called → Video added to `priorityPinIds`
+   - Pin icon shows filled amber pin
 
-5. **Toggle Pin Visibility:**
-   - User clicks eye toggle button → `setShowPins(!showPins)` (line 1539)
-   - When `showPins` is false → Pin track hidden, eye-off icon displayed
-   - No persistence - resets to `true` on component mount
+5. **Unpin Completely (Double-click):**
+   - User double-clicks pin icon → `removePin(video.id)` called
+   - Video removed from `pinnedVideos`, `priorityPinIds`, and `followerPinIds`
+   - Pin icon returns to unfilled state
+
+6. **Follower Pin Transfer (on video completion):**
+   - Video progress saved → `saveVideoProgress()` checks if ≥85%
+   - If complete, calls `handleFollowerPinCompletion(videoId, playlistItems)`
+   - If follower pin: finds next video in playlist, transfers pin with all modifiers
+   - If not follower or last video: removes pin normally
+   - Console logs: `[FollowerPin] Transferred pin from "Video A" to "Video B"`
 
 **Source of Truth:**
-- `pinStore.pinnedVideos` - Array of pinned video objects (session-only, priority pin always first)
-- `pinStore.priorityPinId` - ID of priority pin (null if none, session-only)
+- `pinStore.pinnedVideos` - Array of pinned video objects (persisted)
+- `pinStore.priorityPinIds` - Array of priority pin IDs (persisted)
+- `pinStore.followerPinIds` - Array of follower pin IDs (persisted)
 
 **State Dependencies:**
-- When `pinnedVideos` changes → Pin track re-renders with new thumbnails (priority pin always first)
-- When `priorityPinId` changes → Priority pin visual styling updates (larger size, amber border)
-- When `currentVideoIndex` changes → Active pin highlight updates (finds pin matching current video)
-- When `showPins` changes → Pin track visibility toggles, eye icon changes
+- When `pinnedVideos` changes → Pin icons update, PinsPage re-renders
+- When `priorityPinIds` changes → Priority pin styling updates (amber color)
+- When `followerPinIds` changes → Double-pin icon appears
+- When video completes → Follower transfer or unpin triggered
 
 ---
 

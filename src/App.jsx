@@ -522,16 +522,18 @@ function App() {
               videoId={currentVideoId}
               playerId="main"
               onEnded={() => handleVideoEnded('main')}
+              playlistItems={currentPlaylistItems}
             />
           ) : (
             <YouTubePlayer
               videoUrl={currentVideoUrl}
               playerId="main"
               onEnded={() => handleVideoEnded('main')}
+              playlistItems={currentPlaylistItems}
             />
           )
         }
-        secondPlayer={secondPlayerVideoUrl ? <YouTubePlayer videoUrl={secondPlayerVideoUrl} playerId="second" onEnded={() => handleVideoEnded('second')} /> : null}
+        secondPlayer={secondPlayerVideoUrl ? <YouTubePlayer videoUrl={secondPlayerVideoUrl} playerId="second" onEnded={() => handleVideoEnded('second')} playlistItems={secondPlayerPlaylistItems} /> : null}
         miniHeader={
           <div className="w-full h-full flex items-center px-4">
             <TopNavigation />

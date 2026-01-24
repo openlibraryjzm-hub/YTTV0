@@ -22,16 +22,17 @@ const savePlaybackTime = (videoId, time) => {
   }
 };
 
-// Save video progress to database and auto-unpin if completed
-const saveVideoProgress = async (videoId, videoUrl, duration, currentTime, removePinByVideoId) => {
+// Save video progress to database and handle pin completion (follower pin transfer or unpin)
+const saveVideoProgress = async (videoId, videoUrl, duration, currentTime, handlePinCompletion, playlistItems) => {
   try {
     await updateVideoProgress(videoId, videoUrl, duration, currentTime);
     
-    // Auto-unpin if video reached completion (>=85%)
+    // Handle pin completion if video reached >=85%
     if (duration && duration > 0 && currentTime >= 0) {
       const progressPercentage = (currentTime / duration) * 100;
-      if (progressPercentage >= 85 && removePinByVideoId) {
-        removePinByVideoId(videoId);
+      if (progressPercentage >= 85 && handlePinCompletion) {
+        // handlePinCompletion will either transfer follower pin or unpin normally
+        handlePinCompletion(videoId, playlistItems);
       }
     }
   } catch (error) {
@@ -40,12 +41,18 @@ const saveVideoProgress = async (videoId, videoUrl, duration, currentTime, remov
   }
 };
 
-const LocalVideoPlayer = ({ videoUrl, videoId, playerId = 'default', onEnded, ...props }) => {
+const LocalVideoPlayer = ({ videoUrl, videoId, playerId = 'default', onEnded, playlistItems = [], ...props }) => {
   const videoRef = useRef(null);
   const saveIntervalRef = useRef(null);
   const [videoSrc, setVideoSrc] = useState(null);
   const [error, setError] = useState(null);
-  const { removePinByVideoId } = usePinStore();
+  const { handleFollowerPinCompletion } = usePinStore();
+  
+  // Store playlistItems in a ref so callbacks have access to latest value
+  const playlistItemsRef = useRef(playlistItems);
+  useEffect(() => {
+    playlistItemsRef.current = playlistItems;
+  }, [playlistItems]);
 
   // Get streaming URL for local video file
   useEffect(() => {
@@ -115,7 +122,7 @@ const LocalVideoPlayer = ({ videoUrl, videoId, playerId = 'default', onEnded, ..
       if (!saveIntervalRef.current) {
         saveIntervalRef.current = setInterval(() => {
           if (video && !video.paused) {
-            saveVideoProgress(id, videoUrl, duration, video.currentTime, removePinByVideoId);
+            saveVideoProgress(id, videoUrl, duration, video.currentTime, handleFollowerPinCompletion, playlistItemsRef.current);
           }
         }, 5000);
       }
@@ -131,18 +138,18 @@ const LocalVideoPlayer = ({ videoUrl, videoId, playerId = 'default', onEnded, ..
           const currentTime = video.currentTime;
           const duration = video.duration;
           savePlaybackTime(id, currentTime);
-          saveVideoProgress(id, videoUrl, duration, currentTime, removePinByVideoId);
+          saveVideoProgress(id, videoUrl, duration, currentTime, handleFollowerPinCompletion, playlistItemsRef.current);
         }
       }, 5000);
     };
 
     const handlePause = () => {
-      // Save immediately on pause
+      // Save immediately on pause (no pin handling)
       if (video) {
         const currentTime = video.currentTime;
         const duration = video.duration;
         savePlaybackTime(id, currentTime);
-        saveVideoProgress(id, videoUrl, duration, currentTime);
+        saveVideoProgress(id, videoUrl, duration, currentTime, null, null);
       }
       if (saveIntervalRef.current) {
         clearInterval(saveIntervalRef.current);
@@ -169,8 +176,8 @@ const LocalVideoPlayer = ({ videoUrl, videoId, playerId = 'default', onEnded, ..
     const handleEnded = () => {
       // Reset progress
       savePlaybackTime(id, 0);
-      // Video ended - mark as completed (100%) and unpin
-      saveVideoProgress(id, videoUrl, video.duration, video.duration, removePinByVideoId);
+      // Video ended - mark as completed (100%) and handle follower pin transfer or unpin
+      saveVideoProgress(id, videoUrl, video.duration, video.duration, handleFollowerPinCompletion, playlistItemsRef.current);
 
       if (onEnded) {
         onEnded();
@@ -189,13 +196,13 @@ const LocalVideoPlayer = ({ videoUrl, videoId, playerId = 'default', onEnded, ..
     });
 
     return () => {
-      // Cleanup: save final progress
+      // Cleanup: save final progress (no pin handling on cleanup)
       if (video) {
         try {
           const currentTime = video.currentTime;
           const duration = video.duration;
           savePlaybackTime(id, currentTime);
-          saveVideoProgress(id, videoUrl, duration, currentTime, removePinByVideoId);
+          saveVideoProgress(id, videoUrl, duration, currentTime, null, null);
         } catch (e) {
           // Ignore errors during cleanup
         }
