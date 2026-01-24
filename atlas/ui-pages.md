@@ -122,7 +122,16 @@ Users see a 3-column grid of video cards showing videos from the current playlis
     - **Left**: Tab Bar navigation.
     - **Right**: Control cluster (Tab Presets, Folder Toggle, Add Playlist).
 
-- **Pagination Controls**: For performance, videos are paginated (50 videos per page). Previous/Next controls appear at the bottom of the grid and also via the Sticky Toolbar's logic (internal aliasing only).
+- **Pagination Controls**: For performance, videos are paginated (50 videos per page). Controls appear in two locations:
+  - **Bottom of Grid**: Full pagination with `< [page] of [total] >` format
+  - **Top Navigation Bar**: Compact pagination appears in the right-side actions area when on Videos page with multiple pages
+  - **Button Interactions** (same for both locations):
+    - **Single Click**: Navigate one page (prev/next)
+    - **Double Click**: Quarter jump (25% increments for large page counts, or 1 page for ≤4 pages)
+    - **Long Press (600ms)**: Jump to first/last page
+  - **Page Input**: Click the page number to type a specific page directly
+  - **State Management**: Uses `paginationStore.js` for shared state between both locations
+  - **Note**: Preserve-scroll feature for TopNav navigation is non-functional (see README.md Known Issues)
 
 - **Sticky Video Carousel**: 
   - **Purpose**: Displays important videos at the very top of the page.
@@ -190,6 +199,13 @@ Users see a 3-column grid of video cards showing videos from the current playlis
 - `src/store/pinStore.js`:
   - `pinnedVideos`: Array of pinned video objects (used for banner thumbnail)
   - `priorityPinIds`: Array of priority pin IDs
+- `src/store/paginationStore.js`:
+  - `currentPage`: Current page number (1-indexed)
+  - `totalPages`: Total number of pages
+  - `itemsPerPage`: Items per page (50)
+  - `preserveScroll`: Flag for scroll preservation (non-functional)
+  - Navigation methods: `nextPage`, `prevPage`, `firstPage`, `lastPage`, `nextQuarter`, `prevQuarter`
+  - Preserve-scroll variants: `nextPagePreserve`, `prevPagePreserve`, etc. (used by TopNav)
 - `src/components/VideosPage.jsx` (local state):
   - `displayedVideos`: Array of videos to show (filtered by folder)
   - `selectedVideoIndex`: Currently selected video index

@@ -52,7 +52,7 @@ yttv2/
 │   │   ├── YouTubePlayer.jsx     # YouTube iframe player component
 │   │   ├── NativeVideoPlayer.jsx # Native mpv player for local videos
 │   │   ├── LocalVideoPlayer.jsx  # HTML5 fallback player (browser-compatible formats)
-│   │   ├── TopNavigation.jsx     # Navigation tabs (Playlists/Videos/History)
+│   │   ├── TopNavigation.jsx     # Navigation tabs + compact pagination (Videos page)
 │   │   ├── PlaylistsPage.jsx     # Main playlists grid view
 
 │   │   ├── VideosPage.jsx        # Videos grid view for current playlist
@@ -97,7 +97,9 @@ yttv2/
 │   │   ├── tabStore.js           # Tab state management
 │   │   ├── tabPresetStore.js     # Tab preset state management
 │   │   ├── pinStore.js           # Pin state management (persisted)
-│   │   └── stickyStore.js        # Sticky video state management (persisted)
+│   │   ├── stickyStore.js        # Sticky video state management (persisted)
+│   │   ├── shuffleStore.js       # Shuffle state for video ordering
+│   │   └── paginationStore.js    # Pagination state (shared between VideosPage and TopNav)
 │   ├── utils/                    # Utility functions
 │   │   ├── youtubeUtils.js       # YouTube URL parsing, thumbnails, API
 │   │   ├── initDatabase.js       # Database initialization (no test data)
@@ -345,6 +347,12 @@ The following features exist in the codebase but are currently non-functional:
   - None of these approaches successfully capture right-click events - no console logs appear when right-clicking
   - Possible causes: Overlay element blocking events, CSS `pointer-events` issues, or Tauri-specific event handling
   - The function itself is functional and can be triggered via other means (e.g., programmatic call or alternative UI trigger)
+- **Pagination Preserve-Scroll (TopNav)**:
+  - **Status: NON-FUNCTIONAL**. When navigating pages via the TopNavigation compact pagination, the scroll position should be preserved (not reset to top).
+  - Implementation exists in `paginationStore.js` with `preserveScroll` flag and `*Preserve` method variants
+  - TopNavigation uses the preserve-scroll methods, VideosPage checks the flag before scrolling
+  - The flag is set correctly but scroll preservation does not work as intended
+  - **Workaround**: Use the bottom pagination controls which intentionally scroll to top
 
 ## Theme Documentation
 

@@ -21,6 +21,7 @@ import VideoCardSkeleton from './skeletons/VideoCardSkeleton';
 import { updatePlaylist, getAllPlaylists, getFolderMetadata, setFolderMetadata } from '../api/playlistApi';
 import { useConfigStore } from '../store/configStore';
 import { useShuffleStore } from '../store/shuffleStore';
+import { usePaginationStore } from '../store/paginationStore';
 
 const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
   const {
@@ -176,9 +177,22 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
     }
   };
 
-  // Pagination state
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 50;
+  // Pagination state (from store for sharing with TopNavigation)
+  const {
+    currentPage,
+    setCurrentPage,
+    totalPages,
+    setTotalPages,
+    isEditingPage,
+    setIsEditingPage,
+    pageInputValue,
+    setPageInputValue,
+    itemsPerPage,
+    resetPagination,
+    preserveScroll,
+    clearPreserveScroll,
+  } = usePaginationStore();
+  const pageInputRef = useRef(null);
 
 
 
@@ -186,18 +200,21 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
 
   // Reset page when playlist, folder, or sort filters change
   useEffect(() => {
-    setCurrentPage(1);
+    resetPagination();
     if (scrollContainerRef.current) {
       scrollContainerRef.current.scrollTo(0, 0);
     }
-  }, [activePlaylistId, selectedFolder, sortBy, sortDirection, includeUnwatched, showOnlyCompleted]);
+  }, [activePlaylistId, selectedFolder, sortBy, sortDirection, includeUnwatched, showOnlyCompleted, resetPagination]);
 
-  // Scroll to top when page changes
+  // Scroll to top when page changes (unless preserveScroll is set from TopNav)
   useEffect(() => {
-    if (scrollContainerRef.current) {
+    if (preserveScroll) {
+      // Clear the flag but don't scroll
+      clearPreserveScroll();
+    } else if (scrollContainerRef.current) {
       scrollContainerRef.current.scrollTo(0, 0);
     }
-  }, [currentPage]);
+  }, [currentPage, preserveScroll, clearPreserveScroll]);
 
   useEffect(() => {
     // Sync selected video with current playing video
@@ -990,6 +1007,12 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
 
   const regularVideos = sortedVideos;
 
+  // Update total pages in store whenever regularVideos changes
+  useEffect(() => {
+    const newTotalPages = Math.max(1, Math.ceil(regularVideos.length / itemsPerPage));
+    setTotalPages(newTotalPages);
+  }, [regularVideos.length, itemsPerPage, setTotalPages]);
+
   const bulkTagSelectionCount = Object.values(bulkTagSelections).reduce(
     (total, folders) => total + folders.size,
     0
@@ -1485,29 +1508,192 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
             )}
 
             {/* Pagination Controls - Based on Regular Videos only, since Stickies are always shown */}
-            {regularVideos.length > itemsPerPage && (
-              <div className="flex justify-center items-center gap-4 mt-8 mb-4">
-                <button
-                  onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                  disabled={currentPage === 1}
-                  className="px-4 py-2 bg-slate-700 hover:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg font-medium transition-colors border border-slate-600 text-sky-400 hover:text-sky-300"
-                >
-                  Previous
-                </button>
+            {totalPages > 1 && (() => {
+              // Calculate quarter jump targets
+              // For small page counts (<=4), double-click acts as normal prev/next
+              const useQuarterJumps = totalPages > 4;
+              
+              // Quarter marks: 25%, 50%, 75%, 100% of total pages
+              const quarterMarks = useQuarterJumps 
+                ? [
+                    Math.max(1, Math.round(totalPages * 0.25)),
+                    Math.max(1, Math.round(totalPages * 0.5)),
+                    Math.max(1, Math.round(totalPages * 0.75)),
+                    totalPages
+                  ]
+                : [];
+              
+              // Find next quarter mark (for double-click >)
+              const getNextQuarter = () => {
+                if (!useQuarterJumps) return Math.min(currentPage + 1, totalPages);
+                const next = quarterMarks.find(q => q > currentPage);
+                return next || totalPages;
+              };
+              
+              // Find previous quarter mark (for double-click <)
+              const getPrevQuarter = () => {
+                if (!useQuarterJumps) return Math.max(currentPage - 1, 1);
+                const prev = [...quarterMarks].reverse().find(q => q < currentPage);
+                return prev || 1;
+              };
+              
+              // Combined handler: single click, double click, and long press
+              const LONG_CLICK_MS = 600;
+              const DOUBLE_CLICK_MS = 300;
+              let longClickTimer = null;
+              let singleClickTimer = null;
+              let didLongClick = false;
+              let lastClickTime = 0;
+              
+              const createCombinedHandlers = (singleAction, doubleAction, longAction) => ({
+                onMouseDown: () => {
+                  didLongClick = false;
+                  longClickTimer = setTimeout(() => {
+                    didLongClick = true;
+                    clearTimeout(singleClickTimer);
+                    longAction();
+                  }, LONG_CLICK_MS);
+                },
+                onMouseUp: () => {
+                  clearTimeout(longClickTimer);
+                  if (didLongClick) return;
+                  
+                  const now = Date.now();
+                  const timeSinceLastClick = now - lastClickTime;
+                  
+                  if (timeSinceLastClick < DOUBLE_CLICK_MS) {
+                    // Double click detected
+                    clearTimeout(singleClickTimer);
+                    lastClickTime = 0;
+                    doubleAction();
+                  } else {
+                    // Potential single click - wait to see if double click comes
+                    lastClickTime = now;
+                    singleClickTimer = setTimeout(() => {
+                      singleAction();
+                      lastClickTime = 0;
+                    }, DOUBLE_CLICK_MS);
+                  }
+                },
+                onMouseLeave: () => {
+                  clearTimeout(longClickTimer);
+                },
+                onTouchStart: () => {
+                  didLongClick = false;
+                  longClickTimer = setTimeout(() => {
+                    didLongClick = true;
+                    clearTimeout(singleClickTimer);
+                    longAction();
+                  }, LONG_CLICK_MS);
+                },
+                onTouchEnd: (e) => {
+                  clearTimeout(longClickTimer);
+                  if (didLongClick) {
+                    e.preventDefault();
+                    return;
+                  }
+                  
+                  const now = Date.now();
+                  const timeSinceLastClick = now - lastClickTime;
+                  
+                  if (timeSinceLastClick < DOUBLE_CLICK_MS) {
+                    clearTimeout(singleClickTimer);
+                    lastClickTime = 0;
+                    doubleAction();
+                  } else {
+                    lastClickTime = now;
+                    singleClickTimer = setTimeout(() => {
+                      singleAction();
+                      lastClickTime = 0;
+                    }, DOUBLE_CLICK_MS);
+                  }
+                  e.preventDefault();
+                },
+              });
+              
+              // Handler sets for prev/next buttons
+              const prevHandlers = createCombinedHandlers(
+                () => setCurrentPage(Math.max(currentPage - 1, 1)),
+                () => setCurrentPage(getPrevQuarter()),
+                () => setCurrentPage(1)
+              );
+              const nextHandlers = createCombinedHandlers(
+                () => setCurrentPage(Math.min(currentPage + 1, totalPages)),
+                () => setCurrentPage(getNextQuarter()),
+                () => setCurrentPage(totalPages)
+              );
+              
+              return (
+                <div className="flex justify-center items-center gap-3 mt-8 mb-4">
+                  {/* Previous: click=prev, double-click=quarter back, hold=first */}
+                  <button
+                    {...prevHandlers}
+                    disabled={currentPage === 1}
+                    className="px-4 py-2 bg-slate-700 hover:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg font-bold transition-colors border border-slate-600 text-sky-400 hover:text-sky-300 text-lg select-none"
+                    title="Click: previous | Double-click: quarter back | Hold: first page"
+                  >
+                    &lt;
+                  </button>
 
-                <span className="text-slate-400 font-medium">
-                  Page {currentPage} of {Math.ceil(regularVideos.length / itemsPerPage)}
-                </span>
+                  <span className="text-slate-400 font-medium px-3 flex items-center gap-1">
+                    {isEditingPage ? (
+                      <input
+                        ref={pageInputRef}
+                        type="text"
+                        value={pageInputValue}
+                        onChange={(e) => {
+                          const val = e.target.value.replace(/[^0-9]/g, '');
+                          setPageInputValue(val);
+                        }}
+                        onBlur={() => {
+                          const page = parseInt(pageInputValue);
+                          if (page >= 1 && page <= totalPages) {
+                            setCurrentPage(page);
+                          }
+                          setIsEditingPage(false);
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            const page = parseInt(pageInputValue);
+                            if (page >= 1 && page <= totalPages) {
+                              setCurrentPage(page);
+                            }
+                            setIsEditingPage(false);
+                          } else if (e.key === 'Escape') {
+                            setIsEditingPage(false);
+                          }
+                        }}
+                        className="w-12 px-1 py-0.5 bg-slate-800 border border-sky-500 rounded text-center text-sky-400 font-medium focus:outline-none focus:ring-1 focus:ring-sky-500"
+                        autoFocus
+                      />
+                    ) : (
+                      <span
+                        onClick={() => {
+                          setPageInputValue(String(currentPage));
+                          setIsEditingPage(true);
+                          setTimeout(() => pageInputRef.current?.select(), 0);
+                        }}
+                        className="cursor-pointer hover:text-sky-400 hover:underline transition-colors"
+                        title="Click to jump to a specific page"
+                      >
+                        {currentPage}
+                      </span>
+                    )}
+                    {' '}of {totalPages}
+                  </span>
 
-                <button
-                  onClick={() => setCurrentPage(prev => Math.min(prev + 1, Math.ceil(regularVideos.length / itemsPerPage)))}
-                  disabled={currentPage >= Math.ceil(regularVideos.length / itemsPerPage)}
-                  className="px-4 py-2 bg-slate-700 hover:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg font-medium transition-colors border border-slate-600 text-sky-400 hover:text-sky-300"
-                >
-                  Next
-                </button>
-              </div>
-            )}
+                  {/* Next: click=next, double-click=quarter forward, hold=last */}
+                  <button
+                    {...nextHandlers}
+                    disabled={currentPage >= totalPages}
+                    className="px-4 py-2 bg-slate-700 hover:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg font-bold transition-colors border border-slate-600 text-sky-400 hover:text-sky-300 text-lg select-none"
+                    title="Click: next | Double-click: quarter forward | Hold: last page"
+                  >
+                    &gt;
+                  </button>
+                </div>
+              );
+            })()}
           </div>
         </div >
       )
