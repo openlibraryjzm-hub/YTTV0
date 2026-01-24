@@ -255,8 +255,8 @@ Users see a bottom toolbar in the video menu rectangle with distinct, grouped ac
   - **Star Button** (-19px offset): A circular button with star icon for folder assignment.
     - **Filled star with colored border** = video belongs to that folder color
     - **Empty/outline** = video not in folder (Slate border #334155, Slate icon #475569)
-    - Left-click assigns/unassigns video to quick assign folder
-    - Right-click opens color picker to set quick assign default
+    - **Left-click**: Assigns/unassigns video to quick assign folder
+    - **Right-click**: Aligns Play button filter to Star's color (filters playlist to show only videos in the same folder as current video)
   - **Shuffle Button** (22px offset): A circular button with shuffle icon.
     - **Slate/Dark border** = shuffle from all videos
     - **Colored border** = shuffle from that folder color
@@ -288,13 +288,15 @@ Users see a bottom toolbar in the video menu rectangle with distinct, grouped ac
 - **(Removed)** Tab Button: The toggle list/tab button has been removed from this menu.
 - **(Removed)** Mode Switcher Button: The disabled "1" toggle button has been removed from the UI.
 
-**Color Picker Modal**: When star or shuffle button is right-clicked, a modal appears showing:
-- 16 colored circles (one per folder color) + "All" option for shuffle
+**Color Picker Modal**: When shuffle button is right-clicked, a modal appears showing:
+- 16 colored circles (one per folder color) + "All" option
 - Current selection highlighted with thicker black border
 - Hover shows color name
-- Left-click on color: For star = assigns video, for shuffle = shuffles from that folder
-- Right-click on color: Sets as default quick assign/shuffle color
+- Left-click on color: Shuffles from that folder
+- Right-click on color: Sets as default quick shuffle color
 - Close button (X) in top-right
+
+**Note**: Star button right-click no longer opens a color picker. Instead, it aligns the Play button's folder filter to the Star's displayed color.
 
 **2: File Manifest**
 
@@ -348,9 +350,7 @@ Users see a bottom toolbar in the video menu rectangle with distinct, grouped ac
    - If video already assigned to `quickAssignColor` → Calls `unassignVideoFromFolder` → Updates `currentVideoFolders` state
    - If video not assigned → Calls `assignVideoToFolder` → Updates `currentVideoFolders` state
    - Star button appearance updates based on `currentVideoFolders` (line 1608-1628)
-   - User right-clicks star → `setShowColorPicker('star')` → Color picker modal appears
-   - User left-clicks color in picker → `handleColorSelect(hex, colorId, false)` → Calls `handleStarClick(colorId)` to assign
-   - User right-clicks color in picker → `handleColorSelect(hex, colorId, true)` → `setQuickAssignColor(colorId)` → Saves to localStorage
+   - User right-clicks star → `handleStarAlignToPlay()` → Filters playlist to Star's folder color (see flow #6)
 
 2. **Shuffle Button Flow:**
    - User left-clicks shuffle → `handleShuffle()` (line 668)
@@ -378,9 +378,16 @@ Users see a bottom toolbar in the video menu rectangle with distinct, grouped ac
    - If video not liked → `addVideoToPlaylist(likesPlaylistId, videoUrl, videoId, title, thumbnailUrl)`
    - Updates `isVideoLiked` state → Button appearance updates (line 1636)
 
-4. **Quick Assign/Shuffle Color Persistence:**
+5. **Quick Assign/Shuffle Color Persistence:**
    - On mount → `useEffect` (lines 271, 292) loads from localStorage → `setQuickAssignColor(saved)`, `setQuickShuffleColor(saved)`
    - On change → `useEffect` (lines 283, 304) saves to localStorage → `localStorage.setItem('quickAssignColor', quickAssignColor)`
+
+6. **Star-to-Play Color Alignment Flow:**
+   - User right-clicks Star button → `handleStarAlignToPlay()` is called
+   - Gets the Star's displayed color (video's folder assignment): `currentVideoFolders[0]`
+   - If video is not in any folder, does nothing
+   - If video is in a folder: Calls `getVideosInFolder(currentPlaylistId, folderColor)` → `setPlaylistItems(...)` with folder filter
+   - If current video is not in new view, auto-plays first video
 
 **Source of Truth:**
 - `quickAssignColor` / `quickShuffleColor`: PlayerController local state (persisted to localStorage)

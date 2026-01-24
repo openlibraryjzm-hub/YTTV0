@@ -1329,6 +1329,38 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
     }
   };
 
+  // ========== Star-to-Play Color Alignment ==========
+  // Right-click Star to set the Play button's folder filter to match the Star's color
+  const handleStarAlignToPlay = async () => {
+    // Get the color the Star is currently displaying (video's folder assignment)
+    const starDisplayColor = currentVideoFolders.length > 0 ? currentVideoFolders[0] : null;
+    
+    if (!starDisplayColor) {
+      console.log(`[ColorSync] Video is not in any folder - nothing to align`);
+      return;
+    }
+
+    try {
+      console.log(`[ColorSync] Aligning Play to Star color: ${starDisplayColor}`);
+      
+      const newItems = await getVideosInFolder(currentPlaylistId, starDisplayColor);
+      
+      if (newItems.length > 0) {
+        setPlaylistItems(newItems, currentPlaylistId, { playlist_id: currentPlaylistId, folder_color: starDisplayColor });
+        // Auto-play first video if current video is not in the new view
+        const currentVideoStillExists = newItems.some(v => v.id === activeVideoItem?.id);
+        if (!currentVideoStillExists) {
+          setCurrentVideoIndex(0);
+        }
+        console.log(`[ColorSync] Play filter set to ${starDisplayColor}`);
+      } else {
+        console.log(`[ColorSync] No videos in ${starDisplayColor} folder`);
+      }
+    } catch (error) {
+      console.error('Failed to align colors:', error);
+    }
+  };
+
   // Handle like button click - add/remove video from Likes playlist
   const handleLikeClick = async () => {
     // Get the active video (main or second player) - use activeVideoItem which is computed above
@@ -2045,7 +2077,7 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
                           const isColored = !!activeColorData;
 
                           return (
-                            <div className="rounded-full flex items-center justify-center border-2 shadow-sm transition-colors duration-300 bg-white"
+                            <div className="rounded-full flex items-center justify-center border-2 shadow-sm transition-all duration-300 bg-white"
                               style={{
                                 width: `${bottomIconSize}px`,
                                 height: `${bottomIconSize}px`,
@@ -2083,10 +2115,10 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
 
                       <button
                         onClick={() => handleStarClick()}
-                        onContextMenu={(e) => { e.preventDefault(); setShowColorPicker('star'); }}
+                        onContextMenu={(e) => { e.preventDefault(); handleStarAlignToPlay(); }}
                         className="absolute left-1/2 top-1/2 flex items-center justify-center group/tool"
                         style={{ transform: `translate(calc(-50% + ${starButtonX}px), -50%)` }}
-                        title={getInspectTitle('Star button (assign to folder)')}
+                        title={getInspectTitle('Star button (Left: assign to folder, Right: filter to this color)')}
                       >
                         {(() => {
                           const firstFolder = currentVideoFolders.length > 0 ? currentVideoFolders[0] : null;
@@ -2095,13 +2127,13 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
 
                           if (folderColorObj) {
                             return (
-                              <div className="rounded-full flex items-center justify-center border-2 shadow-sm bg-white" style={{ width: `${bottomIconSize}px`, height: `${bottomIconSize}px`, borderColor: folderColorObj.hex }}>
+                              <div className="rounded-full flex items-center justify-center border-2 shadow-sm bg-white transition-all duration-300" style={{ width: `${bottomIconSize}px`, height: `${bottomIconSize}px`, borderColor: folderColorObj.hex }}>
                                 <Star size={Math.round(bottomIconSize * 0.5)} color={folderColorObj.hex} fill={folderColorObj.hex} strokeWidth={3} />
                               </div>
                             );
                           } else {
                             return (
-                              <div className="rounded-full flex items-center justify-center border-2 shadow-sm bg-white" style={{ width: `${bottomIconSize}px`, height: `${bottomIconSize}px`, borderColor: '#334155' }}>
+                              <div className="rounded-full flex items-center justify-center border-2 shadow-sm bg-white transition-all duration-300" style={{ width: `${bottomIconSize}px`, height: `${bottomIconSize}px`, borderColor: '#334155' }}>
                                 <Star size={Math.round(bottomIconSize * 0.5)} color="#475569" fill="transparent" strokeWidth={3} />
                               </div>
                             );
