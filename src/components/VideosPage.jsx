@@ -10,12 +10,13 @@ import PlaylistSelectionModal from './PlaylistSelectionModal';
 import PlaylistUploader from './PlaylistUploader';
 import { addVideoToPlaylist, getPlaylistItems } from '../api/playlistApi';
 import { useStickyStore } from '../store/stickyStore';
+import { usePinStore } from '../store/pinStore';
 import StickyVideoCarousel from './StickyVideoCarousel';
 import PageBanner from './PageBanner';
 import EditPlaylistModal from './EditPlaylistModal';
 import UnifiedBannerBackground from './UnifiedBannerBackground';
 import { useNavigationStore } from '../store/navigationStore';
-import { Star, MoreVertical, Plus, Play, Check, X, ArrowUp, Clock, Heart, Pin, Settings, Cat } from 'lucide-react';
+import { Star, MoreVertical, Plus, Play, Check, X, ArrowUp, Clock, Heart, Pin, Settings, Cat, ChevronLeft, ChevronRight, RotateCcw } from 'lucide-react';
 import VideoCardSkeleton from './skeletons/VideoCardSkeleton';
 import { updatePlaylist, getAllPlaylists, getFolderMetadata, setFolderMetadata } from '../api/playlistApi';
 import { useConfigStore } from '../store/configStore';
@@ -101,6 +102,79 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
   // Use preview items if available, otherwise use current playlist items
   const activePlaylistItems = previewPlaylistItems || currentPlaylistItems;
   const activePlaylistId = previewPlaylistId || currentPlaylistId;
+
+  // Reset point tracking for chevron navigation
+  // Tracks the playlist to return to when clicking the return button
+  const [resetPointId, setResetPointId] = useState(null);
+  const isChevronNavRef = useRef(false);
+
+  // When activePlaylistId changes from external source (PlaylistsPage preview, controller video grid),
+  // set that as the new reset point. Chevron navigation does NOT update the reset point.
+  useEffect(() => {
+    if (!isChevronNavRef.current && activePlaylistId) {
+      setResetPointId(activePlaylistId);
+    }
+  }, [activePlaylistId]);
+
+  // Show return button when we've navigated away from the reset point
+  const showReturnButton = resetPointId && resetPointId !== activePlaylistId;
+
+  // Playlist navigation handlers (for banner chevrons)
+  const handleNavigatePlaylist = async (direction) => {
+    if (!allPlaylists || allPlaylists.length === 0) return;
+    
+    // Find current index in allPlaylists
+    const currentIndex = allPlaylists.findIndex(p => p.id === activePlaylistId);
+    if (currentIndex === -1) return;
+    
+    // Calculate new index with wrapping
+    let newIndex;
+    if (direction === 'next') {
+      newIndex = (currentIndex + 1) % allPlaylists.length;
+    } else {
+      newIndex = (currentIndex - 1 + allPlaylists.length) % allPlaylists.length;
+    }
+    
+    const targetPlaylist = allPlaylists[newIndex];
+    if (!targetPlaylist) return;
+    
+    try {
+      // Mark as chevron navigation (so useEffect doesn't update reset point)
+      isChevronNavRef.current = true;
+      
+      // Fetch playlist items
+      const items = await getPlaylistItems(targetPlaylist.id);
+      // Set as preview (doesn't affect player or controller menus)
+      setPreviewPlaylist(items, targetPlaylist.id, null, targetPlaylist.name);
+      
+      // Reset flag after the state update propagates
+      setTimeout(() => { isChevronNavRef.current = false; }, 0);
+    } catch (error) {
+      console.error('Failed to navigate to playlist:', error);
+      isChevronNavRef.current = false;
+    }
+  };
+
+  // Return to reset point playlist
+  const handleReturnToOriginal = async () => {
+    if (!resetPointId) return;
+    
+    try {
+      // Mark as internal navigation (don't update reset point)
+      isChevronNavRef.current = true;
+      
+      // Fetch the reset point playlist items
+      const items = await getPlaylistItems(resetPointId);
+      const playlist = allPlaylists.find(p => p.id === resetPointId);
+      setPreviewPlaylist(items, resetPointId, null, playlist?.name);
+      
+      // Reset flag after state update
+      setTimeout(() => { isChevronNavRef.current = false; }, 0);
+    } catch (error) {
+      console.error('Failed to return to original playlist:', error);
+      isChevronNavRef.current = false;
+    }
+  };
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -1019,6 +1093,27 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
     return mostRecent;
   }, [videosToDisplay, videoProgress]);
 
+  // Get pinned videos from store
+  const { pinnedVideos } = usePinStore();
+
+  // Find ALL pinned videos that are in the current playlist
+  const pinnedVideosInPlaylist = useMemo(() => {
+    if (!videosToDisplay || videosToDisplay.length === 0 || !pinnedVideos || pinnedVideos.length === 0) {
+      return [];
+    }
+
+    // Create a set of video IDs in the current playlist for fast lookup
+    const playlistVideoIds = new Set(
+      videosToDisplay.map(v => v.video_id || extractVideoId(v.video_url))
+    );
+
+    // Find all pinned videos that are in this playlist
+    return pinnedVideos.filter(pin => {
+      const pinVideoId = pin.video_id || extractVideoId(pin.video_url);
+      return playlistVideoIds.has(pinVideoId);
+    });
+  }, [videosToDisplay, pinnedVideos]);
+
   // Sticky header state detection
   const [isStuck, setIsStuck] = useState(false);
   const stickySentinelRef = useRef(null);
@@ -1069,7 +1164,54 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
                     onVideoSelect(continueVideo.video_url);
                   }
                 }}
+                pinnedVideos={pinnedVideosInPlaylist}
+                onPinnedClick={(video) => {
+                  if (video && onVideoSelect) {
+                    onVideoSelect(video.video_url);
+                  }
+                }}
                 seamlessBottom={true}
+                topRightContent={
+                  <div className="flex items-center gap-2">
+                    {/* Return to Reset Point Button - Only shows when navigated away from reset point */}
+                    {showReturnButton && (
+                      <button
+                        onClick={handleReturnToOriginal}
+                        className="p-1.5 bg-amber-500/20 hover:bg-amber-500/40 text-amber-300 hover:text-amber-200 rounded-full backdrop-blur-md transition-all duration-200 transform hover:scale-110 border border-amber-500/30"
+                        title={`Return to ${allPlaylists.find(p => p.id === resetPointId)?.name || 'original playlist'}`}
+                      >
+                        <RotateCcw size={16} />
+                      </button>
+                    )}
+                    
+                    {/* Left Chevron */}
+                    <button
+                      onClick={() => handleNavigatePlaylist('prev')}
+                      className="p-1.5 bg-white/10 hover:bg-white/20 text-white rounded-full backdrop-blur-md transition-all duration-200 transform hover:scale-110"
+                      title="Previous Playlist"
+                    >
+                      <ChevronLeft size={16} />
+                    </button>
+                    
+                    {/* Playlist Name - Fixed width with truncation */}
+                    <span 
+                      className="text-white/90 font-semibold text-sm px-2 py-1 bg-black/20 rounded-md backdrop-blur-sm w-32 text-center truncate block"
+                      style={{ textShadow: '-1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0 2px 4px rgba(0,0,0,0.8)' }}
+                      title={allPlaylists.find(p => p.id === activePlaylistId)?.name || 'Playlist'}
+                    >
+                      {allPlaylists.find(p => p.id === activePlaylistId)?.name || 'Playlist'}
+                    </span>
+                    
+                    {/* Right Chevron */}
+                    <button
+                      onClick={() => handleNavigatePlaylist('next')}
+                      className="p-1.5 bg-white/10 hover:bg-white/20 text-white rounded-full backdrop-blur-md transition-all duration-200 transform hover:scale-110"
+                      title="Next Playlist"
+                    >
+                      <ChevronRight size={16} />
+                    </button>
+                  </div>
+                }
               />
             </div>
           )}

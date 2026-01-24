@@ -103,7 +103,12 @@ Users see a 3-column grid of video cards showing videos from the current playlis
 - **Page Banner**: 
   - **Location**: Displayed at the very top of the scrollable content area.
   - **Comprehensive Documentation**: See `page-banner.md` for complete details on the Page Banner system, including Unified Banner System, Sticky Toolbar integration, customization options, and technical implementation.
-  - **Quick Reference**: Shows playlist/folder title, metadata (video count, year, author), description, ASCII avatar, and optional continue watching thumbnail. Supports custom images, animated patterns, and folder color gradients.
+  - **Quick Reference**: Shows playlist/folder title, metadata (video count, year, author), description, ASCII avatar, and thumbnail carousel. Supports custom images, animated patterns, and folder color gradients.
+  - **Thumbnail Carousel** (top-right): Shows continue watching and/or pinned videos with dot navigation and multi-pin bar
+  - **Playlist Navigator** (top-right): Chevron buttons to browse playlists in preview mode without affecting player
+    - **Left/Right Chevrons**: Navigate to previous/next playlist
+    - **Playlist Name**: Fixed-width display with truncation
+    - **Return Button**: Amber icon appears when navigated away from entry point, returns to reset point
 
 - **Sticky Toolbar**: Sits below the Page Banner and sticks to the top of the viewport when scrolling.
   - **Compact Layout**: Features a streamlined single-row design to maximize vertical screen real estate.
@@ -169,6 +174,7 @@ Users see a 3-column grid of video cards showing videos from the current playlis
   - `previewPlaylistItems`: Array of videos in preview playlist (null when not previewing)
   - `currentPlaylistId`: Current playlist ID
   - `previewPlaylistId`: Preview playlist ID
+  - `setPreviewPlaylist`: Sets preview playlist (used by playlist navigator)
 - `src/store/stickyStore.js`:
   - `allStickiedVideos`: Map of scoped keys (`playlistId::folderId`) to video IDs
   - `toggleSticky(playlistId, videoId, folderId)`: Toggles sticky state
@@ -181,6 +187,9 @@ Users see a 3-column grid of video cards showing videos from the current playlis
 - `src/store/shuffleStore.js`:
   - `shuffleStates`: Map of playlist ID to shuffle mapping (VideoID → Rank)
   - `getShuffleState`: Generates or retrieves consistent shuffle order for session
+- `src/store/pinStore.js`:
+  - `pinnedVideos`: Array of pinned video objects (used for banner thumbnail)
+  - `priorityPinIds`: Array of priority pin IDs
 - `src/components/VideosPage.jsx` (local state):
   - `displayedVideos`: Array of videos to show (filtered by folder)
   - `selectedVideoIndex`: Currently selected video index
@@ -189,6 +198,8 @@ Users see a 3-column grid of video cards showing videos from the current playlis
   - `videoProgress`: Map of video ID to progress data (includes `percentage`, `hasFullyWatched`, `last_updated`)
   - `allFolderMetadata`: Map of folder color ID to metadata object (`{ name, description }`) - Loaded when playlist changes for custom name display in bulk tag grid
   - `savingBulkTags`: Boolean indicating bulk tag save operation in progress
+  - `resetPointId`: Playlist ID to return to when using playlist navigator return button
+  - `isChevronNavRef`: Ref to track if navigation is from chevrons (prevents reset point update)
 
 **API/Bridge:**
 - `src/api/playlistApi.js`:
@@ -269,6 +280,30 @@ Users see a 3-column grid of video cards showing videos from the current playlis
    - **Polling:** Component sets up interval to poll `getAllVideoProgress()` every 5 seconds to keep data fresh.
    - When current video changes → `useEffect` (line 92) refreshes progress (debounced 2s)
    - Sorting uses progress data → Determines watch status
+
+7. **Playlist Navigator Flow:**
+   - **Chevron Navigation**: User clicks left/right chevron → `handleNavigatePlaylist('prev'|'next')`
+   - Sets `isChevronNavRef.current = true` → Prevents reset point update
+   - Calculates next/previous playlist index with wrapping
+   - Fetches playlist items → `getPlaylistItems(targetPlaylist.id)`
+   - Sets preview playlist → `setPreviewPlaylist(items, id, null, name)` (doesn't affect player)
+   - Reset flag after state update propagates
+   - **Reset Point Tracking**:
+     - `useEffect` watches `activePlaylistId` changes
+     - If change is NOT from chevron nav → Updates `resetPointId` to current playlist
+     - External entries (from PlaylistsPage, controller) set new reset point
+   - **Return to Reset Point**: User clicks return button → `handleReturnToOriginal()`
+     - Loads `resetPointId` playlist via `getPlaylistItems()`
+     - Sets as preview playlist
+   - **Show Return Button**: `showReturnButton = resetPointId && resetPointId !== activePlaylistId`
+
+8. **Pinned Videos in Banner Flow:**
+   - Component imports `usePinStore` → Gets `pinnedVideos` array
+   - `pinnedVideosInPlaylist` useMemo filters pins to current playlist:
+     - Creates Set of video IDs in `videosToDisplay`
+     - Filters `pinnedVideos` to those matching playlist
+   - Passes `pinnedVideos` array to `PageBanner` component
+   - `onPinnedClick(video)` callback plays the selected pinned video
 
 **Source of Truth:**
 - Database `playlist_items` table - Source of Truth for videos

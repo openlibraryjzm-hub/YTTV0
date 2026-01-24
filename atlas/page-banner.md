@@ -36,7 +36,15 @@ Users see a contextual banner (220px fixed height) at the top of scrollable cont
     - Format: `<< < 1/99 > >>` (First, Previous, Current/Total, Next, Last)
     - Styled to match metadata row text
   - **ASCII Avatar**: Vertically centered ASCII art (user signature)
-  - **Continue Watching**: Optional thumbnail in top-right corner for recently watched videos
+  - **Thumbnail Carousel** (top-right): Shows continue watching and/or pinned videos
+    - **Continue Video**: Shows "CONTINUE?" label with thumbnail of most recently watched video
+    - **Pinned Videos**: Shows "PINNED" label with thumbnail of pinned video(s) in current playlist
+    - **Dot Navigation**: When both continue and pinned exist, 2 dots appear below thumbnail to toggle views
+    - **Multi-Pin Bar**: When multiple pins exist, a vertical segmented bar appears to the right of thumbnail
+  - **Playlist Navigator** (Videos Page): Top-right chevron controls for browsing playlists
+    - Left/right chevrons navigate between playlists in preview mode
+    - Playlist name displayed with fixed width and truncation
+    - Return button appears when navigated away from reset point
 - **Background Options**:
   - **Color Gradients**: Vibrant gradients matching folder color (when viewing folders)
   - **Animated Patterns**: CSS-based patterns (Diagonal, Dots, Mesh, Solid) when no custom image
@@ -118,12 +126,25 @@ Users see a contextual banner (220px fixed height) at the top of scrollable cont
    - Sticky Toolbar uses this height for seamless visual connection
    - When custom image is set, both banner and toolbar use `UnifiedBannerBackground` with synchronized animation
 
-5. **Continue Watching Flow:**
-   - Component checks for recently watched video in current playlist/folder
-   - If found → Displays "CONTINUE?" section in top-right corner
-   - Shows video thumbnail with play button overlay
-   - User clicks → Calls `onContinue` callback → Starts playing from last position
-   - Positioned at `top-12 right-6` to align with ASCII avatar
+5. **Thumbnail Carousel Flow (Continue/Pinned):**
+   - Component receives `continueVideo` and `pinnedVideos` props
+   - **Continue Video**: Most recently watched video in current playlist (from `videoProgress`)
+   - **Pinned Videos**: All pinned videos that exist in current playlist (from `pinStore`)
+   - **State Management**:
+     - `activeThumbnail`: 0 = continue, 1 = pinned view
+     - `activePinnedIndex`: Which pin is currently displayed (when multiple)
+   - **Display Logic**:
+     - If only continue exists → Shows continue thumbnail, no navigation
+     - If only pinned exists → Shows pinned thumbnail, no navigation
+     - If both exist → Shows dot indicators below thumbnail to toggle
+     - If multiple pins → Shows vertical segmented bar to the right of thumbnail
+   - **Vertical Pin Bar**:
+     - Fixed width (`w-3`), matches thumbnail height (`h-24`)
+     - Segments split equally based on pin count (2 pins = 2 segments, 10 pins = 10 segments)
+     - Active segment is solid white, inactive segments are semi-transparent
+     - Clicking a segment changes `activePinnedIndex` to show that pin
+   - User clicks thumbnail → Calls `onContinue` or `onPinnedClick(video)` → Starts playing
+   - Positioned at `top-12 right-6` with centered label alignment
 
 **Source of Truth:**
 - `configStore.customPageBannerImage` - Custom page banner image (global, can be overridden per playlist/folder)
@@ -172,8 +193,22 @@ Users see a contextual banner (220px fixed height) at the top of scrollable cont
 **Content Layout:**
 - **Top-Aligned**: Content uses `items-start` for top-left alignment
 - **ASCII Avatar**: Vertically centered (`mt-8`) within 220px container
-- **Continue Video**: Positioned at `top-12 right-6` to align horizontally with avatar
-- **Text Padding**: Dynamic right padding (`pr-64`) when continue video is present
+- **Thumbnail Carousel**: Positioned at `top-12 right-6` with centered alignment
+- **Text Padding**: Dynamic right padding (`pr-64`) when continue or pinned video is present
+
+**Thumbnail Carousel Component State:**
+- `activeThumbnail`: 0 = continue view, 1 = pinned view
+- `activePinnedIndex`: Index of currently displayed pin (0 to pinnedVideos.length - 1)
+- `hasContinue`: Boolean - continue video exists
+- `hasPinned`: Boolean - at least one pinned video exists
+- `hasMultiplePins`: Boolean - more than one pinned video exists
+- `hasBoth`: Boolean - both continue and pinned exist (shows dot navigation)
+
+**PageBanner Props for Thumbnail Carousel:**
+- `continueVideo`: Video object for continue watching feature
+- `onContinue`: Callback when continue thumbnail is clicked
+- `pinnedVideos`: Array of pinned video objects in current playlist
+- `onPinnedClick(video)`: Callback when pinned thumbnail is clicked (receives selected video)
 
 **5: Page-Specific Usage**
 
@@ -182,7 +217,16 @@ Users see a contextual banner (220px fixed height) at the top of scrollable cont
 - Shows video count, year (2026), and author
 - Edit button allows renaming and setting custom banner via `EditPlaylistModal`
 - Custom banners persist in `folder_metadata` table
-- Continue watching appears if playlist has recently watched video
+- **Thumbnail Carousel**: Shows continue watching and/or pinned videos in top-right
+- **Playlist Navigator** (via `topRightContent` prop):
+  - **Chevron Buttons**: Left (`<`) and right (`>`) to navigate between playlists
+  - **Playlist Name**: Fixed-width display (`w-32`) with text truncation and tooltip for full name
+  - **Preview Mode**: Navigation uses `setPreviewPlaylist` so player continues unaffected
+  - **Reset Point Tracking**: Entering from PlaylistsPage or controller sets a "reset point"
+  - **Return Button**: Amber-colored `RotateCcw` icon appears when navigated away from reset point
+    - Clicking returns to the reset point playlist
+    - Only visible when `resetPointId !== activePlaylistId`
+  - **State**: Uses `resetPointId` state and `isChevronNavRef` ref to track navigation source
 
 **Playlists Page:**
 - Title: "All", preset name, or "All - TabName"
