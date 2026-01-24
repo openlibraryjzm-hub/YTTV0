@@ -691,6 +691,14 @@ Users access the configuration area via the "Config" (Settings icon) button on t
     - **ASCII Art Banner**: A large, interactive banner linking to *EmojiCombos.com* for finding or creating ASCII art. Opens in the user's default browser.
 
 - **Orb Tab**:
+  - **Saved Orb Presets** (top of tab):
+    - **Presets Grid**: Displays saved orb configurations as circular thumbnails in a responsive grid (3-5 columns).
+    - **One-Click Apply**: Click any preset to instantly apply its image, spill settings, scale, and position offsets.
+    - **Active Indicator**: Currently active preset shows a sky-blue ring border and checkmark overlay.
+    - **Delete on Hover**: Red trash button appears on hover to remove a preset.
+    - **Rename**: Click the name label below any preset to edit it inline.
+    - **Spill Badge**: Small "Spill" badge appears on presets that have spill enabled.
+    - **Empty State**: When no presets exist, shows a placeholder with instructions.
   - **Custom Orb Image**:
     - **Upload**: Button to select a local image file for the central orb.
     - **Preview**: Shows the currently selected custom image.
@@ -701,6 +709,12 @@ Users access the configuration area via the "Config" (Settings icon) button on t
     - **Visual Feedback**: The visualizer shows the image with a circular mask and highlights selected spill areas using the actual image data.
   - **Image Scaling**:
     - **Zoom Slider**: A range slider (0.5x to 3.0x) allows users to zoom the orb image in/out within the spill boundaries.
+  - **Image Position**:
+    - **Horizontal (X) Offset Slider**: Range slider (-100 to +100 px) to pan the image left/right.
+    - **Vertical (Y) Offset Slider**: Range slider (-100 to +100 px) to pan the image up/down.
+    - **Reset Buttons**: Individual reset buttons appear next to each slider when value is non-zero.
+    - **Live Preview**: The spill areas visualizer reflects position changes in real-time.
+  - **Save Configuration Button**: Located below the spill/position controls, saves the current orb setup (image, spill, scale, offsets) as a new preset.
   - **External Resources**:
     - **Background Removal Banner**: A large, interactive banner linking to *remove.bg* for easily removing backgrounds from images. This facilitates the creation of "pop-out" 3D effects when used with the Orb's spill functionality. Opens in the user's default browser.
     - **Pro Tip**: A dedicated section explaining how to handle cropped or "zoomed-in" images using generative fill.
@@ -722,6 +736,17 @@ Users access the configuration area via the "Config" (Settings icon) button on t
   - `isSpillEnabled`: Boolean master toggle for orb spill.
   - `orbSpill`: Object `{ tl: bool, tr: bool, bl: bool, br: bool }` for quadrant control.
   - `orbImageScale`: Float (0.5 - 3.0) for image zooming.
+  - `orbImageXOffset`: Integer (-100 to 100) for horizontal position offset.
+  - `orbImageYOffset`: Integer (-100 to 100) for vertical position offset.
+  - `orbFavorites`: Array of saved orb preset objects, each containing:
+    - `id`: Unique identifier (timestamp string).
+    - `name`: User-editable preset name.
+    - `createdAt`: Timestamp of creation.
+    - `customOrbImage`, `isSpillEnabled`, `orbSpill`, `orbImageScale`, `orbImageXOffset`, `orbImageYOffset`: Saved configuration values.
+  - `addOrbFavorite(favorite)`: Adds a new preset to the array.
+  - `removeOrbFavorite(id)`: Removes a preset by ID.
+  - `applyOrbFavorite(favorite)`: Applies all settings from a preset to current state.
+  - `renameOrbFavorite(id, newName)`: Updates a preset's name.
   - `visualizerGradient`: Boolean toggle for distance-based transparency.
   - All state is persisted to `localStorage` via Zustand persist middleware.
 
@@ -741,8 +766,27 @@ Users access the configuration area via the "Config" (Settings icon) button on t
    - Image overflows or clips accordingly.
 
 3. **Image Scaling:**
-    - User drags slider → `setOrbImageScale(val)` updates store.
-    - `PlayerController` applies CSS transform scale to the image element.
+   - User drags slider → `setOrbImageScale(val)` updates store.
+   - `PlayerController` applies CSS transform scale to the image element.
+
+4. **Image Position Offset:**
+   - User drags X or Y slider → `setOrbImageXOffset(val)` or `setOrbImageYOffset(val)` updates store.
+   - `PlayerController` applies CSS transform translate to the image element.
+   - Preview visualizer in Settings reflects offset changes in real-time.
+
+5. **Save Orb Preset:**
+   - User clicks "Save Current Configuration" → `addOrbFavorite()` called with current values.
+   - New preset object added to `orbFavorites` array with auto-generated ID and name.
+   - Preset appears in the grid immediately.
+
+6. **Apply Orb Preset:**
+   - User clicks preset thumbnail → `applyOrbFavorite(favorite)` called.
+   - All orb settings (`customOrbImage`, `isSpillEnabled`, `orbSpill`, `orbImageScale`, `orbImageXOffset`, `orbImageYOffset`) restored from preset.
+   - `PlayerController` updates orb display immediately.
+
+7. **Rename/Delete Preset:**
+   - User clicks name → Inline input appears → On blur/enter → `renameOrbFavorite(id, newName)` updates store.
+   - User hovers and clicks trash icon → `removeOrbFavorite(id)` removes preset from array.
 
 ---
 #### ### 4.1.9 Support Page

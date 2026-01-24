@@ -36,9 +36,11 @@ The Central Orb is a circular element (154px diameter by default) positioned at 
 - **Spill Toggle**: When enabled, the orb image can extend beyond the circular boundary. Users can configure which quadrants allow spill via the **Settings Page > Orb** tab. The spill state is persisted to localStorage (`isSpillEnabled`).
 - **Config Panel & Orb Settings**: When Config button is clicked, users are navigated to the Settings Page.
   - **Orb Tab**: A comprehensive configuration suite for the central element:
+    - **Saved Orb Presets**: Save and manage multiple orb configurations (image + settings) as presets for instant switching.
     - **Image Upload**: Upload custom images (png, jpg, gif) which are automatically resized and compressed for performance.
     - **Spill Control**: An interactive 4-quadrant toggle system allows users to selectively enable/disable image spill for the Top-Left, Top-Right, Bottom-Left, and Bottom-Right corners.
     - **Image Scaling**: A slider control (0.5x to 3.0x) allows precise zooming of the orb image within the spill boundaries.
+    - **Image Position**: X/Y offset sliders (-100 to +100 px) allow precise panning of the orb image.
     - **Visualizer Integration**: The spill effect works in tandem with the audio visualizer border.
 
 **2: File Manifest**
@@ -56,7 +58,8 @@ The Central Orb is a circular element (154px diameter by default) positioned at 
   - `isSpillEnabled`: Boolean, persisted to localStorage
   - `orbSpill`: Object with `{ tl, tr, bl, br }` boolean flags for quadrant spill, persisted to localStorage
   - `orbImageScale`, `orbImageScaleW`, `orbImageScaleH`: Float (0.5 - 3.0), controls image zoom level, persisted to localStorage
-  - `orbImageXOffset`, `orbImageYOffset`: Integers, control image panning (currently internal/dev only), persisted to localStorage
+  - `orbImageXOffset`, `orbImageYOffset`: Integers (-100 to 100), control image panning via Settings Page > Orb tab, persisted to localStorage
+  - `orbFavorites`: Array of saved orb preset objects (image + all settings), persisted to localStorage
 
 **API/Bridge:**
 - No Tauri commands - all state is client-side

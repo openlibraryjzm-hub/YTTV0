@@ -193,7 +193,7 @@ yttv2/
 
 #### `advanced-player-controller.md`
 **Covers**: Central orb, menu rectangles, playlist/video navigation, preview system, folder management, dual player system, likes playlist
-**Key Topics**: Orb customization, preview navigation, colored shuffle, quick assign, pin system
+**Key Topics**: Orb customization, **orb presets**, preview navigation, colored shuffle, quick assign, pin system
 **Cross-References**: See `navigation-routing.md` for navigation flows, `state-management.md` for store usage
 
 #### `playlist&tab.md`

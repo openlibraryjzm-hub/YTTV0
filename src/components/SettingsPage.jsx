@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Palette, User, Smile, ExternalLink, Copy, Check, Image, Layout, Music, Box, Volume2 } from 'lucide-react';
+import { Palette, User, Smile, ExternalLink, Copy, Check, Image, Layout, Music, Box, Volume2, Heart, Trash2, Plus, Star } from 'lucide-react';
 import { openUrl } from '@tauri-apps/plugin-opener';
 import { useConfigStore } from '../store/configStore';
 import { THEMES } from '../utils/themes';
@@ -52,11 +52,15 @@ export default function SettingsPage({ currentThemeId, onThemeChange }) {
         isSpillEnabled, setIsSpillEnabled,
         orbSpill, setOrbSpill,
         orbImageScale, setOrbImageScale,
+        orbImageXOffset, setOrbImageXOffset,
+        orbImageYOffset, setOrbImageYOffset,
         bannerPattern, setBannerPattern,
         customBannerImage, setCustomBannerImage,
         customPageBannerImage, setCustomPageBannerImage,
         playerBorderPattern, setPlayerBorderPattern,
-        visualizerGradient, setVisualizerGradient
+        visualizerGradient, setVisualizerGradient,
+        // Orb Favorites
+        orbFavorites, addOrbFavorite, removeOrbFavorite, applyOrbFavorite, renameOrbFavorite
     } = useConfigStore();
     const [customAvatar, setCustomAvatar] = useState('');
     const [copied, setCopied] = useState(false);
@@ -123,6 +127,40 @@ export default function SettingsPage({ currentThemeId, onThemeChange }) {
     };
 
     const isMultiLine = (text) => text.includes('\n');
+
+    // Orb Favorites handlers
+    const [editingFavoriteId, setEditingFavoriteId] = useState(null);
+    const [editingFavoriteName, setEditingFavoriteName] = useState('');
+    const [hoveredFavoriteId, setHoveredFavoriteId] = useState(null);
+
+    const handleSaveCurrentOrbAsFavorite = () => {
+        if (!customOrbImage) return; // Don't save if no image is set
+        addOrbFavorite({
+            customOrbImage,
+            isSpillEnabled,
+            orbSpill: { ...orbSpill },
+            orbImageScale,
+            orbImageXOffset,
+            orbImageYOffset,
+        });
+    };
+
+    const handleApplyFavorite = (favorite) => {
+        applyOrbFavorite(favorite);
+    };
+
+    const handleStartRename = (favorite) => {
+        setEditingFavoriteId(favorite.id);
+        setEditingFavoriteName(favorite.name);
+    };
+
+    const handleFinishRename = () => {
+        if (editingFavoriteId && editingFavoriteName.trim()) {
+            renameOrbFavorite(editingFavoriteId, editingFavoriteName.trim());
+        }
+        setEditingFavoriteId(null);
+        setEditingFavoriteName('');
+    };
 
     return (
         <div className="w-full h-full flex flex-col bg-transparent">
@@ -490,6 +528,101 @@ export default function SettingsPage({ currentThemeId, onThemeChange }) {
 
                     ) : activeTab === 'orb' ? (
                         <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
+                            {/* Orb Favorites Section */}
+                            <ConfigSection title="Saved Orb Presets" icon={Star}>
+                                <div className="space-y-4">
+                                    {/* Favorites Grid */}
+                                    {orbFavorites.length > 0 ? (
+                                        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3">
+                                            {orbFavorites.map((favorite) => (
+                                                <div
+                                                    key={favorite.id}
+                                                    className="relative group"
+                                                    onMouseEnter={() => setHoveredFavoriteId(favorite.id)}
+                                                    onMouseLeave={() => setHoveredFavoriteId(null)}
+                                                >
+                                                    {/* Favorite Thumbnail */}
+                                                    <button
+                                                        onClick={() => handleApplyFavorite(favorite)}
+                                                        className={`w-full aspect-square rounded-full border-4 overflow-hidden transition-all duration-200 relative ${favorite.customOrbImage === customOrbImage
+                                                            ? 'border-sky-500 ring-4 ring-sky-200 shadow-lg scale-105'
+                                                            : 'border-slate-200 hover:border-sky-300 hover:shadow-md'
+                                                            }`}
+                                                    >
+                                                        <img
+                                                            src={favorite.customOrbImage}
+                                                            alt={favorite.name}
+                                                            className="w-full h-full object-cover"
+                                                            style={{
+                                                                transform: favorite.isSpillEnabled ? `scale(${favorite.orbImageScale})` : 'none'
+                                                            }}
+                                                        />
+                                                        {/* Active Indicator */}
+                                                        {favorite.customOrbImage === customOrbImage && (
+                                                            <div className="absolute inset-0 bg-sky-500/20 flex items-center justify-center">
+                                                                <Check className="text-white drop-shadow-md" size={20} />
+                                                            </div>
+                                                        )}
+                                                    </button>
+
+                                                    {/* Delete Button (on hover) */}
+                                                    {hoveredFavoriteId === favorite.id && (
+                                                        <button
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                removeOrbFavorite(favorite.id);
+                                                            }}
+                                                            className="absolute -top-1 -right-1 w-6 h-6 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center shadow-md transition-all z-10"
+                                                        >
+                                                            <Trash2 size={12} />
+                                                        </button>
+                                                    )}
+
+                                                    {/* Name Label */}
+                                                    {editingFavoriteId === favorite.id ? (
+                                                        <input
+                                                            type="text"
+                                                            value={editingFavoriteName}
+                                                            onChange={(e) => setEditingFavoriteName(e.target.value)}
+                                                            onBlur={handleFinishRename}
+                                                            onKeyDown={(e) => e.key === 'Enter' && handleFinishRename()}
+                                                            autoFocus
+                                                            className="mt-2 w-full text-[10px] text-center font-bold bg-white border border-sky-400 rounded px-1 py-0.5 outline-none"
+                                                        />
+                                                    ) : (
+                                                        <p
+                                                            onClick={() => handleStartRename(favorite)}
+                                                            className="mt-2 text-[10px] text-slate-500 text-center font-bold truncate cursor-pointer hover:text-sky-600 transition-colors"
+                                                            title="Click to rename"
+                                                        >
+                                                            {favorite.name}
+                                                        </p>
+                                                    )}
+
+                                                    {/* Spill Indicator */}
+                                                    {favorite.isSpillEnabled && (
+                                                        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 bg-sky-500 text-white text-[8px] font-bold px-1.5 py-0.5 rounded-full uppercase tracking-wider">
+                                                            Spill
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <div className="py-6 text-center border-2 border-dashed border-slate-200 rounded-xl bg-slate-50">
+                                            <Heart className="mx-auto text-slate-300 mb-2" size={28} />
+                                            <p className="text-xs text-slate-400 font-medium">No saved presets yet</p>
+                                            <p className="text-[10px] text-slate-400 mt-1">Configure your orb below, then save it</p>
+                                        </div>
+                                    )}
+
+                                    {/* Info */}
+                                    <div className="p-3 bg-sky-50 rounded-xl border border-sky-100 text-sky-800 text-[11px] font-medium leading-relaxed">
+                                        <p><strong>Tip:</strong> Saved presets include the image, spill settings, scale, and quadrant configuration. Click a preset to instantly apply it.</p>
+                                    </div>
+                                </div>
+                            </ConfigSection>
+
                             <ConfigSection title="Orb Configuration" icon={Smile}>
                                 <div className="space-y-4">
                                     <div className="space-y-2">
@@ -555,6 +688,75 @@ export default function SettingsPage({ currentThemeId, onThemeChange }) {
                                         </div>
                                     )}
 
+                                    {/* Image Position Offset Sliders */}
+                                    {customOrbImage && isSpillEnabled && (
+                                        <div className="space-y-4 border-t border-slate-100 pt-4">
+                                            <label className="text-xs font-bold uppercase text-slate-400 ml-1">Image Position</label>
+                                            
+                                            {/* X Offset */}
+                                            <div className="space-y-2">
+                                                <div className="flex justify-between items-center px-1">
+                                                    <label className="text-[11px] font-bold text-slate-500">Horizontal (X)</label>
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="text-xs font-mono font-bold text-sky-600">{orbImageXOffset}px</span>
+                                                        {orbImageXOffset !== 0 && (
+                                                            <button
+                                                                onClick={() => setOrbImageXOffset(0)}
+                                                                className="text-[9px] font-bold text-slate-400 hover:text-sky-500 transition-colors"
+                                                            >
+                                                                Reset
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-center gap-3">
+                                                    <span className="text-[10px] font-bold text-slate-300">-100</span>
+                                                    <input
+                                                        type="range"
+                                                        min="-100"
+                                                        max="100"
+                                                        step="1"
+                                                        value={orbImageXOffset}
+                                                        onChange={(e) => setOrbImageXOffset(parseInt(e.target.value))}
+                                                        className="flex-1 h-2 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-sky-500 hover:accent-sky-400 transition-all border border-slate-200"
+                                                    />
+                                                    <span className="text-[10px] font-bold text-slate-300">+100</span>
+                                                </div>
+                                            </div>
+
+                                            {/* Y Offset */}
+                                            <div className="space-y-2">
+                                                <div className="flex justify-between items-center px-1">
+                                                    <label className="text-[11px] font-bold text-slate-500">Vertical (Y)</label>
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="text-xs font-mono font-bold text-sky-600">{orbImageYOffset}px</span>
+                                                        {orbImageYOffset !== 0 && (
+                                                            <button
+                                                                onClick={() => setOrbImageYOffset(0)}
+                                                                className="text-[9px] font-bold text-slate-400 hover:text-sky-500 transition-colors"
+                                                            >
+                                                                Reset
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-center gap-3">
+                                                    <span className="text-[10px] font-bold text-slate-300">-100</span>
+                                                    <input
+                                                        type="range"
+                                                        min="-100"
+                                                        max="100"
+                                                        step="1"
+                                                        value={orbImageYOffset}
+                                                        onChange={(e) => setOrbImageYOffset(parseInt(e.target.value))}
+                                                        className="flex-1 h-2 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-sky-500 hover:accent-sky-400 transition-all border border-slate-200"
+                                                    />
+                                                    <span className="text-[10px] font-bold text-slate-300">+100</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+
                                     {customOrbImage && isSpillEnabled && (
                                         <div className="space-y-2 border-t border-slate-100 pt-4">
                                             <label className="text-xs font-bold uppercase text-slate-400 ml-1">Spill Areas</label>
@@ -565,7 +767,7 @@ export default function SettingsPage({ currentThemeId, onThemeChange }) {
                                                     <img
                                                         src={customOrbImage}
                                                         className="absolute inset-0 w-full h-full object-cover opacity-50 grayscale transition-transform duration-300 origin-center"
-                                                        style={{ transform: `scale(${orbImageScale})` }}
+                                                        style={{ transform: `scale(${orbImageScale}) translate(${orbImageXOffset * 0.5}px, ${orbImageYOffset * 0.5}px)` }}
                                                         alt=""
                                                     />
 
@@ -626,6 +828,25 @@ export default function SettingsPage({ currentThemeId, onThemeChange }) {
                                             </div>
                                         </div>
                                     )}
+                                    {/* Save Current Configuration Button */}
+                                    <div className="border-t border-slate-100 pt-4 mt-4">
+                                        <button
+                                            onClick={handleSaveCurrentOrbAsFavorite}
+                                            disabled={!customOrbImage}
+                                            className={`w-full py-3 rounded-xl text-xs font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-2 border-2 ${customOrbImage
+                                                ? 'bg-sky-500 border-sky-500 text-white hover:bg-sky-600 hover:border-sky-600 shadow-md hover:shadow-lg'
+                                                : 'bg-slate-100 border-slate-200 text-slate-400 cursor-not-allowed'
+                                                }`}
+                                        >
+                                            <Plus size={16} />
+                                            Save Current Configuration as Preset
+                                        </button>
+                                        {!customOrbImage && (
+                                            <p className="text-[10px] text-slate-400 text-center mt-2">
+                                                Upload an orb image first to save it as a preset
+                                            </p>
+                                        )}
+                                    </div>
                                 </div>
                             </ConfigSection>
 

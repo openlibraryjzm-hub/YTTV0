@@ -31,7 +31,7 @@ The UI documentation has been split into focused files for better maintainabilit
    - History Page
    - Pins Page
    - Likes Page
-   - Settings Page
+   - Settings Page (Orb Presets, X/Y Offset Controls)
    - Support Page
 
 3. **[`ui-cards.md`](ui-cards.md)** - Card Components

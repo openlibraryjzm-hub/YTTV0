@@ -108,6 +108,38 @@ export const useConfigStore = create(
             orbSpill: { tl: true, tr: true, bl: true, br: true },
             setOrbSpill: (val) => set({ orbSpill: val }),
 
+            // Orb Favorites - saved configurations
+            orbFavorites: [],
+            addOrbFavorite: (favorite) => set((state) => ({
+                orbFavorites: [...state.orbFavorites, {
+                    id: Date.now().toString(),
+                    name: favorite.name || `Favorite ${state.orbFavorites.length + 1}`,
+                    createdAt: Date.now(),
+                    customOrbImage: favorite.customOrbImage,
+                    isSpillEnabled: favorite.isSpillEnabled,
+                    orbSpill: favorite.orbSpill,
+                    orbImageScale: favorite.orbImageScale,
+                    orbImageXOffset: favorite.orbImageXOffset ?? 0,
+                    orbImageYOffset: favorite.orbImageYOffset ?? 0,
+                }]
+            })),
+            removeOrbFavorite: (id) => set((state) => ({
+                orbFavorites: state.orbFavorites.filter(f => f.id !== id)
+            })),
+            applyOrbFavorite: (favorite) => set({
+                customOrbImage: favorite.customOrbImage,
+                isSpillEnabled: favorite.isSpillEnabled,
+                orbSpill: favorite.orbSpill,
+                orbImageScale: favorite.orbImageScale,
+                orbImageXOffset: favorite.orbImageXOffset ?? 0,
+                orbImageYOffset: favorite.orbImageYOffset ?? 0,
+            }),
+            renameOrbFavorite: (id, newName) => set((state) => ({
+                orbFavorites: state.orbFavorites.map(f => 
+                    f.id === id ? { ...f, name: newName } : f
+                )
+            })),
+
             // Restored Missing Keys (Defaults)
             pinFirstButtonSize: 34,
             setPinFirstButtonSize: (val) => set({ pinFirstButtonSize: val }),
