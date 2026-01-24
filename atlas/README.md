@@ -86,7 +86,8 @@ yttv2/
 │   │   ├── SupportPage.jsx             # Tabbed Support Hub (Code, Dev, Community, Resources)
 │   │   ├── LikesPage.jsx               # Liked videos with distribution graph and pagination
 │   │   ├── PieGraph.jsx                # Animated SVG pie chart for likes distribution
-│   │   └── DebugRuler.jsx              # Ruler overlay component (non-functional - see debug.md)
+│   │   ├── DebugRuler.jsx              # Ruler overlay component (non-functional - see debug.md)
+│   │   └── ScrollbarChevrons.jsx       # Scrollbar navigation controls (chevron-dot-chevron capsule)
 │   ├── store/                    # Zustand state management
 │   │   ├── configStore.js        # Theme and Profile configuration
 │   │   ├── layoutStore.js        # View mode, menu state, debug/inspect/ruler/dev toolbar toggles
