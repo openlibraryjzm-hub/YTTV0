@@ -351,7 +351,7 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
     };
 
     filterVideos();
-  }, [selectedFolder, activePlaylistId, activePlaylistItems]);
+  }, [selectedFolder, activePlaylistId, activePlaylistItems, videoFolderAssignments]);
 
   const handleMenuOptionClick = async (option, video) => {
     console.log('handleMenuOptionClick:', option.action, video.id, 'activePermission:', !!activePlaylistId);
@@ -632,11 +632,12 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
       }
       loadVideoFolders(assignments);
 
-      // Refresh folder view if viewing a folder
-      if (selectedFolder !== null) {
+      // Refresh folder view if viewing a colored folder (unsorted is handled by useEffect)
+      if (selectedFolder !== null && selectedFolder !== 'unsorted') {
         const videos = await getVideosInFolder(activePlaylistId, selectedFolder);
         setDisplayedVideos(videos || []);
       }
+      // For unsorted, the useEffect will automatically update when videoFolderAssignments changes
 
       // Clear selections and exit bulk tag mode
       clearBulkTagSelections();

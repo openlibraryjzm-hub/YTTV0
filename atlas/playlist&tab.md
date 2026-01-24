@@ -198,6 +198,7 @@ Users see colored folders as a way to organize videos within playlists:
   - **16 Colored Dots**: Each dot displays the count of videos assigned to that folder.
   - **All Button**: Shows all videos (displays total count).
   - **Unsorted Button**: Shows videos not assigned to any folder (displays count).
+  - **Dynamic Unsorted Updates**: When viewing the unsorted page, assigning videos to folders immediately removes them from the view and backfills with the next unsorted video. This reactive behavior is triggered by changes to `videoFolderAssignments` in the store.
  
 - **Start-of-List Sticky Videos**:
   - Each specific colored folder view supports its own set of "Sticky Videos" (see `ui.md` 4.1.2).
@@ -267,6 +268,7 @@ Users see colored folders as a way to organize videos within playlists:
    - API call inserts record into `video_folder_assignments` table
    - Local state updated → `setVideoFolders(videoId, [...folders, folderColor])`
    - If viewing that folder → `getVideosInFolder()` refreshes displayed videos
+   - **Dynamic Unsorted Updates**: If viewing unsorted page, the `videoFolderAssignments` change triggers automatic re-filter, removing the assigned video and backfilling with the next unsorted video (pagination applies)
    - Folder card video count updates on next load
 
 4. **Sticky Folder Flow:**

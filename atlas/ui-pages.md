@@ -213,10 +213,12 @@ Users see a 3-column grid of video cards showing videos from the current playlis
 
 2. **Folder Filtering Flow:**
    - User selects folder → `setSelectedFolder(folderColor)` (FolderSelector)
-   - `useEffect` (line 149) triggers → `filterVideos()`
+   - `useEffect` (line 304) triggers → `filterVideos()`
    - If `selectedFolder === null` → Shows all videos from `activePlaylistItems`
-   - If `selectedFolder` set → Calls `getVideosInFolder(playlistId, folderColor)`
+   - If `selectedFolder === 'unsorted'` → Filters videos with no folder assignments from `videoFolderAssignments`
+   - If `selectedFolder` is a color → Calls `getVideosInFolder(playlistId, folderColor)`
    - Updates `displayedVideos` → Grid re-renders with filtered videos
+   - **Dynamic Updates**: The `useEffect` depends on `videoFolderAssignments`, so when videos are assigned to folders, the unsorted view updates automatically without requiring page navigation
 
 3. **Sorting Flow:**
    - User selects sort option → `setSortBy(option)` (line 42)
@@ -271,9 +273,10 @@ Users see a 3-column grid of video cards showing videos from the current playlis
 - When `currentPlaylistItems` changes → Videos loaded → Grid updates
 - When `previewPlaylistItems` set → Preview mode active → Shows preview items
 - When `selectedFolder` changes → `displayedVideos` filtered → Grid shows only folder videos
+- When `videoFolderAssignments` changes → Unsorted view dynamically updates → Assigned videos removed, next unsorted videos appear
 - When `sortBy` changes → `sortedVideos` recalculated → Grid re-sorted
 - When `bulkTagMode` changes → Cards enter/exit bulk mode → UI changes
-- When folder assigned → `videoFolderAssignments` updated → Card star icon updates
+- When folder assigned → `videoFolderAssignments` updated → Card star icon updates AND unsorted view refreshes automatically
 - When video progress updates → `videoProgress` Map updated → Sorting may change
 
 ---

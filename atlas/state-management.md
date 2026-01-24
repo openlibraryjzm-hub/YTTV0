@@ -158,6 +158,7 @@ The application uses **Zustand** (v5.0.9) for state management. Zustand is a lig
 **Dependencies:**
 - When `selectedFolder` changes → VideosPage filters videos → Grid shows only folder videos
 - When `videoFolderAssignments` changes → VideoCard star icons update → Visual feedback
+- When `videoFolderAssignments` changes (unsorted view) → VideosPage re-filters unsorted videos → Assigned videos removed, next unsorted videos backfilled
 - When `bulkTagMode` changes → VideoCard hover behavior changes → Color grid appears
 - When `bulkTagSelections` changes → Visual feedback updates → Checkmarks appear
 
