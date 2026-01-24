@@ -8,7 +8,7 @@ import { useTabStore } from '../store/tabStore';
 import { useTabPresetStore } from '../store/tabPresetStore';
 import { useLayoutStore } from '../store/layoutStore';
 import { useNavigationStore } from '../store/navigationStore';
-import { getFolderColorById } from '../utils/folderColors';
+import { getFolderColorById, FOLDER_COLORS } from '../utils/folderColors';
 import { useInspectLabel } from '../utils/inspectLabels';
 import PlaylistUploader from './PlaylistUploader';
 import BulkPlaylistImporter from './BulkPlaylistImporter';
@@ -41,6 +41,14 @@ const PlaylistsPage = ({ onVideoSelect }) => {
   const [playlistFolders, setPlaylistFolders] = useState({}); // Store folders for each playlist: { playlistId: [folders] }
   const [stuckFolders, setStuckFolders] = useState(new Set()); // Track stuck folders: Set of "playlistId:folderColor" strings
   const [folderMetadata, setFolderMetadata] = useState({}); // Store folder custom names: { "playlistId:folderColor": { name, description } }
+  const [openFolderMenuIds, setOpenFolderMenuIds] = useState(new Set()); // Track which playlists have folder selector menu open
+  const [hoveredPieSegment, setHoveredPieSegment] = useState({}); // Track hovered pie segment per playlist: { playlistId: folderColorId }
+  const pieChartRefs = useRef({}); // Refs for pie chart containers to handle wheel events
+  const pieDataRef = useRef({ hoveredPieSegment: {}, playlistFolders: {} }); // Ref to hold latest state for wheel handler
+  
+  // Keep ref in sync with state
+  pieDataRef.current.hoveredPieSegment = hoveredPieSegment;
+  pieDataRef.current.playlistFolders = playlistFolders;
   const { setPlaylistItems, currentPlaylistItems, setCurrentFolder, setPreviewPlaylist, setAllPlaylists, activePlaylistId } = usePlaylistStore();
   const { showColoredFolders, setShowColoredFolders } = useFolderStore();
   const [imageLoadErrors, setImageLoadErrors] = useState(new Set());
@@ -279,7 +287,7 @@ const PlaylistsPage = ({ onVideoSelect }) => {
           {/* Skeleton Banner */}
           <div className="w-full h-64 bg-slate-800/30 rounded-xl animate-pulse mb-8" />
         </div>
-        <div className="grid grid-cols-2 gap-4 px-8 pb-8">
+        <div className="grid grid-cols-2 gap-4 px-8 pb-8 items-start">
           {[...Array(6)].map((_, i) => (
             <PlaylistCardSkeleton key={i} />
           ))}
@@ -640,7 +648,7 @@ const PlaylistsPage = ({ onVideoSelect }) => {
             </div>
 
             {/* Grid */}
-            <div className="grid grid-cols-2 gap-4 px-8 pb-8">
+            <div className="grid grid-cols-2 gap-4 px-8 pb-8 items-start">
               {/* Colored Folders - Grouped by playlist with headers */}
               {showColoredFolders && (() => {
                 // Filter folders
@@ -1194,6 +1202,44 @@ const PlaylistsPage = ({ onVideoSelect }) => {
                               >
                                 <Shuffle size={18} />
                               </button>
+                              {/* Folder Menu Toggle */}
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  const isOpen = openFolderMenuIds.has(playlist.id);
+                                  if (isOpen) {
+                                    // Clean up ref so it re-attaches when reopened
+                                    delete pieChartRefs.current[playlist.id];
+                                  } else {
+                                    // Auto-select first folder when opening
+                                    const folders = playlistFolders[playlist.id] || [];
+                                    if (folders.length > 0) {
+                                      setHoveredPieSegment(prev => ({
+                                        ...prev,
+                                        [playlist.id]: folders[0].folder_color
+                                      }));
+                                    }
+                                  }
+                                  setOpenFolderMenuIds(prev => {
+                                    const next = new Set(prev);
+                                    if (next.has(playlist.id)) {
+                                      next.delete(playlist.id);
+                                    } else {
+                                      next.add(playlist.id);
+                                    }
+                                    return next;
+                                  });
+                                }}
+                                className={`p-1 rounded transition-colors ${openFolderMenuIds.has(playlist.id)
+                                  ? 'bg-sky-500 text-white'
+                                  : 'hover:bg-slate-200 text-[#052F4A] hover:text-sky-600'
+                                  }`}
+                                title="Folder colors"
+                              >
+                                <svg className="w-[18px] h-[18px]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A2 2 0 013 12V7a4 4 0 014-4z" />
+                                </svg>
+                              </button>
                             </div>
                           </div>
 
@@ -1340,6 +1386,262 @@ const PlaylistsPage = ({ onVideoSelect }) => {
                             </div>
 
                           </div>
+
+                          {/* Expandable Folder Color Menu - Pie Chart */}
+                          {openFolderMenuIds.has(playlist.id) && (() => {
+                            const playlistFolderList = playlistFolders[playlist.id] || [];
+                            const totalVideos = playlistFolderList.reduce((acc, f) => acc + (f.video_count || 1), 0);
+                            
+                            // Calculate pie segments
+                            let cumulativeAngle = 0;
+                            const pieSegments = playlistFolderList.map((folder) => {
+                              const folderColorData = getFolderColorById(folder.folder_color);
+                              const folderMetaKey = `${folder.playlist_id}:${folder.folder_color}`;
+                              const customName = folderMetadata[folderMetaKey]?.name;
+                              const displayName = customName || folderColorData.name;
+                              const videoCount = folder.video_count || 1;
+                              const angle = (videoCount / totalVideos) * 360;
+                              const startAngle = cumulativeAngle;
+                              cumulativeAngle += angle;
+                              
+                              return {
+                                folder,
+                                folderColorData,
+                                displayName,
+                                videoCount,
+                                startAngle,
+                                endAngle: cumulativeAngle,
+                                angle,
+                                percentage: (videoCount / totalVideos) * 100
+                              };
+                            });
+
+                            // Get hover state for this playlist's pie chart
+                            const hoveredSegmentId = hoveredPieSegment[playlist.id] || null;
+                            const hoveredSegment = pieSegments.find(s => s.folder.folder_color === hoveredSegmentId);
+
+                            return (
+                              <div 
+                                className="mt-2 rounded-lg bg-slate-800/90 border border-slate-600/50 p-3 animate-in slide-in-from-top-2 duration-200"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <div className="flex items-center justify-between mb-3">
+                                  <span className="text-sm font-medium text-slate-300">Colored Folders</span>
+                                  <button
+                                    onClick={() => {
+                                      // Clean up ref so it re-attaches when reopened
+                                      delete pieChartRefs.current[playlist.id];
+                                      setOpenFolderMenuIds(prev => {
+                                        const next = new Set(prev);
+                                        next.delete(playlist.id);
+                                        return next;
+                                      });
+                                    }}
+                                    className="text-slate-400 hover:text-white transition-colors"
+                                  >
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                  </button>
+                                </div>
+                                {playlistFolderList.length > 0 ? (
+                                  <div 
+                                    className="flex items-center gap-4"
+                                    ref={(el) => {
+                                      if (el && pieChartRefs.current[playlist.id] !== el) {
+                                        pieChartRefs.current[playlist.id] = el;
+                                        const playlistId = playlist.id; // Capture playlist.id in closure
+                                        const wheelHandler = (e) => {
+                                          e.preventDefault();
+                                          e.stopPropagation();
+                                          
+                                          const segments = pieDataRef.current.playlistFolders[playlistId] || [];
+                                          if (segments.length === 0) return;
+                                          
+                                          const currentHovered = pieDataRef.current.hoveredPieSegment[playlistId];
+                                          const currentIndex = segments.findIndex(s => s.folder_color === currentHovered);
+                                          let newIndex;
+                                          
+                                          if (e.deltaY > 0) {
+                                            // Scroll down - go to next segment
+                                            newIndex = currentIndex < segments.length - 1 ? currentIndex + 1 : 0;
+                                          } else {
+                                            // Scroll up - go to previous segment  
+                                            newIndex = currentIndex > 0 ? currentIndex - 1 : segments.length - 1;
+                                          }
+                                          
+                                          setHoveredPieSegment(prev => ({ 
+                                            ...prev, 
+                                            [playlistId]: segments[newIndex].folder_color 
+                                          }));
+                                        };
+                                        el.addEventListener('wheel', wheelHandler, { passive: false });
+                                      }
+                                    }}
+                                  >
+                                    {/* Pie Chart - Left Side */}
+                                    <div className="relative flex-shrink-0" style={{ width: 140, height: 140 }}>
+                                      <svg viewBox="-100 -100 200 200" className="transform -rotate-90 w-full h-full">
+                                        {/* Pie Segments */}
+                                        {pieSegments.map((segment, idx) => {
+                                          const outerRadius = 80;
+                                          const innerRadius = 35;
+                                          const startRad = (segment.startAngle * Math.PI) / 180;
+                                          const endRad = (segment.endAngle * Math.PI) / 180;
+
+                                          const x1 = Math.cos(startRad) * outerRadius;
+                                          const y1 = Math.sin(startRad) * outerRadius;
+                                          const x2 = Math.cos(endRad) * outerRadius;
+                                          const y2 = Math.sin(endRad) * outerRadius;
+                                          const x3 = Math.cos(endRad) * innerRadius;
+                                          const y3 = Math.sin(endRad) * innerRadius;
+                                          const x4 = Math.cos(startRad) * innerRadius;
+                                          const y4 = Math.sin(startRad) * innerRadius;
+
+                                          const largeArcFlag = segment.angle > 180 ? 1 : 0;
+                                          const isHovered = hoveredSegmentId === segment.folder.folder_color;
+
+                                          const pathData = [
+                                            `M ${x1} ${y1}`,
+                                            `A ${outerRadius} ${outerRadius} 0 ${largeArcFlag} 1 ${x2} ${y2}`,
+                                            `L ${x3} ${y3}`,
+                                            `A ${innerRadius} ${innerRadius} 0 ${largeArcFlag} 0 ${x4} ${y4}`,
+                                            `Z`
+                                          ].join(' ');
+
+                                          return (
+                                            <path
+                                              key={segment.folder.folder_color}
+                                              d={pathData}
+                                              fill={segment.folderColorData.hex}
+                                              className="cursor-pointer transition-all duration-200"
+                                              style={{ 
+                                                filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))',
+                                                transformOrigin: 'center',
+                                                opacity: hoveredSegmentId && !isHovered ? 0.4 : 1,
+                                                transform: isHovered ? 'scale(1.05)' : 'scale(1)',
+                                              }}
+                                              stroke="rgba(15, 23, 42, 0.8)"
+                                              strokeWidth="2"
+                                              onClick={async () => {
+                                                try {
+                                                  const items = await getVideosInFolder(playlist.id, segment.folder.folder_color);
+                                                  setPlaylistItems(items, playlist.id, { playlist_id: playlist.id, folder_color: segment.folder.folder_color }, playlist.name);
+                                                  if (items.length > 0 && onVideoSelect) {
+                                                    onVideoSelect(items[0].video_url);
+                                                  }
+                                                } catch (error) {
+                                                  console.error('Failed to load folder items:', error);
+                                                }
+                                              }}
+                                            />
+                                          );
+                                        })}
+                                        
+                                        {/* Outer Dot Buttons */}
+                                        {pieSegments.map((segment) => {
+                                          const dotRadius = 93; // Position outside the pie
+                                          const midAngle = (segment.startAngle + segment.endAngle) / 2;
+                                          const midRad = (midAngle * Math.PI) / 180;
+                                          const dotX = Math.cos(midRad) * dotRadius;
+                                          const dotY = Math.sin(midRad) * dotRadius;
+                                          const isSelected = hoveredSegmentId === segment.folder.folder_color;
+                                          
+                                          return (
+                                            <circle
+                                              key={`dot-${segment.folder.folder_color}`}
+                                              cx={dotX}
+                                              cy={dotY}
+                                              r={isSelected ? 7 : 5}
+                                              fill={segment.folderColorData.hex}
+                                              className="cursor-pointer transition-all duration-200"
+                                              style={{
+                                                filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.4))',
+                                              }}
+                                              stroke={isSelected ? 'white' : 'rgba(15, 23, 42, 0.6)'}
+                                              strokeWidth={isSelected ? 2 : 1}
+                                              onClick={() => {
+                                                setHoveredPieSegment(prev => ({ 
+                                                  ...prev, 
+                                                  [playlist.id]: segment.folder.folder_color 
+                                                }));
+                                              }}
+                                            />
+                                          );
+                                        })}
+                                      </svg>
+                                      {/* Center - Total Count */}
+                                      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                                        <div className="text-center">
+                                          <div className="text-lg font-bold text-white">{totalVideos}</div>
+                                          <div className="text-[9px] text-slate-400">tagged</div>
+                                        </div>
+                                      </div>
+                                    </div>
+                                    
+                                    {/* Preview Area - Right Side */}
+                                    <div className="flex-1 min-w-0 flex items-center justify-center h-[140px]">
+                                      {hoveredSegment ? (
+                                        <div className="flex flex-col items-center animate-in fade-in duration-150 w-full">
+                                          {/* Folder Name with Color Dot */}
+                                          <div className="flex items-center gap-2 mb-2">
+                                            <div 
+                                              className="w-3 h-3 rounded-full shadow-sm flex-shrink-0"
+                                              style={{ backgroundColor: hoveredSegment.folderColorData.hex }}
+                                            />
+                                            <h4 className="text-sm font-semibold text-white truncate max-w-[120px]">
+                                              {hoveredSegment.displayName}
+                                            </h4>
+                                          </div>
+                                          
+                                          {/* Mini Thumbnail */}
+                                          <div 
+                                            className="w-full max-w-[140px] aspect-video rounded-md overflow-hidden bg-slate-900/50 shadow-md border border-slate-600/30"
+                                          >
+                                            {hoveredSegment.folder.first_video ? (
+                                              <img 
+                                                src={getThumbnailUrl(hoveredSegment.folder.first_video.video_id, 'standard')}
+                                                alt={hoveredSegment.displayName}
+                                                className="w-full h-full object-cover"
+                                              />
+                                            ) : (
+                                              <div className="w-full h-full flex items-center justify-center">
+                                                <svg className="w-6 h-6 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+                                                </svg>
+                                              </div>
+                                            )}
+                                          </div>
+                                          
+                                          {/* Stats Row */}
+                                          <div className="flex items-center justify-center gap-3 mt-2 text-xs">
+                                            <span className="text-slate-400">
+                                              {hoveredSegment.videoCount} videos
+                                            </span>
+                                            <span className="text-slate-600">•</span>
+                                            <span className="text-slate-500">
+                                              {hoveredSegment.percentage.toFixed(1)}%
+                                            </span>
+                                          </div>
+                                        </div>
+                                      ) : (
+                                        <div className="text-center text-slate-500">
+                                          <svg className="w-8 h-8 mx-auto mb-2 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 9l4-4 4 4m0 6l-4 4-4-4" />
+                                          </svg>
+                                          <p className="text-xs">Scroll to browse</p>
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <div className="text-center py-4 text-slate-500 text-sm">
+                                    No colored folders yet
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })()}
                         </div>
                       </div>
                     );

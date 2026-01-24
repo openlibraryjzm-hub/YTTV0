@@ -42,7 +42,94 @@ Users see playlist cards built using the reusable Card component system:
     - **Right Click**: Plays the specific video matching the card's cover image
   - **Shuffle Button** (Title Bar hover): Shuffles playlist items and plays immediately
   - **Preview Button** (Title Bar hover): Opens playlist in preview mode
+  - **Folder Menu Button** (Title Bar hover): Tag icon button that toggles the Folder Pie Chart Menu
   - **3-Dot Menu** (inline with title): Expand, Export, Add to Tab, Delete options
+
+#### ### 4.1.1.1c Folder Pie Chart Menu (Playlist Card Expansion)
+
+**1: User-Perspective Description**
+
+When users click the tag icon button in a playlist card's hover controls, an expandable panel appears below the card showing a pie chart visualization of the playlist's colored folders.
+
+- **Layout Structure**:
+  - **Left Side**: Interactive donut pie chart (140x140px)
+    - Segments sized proportionally by video count per folder
+    - Center displays total tagged video count
+    - Outer colored dot buttons for manual selection
+  - **Right Side**: Preview panel showing selected folder details
+    - Folder name with colored dot indicator
+    - Mini thumbnail (16:9) from folder's first video
+    - Video count and percentage stats
+
+- **Interaction Methods**:
+  - **Scroll Navigation**: Scroll wheel over the menu cycles through folder segments
+    - Scroll down: Next segment (wraps to first)
+    - Scroll up: Previous segment (wraps to last)
+    - Page scroll is blocked while over the menu
+  - **Outer Dot Buttons**: Click colored dots around pie edge to select that folder
+  - **Pie Segment Click**: Click a segment to immediately play that folder's videos
+
+- **Visual States**:
+  - **Selected Segment**: Scaled up (1.05x), full opacity
+  - **Unselected Segments**: Dimmed (0.4 opacity) when another is selected
+  - **Selected Dot**: Larger radius (7px vs 5px), white stroke border
+  - **Auto-Select**: First folder is auto-highlighted when menu opens
+
+- **Behavior**:
+  - Multiple playlist cards can have their folder menus open simultaneously
+  - Menu pushes down content below (no overlapping)
+  - Adjacent cards maintain their height (items-start grid alignment)
+  - Selection persists when mouse leaves the menu area
+  - Closing menu (via toggle or X button) cleans up state for proper re-attachment
+
+**2: File Manifest**
+
+**UI/Components:**
+- `src/components/PlaylistsPage.jsx`: Contains all pie chart menu logic and rendering
+
+**State Management (PlaylistsPage.jsx local state):**
+- `openFolderMenuIds`: Set of playlist IDs with open folder menus
+- `hoveredPieSegment`: Object mapping playlist ID to selected folder color
+- `pieChartRefs`: Ref object for wheel event listener attachment
+- `pieDataRef`: Ref holding latest state for wheel handler closure
+
+**API/Bridge:**
+- `src/api/playlistApi.js`:
+  - `getVideosInFolder(playlistId, folderColor)` - Gets videos when folder is clicked
+
+**3: The Logic & State Chain**
+
+**Trigger → Action → Persistence Flow:**
+
+1. **Menu Toggle Flow:**
+   - User clicks tag icon → `openFolderMenuIds` updated (add/remove playlist ID)
+   - If opening → Auto-selects first folder via `setHoveredPieSegment`
+   - If closing → Cleans up `pieChartRefs` for proper re-attachment
+   - Menu renders/unmounts → Content below pushed down via grid layout
+
+2. **Scroll Navigation Flow:**
+   - User scrolls over menu → Wheel event captured (passive: false)
+   - `pieDataRef` provides latest folder/hover state
+   - Index calculated → Next/previous with wrap-around
+   - `hoveredPieSegment` updated → Pie and preview re-render
+
+3. **Dot Button Click Flow:**
+   - User clicks outer dot → `setHoveredPieSegment` updates
+   - Segment highlights → Preview updates with folder details
+
+4. **Segment Click Flow:**
+   - User clicks pie segment → `getVideosInFolder()` fetched
+   - `setPlaylistItems()` called → Videos loaded into player
+   - `onVideoSelect()` called → First video plays
+
+**Source of Truth:**
+- `playlistFolders[playlistId]`: Array of folders with video data
+- `hoveredPieSegment[playlistId]`: Currently selected folder color
+
+**State Dependencies:**
+- When `openFolderMenuIds` changes → Menu appears/disappears
+- When `hoveredPieSegment` changes → Pie segment highlights, preview updates
+- When `playlistFolders` changes → Pie segments recalculated
 
 **2: File Manifest**
 
