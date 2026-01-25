@@ -76,14 +76,28 @@ Users see a contextual banner (220px fixed height) at the top of scrollable cont
 - **Background Options**:
   - **Color Gradients**: Vibrant gradients matching folder color (when viewing folders)
   - **Animated Patterns**: CSS-based patterns (Diagonal, Dots, Mesh, Solid) when no custom image
-  - **Two-Layer Image System**: User can upload up to two images via Settings → Appearance → Page Banner:
-    - **Layer 1 (Background)**: Primary image that can optionally scroll horizontally
-    - **Layer 2 (Overlay)**: Secondary image rendered on top (use transparent PNGs for composite effects)
-    - Each layer has independent Scale, X Position, and Y Position controls
+  - **Two-Layer System**: Background color + overlay image via Settings → Appearance → Page Banner:
+    - **Layer 1 (Background Color)**: Solid color that fills the banner background
+    - **Layer 2 (Overlay)**: Image rendered on top (use transparent PNGs for composite effects)
+    - Layer 2 has independent Scale, X Position, and Y Position controls
+- **Banner Panel Borders**: Two prominent border sections that divide the banner into distinct panels
+  - **Left Panel**: Covers from left edge to the thumbnail scroller border (332px width)
+    - Straight edges (no rounded corners)
+    - Bold black border (`4px solid rgba(0,0,0,0.8)`)
+    - Inner shadow + outer shadow for depth (`inset 0 0 30px rgba(0,0,0,0.2), 0 0 15px rgba(0,0,0,0.5)`)
+    - **Layer 1 only**: Background color always visible (Layer 2 does NOT cover this area)
+  - **Right Panel**: Covers from left panel end (332px) to right edge
+    - Straight edges (no rounded corners)
+    - Same bold black border and shadow styling
+    - **Layer 2 here**: Overlay image only renders in this panel area
+  - Both panels use `pointer-events-none` and `z-10` for proper layering
+  - Creates visual effect of two separate banner sections
 - **Unified Banner System**: When custom image is set, the banner visually connects with the Sticky Toolbar below it using synchronized horizontal scroll animation (can be disabled via Settings)
   - **Layer 2 Thumbnail Strip**: Vertical strip to the right of thumbnail showing Layer 2 images from folders
-    - **Position**: `left-[220px]`, spans full banner height (`top-2 bottom-2`)
-    - **4 Slots**: Shows first 4 images from selected folder (clickable to apply)
+    - **Position**: `left-[220px]`, fixed height of 196px (fits 4 thumbnails)
+    - **Scrollable**: Shows ALL images/folders with always-visible scrollbar on right side
+      - **Scrollbar**: Native scrollbar always visible for easy navigation
+      - **Item Height**: Fixed 45px per thumbnail for consistent scrolling
     - **Mode Switcher Bar**: Horizontal bar below slots with Folder and Image icons
       - **Folders Mode**: Shows folders with first image as thumbnail background, name overlay, image count
       - **Images Mode**: Shows images from selected folder (click to apply as Layer 2)
@@ -104,26 +118,25 @@ Users see a contextual banner (220px fixed height) at the top of scrollable cont
 
 **State Management:**
 - `src/store/configStore.js`:
-  - `bannerPattern`: Selected pattern ('diagonal' | 'dots' | 'mesh' | 'solid')
-  - **Layer 1 (Background Image):**
-    - `customPageBannerImage`: Base64 string of uploaded Layer 1 image (null = use gradient/pattern)
-    - `pageBannerImageScale`: Scale percentage (50-200%, default 100)
-    - `pageBannerImageXOffset`: X position percentage (0-100%, default 50 = center)
-    - `pageBannerImageYOffset`: Y position percentage (0-100%, default 50 = center)
+  - **Layer 1 (Background Color):**
+    - `pageBannerBgColor`: Hex color string for background (default '#1e293b' slate-800)
   - **Layer 2 (Overlay Image):**
     - `customPageBannerImage2`: Base64 string of uploaded Layer 2 image (null = no overlay)
     - `pageBannerImage2Scale`: Scale percentage for Layer 2 (50-200%, default 100)
     - `pageBannerImage2XOffset`: X position percentage for Layer 2 (0-100%, default 50)
     - `pageBannerImage2YOffset`: Y position percentage for Layer 2 (0-100%, default 50)
-  - **Animation:**
-    - `pageBannerScrollEnabled`: Boolean to enable/disable horizontal scroll animation (default true)
   - **Layer 2 Image Folders System:**
-    - `layer2Folders`: Array of folder objects `{ id, name, images[] }` - default folder is "Default"
+    - `layer2Folders`: Array of folder objects `{ id, name, images[], playlistIds[] }` - default folder is "Default"
+      - `playlistIds`: Array of playlist IDs this folder appears on (empty = all playlists)
     - `selectedLayer2FolderId`: ID of currently selected folder (default: 'default')
     - `setSelectedLayer2FolderId(id)`: Sets the selected folder
     - `addLayer2Folder(name)`: Creates a new folder with optional name
     - `removeLayer2Folder(folderId)`: Deletes a folder (cannot delete 'default')
     - `renameLayer2Folder(folderId, newName)`: Renames a folder
+    - `setLayer2FolderPlaylists(folderId, playlistIds)`: Sets which playlists a folder appears on (empty = all)
+    - `playlistLayer2Overrides`: Object mapping `playlistId` → `{ image, scale, xOffset, yOffset, imageId, folderId }`
+    - `setPlaylistLayer2Override(playlistId, imageConfig)`: Sets the Layer 2 image override for a specific playlist
+    - `clearPlaylistLayer2Override(playlistId)`: Removes the override (falls back to Default folder)
     - `addLayer2Image(folderId, image)`: Adds image with config to folder
     - `removeLayer2Image(folderId, imageId)`: Removes image from folder
     - `updateLayer2Image(folderId, imageId, updates)`: Updates image config
@@ -163,27 +176,18 @@ Users see a contextual banner (220px fixed height) at the top of scrollable cont
    - Passes props to `<PageBanner />` component
    - `PageBanner.jsx` renders with appropriate styling
 
-2. **Background Selection Flow:**
-   - Component checks `customPageBannerImage` and `customPageBannerImage2` from `configStore`
-   - **If Any Custom Image Set**:
-     - Uses `UnifiedBannerBackground` component for GPU-accelerated rendering
-     - **Layer 1 (Background)**: Renders first with `z-0`, applies scale/position settings
-       - If `pageBannerScrollEnabled` is true and not a GIF → Animates horizontally
-       - If disabled or GIF → Static image with position settings
-     - **Layer 2 (Overlay)**: Renders on top with `z-[1]`, always static (no scroll animation)
-     - Each layer applies its own scale (auto height%) and position (X%, Y%) settings
-   - **If No Custom Images**:
-     - Checks `folderColor` prop → Generates gradient from folder color
-     - If `folderColor === 'unsorted'` → Uses gray gradient
-     - If no folder color → Uses default blue gradient
-     - Applies animated pattern overlay based on `bannerPattern` setting
+2. **Background Rendering Flow:**
+   - Component uses `pageBannerBgColor` from `configStore` as solid background color (Layer 1)
+   - **Layer 2 (Overlay)**:
+     - If `effectiveLayer2Image` exists, renders via `UnifiedBannerBackground` component
+     - Layer 2 applies its scale (auto height%) and position (X%, Y%) settings
+   - Shadow color derived from `pageBannerBgColor`
 
-3. **Custom Banner Upload Flow (Playlist/Folder):**
-   - User right-clicks info button on banner → Opens `EditPlaylistModal`
-   - User uploads custom banner image → Modal saves to `folder_metadata` table
-   - On next page load → Banner fetches custom image from database
-   - Updates `customPageBannerImage` in store → Banner displays custom image
-   - **Note**: Currently custom page banners are scoped per playlist/folder (stored in database)
+3. **Per-Playlist Layer 2 Selection Flow:**
+   - User views a playlist's Videos page
+   - Clicks an image in the Layer 2 thumbnail strip
+   - Image is saved to `playlistLayer2Overrides[playlistId]`
+   - That playlist now shows the selected Layer 2 image on future visits
 
 4. **Sticky Toolbar Integration:**
    - `PageBanner` measures its height via `ResizeObserver`
@@ -239,23 +243,20 @@ Users see a contextual banner (220px fixed height) at the top of scrollable cont
    - **Positioning**: `bottom-1 left-[1px]`
 
 **Source of Truth:**
-- `configStore.customPageBannerImage` - Layer 1 image (global, can be overridden per playlist/folder)
-- `configStore.customPageBannerImage2` - Layer 2 overlay image
-- `configStore.pageBannerImageScale/XOffset/YOffset` - Layer 1 positioning
-- `configStore.pageBannerImage2Scale/XOffset/YOffset` - Layer 2 positioning
-- `configStore.pageBannerScrollEnabled` - Scroll animation toggle
-- `configStore.bannerPattern` - Selected animated pattern (when no custom images)
+- `configStore.pageBannerBgColor` - Layer 1 background color (hex string)
+- `configStore.customPageBannerImage2` - Layer 2 overlay image (for Settings page preview)
+- `configStore.pageBannerImage2Scale/XOffset/YOffset` - Layer 2 positioning (for Settings page preview)
+- `configStore.playlistLayer2Overrides` - Per-playlist Layer 2 image selections
 - Database `folder_metadata` table - Custom folder banners and ASCII art (per folder)
 - Database `playlists` table - Playlist descriptions and metadata
 - Props passed from parent page component - Title, description, video count, folder color, playlist badges, customDescription
 - Page component state - Filtered playlist state, pagination state (for badges and pagination badge)
 
 **State Dependencies:**
-- When `customPageBannerImage` or `customPageBannerImage2` changes → Banner background updates → UnifiedBannerBackground renders
-- When `pageBannerImageScale/XOffset/YOffset` changes → Layer 1 position/size updates in real-time
-- When `pageBannerImage2Scale/XOffset/YOffset` changes → Layer 2 position/size updates in real-time
-- When `pageBannerScrollEnabled` changes → Scroll animation toggles on/off for Layer 1
-- When `bannerPattern` changes → Pattern overlay updates (only when no custom images)
+- When `pageBannerBgColor` changes → Background color updates
+- When `customPageBannerImage2` changes (Settings) → Layer 2 preview updates
+- When `pageBannerImage2Scale/XOffset/YOffset` changes (Settings) → Layer 2 position/size updates in real-time
+- When `playlistLayer2Overrides[playlistId]` changes → That playlist's banner Layer 2 updates
 - When `folderColor` changes → Gradient colors update → Banner re-renders with new colors
 - When banner height changes → `setBannerHeight` called → Sticky Toolbar adjusts positioning
 - When custom image uploaded → Saved to database → Banner fetches and displays on next load
@@ -265,19 +266,15 @@ Users see a contextual banner (220px fixed height) at the top of scrollable cont
 
 **4: Technical Implementation Details**
 
-**Unified Banner System:**
-- Uses `UnifiedBannerBackground` component for custom images
-- Supports two independent image layers (background + overlay)
-- **Layer 1 (Background)**:
-  - GPU-accelerated horizontal scroll animation (60fps) when enabled
-  - Two side-by-side divs (200% width total) slide from 0 to -50% for seamless loop
-  - Animation can be disabled via `pageBannerScrollEnabled` setting
-  - Configurable scale (50-200%) and position (X: 0-100%, Y: 0-100%)
+**Two-Layer Banner System:**
+- **Layer 1 (Background Color)**:
+  - Simple solid color background from `pageBannerBgColor`
+  - Configurable via color picker with preset options in Settings
 - **Layer 2 (Overlay)**:
-  - Always static (no scroll animation)
-  - Rendered with `z-[1]` to appear on top of Layer 1
-  - Ideal for transparent PNGs to create composite/layered effects
-  - Independent scale and position controls
+  - Uses `UnifiedBannerBackground` component for image rendering
+  - Ideal for transparent PNGs to create composite effects over the background color
+  - Per-playlist image selection with fallback to Default folder
+  - Configurable scale (50-200%) and position (X: 0-100%, Y: 0-100%)
 
 **Gradient Generation:**
 - Folder colors mapped via `FOLDER_COLORS` utility
@@ -323,8 +320,20 @@ Users see a contextual banner (220px fixed height) at the top of scrollable cont
 - `layer2ViewMode`: 'folders' | 'images' - current view mode (default: 'images')
 - `selectedFolder`: Folder object from `layer2Folders` matching `selectedLayer2FolderId`
 - `layer2Images`: Array of images from the selected folder
-- **Folders Mode**: Shows up to 4 folders with first image as thumbnail, clicking selects folder and auto-switches to images mode
-- **Images Mode**: Shows up to 4 images from selected folder, clicking applies image as Layer 2
+- `filteredLayer2Folders`: Folders filtered by playlist assignment (only shows folders assigned to current playlist or "all")
+- `effectiveLayer2ImageId`: The ID of the currently selected image for this playlist (from override or default)
+- **Folders Mode**: Shows filtered folders with scroll support (45px height each), clicking selects folder and auto-switches to images mode
+- **Images Mode**: Shows ALL images from selected folder with scroll support (45px height each), clicking sets image as Layer 2 for current playlist
+- **Scroll Support**: Always-visible scrollbar on right side for easy navigation through all items
+- **Selection Behavior**: Clicking an image calls `handleSelectLayer2Image()` which stores the override for the current playlist
+- **Playlist Assignment**: Each folder can be assigned to specific playlists (configured in Settings → Appearance → Page Banner)
+  - Default: Empty `playlistIds` array means folder shows on ALL playlists
+  - Specific: Adding playlist IDs makes the folder exclusive to those playlists' Videos pages
+- **Per-Playlist Layer 2 Selection**: Each playlist remembers its own selected Layer 2 image
+  - **Default**: First image from Default folder is shown for all playlists initially
+  - **Override**: Clicking an image in the thumbnail strip sets it as the Layer 2 image for that specific playlist
+  - **Persistence**: Selection is stored in `playlistLayer2Overrides` in configStore
+  - **Active Indicator**: Purple border highlights the currently selected image for the current playlist
 
 **Pinned Video Data (from VideosPage):**
 - `folder_color`: First folder color assigned to this video (for pin bar segment coloring)
@@ -409,15 +418,14 @@ Users see a contextual banner (220px fixed height) at the top of scrollable cont
 
 **Via Settings:**
 - **Location**: Settings → Appearance → Page Banner (first section at top of Appearance tab)
-- **Two-Layer Image Controls**:
-  - **Layer 1 (Background)**: Upload, remove, and adjust scale/position
+- **Two-Layer Controls**:
+  - **Layer 1 (Background Color)**: Color picker with hex input and preset color buttons
+    - Presets: Slate, Dark, Zinc, Indigo, Blue, Green, Red, Amber
   - **Layer 2 (Overlay)**: Upload, remove, and adjust scale/position (use transparent PNGs)
-  - **Scale Slider**: 50% to 200% (controls image height, maintains aspect ratio)
-  - **X Position Slider**: 0% (left) to 100% (right)
-  - **Y Position Slider**: 0% (top) to 100% (bottom)
-  - **Thumbnail Preview**: Shows uploaded image in each layer's control panel
-- **Pattern Selection**: Toggle between Diagonal, Dots, Mesh, Solid patterns (only visible when no custom images uploaded)
-- **Scroll Animation Toggle**: Enable/disable horizontal scrolling animation for Layer 1
+    - **Scale Slider**: 50% to 200% (controls image height, maintains aspect ratio)
+    - **X Position Slider**: 0% (left) to 100% (right)
+    - **Y Position Slider**: 0% (top) to 100% (bottom)
+    - **Thumbnail Preview**: Shows uploaded image
 - **Live Preview**: Changes apply immediately to the actual Page Banner above the settings (no separate preview panel)
 - **Layer 2 Image Library**: Multi-folder system for organizing Layer 2 images
   - **New Folder Button**: Creates additional folders for organization

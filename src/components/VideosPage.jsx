@@ -1218,6 +1218,7 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
                 onNavigatePrev={() => handleNavigatePlaylist('prev')}
                 onReturn={handleReturnToOriginal}
                 showReturnButton={showReturnButton}
+                currentPlaylistId={activePlaylistId}
               />
             </div>
           )}

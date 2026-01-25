@@ -199,16 +199,9 @@ export const useConfigStore = create(
             // Visual Flair
             bannerPattern: 'diagonal',
             setBannerPattern: (val) => set({ bannerPattern: val }),
-            customPageBannerImage: null,
-            setCustomPageBannerImage: (val) => set({ customPageBannerImage: val }),
-            pageBannerScrollEnabled: true,
-            setPageBannerScrollEnabled: (val) => set({ pageBannerScrollEnabled: val }),
-            pageBannerImageScale: 100,
-            setPageBannerImageScale: (val) => set({ pageBannerImageScale: val }),
-            pageBannerImageXOffset: 50,
-            setPageBannerImageXOffset: (val) => set({ pageBannerImageXOffset: val }),
-            pageBannerImageYOffset: 50,
-            setPageBannerImageYOffset: (val) => set({ pageBannerImageYOffset: val }),
+            // Layer 1 - Background Color (solid color behind Layer 2 overlay)
+            pageBannerBgColor: '#1e293b', // Default slate-800
+            setPageBannerBgColor: (val) => set({ pageBannerBgColor: val }),
             // Second Page Banner Image (Layer 2)
             customPageBannerImage2: null,
             setCustomPageBannerImage2: (val) => set({ customPageBannerImage2: val }),
@@ -220,8 +213,9 @@ export const useConfigStore = create(
             setPageBannerImage2YOffset: (val) => set({ pageBannerImage2YOffset: val }),
 
             // Layer 2 Image Folders System
+            // playlistIds: [] means show on ALL playlists, specific IDs means show only on those playlists
             layer2Folders: [
-                { id: 'default', name: 'Default', images: [] }
+                { id: 'default', name: 'Default', images: [], playlistIds: [] }
             ],
             selectedLayer2FolderId: 'default',
             setSelectedLayer2FolderId: (val) => set({ selectedLayer2FolderId: val }),
@@ -229,7 +223,8 @@ export const useConfigStore = create(
                 layer2Folders: [...state.layer2Folders, {
                     id: Date.now().toString(),
                     name: name || `Folder ${state.layer2Folders.length + 1}`,
-                    images: []
+                    images: [],
+                    playlistIds: [] // Empty = show on all playlists
                 }]
             })),
             removeLayer2Folder: (folderId) => set((state) => ({
@@ -240,6 +235,12 @@ export const useConfigStore = create(
             renameLayer2Folder: (folderId, newName) => set((state) => ({
                 layer2Folders: state.layer2Folders.map(f =>
                     f.id === folderId ? { ...f, name: newName } : f
+                )
+            })),
+            // Update which playlists a folder appears on (empty = all playlists)
+            setLayer2FolderPlaylists: (folderId, playlistIds) => set((state) => ({
+                layer2Folders: state.layer2Folders.map(f =>
+                    f.id === folderId ? { ...f, playlistIds: playlistIds || [] } : f
                 )
             })),
             addLayer2Image: (folderId, image) => set((state) => ({
@@ -283,6 +284,22 @@ export const useConfigStore = create(
                 pageBannerImage2Scale: image.scale,
                 pageBannerImage2XOffset: image.xOffset,
                 pageBannerImage2YOffset: image.yOffset
+            }),
+            
+            // Per-Playlist Layer 2 Image Overrides
+            // Maps playlistId -> { image, scale, xOffset, yOffset, imageId, folderId }
+            // If a playlist has an override, it uses that image instead of the default
+            playlistLayer2Overrides: {},
+            setPlaylistLayer2Override: (playlistId, imageConfig) => set((state) => ({
+                playlistLayer2Overrides: {
+                    ...state.playlistLayer2Overrides,
+                    [playlistId]: imageConfig
+                }
+            })),
+            clearPlaylistLayer2Override: (playlistId) => set((state) => {
+                const newOverrides = { ...state.playlistLayer2Overrides };
+                delete newOverrides[playlistId];
+                return { playlistLayer2Overrides: newOverrides };
             }),
 
             // Player Border Pattern

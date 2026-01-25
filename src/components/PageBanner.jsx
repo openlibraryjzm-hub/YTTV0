@@ -7,21 +7,103 @@ import { getThumbnailUrl } from '../utils/youtubeUtils';
 import UnifiedBannerBackground from './UnifiedBannerBackground';
 import { useConfigStore } from '../store/configStore';
 
-const PageBanner = ({ title, description, folderColor, onEdit, videoCount, countLabel = 'Video', creationYear, author, avatar, continueVideo, onContinue, pinnedVideos = [], onPinnedClick, children, childrenPosition = 'right', topRightContent, seamlessBottom = false, playlistBadges, onPlaylistBadgeLeftClick, onPlaylistBadgeRightClick, allPlaylists, filteredPlaylist, customDescription, onNavigateNext, onNavigatePrev, onReturn, showReturnButton }) => {
+const PageBanner = ({ title, description, folderColor, onEdit, videoCount, countLabel = 'Video', creationYear, author, avatar, continueVideo, onContinue, pinnedVideos = [], onPinnedClick, children, childrenPosition = 'right', topRightContent, seamlessBottom = false, playlistBadges, onPlaylistBadgeLeftClick, onPlaylistBadgeRightClick, allPlaylists, filteredPlaylist, customDescription, onNavigateNext, onNavigatePrev, onReturn, showReturnButton, currentPlaylistId }) => {
     const { 
-        bannerPattern, customPageBannerImage, bannerBgSize, setBannerHeight, setBannerBgSize, 
-        pageBannerScrollEnabled, pageBannerImageScale, pageBannerImageXOffset, pageBannerImageYOffset,
+        pageBannerBgColor, setBannerHeight,
         customPageBannerImage2, pageBannerImage2Scale, pageBannerImage2XOffset, pageBannerImage2YOffset,
         userAvatar,
-        layer2Folders, applyLayer2Image, selectedLayer2FolderId, setSelectedLayer2FolderId
+        layer2Folders, applyLayer2Image, selectedLayer2FolderId, setSelectedLayer2FolderId,
+        playlistLayer2Overrides, setPlaylistLayer2Override
     } = useConfigStore();
     
     // Layer 2 strip view mode: 'folders' = show folder list, 'images' = show images from selected folder
     const [layer2ViewMode, setLayer2ViewMode] = useState('images');
     
-    // Get the selected folder and its images
-    const selectedFolder = layer2Folders?.find(f => f.id === selectedLayer2FolderId) || layer2Folders?.[0];
+    // Filter folders based on current playlist assignment
+    // Show folders that either: have no playlistIds (show on all) OR include current playlist
+    const filteredLayer2Folders = layer2Folders?.filter(folder => {
+        // If no playlistIds set or empty array, show on all playlists
+        if (!folder.playlistIds || folder.playlistIds.length === 0) return true;
+        // If currentPlaylistId is provided, check if folder is assigned to it
+        if (currentPlaylistId) return folder.playlistIds.includes(currentPlaylistId);
+        // If no currentPlaylistId, only show folders that appear on all
+        return false;
+    }) || [];
+    
+    // Get the selected folder and its images (from filtered folders)
+    const selectedFolder = filteredLayer2Folders?.find(f => f.id === selectedLayer2FolderId) || filteredLayer2Folders?.[0];
     const layer2Images = selectedFolder?.images || [];
+    
+    // Per-Playlist Layer 2 Image Selection
+    // Each playlist can have its own selected Layer 2 image
+    // Settings page (no currentPlaylistId): Uses global customPageBannerImage2 with global scale/offset
+    // Videos page (with currentPlaylistId): Uses per-playlist override or defaults to Default folder's first image
+    const getEffectiveLayer2Image = () => {
+        // Settings page case: No playlist context, use global values for live preview
+        if (!currentPlaylistId) {
+            if (customPageBannerImage2) {
+                return {
+                    image: customPageBannerImage2,
+                    scale: pageBannerImage2Scale,
+                    xOffset: pageBannerImage2XOffset,
+                    yOffset: pageBannerImage2YOffset,
+                    imageId: null, // Global, not from a saved image
+                    folderId: null
+                };
+            }
+            return null;
+        }
+        
+        // Videos page case: Check for playlist-specific override first
+        if (playlistLayer2Overrides[currentPlaylistId]) {
+            const override = playlistLayer2Overrides[currentPlaylistId];
+            return {
+                image: override.image,
+                scale: override.scale,
+                xOffset: override.xOffset,
+                yOffset: override.yOffset,
+                imageId: override.imageId,
+                folderId: override.folderId
+            };
+        }
+        
+        // No override - use first image from Default folder as fallback
+        const defaultFolder = layer2Folders?.find(f => f.id === 'default');
+        if (defaultFolder && defaultFolder.images?.length > 0) {
+            const defaultImage = defaultFolder.images[0];
+            return {
+                image: defaultImage.image,
+                scale: defaultImage.scale,
+                xOffset: defaultImage.xOffset,
+                yOffset: defaultImage.yOffset,
+                imageId: defaultImage.id,
+                folderId: 'default'
+            };
+        }
+        
+        // No default images available
+        return null;
+    };
+    
+    const effectiveLayer2 = getEffectiveLayer2Image();
+    const effectiveLayer2Image = effectiveLayer2?.image || null;
+    const effectiveLayer2Scale = effectiveLayer2?.scale ?? 100;
+    const effectiveLayer2XOffset = effectiveLayer2?.xOffset ?? 50;
+    const effectiveLayer2YOffset = effectiveLayer2?.yOffset ?? 50;
+    const effectiveLayer2ImageId = effectiveLayer2?.imageId || null;
+    
+    // Handler to select Layer 2 image for current playlist
+    const handleSelectLayer2Image = (img, folderId) => {
+        if (!currentPlaylistId) return;
+        setPlaylistLayer2Override(currentPlaylistId, {
+            image: img.image,
+            scale: img.scale,
+            xOffset: img.xOffset,
+            yOffset: img.yOffset,
+            imageId: img.id,
+            folderId: folderId
+        });
+    };
     const [badgesExpanded, setBadgesExpanded] = useState(false);
     const badgesContainerRef = useRef(null);
     
@@ -60,19 +142,7 @@ const PageBanner = ({ title, description, folderColor, onEdit, videoCount, count
     const activeLabel = currentOption === 'continue' ? 'CONTINUE?' : currentOption === 'pinned' ? 'PINNED' : 'SIGNATURE';
     const activeCallback = currentOption === 'continue' ? onContinue : currentOption === 'pinned' ? () => onPinnedClick && onPinnedClick(activePinnedVideo) : null;
 
-    // Find color config if folderColor is provided
-    // If folderColor is 'unsorted', distinct gray style
-    const isUnsorted = folderColor === 'unsorted';
-
-    const colorConfig = (!isUnsorted && folderColor)
-        ? FOLDER_COLORS.find(c => c.id === folderColor)
-        : null;
-
-    // Determine gradient styles
-    let gradientStyle;
-    let shadowColor;
-
-    // Measure height and calculate background size for Unified Banner
+    // Measure height for banner
     const bannerRef = React.useRef(null);
 
     React.useEffect(() => {
@@ -81,64 +151,18 @@ const PageBanner = ({ title, description, folderColor, onEdit, videoCount, count
         const updateDimensions = () => {
             const banner = bannerRef.current;
             if (!banner) return;
-
-            const width = banner.offsetWidth;
-            const height = banner.offsetHeight;
-
-            // If no custom image, just report height
-            if (!customPageBannerImage) {
-                setBannerHeight(height);
-                return;
-            }
-
-            // Just report height for PageBanner spacing, we use cover/center now.
-            setBannerHeight(height);
+            setBannerHeight(banner.offsetHeight);
         };
-
 
         const observer = new ResizeObserver(updateDimensions);
         observer.observe(bannerRef.current);
-
-        // Also listen to window resize for horizontal changes
         window.addEventListener('resize', updateDimensions);
 
         return () => {
             observer.disconnect();
             window.removeEventListener('resize', updateDimensions);
         };
-    }, [customPageBannerImage, setBannerHeight, setBannerBgSize]);
-
-    if (customPageBannerImage) {
-        gradientStyle = {
-            backgroundImage: `url(${customPageBannerImage})`,
-            backgroundSize: 'cover', // Standard cover
-            backgroundPositionY: 'center',
-            backgroundPositionX: '0px', // Allow animation to take over X axis
-            backgroundRepeat: 'repeat-x', // Repeat horizontally for scroll
-            // backgroundAttachment: 'fixed', // Removed fixed to basic absolute stitching
-        };
-        // Use a neutral or dominant color for shadow if possible, or fallback
-        shadowColor = colorConfig?.hex || '#3b82f6';
-    } else if (isUnsorted) {
-        gradientStyle = {
-            background: 'linear-gradient(135deg, #64748b 0%, #475569 100%)' // Slate/Gray
-        };
-        shadowColor = '#64748b';
-    } else if (colorConfig) {
-        gradientStyle = {
-            background: `linear-gradient(135deg, ${colorConfig.hex}DD 0%, ${colorConfig.hex} 100%)`
-        };
-        shadowColor = colorConfig.hex;
-    } else {
-        // Default Playlist Blue
-        gradientStyle = {
-            background: 'linear-gradient(135deg, #0ea5e9 0%, #3b82f6 100%)' // Sky to Blue
-        };
-        shadowColor = '#3b82f6';
-    }
-
-    // Check if custom image is a GIF
-    const isGif = customPageBannerImage?.startsWith('data:image/gif');
+    }, [setBannerHeight]);
 
     // Simple approach: show all badges, but limit height with CSS when collapsed
     const hasMoreBadges = playlistBadges && playlistBadges.length > 0;
@@ -151,44 +175,54 @@ const PageBanner = ({ title, description, folderColor, onEdit, videoCount, count
     return (
         <div ref={bannerRef} className={`w-full relative animate-fade-in group mx-auto ${bannerHeightClass} ${seamlessBottom ? 'mb-0' : 'mb-8'}`}>
 
-            {/* Background Layer - Hides overflow for shapes/patterns/images */}
+            {/* Background Layer - Solid color (Layer 1) */}
             <div
-                className={`absolute inset-0 overflow-hidden ${seamlessBottom ? 'rounded-t-2xl rounded-b-none shadow-none' : 'rounded-2xl shadow-lg'}`}
+                className="absolute inset-0 overflow-hidden shadow-lg"
                 style={{
-                    // Gradient styles only when NO custom image (fallback)
-                    ...(!customPageBannerImage ? gradientStyle : {}),
-                    boxShadow: seamlessBottom ? 'none' : `0 10px 25px -5px ${shadowColor}50`
+                    backgroundColor: pageBannerBgColor,
+                    boxShadow: seamlessBottom ? 'none' : `0 10px 25px -5px ${pageBannerBgColor}50`
                 }}
             >
-                {/* Unified GPU Banner */}
-                {(customPageBannerImage || customPageBannerImage2) && (
-                    <UnifiedBannerBackground
-                        image={customPageBannerImage}
-                        bgSize="cover"
-                        yOffset="center"
-                        isGif={isGif}
-                        scrollEnabled={pageBannerScrollEnabled}
-                        imageScale={pageBannerImageScale}
-                        imageXOffset={pageBannerImageXOffset}
-                        imageYOffset={pageBannerImageYOffset}
-                        image2={customPageBannerImage2}
-                        image2Scale={pageBannerImage2Scale}
-                        image2XOffset={pageBannerImage2XOffset}
-                        image2YOffset={pageBannerImage2YOffset}
-                    />
-                )}
-
-                {/* Animated Pattern Overlay */}
-                {!customPageBannerImage && !customPageBannerImage2 && (
-                    <div className={`absolute inset-0 pointer-events-none z-0 pattern-${bannerPattern || 'diagonal'}`} />
-                )}
-
-
-
                 {/* Abstract Background Shapes */}
                 <div className="absolute top-0 right-0 w-96 h-96 bg-white/10 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none transform group-hover:scale-110 transition-transform duration-1000 ease-in-out" />
                 <div className="absolute bottom-0 left-0 w-64 h-64 bg-black/10 rounded-full blur-2xl -ml-16 -mb-16 pointer-events-none" />
             </div>
+            
+            {/* Layer 2 Overlay - only covers right panel area (starts at border line) */}
+            {effectiveLayer2Image && (
+                <div 
+                    className="absolute top-0 bottom-0 right-0 overflow-hidden"
+                    style={{ left: '332px' }}
+                >
+                    <UnifiedBannerBackground
+                        image={null}
+                        image2={effectiveLayer2Image}
+                        image2Scale={effectiveLayer2Scale}
+                        image2XOffset={effectiveLayer2XOffset}
+                        image2YOffset={effectiveLayer2YOffset}
+                    />
+                </div>
+            )}
+            
+            {/* Left Panel Border - covers from left to 2px past thumbnail scroller */}
+            <div 
+                className="absolute top-0 bottom-0 left-0 pointer-events-none z-10"
+                style={{ 
+                    width: '332px',
+                    border: '4px solid rgba(0,0,0,0.8)',
+                    boxShadow: 'inset 0 0 30px rgba(0,0,0,0.2), 0 0 15px rgba(0,0,0,0.5)'
+                }}
+            />
+            
+            {/* Right Panel Border - covers from left panel end to right edge */}
+            <div 
+                className="absolute top-0 bottom-0 right-0 pointer-events-none z-10"
+                style={{ 
+                    left: '332px',
+                    border: '4px solid rgba(0,0,0,0.8)',
+                    boxShadow: 'inset 0 0 30px rgba(0,0,0,0.2), 0 0 15px rgba(0,0,0,0.5)'
+                }}
+            />
 
             {/* Top Right Content */}
             {topRightContent && (
@@ -651,89 +685,107 @@ const PageBanner = ({ title, description, folderColor, onEdit, videoCount, count
                 </div>
             )}
             
-            {/* Vertical Thumbnail Strip - stacked thumbnails spanning banner height */}
-            <div className="absolute top-2 bottom-2 left-[220px] flex flex-col gap-1 z-20">
-                {/* 4 slots container */}
-                <div className="flex-1 flex flex-col gap-1">
+            {/* Vertical Thumbnail Strip - stacked thumbnails with scrollbar */}
+            <div className="absolute top-2 left-[220px] flex flex-col gap-1 z-20" style={{ height: '196px' }}>
+                {/* Scrollable container with always-visible scrollbar */}
+                <div 
+                    className="flex-1 flex flex-col gap-1 overflow-y-auto pr-1"
+                    style={{ 
+                        scrollbarWidth: 'auto',
+                        scrollbarColor: 'rgba(255,255,255,0.5) rgba(0,0,0,0.3)'
+                    }}
+                >
                     {layer2ViewMode === 'images' ? (
-                        /* Images Mode: Show images from selected folder */
-                        [0, 1, 2, 3].map((index) => {
-                            const img = layer2Images[index];
-                            const isActive = img && customPageBannerImage2 === img.image;
-                            return (
-                                <button
-                                    key={index}
-                                    onClick={() => img && applyLayer2Image(img)}
-                                    className={`flex-1 w-[100px] rounded-md overflow-hidden border transition-all ${
-                                        isActive 
-                                            ? 'border-2 border-purple-400 ring-1 ring-purple-300' 
-                                            : 'border border-white/20 hover:border-white/40'
-                                    } bg-black/30 backdrop-blur-sm ${img ? 'cursor-pointer hover:scale-105' : ''}`}
-                                    disabled={!img}
-                                >
-                                    {img ? (
+                        /* Images Mode: Show ALL images from selected folder with scroll */
+                        layer2Images.length > 0 ? (
+                            layer2Images.map((img, index) => {
+                                // Check if this image is currently selected for this playlist
+                                const isActive = img && effectiveLayer2ImageId === img.id;
+                                return (
+                                    <button
+                                        key={img.id || index}
+                                        onClick={() => img && handleSelectLayer2Image(img, selectedFolder?.id)}
+                                        className={`flex-shrink-0 h-[45px] w-[100px] rounded-md overflow-hidden border transition-all ${
+                                            isActive 
+                                                ? 'border-2 border-purple-400 ring-1 ring-purple-300' 
+                                                : 'border border-white/20 hover:border-white/40'
+                                        } bg-black/30 backdrop-blur-sm cursor-pointer hover:scale-105`}
+                                        title={currentPlaylistId ? "Click to set as banner for this playlist" : "Select a playlist first"}
+                                    >
                                         <img 
                                             src={img.image} 
                                             alt={`Layer 2 Option ${index + 1}`} 
                                             className="w-full h-full object-cover"
                                         />
-                                    ) : null}
-                                </button>
-                            );
-                        })
-                    ) : (
-                        /* Folders Mode: Show folder list with first image as thumbnail */
-                        [0, 1, 2, 3].map((index) => {
-                            const folder = layer2Folders?.[index];
-                            const isSelected = folder && folder.id === selectedLayer2FolderId;
-                            const firstImage = folder?.images?.[0];
-                            return (
-                                <button
+                                    </button>
+                                );
+                            })
+                        ) : (
+                            /* Empty state - show 4 placeholder slots */
+                            [0, 1, 2, 3].map((index) => (
+                                <div
                                     key={index}
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        if (folder) {
-                                            // Select folder and switch to images view
-                                            setSelectedLayer2FolderId(folder.id);
-                                            // Use setTimeout to ensure state updates in sequence
-                                            setTimeout(() => setLayer2ViewMode('images'), 0);
-                                        }
-                                    }}
-                                    className={`flex-1 w-[100px] rounded-md overflow-hidden border transition-all relative ${
-                                        isSelected 
-                                            ? 'border-2 border-purple-400 ring-1 ring-purple-300' 
-                                            : 'border border-white/20 hover:border-white/40'
-                                    } bg-black/30 backdrop-blur-sm ${folder ? 'cursor-pointer hover:scale-105' : ''}`}
-                                    disabled={!folder}
-                                >
-                                    {folder ? (
-                                        <>
-                                            {/* Folder thumbnail - first image or fallback */}
-                                            {firstImage ? (
-                                                <img 
-                                                    src={firstImage.image} 
-                                                    alt={folder.name}
-                                                    className="absolute inset-0 w-full h-full object-cover opacity-70"
-                                                />
-                                            ) : (
-                                                <div className="absolute inset-0 flex items-center justify-center">
-                                                    <Folder size={20} className="text-purple-300/50" />
-                                                </div>
-                                            )}
-                                            {/* Folder info overlay */}
-                                            <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/40">
-                                                <span className="text-[9px] text-white font-bold truncate max-w-[90px] text-center px-1" style={{ textShadow: '0 1px 3px rgba(0,0,0,1)' }}>
-                                                    {folder.name}
-                                                </span>
-                                                <span className="text-[8px] text-white/70 font-medium" style={{ textShadow: '0 1px 2px rgba(0,0,0,0.8)' }}>
-                                                    {folder.images.length} img
-                                                </span>
+                                    className="flex-shrink-0 h-[45px] w-[100px] rounded-md overflow-hidden border border-white/20 bg-black/30 backdrop-blur-sm"
+                                />
+                            ))
+                        )
+                    ) : (
+                        /* Folders Mode: Show ALL folders with scroll (filtered by playlist assignment) */
+                        filteredLayer2Folders && filteredLayer2Folders.length > 0 ? (
+                            filteredLayer2Folders.map((folder, index) => {
+                                const isSelected = folder && folder.id === selectedLayer2FolderId;
+                                const firstImage = folder?.images?.[0];
+                                return (
+                                    <button
+                                        key={folder.id || index}
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            if (folder) {
+                                                // Select folder and switch to images view
+                                                setSelectedLayer2FolderId(folder.id);
+                                                // Use setTimeout to ensure state updates in sequence
+                                                setTimeout(() => setLayer2ViewMode('images'), 0);
+                                            }
+                                        }}
+                                        className={`flex-shrink-0 h-[45px] w-[100px] rounded-md overflow-hidden border transition-all relative ${
+                                            isSelected 
+                                                ? 'border-2 border-purple-400 ring-1 ring-purple-300' 
+                                                : 'border border-white/20 hover:border-white/40'
+                                        } bg-black/30 backdrop-blur-sm cursor-pointer hover:scale-105`}
+                                    >
+                                        {/* Folder thumbnail - first image or fallback */}
+                                        {firstImage ? (
+                                            <img 
+                                                src={firstImage.image} 
+                                                alt={folder.name}
+                                                className="absolute inset-0 w-full h-full object-cover opacity-70"
+                                            />
+                                        ) : (
+                                            <div className="absolute inset-0 flex items-center justify-center">
+                                                <Folder size={20} className="text-purple-300/50" />
                                             </div>
-                                        </>
-                                    ) : null}
-                                </button>
-                            );
-                        })
+                                        )}
+                                        {/* Folder info overlay */}
+                                        <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/40">
+                                            <span className="text-[9px] text-white font-bold truncate max-w-[90px] text-center px-1" style={{ textShadow: '0 1px 3px rgba(0,0,0,1)' }}>
+                                                {folder.name}
+                                            </span>
+                                            <span className="text-[8px] text-white/70 font-medium" style={{ textShadow: '0 1px 2px rgba(0,0,0,0.8)' }}>
+                                                {folder.images.length} img
+                                            </span>
+                                        </div>
+                                    </button>
+                                );
+                            })
+                        ) : (
+                            /* Empty state - show 4 placeholder slots */
+                            [0, 1, 2, 3].map((index) => (
+                                <div
+                                    key={index}
+                                    className="flex-shrink-0 h-[45px] w-[100px] rounded-md overflow-hidden border border-white/20 bg-black/30 backdrop-blur-sm"
+                                />
+                            ))
+                        )
                     )}
                 </div>
                 

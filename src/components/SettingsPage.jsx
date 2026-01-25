@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
-import { Palette, User, Smile, ExternalLink, Copy, Check, Image, Layout, Music, Box, Volume2, Heart, Trash2, Plus, Star, Folder } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Palette, User, Smile, ExternalLink, Copy, Check, Image, Layout, Music, Box, Volume2, Heart, Trash2, Plus, Star, Folder, ChevronDown } from 'lucide-react';
 import { openUrl } from '@tauri-apps/plugin-opener';
 import { useConfigStore } from '../store/configStore';
 import { THEMES } from '../utils/themes';
 import PageBanner from './PageBanner';
+import { getAllPlaylists } from '../api/playlistApi';
 
 const AVATARS = [
     '( ͡° ͜ʖ ͡°)',
@@ -56,11 +57,7 @@ export default function SettingsPage({ currentThemeId, onThemeChange }) {
         orbImageYOffset, setOrbImageYOffset,
         bannerPattern, setBannerPattern,
         customBannerImage, setCustomBannerImage,
-        customPageBannerImage, setCustomPageBannerImage,
-        pageBannerScrollEnabled, setPageBannerScrollEnabled,
-        pageBannerImageScale, setPageBannerImageScale,
-        pageBannerImageXOffset, setPageBannerImageXOffset,
-        pageBannerImageYOffset, setPageBannerImageYOffset,
+        pageBannerBgColor, setPageBannerBgColor,
         customPageBannerImage2, setCustomPageBannerImage2,
         pageBannerImage2Scale, setPageBannerImage2Scale,
         pageBannerImage2XOffset, setPageBannerImage2XOffset,
@@ -71,7 +68,8 @@ export default function SettingsPage({ currentThemeId, onThemeChange }) {
         orbFavorites, addOrbFavorite, removeOrbFavorite, applyOrbFavorite, renameOrbFavorite,
         // Layer 2 Folders
         layer2Folders, addLayer2Image, removeLayer2Image, updateLayer2Image, applyLayer2Image,
-        addLayer2Folder, removeLayer2Folder, renameLayer2Folder, selectedLayer2FolderId, setSelectedLayer2FolderId
+        addLayer2Folder, removeLayer2Folder, renameLayer2Folder, selectedLayer2FolderId, setSelectedLayer2FolderId,
+        setLayer2FolderPlaylists
     } = useConfigStore();
     const [customAvatar, setCustomAvatar] = useState('');
     const [copied, setCopied] = useState(false);
@@ -179,6 +177,23 @@ export default function SettingsPage({ currentThemeId, onThemeChange }) {
     const [editingLayer2FolderId, setEditingLayer2FolderId] = useState(null);
     const [editingLayer2FolderName, setEditingLayer2FolderName] = useState('');
     const [hoveredLayer2FolderId, setHoveredLayer2FolderId] = useState(null);
+    
+    // Playlist list for folder assignment
+    const [allPlaylists, setAllPlaylists] = useState([]);
+    const [expandedFolderPlaylistSelector, setExpandedFolderPlaylistSelector] = useState(null);
+    
+    // Fetch playlists for folder assignment dropdown
+    useEffect(() => {
+        const fetchPlaylists = async () => {
+            try {
+                const playlists = await getAllPlaylists();
+                setAllPlaylists(playlists || []);
+            } catch (error) {
+                console.error('Error fetching playlists for folder assignment:', error);
+            }
+        };
+        fetchPlaylists();
+    }, []);
 
     const handleSaveCurrentOrbAsFavorite = () => {
         if (!customOrbImage) return; // Don't save if no image is set
@@ -265,69 +280,58 @@ export default function SettingsPage({ currentThemeId, onThemeChange }) {
                             <ConfigSection title="Page Banner" icon={Layout}>
                                 {/* Two-column layer controls */}
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                                    {/* Layer 1 - Background */}
+                                    {/* Layer 1 - Background Color */}
                                     <div className="space-y-3 p-4 rounded-xl border-2 border-slate-100 bg-white">
-                                        <div className="flex items-center justify-between">
-                                            <label className="text-xs font-bold uppercase text-slate-400">Layer 1 (Background)</label>
-                                            {customPageBannerImage && (
-                                                <button
-                                                    onClick={() => {
-                                                        setCustomPageBannerImage(null);
-                                                        setPageBannerImageScale(100);
-                                                        setPageBannerImageXOffset(50);
-                                                        setPageBannerImageYOffset(50);
-                                                    }}
-                                                    className="text-[9px] font-bold text-red-400 hover:text-red-500 transition-colors"
-                                                >
-                                                    Remove
-                                                </button>
-                                            )}
+                                        <label className="text-xs font-bold uppercase text-slate-400">Layer 1 (Background Color)</label>
+                                        
+                                        {/* Color Preview */}
+                                        <div 
+                                            className="w-full h-16 rounded-lg border-2 border-slate-200"
+                                            style={{ backgroundColor: pageBannerBgColor }}
+                                        />
+                                        
+                                        {/* Color Picker */}
+                                        <div className="flex items-center gap-3">
+                                            <input 
+                                                type="color" 
+                                                value={pageBannerBgColor}
+                                                onChange={(e) => setPageBannerBgColor(e.target.value)}
+                                                className="w-10 h-10 rounded-lg cursor-pointer border-2 border-slate-200"
+                                            />
+                                            <input 
+                                                type="text" 
+                                                value={pageBannerBgColor}
+                                                onChange={(e) => setPageBannerBgColor(e.target.value)}
+                                                className="flex-1 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm font-mono text-slate-700 uppercase"
+                                                placeholder="#000000"
+                                            />
                                         </div>
                                         
-                                        {customPageBannerImage ? (
-                                            <>
-                                                {/* Thumbnail */}
-                                                <div className="w-full h-16 rounded-lg overflow-hidden bg-slate-100 relative">
-                                                    <img src={customPageBannerImage} alt="Layer 1" className="w-full h-full object-cover" />
-                                                </div>
-                                                {/* Scale */}
-                                                <div className="space-y-1">
-                                                    <div className="flex justify-between items-center">
-                                                        <label className="text-[10px] font-bold text-slate-500">Scale</label>
-                                                        <span className="text-[10px] font-mono font-bold text-sky-600">{pageBannerImageScale}%</span>
-                                                    </div>
-                                                    <input type="range" min="50" max="200" step="5" value={pageBannerImageScale}
-                                                        onChange={(e) => setPageBannerImageScale(parseInt(e.target.value))}
-                                                        className="w-full h-1.5 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-sky-500" />
-                                                </div>
-                                                {/* X Position */}
-                                                <div className="space-y-1">
-                                                    <div className="flex justify-between items-center">
-                                                        <label className="text-[10px] font-bold text-slate-500">X Position</label>
-                                                        <span className="text-[10px] font-mono font-bold text-sky-600">{pageBannerImageXOffset}%</span>
-                                                    </div>
-                                                    <input type="range" min="0" max="100" step="1" value={pageBannerImageXOffset}
-                                                        onChange={(e) => setPageBannerImageXOffset(parseInt(e.target.value))}
-                                                        className="w-full h-1.5 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-sky-500" />
-                                                </div>
-                                                {/* Y Position */}
-                                                <div className="space-y-1">
-                                                    <div className="flex justify-between items-center">
-                                                        <label className="text-[10px] font-bold text-slate-500">Y Position</label>
-                                                        <span className="text-[10px] font-mono font-bold text-sky-600">{pageBannerImageYOffset}%</span>
-                                                    </div>
-                                                    <input type="range" min="0" max="100" step="1" value={pageBannerImageYOffset}
-                                                        onChange={(e) => setPageBannerImageYOffset(parseInt(e.target.value))}
-                                                        className="w-full h-1.5 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-sky-500" />
-                                                </div>
-                                            </>
-                                        ) : (
-                                            <label className="w-full py-4 bg-slate-50 border-2 border-dashed border-slate-200 rounded-lg text-[10px] font-bold uppercase text-slate-400 hover:bg-sky-50 hover:border-sky-300 hover:text-sky-500 transition-all flex items-center justify-center gap-2 cursor-pointer">
-                                                <Image size={12} />
-                                                Upload Layer 1
-                                                <input type="file" accept="image/*" onChange={handlePageBannerUpload} className="hidden" />
-                                            </label>
-                                        )}
+                                        {/* Quick Color Presets */}
+                                        <div className="flex flex-wrap gap-2">
+                                            {[
+                                                { color: '#1e293b', name: 'Slate' },
+                                                { color: '#0f172a', name: 'Dark' },
+                                                { color: '#18181b', name: 'Zinc' },
+                                                { color: '#1e1b4b', name: 'Indigo' },
+                                                { color: '#172554', name: 'Blue' },
+                                                { color: '#14532d', name: 'Green' },
+                                                { color: '#7f1d1d', name: 'Red' },
+                                                { color: '#78350f', name: 'Amber' },
+                                            ].map(preset => (
+                                                <button
+                                                    key={preset.color}
+                                                    onClick={() => setPageBannerBgColor(preset.color)}
+                                                    className={`w-8 h-8 rounded-lg border-2 transition-all ${
+                                                        pageBannerBgColor === preset.color 
+                                                            ? 'border-sky-500 ring-2 ring-sky-200' 
+                                                            : 'border-slate-200 hover:border-slate-400'
+                                                    }`}
+                                                    style={{ backgroundColor: preset.color }}
+                                                    title={preset.name}
+                                                />
+                                            ))}
+                                        </div>
                                     </div>
 
                                     {/* Layer 2 - Overlay */}
@@ -397,48 +401,8 @@ export default function SettingsPage({ currentThemeId, onThemeChange }) {
                                 </div>
 
                                 <p className="text-[10px] text-slate-400 leading-relaxed mb-4">
-                                    Layer 1 is the background, Layer 2 overlays on top. Use transparent PNGs for Layer 2. Recommended: 1920×220px images.
+                                    Layer 1 is the background color. Layer 2 overlays on top - use transparent PNGs for best results.
                                 </p>
-
-                                {/* Pattern Presets - Only show when no custom images */}
-                                {!customPageBannerImage && !customPageBannerImage2 && (
-                                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
-                                        {['Diagonal', 'Dots', 'Mesh', 'Solid'].map((name) => {
-                                            const id = name === 'Mesh' ? 'waves' : name.toLowerCase();
-                                            return (
-                                                <button
-                                                    key={id}
-                                                    onClick={() => setBannerPattern(id)}
-                                                    className={`p-2 rounded-xl text-xs font-bold uppercase transition-all border-2 flex flex-col gap-2 items-center ${bannerPattern === id
-                                                        ? 'border-sky-500 bg-sky-50 text-sky-700 shadow-md'
-                                                        : 'border-slate-100 bg-white text-slate-400 hover:border-sky-200 hover:text-sky-600'
-                                                        }`}
-                                                >
-                                                    <div className="w-full h-12 bg-gradient-to-r from-sky-400 to-blue-600 rounded-lg overflow-hidden relative shadow-inner">
-                                                        <div className={`absolute inset-0 pattern-${id}`}></div>
-                                                    </div>
-                                                    <span>{name}</span>
-                                                </button>
-                                            );
-                                        })}
-                                    </div>
-                                )}
-
-                                {/* Scroll Animation Toggle */}
-                                <div className="flex items-center justify-between p-4 rounded-xl border-2 border-slate-100 bg-white">
-                                    <div className="space-y-1">
-                                        <span className="text-sm font-bold text-slate-700 block">Scroll Animation</span>
-                                        <p className="text-xs text-slate-400">
-                                            Enable horizontal scrolling animation for Layer 1.
-                                        </p>
-                                    </div>
-                                    <button
-                                        onClick={() => setPageBannerScrollEnabled(!pageBannerScrollEnabled)}
-                                        className={`w-12 h-6 rounded-full transition-colors relative ${pageBannerScrollEnabled ? 'bg-sky-500' : 'bg-slate-200'}`}
-                                    >
-                                        <div className={`w-4 h-4 bg-white rounded-full absolute top-1 transition-all ${pageBannerScrollEnabled ? 'left-7 shadow-sm' : 'left-1'}`} />
-                                    </button>
-                                </div>
 
                                 {/* Layer 2 Image Folders */}
                                 <div className="space-y-3 pt-4 border-t border-slate-100">
@@ -522,6 +486,88 @@ export default function SettingsPage({ currentThemeId, onThemeChange }) {
                                                         </button>
                                                     )}
                                                 </div>
+                                            </div>
+                                            
+                                            {/* Playlist Assignment Selector */}
+                                            <div className="relative">
+                                                <button
+                                                    onClick={() => setExpandedFolderPlaylistSelector(
+                                                        expandedFolderPlaylistSelector === folder.id ? null : folder.id
+                                                    )}
+                                                    className="flex items-center gap-2 px-2 py-1.5 bg-slate-100 hover:bg-slate-200 rounded-lg text-[10px] font-medium text-slate-600 transition-all w-full justify-between"
+                                                >
+                                                    <span>
+                                                        {(!folder.playlistIds || folder.playlistIds.length === 0) 
+                                                            ? '📍 Shows on: All Playlists' 
+                                                            : `📍 Shows on: ${folder.playlistIds.length} playlist${folder.playlistIds.length > 1 ? 's' : ''}`
+                                                        }
+                                                    </span>
+                                                    <ChevronDown 
+                                                        size={12} 
+                                                        className={`transition-transform ${expandedFolderPlaylistSelector === folder.id ? 'rotate-180' : ''}`}
+                                                    />
+                                                </button>
+                                                
+                                                {/* Playlist Dropdown */}
+                                                {expandedFolderPlaylistSelector === folder.id && (
+                                                    <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded-lg shadow-lg z-20 max-h-48 overflow-y-auto">
+                                                        {/* All Playlists Option */}
+                                                        <button
+                                                            onClick={() => {
+                                                                setLayer2FolderPlaylists(folder.id, []);
+                                                            }}
+                                                            className={`w-full px-3 py-2 text-left text-[10px] font-medium transition-all flex items-center gap-2 ${
+                                                                (!folder.playlistIds || folder.playlistIds.length === 0)
+                                                                    ? 'bg-purple-100 text-purple-700'
+                                                                    : 'hover:bg-slate-50 text-slate-600'
+                                                            }`}
+                                                        >
+                                                            {(!folder.playlistIds || folder.playlistIds.length === 0) && <Check size={10} />}
+                                                            <span className={(!folder.playlistIds || folder.playlistIds.length === 0) ? '' : 'ml-[18px]'}>
+                                                                All Playlists (Default)
+                                                            </span>
+                                                        </button>
+                                                        
+                                                        <div className="border-t border-slate-100 my-1" />
+                                                        <div className="px-2 py-1 text-[9px] font-bold uppercase text-slate-400">
+                                                            Select specific playlists:
+                                                        </div>
+                                                        
+                                                        {allPlaylists.map((playlist) => {
+                                                            const isSelected = folder.playlistIds?.includes(playlist.id);
+                                                            return (
+                                                                <button
+                                                                    key={playlist.id}
+                                                                    onClick={() => {
+                                                                        const currentIds = folder.playlistIds || [];
+                                                                        const newIds = isSelected
+                                                                            ? currentIds.filter(id => id !== playlist.id)
+                                                                            : [...currentIds, playlist.id];
+                                                                        setLayer2FolderPlaylists(folder.id, newIds);
+                                                                    }}
+                                                                    className={`w-full px-3 py-1.5 text-left text-[10px] font-medium transition-all flex items-center gap-2 ${
+                                                                        isSelected
+                                                                            ? 'bg-purple-50 text-purple-700'
+                                                                            : 'hover:bg-slate-50 text-slate-600'
+                                                                    }`}
+                                                                >
+                                                                    <div className={`w-3.5 h-3.5 rounded border-2 flex items-center justify-center ${
+                                                                        isSelected ? 'bg-purple-500 border-purple-500' : 'border-slate-300'
+                                                                    }`}>
+                                                                        {isSelected && <Check size={8} className="text-white" />}
+                                                                    </div>
+                                                                    <span className="truncate">{playlist.name}</span>
+                                                                </button>
+                                                            );
+                                                        })}
+                                                        
+                                                        {allPlaylists.length === 0 && (
+                                                            <div className="px-3 py-2 text-[10px] text-slate-400 italic">
+                                                                No playlists found
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                )}
                                             </div>
                                             
                                             {/* Images Grid */}
