@@ -80,7 +80,7 @@ yttv2/
 │   │   ├── PlaylistFolderSelector.jsx  # Universal playlist/folder selector
 │   │   ├── PlaylistSelectionModal.jsx  # Modal for selecting playlist (Move/Copy actions)
 │   │   ├── StickyVideoCarousel.jsx     # Carousel/Grid for stickied videos
-│   │   ├── PageBanner.jsx              # Banner with metadata and animated diagonal pattern
+│   │   ├── PageBanner.jsx              # Banner with metadata, media carousel (continue/pinned/ASCII), animated patterns
 │   │   ├── EditPlaylistModal.jsx       # Modal for editing playlist/folder metadata
 │   │   ├── SettingsPage.jsx            # Application configuration (Appearance, Visualizer, Orb, Profile)
 │   │   ├── SupportPage.jsx             # Tabbed Support Hub (Code, Dev, Community, Resources)
@@ -238,7 +238,7 @@ yttv2/
 
 #### `page-banner.md`
 **Covers**: Contextual page banners on Videos, Playlists, Likes, Pins pages with metadata and customization
-**Key Topics**: Unified Banner System, PageBanner component, Sticky Toolbar integration, custom folder banners, animated patterns
+**Key Topics**: Unified Banner System, PageBanner component, Media Carousel (continue/pinned/ASCII), Sticky Toolbar integration, custom folder banners, animated patterns
 **Cross-References**: See `ui-pages.md` for page components, `ui-layout.md` for layout system
 
 #### `debug.md`

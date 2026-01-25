@@ -35,12 +35,16 @@ Users see a contextual banner (220px fixed height) at the top of scrollable cont
   - **Pagination Badge**: Compact pagination controls (Likes page)
     - Format: `<< < 1/99 > >>` (First, Previous, Current/Total, Next, Last)
     - Styled to match metadata row text
-  - **ASCII Avatar**: Vertically centered ASCII art (user signature)
-  - **Thumbnail Carousel** (top-right): Shows continue watching and/or pinned videos
-    - **Continue Video**: Shows "CONTINUE?" label with thumbnail of most recently watched video
-    - **Pinned Videos**: Shows "PINNED" label with thumbnail of pinned video(s) in current playlist
-    - **Dot Navigation**: When both continue and pinned exist, 2 dots appear below thumbnail to toggle views
+  - **Media Carousel** (bottom-left): Shows continue watching, pinned videos, and/or ASCII signature
+    - **Continue Video**: Thumbnail of most recently watched video (click to resume)
+    - **Pinned Videos**: Thumbnail of pinned video(s) in current playlist
+    - **ASCII Signature**: User's ASCII art displayed in fixed container (from Settings → Signature)
+    - **Segmented Bar Navigation**: Horizontal bar with icons below content to toggle views:
+      - Clock icon for Continue watching
+      - Pin icon for Pinned videos
+      - Sparkles icon for ASCII Signature
     - **Multi-Pin Bar**: When multiple pins exist, a vertical segmented bar appears to the right of thumbnail
+    - **Fixed Width**: Container is 170px wide with 160px content area to prevent layout shifts
   - **Playlist Navigator** (Videos Page): Top-right chevron controls for browsing playlists
     - Left/right chevrons navigate between playlists in preview mode
     - Playlist name displayed with fixed width and truncation
@@ -144,25 +148,34 @@ Users see a contextual banner (220px fixed height) at the top of scrollable cont
    - Sticky Toolbar uses this height for seamless visual connection
    - When custom image is set, both banner and toolbar use `UnifiedBannerBackground` with synchronized animation
 
-5. **Thumbnail Carousel Flow (Continue/Pinned):**
-   - Component receives `continueVideo` and `pinnedVideos` props
+5. **Media Carousel Flow (Continue/Pinned/ASCII):**
+   - Component receives `continueVideo` and `pinnedVideos` props, gets `userAvatar` from configStore
    - **Continue Video**: Most recently watched video in current playlist (from `videoProgress`)
    - **Pinned Videos**: All pinned videos that exist in current playlist (from `pinStore`)
+   - **ASCII Signature**: User's ASCII art from Settings → Signature (from `configStore.userAvatar`)
    - **State Management**:
-     - `activeThumbnail`: 0 = continue, 1 = pinned view
+     - `activeThumbnail`: Index into `availableOptions` array (0, 1, or 2)
+     - `availableOptions`: Dynamic array of available options ('continue', 'pinned', 'ascii')
      - `activePinnedIndex`: Which pin is currently displayed (when multiple)
    - **Display Logic**:
-     - If only continue exists → Shows continue thumbnail, no navigation
-     - If only pinned exists → Shows pinned thumbnail, no navigation
-     - If both exist → Shows dot indicators below thumbnail to toggle
+     - If only one option exists → Shows that option, no navigation bar
+     - If multiple options exist → Shows horizontal segmented bar with icons below content
      - If multiple pins → Shows vertical segmented bar to the right of thumbnail
-   - **Vertical Pin Bar**:
+     - ASCII option always available if `userAvatar` is set
+   - **Horizontal Segmented Bar** (option navigation):
+     - Fixed width (`w-[160px]`), height (`h-5`)
+     - Icons: Clock (continue), Pin (pinned), Sparkles (ASCII)
+     - Active segment: solid white with black icon
+     - Inactive segments: semi-transparent with white icon
+     - Glassmorphic styling: `bg-black/20 backdrop-blur-sm border-white/20`
+   - **Vertical Pin Bar** (multi-pin navigation):
      - Fixed width (`w-3`), matches thumbnail height (`h-24`)
      - Segments split equally based on pin count (2 pins = 2 segments, 10 pins = 10 segments)
      - Active segment is solid white, inactive segments are semi-transparent
      - Clicking a segment changes `activePinnedIndex` to show that pin
    - User clicks thumbnail → Calls `onContinue` or `onPinnedClick(video)` → Starts playing
-   - Positioned at `top-12 right-6` with centered label alignment
+   - User clicks ASCII area → No action (display only)
+   - **Positioning**: `bottom-1 left-6` with fixed-width container (170px)
 
 **Source of Truth:**
 - `configStore.customPageBannerImage` - Layer 1 image (global, can be overridden per playlist/folder)
@@ -225,23 +238,28 @@ Users see a contextual banner (220px fixed height) at the top of scrollable cont
 
 **Content Layout:**
 - **Top-Aligned**: Content uses `items-start` for top-left alignment
-- **ASCII Avatar**: Vertically centered (`mt-8`) within 220px container
-- **Thumbnail Carousel**: Positioned at `top-12 right-6` with centered alignment
-- **Text Padding**: Dynamic right padding (`pr-64`) when continue or pinned video is present
+- **Media Carousel**: Positioned at `bottom-1 left-6` (below title and metadata)
+- **Fixed Container**: 170px outer width, 160px content width prevents layout shifts
+- **Edit Button**: Positioned at top-right (adjusts position when `topRightContent` is present)
 
-**Thumbnail Carousel Component State:**
-- `activeThumbnail`: 0 = continue view, 1 = pinned view
+**Media Carousel Component State:**
+- `activeThumbnail`: Index into `availableOptions` array (0, 1, or 2)
+- `availableOptions`: Array of available option types ('continue', 'pinned', 'ascii')
+- `currentOption`: The currently selected option type
 - `activePinnedIndex`: Index of currently displayed pin (0 to pinnedVideos.length - 1)
 - `hasContinue`: Boolean - continue video exists
 - `hasPinned`: Boolean - at least one pinned video exists
 - `hasMultiplePins`: Boolean - more than one pinned video exists
-- `hasBoth`: Boolean - both continue and pinned exist (shows dot navigation)
+- `hasAscii`: Boolean - ASCII signature is available (from `userAvatar` or `avatar` prop)
+- `hasMultipleOptions`: Boolean - more than one option exists (shows segmented bar navigation)
+- `hasAnyOption`: Boolean - at least one option exists (shows the carousel)
 
 **PageBanner Props for Thumbnail Carousel:**
 - `continueVideo`: Video object for continue watching feature
 - `onContinue`: Callback when continue thumbnail is clicked
 - `pinnedVideos`: Array of pinned video objects in current playlist
 - `onPinnedClick(video)`: Callback when pinned thumbnail is clicked (receives selected video)
+- `avatar`: Optional ASCII art prop (fallback, `userAvatar` from configStore takes priority)
 
 **5: Page-Specific Usage**
 
@@ -312,7 +330,7 @@ Users see a contextual banner (220px fixed height) at the top of scrollable cont
 - **Live Preview**: Changes apply immediately to the actual Page Banner above the settings (no separate preview panel)
 
 **Visual Customization:**
-- **ASCII Art**: Set via Settings → Signature, or per-folder via `folder_metadata.custom_ascii`
+- **ASCII Signature**: Set via Settings → Signature, displayed in right-side carousel as "SIGNATURE" option
 - **Author Name**: Set via Settings → Signature → Pseudonym
 - **Folder Colors**: Automatically generate matching gradients
 

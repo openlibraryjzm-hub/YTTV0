@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { FOLDER_COLORS } from '../utils/folderColors';
-import { Pen, Play, ChevronRight } from 'lucide-react';
+import { Pen, Play, ChevronRight, Clock, Pin, Sparkles } from 'lucide-react';
 import { getThumbnailUrl } from '../utils/youtubeUtils';
 
 
@@ -11,30 +11,43 @@ const PageBanner = ({ title, description, folderColor, onEdit, videoCount, count
     const { 
         bannerPattern, customPageBannerImage, bannerBgSize, setBannerHeight, setBannerBgSize, 
         pageBannerScrollEnabled, pageBannerImageScale, pageBannerImageXOffset, pageBannerImageYOffset,
-        customPageBannerImage2, pageBannerImage2Scale, pageBannerImage2XOffset, pageBannerImage2YOffset
+        customPageBannerImage2, pageBannerImage2Scale, pageBannerImage2XOffset, pageBannerImage2YOffset,
+        userAvatar
     } = useConfigStore();
     const [badgesExpanded, setBadgesExpanded] = useState(false);
     const badgesContainerRef = useRef(null);
     
-    // Thumbnail carousel state (0 = continue, 1+ = pinned index)
+    // Thumbnail carousel state (0 = continue, 1 = pinned, 2 = ascii)
     const [activeThumbnail, setActiveThumbnail] = useState(0);
     // Track which pinned video is selected (when viewing pinned)
     const [activePinnedIndex, setActivePinnedIndex] = useState(0);
     
-    // Determine which videos are available
+    // Determine which options are available
     const hasContinue = !!continueVideo;
     const hasPinned = pinnedVideos && pinnedVideos.length > 0;
     const hasMultiplePins = pinnedVideos && pinnedVideos.length > 1;
-    const hasBoth = hasContinue && hasPinned;
-    const hasAny = hasContinue || hasPinned;
+    const hasAscii = !!(userAvatar || avatar); // Use userAvatar from store or avatar prop
+    const displayAvatar = userAvatar || avatar; // The actual avatar to display
+    
+    // Count available options for dot navigation
+    const availableOptions = [];
+    if (hasContinue) availableOptions.push('continue');
+    if (hasPinned) availableOptions.push('pinned');
+    if (hasAscii) availableOptions.push('ascii');
+    const hasMultipleOptions = availableOptions.length > 1;
+    const hasAnyOption = availableOptions.length > 0;
     
     // Get the active pinned video
     const activePinnedVideo = hasPinned ? pinnedVideos[activePinnedIndex] || pinnedVideos[0] : null;
     
-    // Get the active video based on selection
-    const activeVideo = activeThumbnail === 0 ? continueVideo : activePinnedVideo;
-    const activeLabel = activeThumbnail === 0 ? 'CONTINUE?' : 'PINNED';
-    const activeCallback = activeThumbnail === 0 ? onContinue : () => onPinnedClick && onPinnedClick(activePinnedVideo);
+    // Map activeThumbnail index to actual option type
+    const getOptionAtIndex = (index) => availableOptions[index] || null;
+    const currentOption = getOptionAtIndex(activeThumbnail);
+    
+    // Get the active video based on selection (null for ascii)
+    const activeVideo = currentOption === 'continue' ? continueVideo : currentOption === 'pinned' ? activePinnedVideo : null;
+    const activeLabel = currentOption === 'continue' ? 'CONTINUE?' : currentOption === 'pinned' ? 'PINNED' : 'SIGNATURE';
+    const activeCallback = currentOption === 'continue' ? onContinue : currentOption === 'pinned' ? () => onPinnedClick && onPinnedClick(activePinnedVideo) : null;
 
     // Find color config if folderColor is provided
     // If folderColor is 'unsorted', distinct gray style
@@ -166,20 +179,6 @@ const PageBanner = ({ title, description, folderColor, onEdit, videoCount, count
                 <div className="absolute bottom-0 left-0 w-64 h-64 bg-black/10 rounded-full blur-2xl -ml-16 -mb-16 pointer-events-none" />
             </div>
 
-            {/* Edit Button - Visible on hover if onEdit is provided */}
-            {onEdit && (
-                <button
-                    onClick={(e) => {
-                        e.stopPropagation();
-                        onEdit();
-                    }}
-                    className="absolute top-4 left-4 p-2 bg-white/10 hover:bg-white/20 text-white rounded-full backdrop-blur-md opacity-0 group-hover:opacity-100 transition-all duration-300 transform hover:scale-105 z-20"
-                    title="Edit Details"
-                >
-                    <Pen size={18} />
-                </button>
-            )}
-
             {/* Top Right Content */}
             {topRightContent && (
                 <div className="absolute top-4 right-4 z-30">
@@ -187,25 +186,23 @@ const PageBanner = ({ title, description, folderColor, onEdit, videoCount, count
                 </div>
             )}
 
+            {/* Edit Button - Visible on hover if onEdit is provided */}
+            {onEdit && (
+                <button
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        onEdit();
+                    }}
+                    className={`absolute top-4 ${topRightContent ? 'right-48' : 'right-4'} p-2 bg-white/10 hover:bg-white/20 text-white rounded-full backdrop-blur-md opacity-0 group-hover:opacity-100 transition-all duration-300 transform hover:scale-105 z-20`}
+                    title="Edit Details"
+                >
+                    <Pen size={18} />
+                </button>
+            )}
+
             {/* Content Container - Allow overflow for dropdowns */}
             <div className="relative z-10 flex items-start h-full gap-8 w-full px-8 pt-4">
-                {/* Avatar Section (Optional) */}
-                {avatar && (
-                    <div className="shrink-0 hidden md:flex flex-col items-center gap-1 animate-in fade-in slide-in-from-left-4 duration-700 mt-8">
-                        {avatar.includes('\n') ? (
-                            <pre className="font-mono text-[4px] leading-none whitespace-pre text-white/90 drop-shadow-md select-none opacity-90 mix-blend-overlay" style={{ textShadow: '-0.5px -0.5px 0 #000, 0.5px -0.5px 0 #000, -0.5px 0.5px 0 #000, 0.5px 0.5px 0 #000, 0 1px 2px rgba(0,0,0,1)' }}>
-                                {avatar}
-                            </pre>
-                        ) : (
-                            // Single line avatars (Lenny) are larger
-                            <div className="font-mono text-3xl font-bold text-white/90 drop-shadow-md whitespace-nowrap opacity-90 mix-blend-overlay" style={{ textShadow: '-2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 2px 2px 0 #000, 0 4px 8px rgba(0,0,0,0.8)' }}>
-                                {avatar}
-                            </div>
-                        )}
-                    </div>
-                )}
-
-                <div className={`flex flex-col justify-start min-w-0 ${hasAny ? 'pr-64' : ''}`}>
+                <div className="flex flex-col justify-start min-w-0">
                     <h1 className="text-4xl md:text-5xl font-black text-white mb-2 tracking-tight drop-shadow-md truncate" style={{ textShadow: '-2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 2px 2px 0 #000, 0 4px 8px rgba(0,0,0,0.8)' }}>
                         {title}
                     </h1>
@@ -384,88 +381,101 @@ const PageBanner = ({ title, description, folderColor, onEdit, videoCount, count
                 )}
             </div>
 
-            {/* Thumbnail Section - Continue/Pinned with dot navigation */}
-            {hasAny && activeVideo && (
-                <div className="absolute top-12 right-6 flex flex-col items-center gap-2 z-20">
-                    {/* Thumbnail row with optional pin bar */}
-                    <div className="flex items-stretch gap-2">
-                        {/* Clickable thumbnail area */}
-                        <div
-                            className="flex flex-col items-center gap-2 group/thumb cursor-pointer"
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                if (activeCallback) activeCallback();
-                            }}
-                        >
-                            <span className="text-white/80 font-bold text-sm tracking-wider group-hover/thumb:text-white transition-colors" style={{ textShadow: '-1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0 2px 4px rgba(0,0,0,0.8)' }}>
-                                {activeLabel}
-                            </span>
-                            <div className="relative h-24 aspect-video rounded-lg overflow-hidden shadow-lg border-2 border-white/20 group-hover/thumb:border-white transition-all transform group-hover/thumb:scale-105">
-                                <img
-                                    src={getThumbnailUrl(activeVideo.video_id, 'medium')}
-                                    alt={activeVideo.title}
-                                    className="w-full h-full object-cover"
-                                />
-                                <div className="absolute inset-0 bg-black/30 flex items-center justify-center opacity-0 group-hover/thumb:opacity-100 transition-opacity">
-                                    <Play className="text-white fill-white" size={24} />
-                                </div>
+            {/* Thumbnail/ASCII Section - Continue/Pinned/ASCII with dot navigation */}
+            {hasAnyOption && (
+                <div className="absolute bottom-1 left-6 flex flex-col items-start gap-1 z-20">
+                    {/* Fixed-width container for content */}
+                    <div className="w-[170px] flex flex-col items-center">
+                        {/* Content row with optional pin bar */}
+                        <div className="flex items-stretch gap-2">
+                            {/* Clickable content area */}
+                            <div
+                                className={`flex flex-col items-center gap-2 group/thumb ${activeCallback ? 'cursor-pointer' : ''}`}
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    if (activeCallback) activeCallback();
+                                }}
+                            >
+                                {/* Show video thumbnail for continue/pinned, ASCII art for signature */}
+                                {currentOption === 'ascii' ? (
+                                    <div className="h-24 w-[160px] flex items-center justify-center rounded-lg bg-black/30 backdrop-blur-sm border-2 border-white/20 overflow-hidden">
+                                        {displayAvatar && displayAvatar.includes('\n') ? (
+                                            <pre className="font-mono text-[5px] leading-none whitespace-pre text-white/90 drop-shadow-md select-none max-w-full max-h-full" style={{ textShadow: '-0.5px -0.5px 0 #000, 0.5px -0.5px 0 #000, -0.5px 0.5px 0 #000, 0.5px 0.5px 0 #000, 0 1px 2px rgba(0,0,0,1)' }}>
+                                                {displayAvatar}
+                                            </pre>
+                                        ) : (
+                                            <div className="font-mono text-xl font-bold text-white/90 drop-shadow-md whitespace-nowrap max-w-full truncate px-2" style={{ textShadow: '-2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 2px 2px 0 #000, 0 4px 8px rgba(0,0,0,0.8)' }}>
+                                                {displayAvatar}
+                                            </div>
+                                        )}
+                                    </div>
+                                ) : activeVideo && (
+                                    <div className="relative h-24 w-[160px] rounded-lg overflow-hidden shadow-lg border-2 border-white/20 group-hover/thumb:border-white transition-all transform group-hover/thumb:scale-105">
+                                        <img
+                                            src={getThumbnailUrl(activeVideo.video_id, 'medium')}
+                                            alt={activeVideo.title}
+                                            className="w-full h-full object-cover"
+                                        />
+                                        <div className="absolute inset-0 bg-black/30 flex items-center justify-center opacity-0 group-hover/thumb:opacity-100 transition-opacity">
+                                            <Play className="text-white fill-white" size={24} />
+                                        </div>
+                                    </div>
+                                )}
                             </div>
+                            
+                            {/* Vertical pin bar - only show when viewing pinned and multiple pins exist */}
+                            {currentOption === 'pinned' && hasMultiplePins && (
+                                <div className="flex flex-col w-3 h-24 mt-auto rounded-md overflow-hidden border border-white/20 bg-black/20 backdrop-blur-sm">
+                                    {pinnedVideos.map((pin, index) => (
+                                        <button
+                                            key={pin.id || index}
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                setActivePinnedIndex(index);
+                                            }}
+                                            className={`flex-1 transition-all ${
+                                                activePinnedIndex === index
+                                                    ? 'bg-white'
+                                                    : 'bg-white/30 hover:bg-white/50'
+                                            }`}
+                                            style={{
+                                                borderBottom: index < pinnedVideos.length - 1 ? '1px solid rgba(0,0,0,0.3)' : 'none'
+                                            }}
+                                            title={pin.title || `Pin ${index + 1}`}
+                                        />
+                                    ))}
+                                </div>
+                            )}
                         </div>
                         
-                        {/* Vertical pin bar - only show when viewing pinned and multiple pins exist */}
-                        {activeThumbnail === 1 && hasMultiplePins && (
-                            <div className="flex flex-col w-3 h-24 mt-auto rounded-md overflow-hidden border border-white/20 bg-black/20 backdrop-blur-sm">
-                                {pinnedVideos.map((pin, index) => (
+                        {/* Horizontal segmented bar - show when multiple options exist */}
+                        {hasMultipleOptions && (
+                            <div className="flex flex-row h-5 w-[160px] mt-1 rounded-md overflow-hidden border border-white/20 bg-black/20 backdrop-blur-sm">
+                                {availableOptions.map((option, index) => (
                                     <button
-                                        key={pin.id || index}
+                                        key={option}
                                         onClick={(e) => {
                                             e.stopPropagation();
-                                            setActivePinnedIndex(index);
+                                            setActiveThumbnail(index);
                                         }}
-                                        className={`flex-1 transition-all ${
-                                            activePinnedIndex === index
-                                                ? 'bg-white'
-                                                : 'bg-white/30 hover:bg-white/50'
+                                        className={`flex-1 flex items-center justify-center transition-all ${
+                                            activeThumbnail === index
+                                                ? 'bg-white text-black'
+                                                : 'bg-white/30 text-white/70 hover:bg-white/50 hover:text-white'
                                         }`}
                                         style={{
-                                            borderBottom: index < pinnedVideos.length - 1 ? '1px solid rgba(0,0,0,0.3)' : 'none'
+                                            borderRight: index < availableOptions.length - 1 ? '1px solid rgba(0,0,0,0.3)' : 'none'
                                         }}
-                                        title={pin.title || `Pin ${index + 1}`}
-                                    />
+                                        title={option === 'continue' ? 'Continue watching' : option === 'pinned' ? 'Pinned videos' : 'Signature'}
+                                    >
+                                        {option === 'continue' && <Clock size={12} />}
+                                        {option === 'pinned' && <Pin size={12} />}
+                                        {option === 'ascii' && <Sparkles size={12} />}
+                                    </button>
                                 ))}
                             </div>
                         )}
                     </div>
-                    
-                    {/* Dot indicators - only show when both continue and pinned exist */}
-                    {hasBoth && (
-                        <div className="flex items-center gap-2 mt-1">
-                            <button
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    setActiveThumbnail(0);
-                                }}
-                                className={`w-2 h-2 rounded-full transition-all ${
-                                    activeThumbnail === 0 
-                                        ? 'bg-white scale-110' 
-                                        : 'bg-white/40 hover:bg-white/60'
-                                }`}
-                                title="Continue watching"
-                            />
-                            <button
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    setActiveThumbnail(1);
-                                }}
-                                className={`w-2 h-2 rounded-full transition-all ${
-                                    activeThumbnail === 1 
-                                        ? 'bg-white scale-110' 
-                                        : 'bg-white/40 hover:bg-white/60'
-                                }`}
-                                title="Pinned videos"
-                            />
-                        </div>
-                    )}
                 </div>
             )}
         </div>
