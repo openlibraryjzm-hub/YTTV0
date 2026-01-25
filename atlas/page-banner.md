@@ -24,8 +24,11 @@ Users see a contextual banner (220px fixed height) at the top of scrollable cont
   - **History Page**: Shows "History" with playlist badges
   - **Pins Page**: Shows "Pinned Videos"
 - **Visual Elements**:
-  - **Title**: Large, bold text with dark text shadow for readability
-  - **Description**: Truncated to 2 lines with generous right padding (can be replaced with `customDescription` prop)
+  - **Title**: Extra-large, bold text (`text-6xl md:text-7xl`) with dark text shadow for readability, no bottom margin (`mb-0`)
+  - **Description**: Hidden by default, shown when info button is clicked
+    - **Position**: To the right of thumbnail area (`ml-[170px] mt-[7px]`)
+    - **Lines**: Up to 6 lines (`line-clamp-6`) for long descriptions
+    - **Visibility**: Controlled by `showInfo` state (toggle via info button)
   - **Playlist Badges**: Interactive badges showing playlists (History/Likes pages)
     - **Styling**: text-white/80, font-medium, text-sm md:text-base
     - **Left Click**: Filters page content to that playlist
@@ -33,26 +36,36 @@ Users see a contextual banner (220px fixed height) at the top of scrollable cont
     - **Limit**: 2 rows with expand button (>>>) to show all
   - **Pagination Badge**: Compact pagination controls (Likes page)
     - Format: `<< < 1/99 > >>` (First, Previous, Current/Total, Next, Last)
-  - **Info Button** (bottom-left corner): Small circular button to toggle metadata display
+  - **Info Button** (bottom-left corner): Small circular button with dual functionality
     - **Styling**: White background (`bg-white`), black icon (`text-black`)
     - **Size**: 20px (`w-5 h-5`) with Info icon (12px)
     - **Position**: `bottom-[2px] left-[2px]` - snug in corner
-    - **On Click**: Toggles info display in the thumbnail area
-  - **Info Display** (in thumbnail area when info button active):
-    - **Author** (top): User's pseudonym
-    - **Year** (middle): Creation year
-    - **Video Count** (bottom): Number of videos with label
-    - Same dimensions as thumbnail (h-24 w-[160px])
+    - **Left Click**: Toggles info display (description + info overlays on thumbnail)
+    - **Right Click**: Opens edit modal (replaces removed edit button)
+  - **Info Overlays** (on thumbnail when info button active):
+    - Overlays appear on top of the thumbnail with tight backdrops (`bg-black/70 backdrop-blur-sm`)
+    - **Author** (top-right): User's pseudonym
+    - **Year** (middle-right): Creation year
+    - **Video Count** (bottom-right): Number of videos with label
+    - Vertically aligned on right side of thumbnail
   - **Media Carousel** (bottom-left): Shows continue watching, pinned videos, and/or ASCII signature
     - **Continue Video**: Thumbnail of most recently watched video (click to resume)
     - **Pinned Videos**: Thumbnail of pinned video(s) in current playlist
     - **ASCII Signature**: User's ASCII art displayed in fixed container (from Settings → Signature)
+    - **Pin Type Badge** (on pinned thumbnails): Top-left badge showing pin type:
+      - **Normal Pin**: White pin icon
+      - **Follower Pin**: White pin icon + → arrow
+      - **Priority Pin**: 👑 crown + golden pin icon
+      - **Priority Follower Pin**: 👑 crown + golden pin icon + → arrow
     - **Segmented Bar Navigation**: Horizontal bar with icons below content to toggle views:
       - Clock icon for Continue watching
       - Pin icon for Pinned videos
       - Sparkles icon for ASCII Signature
       - Offset `ml-[25px]` to align under thumbnail
-    - **Multi-Pin Bar**: When multiple pins exist, a vertical segmented bar appears to the right of thumbnail
+    - **Multi-Pin Bar**: When multiple pins exist (max 10 segments), a vertical segmented bar appears to the right of thumbnail
+      - **Folder Colors**: Each segment colored by the pin's folder assignment
+      - **Priority Crown**: Priority pin segment has crown-like clip-path and golden color (`#FFD700`)
+      - **Selection Dot**: White dot indicator to the right of the bar (golden for priority pin)
     - **Fixed Width**: Container positioned at `bottom-1 left-[1px]`
   - **Playlist Navigator Stack** (Videos Page): Vertical stack to the left of thumbnail
     - **Up Chevron** (top): Navigates to next playlist - white bg, black icon
@@ -148,7 +161,7 @@ Users see a contextual banner (220px fixed height) at the top of scrollable cont
      - Applies animated pattern overlay based on `bannerPattern` setting
 
 3. **Custom Banner Upload Flow (Playlist/Folder):**
-   - User clicks Edit button (pen icon) on banner → Opens `EditPlaylistModal`
+   - User right-clicks info button on banner → Opens `EditPlaylistModal`
    - User uploads custom banner image → Modal saves to `folder_metadata` table
    - On next page load → Banner fetches custom image from database
    - Updates `customPageBannerImage` in store → Banner displays custom image
@@ -164,18 +177,20 @@ Users see a contextual banner (220px fixed height) at the top of scrollable cont
    - Component receives `continueVideo` and `pinnedVideos` props, gets `userAvatar` from configStore
    - **Continue Video**: Most recently watched video in current playlist (from `videoProgress`)
    - **Pinned Videos**: All pinned videos that exist in current playlist (from `pinStore`)
+     - Enriched with `folder_color`, `isPriority`, `isFollower` flags from VideosPage
+     - Sorted with priority pin always first
    - **ASCII Signature**: User's ASCII art from Settings → Signature (from `configStore.userAvatar`)
-   - **Info Display**: Shows author, year, video count when info button is clicked
+   - **Info Display**: Shows description and info overlays on thumbnail when info button is clicked
    - **State Management**:
-     - `showInfo`: Boolean - toggles info display in thumbnail area
+     - `showInfo`: Boolean - toggles info display (description + thumbnail overlays)
      - `activeThumbnail`: Index into `availableOptions` array (0, 1, or 2)
      - `availableOptions`: Dynamic array of available options ('continue', 'pinned', 'ascii')
      - `activePinnedIndex`: Which pin is currently displayed (when multiple)
    - **Display Logic**:
-     - If `showInfo` is true → Shows info panel (author/year/count) instead of thumbnail
+     - If `showInfo` is true → Shows description text and info overlays on thumbnail
      - If only one option exists → Shows that option, no navigation bar
      - If multiple options exist → Shows horizontal segmented bar with icons below content
-     - If multiple pins → Shows vertical segmented bar to the right of thumbnail
+     - If multiple pins → Shows vertical segmented bar to the right of thumbnail (max 10)
      - ASCII option always available if `userAvatar` is set
    - **Horizontal Segmented Bar** (option navigation):
      - Fixed width (`w-[160px]`), height (`h-5`), offset `ml-[25px]`
@@ -185,9 +200,15 @@ Users see a contextual banner (220px fixed height) at the top of scrollable cont
      - Glassmorphic styling: `bg-black/20 backdrop-blur-sm border-white/20`
    - **Vertical Pin Bar** (multi-pin navigation):
      - Fixed width (`w-3`), matches thumbnail height (`h-24`)
-     - Segments split equally based on pin count (2 pins = 2 segments, 10 pins = 10 segments)
-     - Active segment is solid white, inactive segments are semi-transparent
+     - **Max 10 segments** - capped to prevent overflow
+     - **Folder-colored segments**: Each segment colored by pin's assigned folder (from `videoFolderAssignments`)
+     - **Priority Crown**: First segment (if priority pin) has crown clip-path and golden `#FFD700` color
+     - **Selection Indicator**: White dot to the right of bar (golden for priority pin)
      - Clicking a segment changes `activePinnedIndex` to show that pin
+   - **Pin Type Badge** (on pinned thumbnails):
+     - Position: Top-left of thumbnail (`top-1 left-1`)
+     - Background: `bg-black/60 backdrop-blur-sm`
+     - Displays icons based on pin type: pin icon, crown emoji (priority), arrow (follower)
    - **Playlist Navigator Stack** (Videos Page only):
      - Vertical stack to the left of thumbnail with `gap-[2px]`
      - Up chevron → `onNavigateNext()`, Down chevron → `onNavigatePrev()`
@@ -195,7 +216,8 @@ Users see a contextual banner (220px fixed height) at the top of scrollable cont
      - All buttons: white background, black icons (chevrons), grey/black icon (return)
    - User clicks thumbnail → Calls `onContinue` or `onPinnedClick(video)` → Starts playing
    - User clicks ASCII area → No action (display only)
-   - User clicks info button → Toggles `showInfo` state
+   - User left-clicks info button → Toggles `showInfo` state
+   - User right-clicks info button → Opens edit modal (if `onEdit` provided)
    - **Positioning**: `bottom-1 left-[1px]`
 
 **Source of Truth:**
@@ -259,17 +281,19 @@ Users see a contextual banner (220px fixed height) at the top of scrollable cont
 
 **Content Layout:**
 - **Top-Aligned**: Content uses `items-start` for top-left alignment
-- **Media Carousel**: Positioned at `bottom-1 left-[1px]` (below title and description)
+- **Title**: Extra-large (`text-6xl md:text-7xl`), no bottom margin (`mb-0`)
+- **Description**: Positioned to the right of thumbnail (`ml-[170px] mt-[7px]`), hidden until info button clicked
+- **Media Carousel**: Positioned at `bottom-1 left-[1px]` (below title)
 - **Playlist Navigator Stack**: Vertical bar (`h-24 w-6`) to the left of thumbnail with `gap-[2px]`
-- **Info Button**: Positioned at `bottom-[2px] left-[2px]` (snug in corner)
-- **Edit Button**: Positioned at top-right
+- **Info Button**: Positioned at `bottom-[2px] left-[2px]` (snug in corner), handles both info toggle and edit (right-click)
+- **Edit Button**: Removed (functionality moved to info button right-click)
 
 **Media Carousel Component State:**
-- `showInfo`: Boolean - toggles info display (author/year/count) in thumbnail area
+- `showInfo`: Boolean - toggles info display (description + info overlays on thumbnail)
 - `activeThumbnail`: Index into `availableOptions` array (0, 1, or 2)
 - `availableOptions`: Array of available option types ('continue', 'pinned', 'ascii')
 - `currentOption`: The currently selected option type
-- `activePinnedIndex`: Index of currently displayed pin (0 to pinnedVideos.length - 1)
+- `activePinnedIndex`: Index of currently displayed pin (0 to min(pinnedVideos.length, 10) - 1)
 - `hasContinue`: Boolean - continue video exists
 - `hasPinned`: Boolean - at least one pinned video exists
 - `hasMultiplePins`: Boolean - more than one pinned video exists
@@ -277,10 +301,18 @@ Users see a contextual banner (220px fixed height) at the top of scrollable cont
 - `hasMultipleOptions`: Boolean - more than one option exists (shows segmented bar navigation)
 - `hasAnyOption`: Boolean - at least one option exists (shows the carousel)
 
+**Pinned Video Data (from VideosPage):**
+- `folder_color`: First folder color assigned to this video (for pin bar segment coloring)
+- `isPriority`: Boolean - whether this is the priority pin (crown treatment)
+- `isFollower`: Boolean - whether this is a follower pin (arrow indicator)
+
 **PageBanner Props for Thumbnail Carousel:**
 - `continueVideo`: Video object for continue watching feature
 - `onContinue`: Callback when continue thumbnail is clicked
-- `pinnedVideos`: Array of pinned video objects in current playlist
+- `pinnedVideos`: Array of pinned video objects in current playlist, enriched with:
+  - `folder_color`: Folder color ID for pin bar segment coloring
+  - `isPriority`: Boolean for priority pin (golden crown treatment)
+  - `isFollower`: Boolean for follower pin (arrow indicator)
 - `onPinnedClick(video)`: Callback when pinned thumbnail is clicked (receives selected video)
 - `avatar`: Optional ASCII art prop (fallback, `userAvatar` from configStore takes priority)
 
@@ -293,12 +325,17 @@ Users see a contextual banner (220px fixed height) at the top of scrollable cont
 **5: Page-Specific Usage**
 
 **Videos Page:**
-- Displays playlist name or folder name as title
-- Video count, year, and author available via info button (click info icon in bottom-left corner)
-- Edit button allows renaming and setting custom banner via `EditPlaylistModal`
+- Displays playlist name or folder name as title (extra-large `text-6xl md:text-7xl`)
+- Description shows to the right of thumbnail when info button is clicked
+- Video count, year, and author shown as overlays on thumbnail when info button is clicked
+- Right-click info button opens `EditPlaylistModal` for renaming and setting custom banner
 - Custom banners persist in `folder_metadata` table
 - **Thumbnail Carousel**: Shows continue watching, pinned videos, and/or ASCII signature
-- **Info Display**: When info button clicked, thumbnail area shows author (top), year (middle), video count (bottom)
+- **Info Display**: When info button clicked:
+  - Description appears to the right of thumbnail (`ml-[170px]`)
+  - Info overlays appear on thumbnail (author top-right, year middle-right, count bottom-right)
+- **Pin Type Badge**: When viewing pinned video, top-left badge shows pin type (normal/follower/priority/priority-follower)
+- **Multi-Pin Bar**: Vertical bar with folder-colored segments, priority crown, and selection dot
 - **Playlist Navigator Stack** (vertical, left of thumbnail):
   - **Up Chevron**: Navigates to next playlist in preview mode
   - **Return Button**: Returns to reset point playlist (grey when at reset point, black when away)
@@ -337,13 +374,13 @@ Users see a contextual banner (220px fixed height) at the top of scrollable cont
 **6: Customization Options**
 
 **Via EditPlaylistModal:**
-- **Location**: Click pen icon (top-left, appears on hover) on Videos Page banner
+- **Location**: Right-click on info button (bottom-left corner) on Videos Page banner
 - **Features**:
   - Rename playlist/folder
   - Update description
   - Upload custom page banner image
   - Custom banners saved to `folder_metadata` table
-- **Not Available**: For "Unsorted Videos" view (no edit button shown)
+- **Not Available**: For "Unsorted Videos" view (no edit functionality)
 
 **Via Settings:**
 - **Location**: Settings → Appearance → Page Banner (first section at top of Appearance tab)

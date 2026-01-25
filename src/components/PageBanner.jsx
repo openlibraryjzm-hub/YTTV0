@@ -189,36 +189,23 @@ const PageBanner = ({ title, description, folderColor, onEdit, videoCount, count
                 </div>
             )}
 
-            {/* Edit Button - Visible on hover if onEdit is provided */}
-            {onEdit && (
-                <button
-                    onClick={(e) => {
-                        e.stopPropagation();
-                        onEdit();
-                    }}
-                    className={`absolute top-4 ${topRightContent ? 'right-48' : 'right-4'} p-2 bg-white/10 hover:bg-white/20 text-white rounded-full backdrop-blur-md opacity-0 group-hover:opacity-100 transition-all duration-300 transform hover:scale-105 z-20`}
-                    title="Edit Details"
-                >
-                    <Pen size={18} />
-                </button>
-            )}
 
             {/* Content Container - Allow overflow for dropdowns */}
             <div className="relative z-10 flex items-start h-full gap-8 w-full px-8 pt-4">
                 <div className="flex flex-col justify-start min-w-0">
-                    <h1 className="text-4xl md:text-5xl font-black text-white mb-2 tracking-tight drop-shadow-md truncate" style={{ textShadow: '-2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 2px 2px 0 #000, 0 4px 8px rgba(0,0,0,0.8)' }}>
+                    <h1 className="text-6xl md:text-7xl font-black text-white mb-0 tracking-tight drop-shadow-md truncate" style={{ textShadow: '-2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 2px 2px 0 #000, 0 4px 8px rgba(0,0,0,0.8)' }}>
                         {title}
                     </h1>
 
-                    {customDescription ? (
-                        <div className="mt-1">
+                    {showInfo && (customDescription ? (
+                        <div className="mt-[7px] ml-[170px] max-h-[100px] overflow-y-auto">
                             {customDescription}
                         </div>
                     ) : description && (
-                        <p className="text-sm md:text-base text-white/90 font-medium max-w-4xl leading-relaxed drop-shadow-sm opacity-90 line-clamp-2" style={{ textShadow: '-1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0 2px 4px rgba(0,0,0,0.8)' }}>
+                        <p className="text-sm md:text-base text-white/90 font-medium max-w-4xl leading-relaxed drop-shadow-sm opacity-90 line-clamp-6 mt-[7px] ml-[170px]" style={{ textShadow: '-1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0 2px 4px rgba(0,0,0,0.8)' }}>
                             {description}
                         </p>
-                    )}
+                    ))}
 
                     {/* Playlist Badges */}
                     {playlistBadges && playlistBadges.length > 0 && (
@@ -419,27 +406,51 @@ const PageBanner = ({ title, description, folderColor, onEdit, videoCount, count
                             )}
                             {/* Clickable content area */}
                             <div
-                                className={`flex flex-col items-center gap-2 group/thumb ${activeCallback && !showInfo ? 'cursor-pointer' : ''}`}
+                                className={`flex flex-col items-center gap-2 group/thumb flex-shrink-0 ${activeCallback && !showInfo ? 'cursor-pointer' : ''}`}
                                 onClick={(e) => {
                                     e.stopPropagation();
                                     if (!showInfo && activeCallback) activeCallback();
                                 }}
                             >
-                                {/* Show info panel when info button is clicked */}
-                                {showInfo ? (
-                                    <div className="h-24 w-[160px] flex flex-col items-center justify-center gap-1 rounded-lg bg-black/30 backdrop-blur-sm border-2 border-white/20 overflow-hidden px-2">
+                                {/* Show thumbnail with info overlays when info button is clicked */}
+                                {showInfo && activeVideo ? (
+                                    <div className="relative h-24 w-[160px] rounded-lg overflow-hidden shadow-lg border-2 border-white/20">
+                                        <img
+                                            src={getThumbnailUrl(activeVideo.video_id, 'medium')}
+                                            alt={activeVideo.title}
+                                            className="w-full h-full object-cover"
+                                        />
+                                        {/* Info overlays - vertically aligned on right side */}
                                         {author && (
-                                            <span className="text-white/90 font-semibold text-sm truncate max-w-full" style={{ textShadow: '-1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000' }}>
+                                            <span className="absolute top-1 right-1 px-1.5 py-0.5 bg-black/70 backdrop-blur-sm rounded text-white font-semibold text-xs truncate max-w-[90%]" style={{ textShadow: '-1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000' }}>
                                                 {author}
                                             </span>
                                         )}
                                         {creationYear && (
-                                            <span className="text-white/70 font-medium text-xs" style={{ textShadow: '-1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000' }}>
+                                            <span className="absolute top-1/2 right-1 -translate-y-1/2 px-1.5 py-0.5 bg-black/70 backdrop-blur-sm rounded text-white/90 font-medium text-xs">
                                                 {creationYear}
                                             </span>
                                         )}
                                         {videoCount !== undefined && (
-                                            <span className="text-white/70 font-medium text-xs" style={{ textShadow: '-1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000' }}>
+                                            <span className="absolute bottom-1 right-1 px-1.5 py-0.5 bg-black/70 backdrop-blur-sm rounded text-white/90 font-medium text-xs">
+                                                {videoCount} {videoCount === 1 ? countLabel : `${countLabel}s`}
+                                            </span>
+                                        )}
+                                    </div>
+                                ) : showInfo && !activeVideo ? (
+                                    <div className="h-24 w-[160px] flex flex-col items-center justify-center gap-1 rounded-lg bg-black/50 backdrop-blur-sm border-2 border-white/20 overflow-hidden px-2">
+                                        {author && (
+                                            <span className="px-1.5 py-0.5 bg-black/70 backdrop-blur-sm rounded text-white font-semibold text-sm truncate max-w-full" style={{ textShadow: '-1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000' }}>
+                                                {author}
+                                            </span>
+                                        )}
+                                        {creationYear && (
+                                            <span className="px-1.5 py-0.5 bg-black/70 backdrop-blur-sm rounded text-white/90 font-medium text-xs">
+                                                {creationYear}
+                                            </span>
+                                        )}
+                                        {videoCount !== undefined && (
+                                            <span className="px-1.5 py-0.5 bg-black/70 backdrop-blur-sm rounded text-white/90 font-medium text-xs">
                                                 {videoCount} {videoCount === 1 ? countLabel : `${countLabel}s`}
                                             </span>
                                         )}
@@ -463,6 +474,32 @@ const PageBanner = ({ title, description, folderColor, onEdit, videoCount, count
                                             alt={activeVideo.title}
                                             className="w-full h-full object-cover"
                                         />
+                                        {/* Pin type icon - only show when viewing pinned video */}
+                                        {currentOption === 'pinned' && activePinnedVideo && (
+                                            <div 
+                                                className="absolute top-1 left-1 flex items-center gap-0.5 px-1 py-0.5 rounded bg-black/60 backdrop-blur-sm"
+                                                title={
+                                                    activePinnedVideo.isPriority && activePinnedVideo.isFollower ? 'Priority Follower Pin' :
+                                                    activePinnedVideo.isPriority ? 'Priority Pin' :
+                                                    activePinnedVideo.isFollower ? 'Follower Pin' : 'Pin'
+                                                }
+                                            >
+                                                {/* Crown for priority */}
+                                                {activePinnedVideo.isPriority && (
+                                                    <span className="text-[10px]" style={{ color: '#FFD700' }}>👑</span>
+                                                )}
+                                                {/* Pin icon */}
+                                                <Pin 
+                                                    size={12} 
+                                                    className={activePinnedVideo.isPriority ? 'text-yellow-400' : 'text-white'}
+                                                    fill={activePinnedVideo.isPriority ? '#FFD700' : 'white'}
+                                                />
+                                                {/* Arrow for follower */}
+                                                {activePinnedVideo.isFollower && (
+                                                    <span className="text-[10px] text-sky-400">→</span>
+                                                )}
+                                            </div>
+                                        )}
                                         <div className="absolute inset-0 bg-black/30 flex items-center justify-center opacity-0 group-hover/thumb:opacity-100 transition-opacity">
                                             <Play className="text-white fill-white" size={24} />
                                         </div>
@@ -470,27 +507,59 @@ const PageBanner = ({ title, description, folderColor, onEdit, videoCount, count
                                 )}
                             </div>
                             
-                            {/* Vertical pin bar - only show when viewing pinned and multiple pins exist */}
+                            {/* Vertical pin bar with selection dot - only show when viewing pinned and multiple pins exist (max 10 segments) */}
                             {currentOption === 'pinned' && hasMultiplePins && (
-                                <div className="flex flex-col w-3 h-24 mt-auto rounded-md overflow-hidden border border-white/20 bg-black/20 backdrop-blur-sm">
-                                    {pinnedVideos.map((pin, index) => (
-                                        <button
-                                            key={pin.id || index}
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                setActivePinnedIndex(index);
-                                            }}
-                                            className={`flex-1 transition-all ${
-                                                activePinnedIndex === index
-                                                    ? 'bg-white'
-                                                    : 'bg-white/30 hover:bg-white/50'
-                                            }`}
-                                            style={{
-                                                borderBottom: index < pinnedVideos.length - 1 ? '1px solid rgba(0,0,0,0.3)' : 'none'
-                                            }}
-                                            title={pin.title || `Pin ${index + 1}`}
-                                        />
-                                    ))}
+                                <div className="flex flex-row items-stretch gap-[2px]">
+                                    <div className="flex flex-col w-3 h-24 rounded-md overflow-hidden border border-white/20 bg-black/20 backdrop-blur-sm">
+                                        {pinnedVideos.slice(0, 10).map((pin, index) => {
+                                            // Get folder color for this pinned video
+                                            const pinFolderColor = pin.folder_color || pin.folderColor;
+                                            const folderColorConfig = pinFolderColor ? FOLDER_COLORS.find(c => c.id === pinFolderColor) : null;
+                                            const isPriority = pin.isPriority;
+                                            // Priority pins get golden color, otherwise use folder color
+                                            const segmentColor = isPriority ? '#FFD700' : (folderColorConfig?.hex || null);
+                                            
+                                            return (
+                                                <button
+                                                    key={pin.id || index}
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setActivePinnedIndex(index);
+                                                    }}
+                                                    className={`flex-1 transition-all hover:opacity-100 ${
+                                                        !segmentColor ? 'bg-white/50 hover:bg-white/70' : ''
+                                                    }`}
+                                                    style={{
+                                                        borderBottom: index < Math.min(pinnedVideos.length, 10) - 1 ? '1px solid rgba(0,0,0,0.3)' : 'none',
+                                                        ...(segmentColor ? {
+                                                            backgroundColor: segmentColor,
+                                                            opacity: isPriority ? 1 : 0.85
+                                                        } : {}),
+                                                        // Crown-like clip-path for priority pin (top segment with pointy top edge)
+                                                        ...(isPriority && index === 0 ? {
+                                                            clipPath: 'polygon(0% 30%, 25% 0%, 50% 20%, 75% 0%, 100% 30%, 100% 100%, 0% 100%)',
+                                                            marginTop: '-2px',
+                                                            paddingTop: '2px'
+                                                        } : {})
+                                                    }}
+                                                    title={isPriority ? `👑 ${pin.title || 'Priority Pin'}` : (pin.title || `Pin ${index + 1}`)}
+                                                />
+                                            );
+                                        })}
+                                    </div>
+                                    {/* Selection indicator dot */}
+                                    <div className="relative h-24 w-2 flex flex-col">
+                                        {pinnedVideos.slice(0, 10).map((pin, index) => (
+                                            <div key={index} className="flex-1 flex items-center justify-center">
+                                                {activePinnedIndex === index && (
+                                                    <div 
+                                                        className="w-1.5 h-1.5 rounded-full shadow-md" 
+                                                        style={{ backgroundColor: pin.isPriority ? '#FFD700' : 'white' }}
+                                                    />
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
                                 </div>
                             )}
                         </div>
@@ -526,18 +595,23 @@ const PageBanner = ({ title, description, folderColor, onEdit, videoCount, count
                 </div>
             )}
 
-            {/* Info Button - Bottom left corner */}
+            {/* Info Button - Bottom left corner (left-click: toggle info, right-click: edit) */}
             <button
                 onClick={(e) => {
                     e.stopPropagation();
                     setShowInfo(!showInfo);
+                }}
+                onContextMenu={(e) => {
+                    e.stopPropagation();
+                    e.preventDefault();
+                    if (onEdit) onEdit();
                 }}
                 className={`absolute bottom-[2px] left-[2px] w-5 h-5 rounded-full flex items-center justify-center transition-all z-20 ${
                     showInfo 
                         ? 'bg-white text-black' 
                         : 'bg-white text-black hover:bg-white/80'
                 }`}
-                title={showInfo ? "Hide info" : "Show info"}
+                title={showInfo ? "Hide info | Right-click to edit" : "Show info | Right-click to edit"}
             >
                 <Info size={12} strokeWidth={2} />
             </button>

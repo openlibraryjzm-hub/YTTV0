@@ -1117,9 +1117,9 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
   }, [videosToDisplay, videoProgress]);
 
   // Get pinned videos from store
-  const { pinnedVideos } = usePinStore();
+  const { pinnedVideos, priorityPinIds, followerPinIds } = usePinStore();
 
-  // Find ALL pinned videos that are in the current playlist
+  // Find ALL pinned videos that are in the current playlist (with folder colors, priority, and follower flags)
   const pinnedVideosInPlaylist = useMemo(() => {
     if (!videosToDisplay || videosToDisplay.length === 0 || !pinnedVideos || pinnedVideos.length === 0) {
       return [];
@@ -1130,12 +1130,32 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
       videosToDisplay.map(v => v.video_id || extractVideoId(v.video_url))
     );
 
-    // Find all pinned videos that are in this playlist
-    return pinnedVideos.filter(pin => {
-      const pinVideoId = pin.video_id || extractVideoId(pin.video_url);
-      return playlistVideoIds.has(pinVideoId);
+    // Find all pinned videos that are in this playlist and attach folder color + priority/follower flags
+    const pinsInPlaylist = pinnedVideos
+      .filter(pin => {
+        const pinVideoId = pin.video_id || extractVideoId(pin.video_url);
+        return playlistVideoIds.has(pinVideoId);
+      })
+      .map(pin => {
+        // Get folder color for this pinned video (use first assigned folder)
+        const folders = videoFolderAssignments[pin.id] || [];
+        const isPriority = priorityPinIds?.includes(pin.id) || false;
+        const isFollower = followerPinIds?.includes(pin.id) || false;
+        return {
+          ...pin,
+          folder_color: folders.length > 0 ? folders[0] : null,
+          isPriority,
+          isFollower
+        };
+      });
+    
+    // Sort so priority pin is always first
+    return pinsInPlaylist.sort((a, b) => {
+      if (a.isPriority && !b.isPriority) return -1;
+      if (!a.isPriority && b.isPriority) return 1;
+      return 0;
     });
-  }, [videosToDisplay, pinnedVideos]);
+  }, [videosToDisplay, pinnedVideos, videoFolderAssignments, priorityPinIds, followerPinIds]);
 
   // Sticky header state detection
   const [isStuck, setIsStuck] = useState(false);
