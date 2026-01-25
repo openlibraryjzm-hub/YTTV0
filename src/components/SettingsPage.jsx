@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Palette, User, Smile, ExternalLink, Copy, Check, Image, Layout, Music, Box, Volume2, Heart, Trash2, Plus, Star } from 'lucide-react';
+import { Palette, User, Smile, ExternalLink, Copy, Check, Image, Layout, Music, Box, Volume2, Heart, Trash2, Plus, Star, Folder } from 'lucide-react';
 import { openUrl } from '@tauri-apps/plugin-opener';
 import { useConfigStore } from '../store/configStore';
 import { THEMES } from '../utils/themes';
@@ -68,7 +68,10 @@ export default function SettingsPage({ currentThemeId, onThemeChange }) {
         playerBorderPattern, setPlayerBorderPattern,
         visualizerGradient, setVisualizerGradient,
         // Orb Favorites
-        orbFavorites, addOrbFavorite, removeOrbFavorite, applyOrbFavorite, renameOrbFavorite
+        orbFavorites, addOrbFavorite, removeOrbFavorite, applyOrbFavorite, renameOrbFavorite,
+        // Layer 2 Folders
+        layer2Folders, addLayer2Image, removeLayer2Image, updateLayer2Image, applyLayer2Image,
+        addLayer2Folder, removeLayer2Folder, renameLayer2Folder, selectedLayer2FolderId, setSelectedLayer2FolderId
     } = useConfigStore();
     const [customAvatar, setCustomAvatar] = useState('');
     const [copied, setCopied] = useState(false);
@@ -141,6 +144,24 @@ export default function SettingsPage({ currentThemeId, onThemeChange }) {
         }
     };
 
+    const handleLayer2FolderImageUpload = (e, folderId) => {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                addLayer2Image(folderId, {
+                    image: reader.result,
+                    scale: 100,
+                    xOffset: 50,
+                    yOffset: 50
+                });
+            };
+            reader.readAsDataURL(file);
+        }
+        // Reset input so the same file can be uploaded again
+        e.target.value = '';
+    };
+
     const toggleSpillQuadrant = (q) => {
         setOrbSpill({ ...orbSpill, [q]: !orbSpill[q] });
     };
@@ -151,6 +172,13 @@ export default function SettingsPage({ currentThemeId, onThemeChange }) {
     const [editingFavoriteId, setEditingFavoriteId] = useState(null);
     const [editingFavoriteName, setEditingFavoriteName] = useState('');
     const [hoveredFavoriteId, setHoveredFavoriteId] = useState(null);
+
+    // Layer 2 Folder handlers
+    const [hoveredLayer2ImageId, setHoveredLayer2ImageId] = useState(null);
+    const [editingLayer2ImageId, setEditingLayer2ImageId] = useState(null);
+    const [editingLayer2FolderId, setEditingLayer2FolderId] = useState(null);
+    const [editingLayer2FolderName, setEditingLayer2FolderName] = useState('');
+    const [hoveredLayer2FolderId, setHoveredLayer2FolderId] = useState(null);
 
     const handleSaveCurrentOrbAsFavorite = () => {
         if (!customOrbImage) return; // Don't save if no image is set
@@ -410,6 +438,176 @@ export default function SettingsPage({ currentThemeId, onThemeChange }) {
                                     >
                                         <div className={`w-4 h-4 bg-white rounded-full absolute top-1 transition-all ${pageBannerScrollEnabled ? 'left-7 shadow-sm' : 'left-1'}`} />
                                     </button>
+                                </div>
+
+                                {/* Layer 2 Image Folders */}
+                                <div className="space-y-3 pt-4 border-t border-slate-100">
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-2">
+                                            <Folder size={14} className="text-purple-500" />
+                                            <label className="text-xs font-bold uppercase text-slate-400">Layer 2 Image Library</label>
+                                        </div>
+                                        <button
+                                            onClick={() => addLayer2Folder()}
+                                            className="flex items-center gap-1 px-2 py-1 bg-purple-100 hover:bg-purple-200 text-purple-600 rounded-lg text-[10px] font-bold uppercase transition-all"
+                                        >
+                                            <Plus size={10} />
+                                            New Folder
+                                        </button>
+                                    </div>
+                                    <p className="text-[10px] text-slate-400 leading-relaxed">
+                                        Organize Layer 2 images in folders. Click to apply, hover to delete. Click folder name to rename.
+                                    </p>
+                                    
+                                    {layer2Folders.map((folder) => (
+                                        <div 
+                                            key={folder.id} 
+                                            className={`space-y-3 p-4 rounded-xl border-2 transition-all ${
+                                                selectedLayer2FolderId === folder.id 
+                                                    ? 'border-purple-400 bg-purple-50/50' 
+                                                    : 'border-purple-100 bg-purple-50/30'
+                                            }`}
+                                            onMouseEnter={() => setHoveredLayer2FolderId(folder.id)}
+                                            onMouseLeave={() => setHoveredLayer2FolderId(null)}
+                                        >
+                                            <div className="flex items-center justify-between">
+                                                <div className="flex items-center gap-2">
+                                                    {editingLayer2FolderId === folder.id ? (
+                                                        <input
+                                                            type="text"
+                                                            value={editingLayer2FolderName}
+                                                            onChange={(e) => setEditingLayer2FolderName(e.target.value)}
+                                                            onBlur={() => {
+                                                                if (editingLayer2FolderName.trim()) {
+                                                                    renameLayer2Folder(folder.id, editingLayer2FolderName.trim());
+                                                                }
+                                                                setEditingLayer2FolderId(null);
+                                                            }}
+                                                            onKeyDown={(e) => {
+                                                                if (e.key === 'Enter') {
+                                                                    if (editingLayer2FolderName.trim()) {
+                                                                        renameLayer2Folder(folder.id, editingLayer2FolderName.trim());
+                                                                    }
+                                                                    setEditingLayer2FolderId(null);
+                                                                }
+                                                            }}
+                                                            autoFocus
+                                                            className="text-xs font-bold text-purple-600 bg-white border border-purple-400 rounded px-2 py-0.5 outline-none w-32"
+                                                        />
+                                                    ) : (
+                                                        <button
+                                                            onClick={() => {
+                                                                setEditingLayer2FolderId(folder.id);
+                                                                setEditingLayer2FolderName(folder.name);
+                                                            }}
+                                                            className="text-xs font-bold text-purple-600 hover:text-purple-800 transition-colors"
+                                                            title="Click to rename"
+                                                        >
+                                                            {folder.name}
+                                                        </button>
+                                                    )}
+                                                    {selectedLayer2FolderId === folder.id && (
+                                                        <span className="text-[8px] font-bold bg-purple-500 text-white px-1.5 py-0.5 rounded-full uppercase">Active</span>
+                                                    )}
+                                                </div>
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-[10px] text-slate-400">{folder.images.length} images</span>
+                                                    {folder.id !== 'default' && hoveredLayer2FolderId === folder.id && (
+                                                        <button
+                                                            onClick={() => removeLayer2Folder(folder.id)}
+                                                            className="w-5 h-5 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center transition-all"
+                                                            title="Delete folder"
+                                                        >
+                                                            <Trash2 size={10} />
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            </div>
+                                            
+                                            {/* Images Grid */}
+                                            {folder.images.length > 0 ? (
+                                                <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 gap-2">
+                                                    {folder.images.map((img) => (
+                                                        <div
+                                                            key={img.id}
+                                                            className="relative group"
+                                                            onMouseEnter={() => setHoveredLayer2ImageId(img.id)}
+                                                            onMouseLeave={() => setHoveredLayer2ImageId(null)}
+                                                        >
+                                                            <button
+                                                                onClick={() => {
+                                                                    applyLayer2Image(img);
+                                                                    setSelectedLayer2FolderId(folder.id);
+                                                                }}
+                                                                className={`w-full aspect-video rounded-lg border-2 overflow-hidden transition-all duration-200 ${
+                                                                    customPageBannerImage2 === img.image
+                                                                        ? 'border-purple-500 ring-2 ring-purple-200 shadow-lg'
+                                                                        : 'border-slate-200 hover:border-purple-300 hover:shadow-md'
+                                                                }`}
+                                                            >
+                                                                <img
+                                                                    src={img.image}
+                                                                    alt="Layer 2"
+                                                                    className="w-full h-full object-cover"
+                                                                />
+                                                                {/* Active Indicator */}
+                                                                {customPageBannerImage2 === img.image && (
+                                                                    <div className="absolute inset-0 bg-purple-500/20 flex items-center justify-center">
+                                                                        <Check className="text-white drop-shadow-md" size={16} />
+                                                                    </div>
+                                                                )}
+                                                            </button>
+                                                            
+                                                            {/* Delete Button */}
+                                                            {hoveredLayer2ImageId === img.id && (
+                                                                <button
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        removeLayer2Image(folder.id, img.id);
+                                                                    }}
+                                                                    className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center shadow-md transition-all z-10"
+                                                                >
+                                                                    <Trash2 size={10} />
+                                                                </button>
+                                                            )}
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            ) : (
+                                                <div className="py-4 text-center border-2 border-dashed border-purple-200 rounded-lg bg-white/50">
+                                                    <p className="text-[10px] text-slate-400">No images saved yet</p>
+                                                </div>
+                                            )}
+                                            
+                                            {/* Add Image Button */}
+                                            <label className="w-full py-2 bg-white border-2 border-dashed border-purple-200 rounded-lg text-[10px] font-bold uppercase text-purple-400 hover:bg-purple-50 hover:border-purple-400 hover:text-purple-600 transition-all flex items-center justify-center gap-2 cursor-pointer">
+                                                <Plus size={12} />
+                                                Add Image to Folder
+                                                <input
+                                                    type="file"
+                                                    accept="image/*"
+                                                    onChange={(e) => handleLayer2FolderImageUpload(e, folder.id)}
+                                                    className="hidden"
+                                                />
+                                            </label>
+                                            
+                                            {/* Save Current Layer 2 Button */}
+                                            {customPageBannerImage2 && (
+                                                <button
+                                                    onClick={() => addLayer2Image(folder.id, {
+                                                        image: customPageBannerImage2,
+                                                        scale: pageBannerImage2Scale,
+                                                        xOffset: pageBannerImage2XOffset,
+                                                        yOffset: pageBannerImage2YOffset
+                                                    })}
+                                                    className="w-full py-2 bg-purple-500 hover:bg-purple-600 text-white rounded-lg text-[10px] font-bold uppercase transition-all flex items-center justify-center gap-2"
+                                                >
+                                                    <Plus size={12} />
+                                                    Save Current Layer 2 Config
+                                                </button>
+                                            )}
+                                        </div>
+                                    ))}
                                 </div>
                             </ConfigSection>
 

@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { FOLDER_COLORS } from '../utils/folderColors';
-import { Pen, Play, ChevronRight, ChevronUp, ChevronDown, RotateCcw, Clock, Pin, Sparkles, Info } from 'lucide-react';
+import { Pen, Play, ChevronRight, ChevronUp, ChevronDown, RotateCcw, Clock, Pin, Sparkles, Info, Folder, Image } from 'lucide-react';
 import { getThumbnailUrl } from '../utils/youtubeUtils';
 
 
@@ -12,8 +12,16 @@ const PageBanner = ({ title, description, folderColor, onEdit, videoCount, count
         bannerPattern, customPageBannerImage, bannerBgSize, setBannerHeight, setBannerBgSize, 
         pageBannerScrollEnabled, pageBannerImageScale, pageBannerImageXOffset, pageBannerImageYOffset,
         customPageBannerImage2, pageBannerImage2Scale, pageBannerImage2XOffset, pageBannerImage2YOffset,
-        userAvatar
+        userAvatar,
+        layer2Folders, applyLayer2Image, selectedLayer2FolderId, setSelectedLayer2FolderId
     } = useConfigStore();
+    
+    // Layer 2 strip view mode: 'folders' = show folder list, 'images' = show images from selected folder
+    const [layer2ViewMode, setLayer2ViewMode] = useState('images');
+    
+    // Get the selected folder and its images
+    const selectedFolder = layer2Folders?.find(f => f.id === selectedLayer2FolderId) || layer2Folders?.[0];
+    const layer2Images = selectedFolder?.images || [];
     const [badgesExpanded, setBadgesExpanded] = useState(false);
     const badgesContainerRef = useRef(null);
     
@@ -193,7 +201,7 @@ const PageBanner = ({ title, description, folderColor, onEdit, videoCount, count
             {/* Content Container - Allow overflow for dropdowns */}
             <div className="relative z-10 flex items-start h-full gap-8 w-full px-8 pt-4">
                 <div className="flex flex-col justify-start min-w-0">
-                    <h1 className="text-6xl md:text-7xl font-black text-white mb-0 tracking-tight drop-shadow-md truncate" style={{ textShadow: '-2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 2px 2px 0 #000, 0 4px 8px rgba(0,0,0,0.8)' }}>
+                    <h1 className="text-lg md:text-xl font-black text-white mb-0 tracking-tight drop-shadow-md truncate" style={{ textShadow: '-1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0 2px 4px rgba(0,0,0,0.8)' }}>
                         {title}
                     </h1>
 
@@ -359,51 +367,6 @@ const PageBanner = ({ title, description, folderColor, onEdit, videoCount, count
                     <div className="flex flex-col items-center">
                         {/* Content row with optional pin bar and preview stack */}
                         <div className="flex items-stretch gap-[2px]">
-                            {/* Vertical Playlist Navigator - Up/Return/Down */}
-                            {(onNavigateNext || onNavigatePrev) && (
-                                <div className="flex flex-col h-24 w-6 rounded-md overflow-hidden border border-white/20 bg-black/20 backdrop-blur-sm">
-                                    {/* Up Chevron - Next Playlist */}
-                                    <button
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            if (onNavigateNext) onNavigateNext();
-                                        }}
-                                        className="flex-1 flex items-center justify-center bg-white hover:bg-white/80 text-black transition-all"
-                                        title="Next Playlist"
-                                    >
-                                        <ChevronUp size={16} strokeWidth={2.5} />
-                                    </button>
-                                    
-                                    {/* Middle - Return/Refresh Button */}
-                                    <button
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            if (onReturn) onReturn();
-                                        }}
-                                        className={`flex-1 flex items-center justify-center transition-all border-y border-black/30 bg-white ${
-                                            showReturnButton 
-                                                ? 'hover:bg-white/80 text-black' 
-                                                : 'text-gray-400 cursor-default'
-                                        }`}
-                                        title={showReturnButton ? "Return to original playlist" : "At original playlist"}
-                                        disabled={!showReturnButton}
-                                    >
-                                        <RotateCcw size={12} />
-                                    </button>
-                                    
-                                    {/* Down Chevron - Previous Playlist */}
-                                    <button
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            if (onNavigatePrev) onNavigatePrev();
-                                        }}
-                                        className="flex-1 flex items-center justify-center bg-white hover:bg-white/80 text-black transition-all"
-                                        title="Previous Playlist"
-                                    >
-                                        <ChevronDown size={16} strokeWidth={2.5} />
-                                    </button>
-                                </div>
-                            )}
                             {/* Clickable content area */}
                             <div
                                 className={`flex flex-col items-center gap-2 group/thumb flex-shrink-0 ${activeCallback && !showInfo ? 'cursor-pointer' : ''}`}
@@ -562,59 +525,269 @@ const PageBanner = ({ title, description, folderColor, onEdit, videoCount, count
                                     </div>
                                 </div>
                             )}
-                        </div>
-                        
-                        {/* Horizontal segmented bar - show when multiple options exist */}
-                        {hasMultipleOptions && (
-                            <div className="flex flex-row h-5 w-[160px] mt-1 ml-[25px] rounded-md overflow-hidden border border-white/20 bg-black/20 backdrop-blur-sm">
-                                {availableOptions.map((option, index) => (
+                            
+                            {/* Vertical Playlist Navigator - Up/Return/Down (right side of thumbnail) */}
+                            {(onNavigateNext || onNavigatePrev) && (
+                                <div className="flex flex-col h-24 w-6 rounded-md overflow-hidden border border-white/20 bg-black/20 backdrop-blur-sm">
+                                    {/* Up Chevron - Next Playlist */}
                                     <button
-                                        key={option}
                                         onClick={(e) => {
                                             e.stopPropagation();
-                                            setActiveThumbnail(index);
+                                            if (onNavigateNext) onNavigateNext();
                                         }}
-                                        className={`flex-1 flex items-center justify-center transition-all ${
-                                            activeThumbnail === index
-                                                ? 'bg-white text-black'
-                                                : 'bg-white/30 text-white/70 hover:bg-white/50 hover:text-white'
-                                        }`}
-                                        style={{
-                                            borderRight: index < availableOptions.length - 1 ? '1px solid rgba(0,0,0,0.3)' : 'none'
-                                        }}
-                                        title={option === 'continue' ? 'Continue watching' : option === 'pinned' ? 'Pinned videos' : 'Signature'}
+                                        className="flex-1 flex items-center justify-center bg-white hover:bg-white/80 text-black transition-all"
+                                        title="Next Playlist"
                                     >
-                                        {option === 'continue' && <Clock size={12} />}
-                                        {option === 'pinned' && <Pin size={12} />}
-                                        {option === 'ascii' && <Sparkles size={12} />}
+                                        <ChevronUp size={16} strokeWidth={2.5} />
                                     </button>
-                                ))}
+                                    
+                                    {/* Middle - Return/Refresh Button */}
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            if (onReturn) onReturn();
+                                        }}
+                                        className={`flex-1 flex items-center justify-center transition-all border-y border-black/30 bg-white ${
+                                            showReturnButton 
+                                                ? 'hover:bg-white/80 text-black' 
+                                                : 'text-gray-400 cursor-default'
+                                        }`}
+                                        title={showReturnButton ? "Return to original playlist" : "At original playlist"}
+                                        disabled={!showReturnButton}
+                                    >
+                                        <RotateCcw size={12} />
+                                    </button>
+                                    
+                                    {/* Down Chevron - Previous Playlist */}
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            if (onNavigatePrev) onNavigatePrev();
+                                        }}
+                                        className="flex-1 flex items-center justify-center bg-white hover:bg-white/80 text-black transition-all"
+                                        title="Previous Playlist"
+                                    >
+                                        <ChevronDown size={16} strokeWidth={2.5} />
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+                        
+                        {/* Horizontal segmented bar with info button - show when multiple options exist */}
+                        {hasMultipleOptions && (
+                            <div className="flex flex-row items-center gap-1 mt-1 ml-[10px]">
+                                <div className="flex flex-row h-5 w-[160px] rounded-md overflow-hidden border border-white/20 bg-black/20 backdrop-blur-sm">
+                                    {availableOptions.map((option, index) => (
+                                        <button
+                                            key={option}
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                setActiveThumbnail(index);
+                                            }}
+                                            className={`flex-1 flex items-center justify-center transition-all ${
+                                                activeThumbnail === index
+                                                    ? 'bg-white text-black'
+                                                    : 'bg-white/30 text-white/70 hover:bg-white/50 hover:text-white'
+                                            }`}
+                                            style={{
+                                                borderRight: index < availableOptions.length - 1 ? '1px solid rgba(0,0,0,0.3)' : 'none'
+                                            }}
+                                            title={option === 'continue' ? 'Continue watching' : option === 'pinned' ? 'Pinned videos' : 'Signature'}
+                                        >
+                                            {option === 'continue' && <Clock size={12} />}
+                                            {option === 'pinned' && <Pin size={12} />}
+                                            {option === 'ascii' && <Sparkles size={12} />}
+                                        </button>
+                                    ))}
+                                </div>
+                                {/* Info Button - right of carousel buttons */}
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        setShowInfo(!showInfo);
+                                    }}
+                                    onContextMenu={(e) => {
+                                        e.stopPropagation();
+                                        e.preventDefault();
+                                        if (onEdit) onEdit();
+                                    }}
+                                    className={`w-5 h-5 rounded-full flex items-center justify-center transition-all ${
+                                        showInfo 
+                                            ? 'bg-white text-black' 
+                                            : 'bg-white text-black hover:bg-white/80'
+                                    }`}
+                                    title={showInfo ? "Hide info | Right-click to edit" : "Show info | Right-click to edit"}
+                                >
+                                    <Info size={12} strokeWidth={2} />
+                                </button>
+                            </div>
+                        )}
+                        
+                        {/* Info Button - show alone when no carousel options */}
+                        {!hasMultipleOptions && (
+                            <div className="mt-1 ml-[10px]">
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        setShowInfo(!showInfo);
+                                    }}
+                                    onContextMenu={(e) => {
+                                        e.stopPropagation();
+                                        e.preventDefault();
+                                        if (onEdit) onEdit();
+                                    }}
+                                    className={`w-5 h-5 rounded-full flex items-center justify-center transition-all ${
+                                        showInfo 
+                                            ? 'bg-white text-black' 
+                                            : 'bg-white text-black hover:bg-white/80'
+                                    }`}
+                                    title={showInfo ? "Hide info | Right-click to edit" : "Show info | Right-click to edit"}
+                                >
+                                    <Info size={12} strokeWidth={2} />
+                                </button>
                             </div>
                         )}
                     </div>
                 </div>
             )}
-
-            {/* Info Button - Bottom left corner (left-click: toggle info, right-click: edit) */}
-            <button
-                onClick={(e) => {
-                    e.stopPropagation();
-                    setShowInfo(!showInfo);
-                }}
-                onContextMenu={(e) => {
-                    e.stopPropagation();
-                    e.preventDefault();
-                    if (onEdit) onEdit();
-                }}
-                className={`absolute bottom-[2px] left-[2px] w-5 h-5 rounded-full flex items-center justify-center transition-all z-20 ${
-                    showInfo 
-                        ? 'bg-white text-black' 
-                        : 'bg-white text-black hover:bg-white/80'
-                }`}
-                title={showInfo ? "Hide info | Right-click to edit" : "Show info | Right-click to edit"}
-            >
-                <Info size={12} strokeWidth={2} />
-            </button>
+            
+            {/* Vertical Thumbnail Strip - stacked thumbnails spanning banner height */}
+            <div className="absolute top-2 bottom-2 left-[220px] flex flex-col gap-1 z-20">
+                {/* 4 slots container */}
+                <div className="flex-1 flex flex-col gap-1">
+                    {layer2ViewMode === 'images' ? (
+                        /* Images Mode: Show images from selected folder */
+                        [0, 1, 2, 3].map((index) => {
+                            const img = layer2Images[index];
+                            const isActive = img && customPageBannerImage2 === img.image;
+                            return (
+                                <button
+                                    key={index}
+                                    onClick={() => img && applyLayer2Image(img)}
+                                    className={`flex-1 w-[100px] rounded-md overflow-hidden border transition-all ${
+                                        isActive 
+                                            ? 'border-2 border-purple-400 ring-1 ring-purple-300' 
+                                            : 'border border-white/20 hover:border-white/40'
+                                    } bg-black/30 backdrop-blur-sm ${img ? 'cursor-pointer hover:scale-105' : ''}`}
+                                    disabled={!img}
+                                >
+                                    {img ? (
+                                        <img 
+                                            src={img.image} 
+                                            alt={`Layer 2 Option ${index + 1}`} 
+                                            className="w-full h-full object-cover"
+                                        />
+                                    ) : null}
+                                </button>
+                            );
+                        })
+                    ) : (
+                        /* Folders Mode: Show folder list with first image as thumbnail */
+                        [0, 1, 2, 3].map((index) => {
+                            const folder = layer2Folders?.[index];
+                            const isSelected = folder && folder.id === selectedLayer2FolderId;
+                            const firstImage = folder?.images?.[0];
+                            return (
+                                <button
+                                    key={index}
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        if (folder) {
+                                            // Select folder and switch to images view
+                                            setSelectedLayer2FolderId(folder.id);
+                                            // Use setTimeout to ensure state updates in sequence
+                                            setTimeout(() => setLayer2ViewMode('images'), 0);
+                                        }
+                                    }}
+                                    className={`flex-1 w-[100px] rounded-md overflow-hidden border transition-all relative ${
+                                        isSelected 
+                                            ? 'border-2 border-purple-400 ring-1 ring-purple-300' 
+                                            : 'border border-white/20 hover:border-white/40'
+                                    } bg-black/30 backdrop-blur-sm ${folder ? 'cursor-pointer hover:scale-105' : ''}`}
+                                    disabled={!folder}
+                                >
+                                    {folder ? (
+                                        <>
+                                            {/* Folder thumbnail - first image or fallback */}
+                                            {firstImage ? (
+                                                <img 
+                                                    src={firstImage.image} 
+                                                    alt={folder.name}
+                                                    className="absolute inset-0 w-full h-full object-cover opacity-70"
+                                                />
+                                            ) : (
+                                                <div className="absolute inset-0 flex items-center justify-center">
+                                                    <Folder size={20} className="text-purple-300/50" />
+                                                </div>
+                                            )}
+                                            {/* Folder info overlay */}
+                                            <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/40">
+                                                <span className="text-[9px] text-white font-bold truncate max-w-[90px] text-center px-1" style={{ textShadow: '0 1px 3px rgba(0,0,0,1)' }}>
+                                                    {folder.name}
+                                                </span>
+                                                <span className="text-[8px] text-white/70 font-medium" style={{ textShadow: '0 1px 2px rgba(0,0,0,0.8)' }}>
+                                                    {folder.images.length} img
+                                                </span>
+                                            </div>
+                                        </>
+                                    ) : null}
+                                </button>
+                            );
+                        })
+                    )}
+                </div>
+                
+                {/* Mode Switcher Bar */}
+                <div className="flex flex-row h-5 w-[100px] rounded-md overflow-hidden border border-white/20 bg-black/20 backdrop-blur-sm">
+                    <button
+                        onClick={() => setLayer2ViewMode('folders')}
+                        className={`flex-1 flex items-center justify-center transition-all ${
+                            layer2ViewMode === 'folders'
+                                ? 'bg-purple-500 text-white'
+                                : 'bg-white/30 text-white/70 hover:bg-white/50 hover:text-white'
+                        }`}
+                        title="Browse folders"
+                    >
+                        <Folder size={12} />
+                    </button>
+                    <button
+                        onClick={() => setLayer2ViewMode('images')}
+                        className={`flex-1 flex items-center justify-center transition-all border-l border-black/30 ${
+                            layer2ViewMode === 'images'
+                                ? 'bg-purple-500 text-white'
+                                : 'bg-white/30 text-white/70 hover:bg-white/50 hover:text-white'
+                        }`}
+                        title={`View images in ${selectedFolder?.name || 'folder'}`}
+                    >
+                        <Image size={12} />
+                    </button>
+                </div>
+            </div>
+            
+            {/* Fallback Info Button - when no thumbnail/carousel options exist */}
+            {!hasAnyOption && (
+                <div className="absolute bottom-1 left-[1px] z-20">
+                    <button
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            setShowInfo(!showInfo);
+                        }}
+                        onContextMenu={(e) => {
+                            e.stopPropagation();
+                            e.preventDefault();
+                            if (onEdit) onEdit();
+                        }}
+                        className={`w-5 h-5 rounded-full flex items-center justify-center transition-all ${
+                            showInfo 
+                                ? 'bg-white text-black' 
+                                : 'bg-white text-black hover:bg-white/80'
+                        }`}
+                        title={showInfo ? "Hide info | Right-click to edit" : "Show info | Right-click to edit"}
+                    >
+                        <Info size={12} strokeWidth={2} />
+                    </button>
+                </div>
+            )}
         </div>
     );
 };

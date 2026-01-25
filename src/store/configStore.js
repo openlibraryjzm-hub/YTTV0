@@ -219,6 +219,72 @@ export const useConfigStore = create(
             pageBannerImage2YOffset: 50,
             setPageBannerImage2YOffset: (val) => set({ pageBannerImage2YOffset: val }),
 
+            // Layer 2 Image Folders System
+            layer2Folders: [
+                { id: 'default', name: 'Default', images: [] }
+            ],
+            selectedLayer2FolderId: 'default',
+            setSelectedLayer2FolderId: (val) => set({ selectedLayer2FolderId: val }),
+            addLayer2Folder: (name) => set((state) => ({
+                layer2Folders: [...state.layer2Folders, {
+                    id: Date.now().toString(),
+                    name: name || `Folder ${state.layer2Folders.length + 1}`,
+                    images: []
+                }]
+            })),
+            removeLayer2Folder: (folderId) => set((state) => ({
+                layer2Folders: state.layer2Folders.filter(f => f.id !== folderId),
+                // Reset to default if deleted folder was selected
+                selectedLayer2FolderId: state.selectedLayer2FolderId === folderId ? 'default' : state.selectedLayer2FolderId
+            })),
+            renameLayer2Folder: (folderId, newName) => set((state) => ({
+                layer2Folders: state.layer2Folders.map(f =>
+                    f.id === folderId ? { ...f, name: newName } : f
+                )
+            })),
+            addLayer2Image: (folderId, image) => set((state) => ({
+                layer2Folders: state.layer2Folders.map(folder =>
+                    folder.id === folderId
+                        ? {
+                            ...folder,
+                            images: [...folder.images, {
+                                id: Date.now().toString(),
+                                image: image.image,
+                                scale: image.scale ?? 100,
+                                xOffset: image.xOffset ?? 50,
+                                yOffset: image.yOffset ?? 50,
+                                createdAt: Date.now()
+                            }]
+                        }
+                        : folder
+                )
+            })),
+            removeLayer2Image: (folderId, imageId) => set((state) => ({
+                layer2Folders: state.layer2Folders.map(folder =>
+                    folder.id === folderId
+                        ? { ...folder, images: folder.images.filter(img => img.id !== imageId) }
+                        : folder
+                )
+            })),
+            updateLayer2Image: (folderId, imageId, updates) => set((state) => ({
+                layer2Folders: state.layer2Folders.map(folder =>
+                    folder.id === folderId
+                        ? {
+                            ...folder,
+                            images: folder.images.map(img =>
+                                img.id === imageId ? { ...img, ...updates } : img
+                            )
+                        }
+                        : folder
+                )
+            })),
+            applyLayer2Image: (image) => set({
+                customPageBannerImage2: image.image,
+                pageBannerImage2Scale: image.scale,
+                pageBannerImage2XOffset: image.xOffset,
+                pageBannerImage2YOffset: image.yOffset
+            }),
+
             // Player Border Pattern
             playerBorderPattern: 'diagonal',
             setPlayerBorderPattern: (val) => set({ playerBorderPattern: val }),

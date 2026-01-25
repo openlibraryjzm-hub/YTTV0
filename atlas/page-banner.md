@@ -1,4 +1,3 @@
-###Page Banner
 
 The Page Banner is a contextual banner component displayed at the top of content pages (Videos, Playlists, Likes, Pins, etc.). It provides rich metadata, visual identity, and seamless integration with the Sticky Toolbar system.
 
@@ -24,7 +23,7 @@ Users see a contextual banner (220px fixed height) at the top of scrollable cont
   - **History Page**: Shows "History" with playlist badges
   - **Pins Page**: Shows "Pinned Videos"
 - **Visual Elements**:
-  - **Title**: Extra-large, bold text (`text-6xl md:text-7xl`) with dark text shadow for readability, no bottom margin (`mb-0`)
+  - **Title**: Compact, bold text (`text-lg md:text-xl`) with dark text shadow for readability, no bottom margin (`mb-0`) - sized to fit snugly above thumbnail
   - **Description**: Hidden by default, shown when info button is clicked
     - **Position**: To the right of thumbnail area (`ml-[170px] mt-[7px]`)
     - **Lines**: Up to 6 lines (`line-clamp-6`) for long descriptions
@@ -36,10 +35,10 @@ Users see a contextual banner (220px fixed height) at the top of scrollable cont
     - **Limit**: 2 rows with expand button (>>>) to show all
   - **Pagination Badge**: Compact pagination controls (Likes page)
     - Format: `<< < 1/99 > >>` (First, Previous, Current/Total, Next, Last)
-  - **Info Button** (bottom-left corner): Small circular button with dual functionality
+  - **Info Button**: Small circular button with dual functionality, positioned to the right of carousel buttons
     - **Styling**: White background (`bg-white`), black icon (`text-black`)
     - **Size**: 20px (`w-5 h-5`) with Info icon (12px)
-    - **Position**: `bottom-[2px] left-[2px]` - snug in corner
+    - **Position**: Right of horizontal carousel buttons (or standalone when no carousel)
     - **Left Click**: Toggles info display (description + info overlays on thumbnail)
     - **Right Click**: Opens edit modal (replaces removed edit button)
   - **Info Overlays** (on thumbnail when info button active):
@@ -61,13 +60,13 @@ Users see a contextual banner (220px fixed height) at the top of scrollable cont
       - Clock icon for Continue watching
       - Pin icon for Pinned videos
       - Sparkles icon for ASCII Signature
-      - Offset `ml-[25px]` to align under thumbnail
+      - Offset `ml-[10px]` to align under thumbnail
     - **Multi-Pin Bar**: When multiple pins exist (max 10 segments), a vertical segmented bar appears to the right of thumbnail
       - **Folder Colors**: Each segment colored by the pin's folder assignment
       - **Priority Crown**: Priority pin segment has crown-like clip-path and golden color (`#FFD700`)
       - **Selection Dot**: White dot indicator to the right of the bar (golden for priority pin)
     - **Fixed Width**: Container positioned at `bottom-1 left-[1px]`
-  - **Playlist Navigator Stack** (Videos Page): Vertical stack to the left of thumbnail
+  - **Playlist Navigator Stack** (Videos Page): Vertical stack to the right of thumbnail
     - **Up Chevron** (top): Navigates to next playlist - white bg, black icon
     - **Return Button** (middle): Returns to reset point playlist - white bg, grey icon (inactive) / black icon (active)
     - **Down Chevron** (bottom): Navigates to previous playlist - white bg, black icon
@@ -82,6 +81,14 @@ Users see a contextual banner (220px fixed height) at the top of scrollable cont
     - **Layer 2 (Overlay)**: Secondary image rendered on top (use transparent PNGs for composite effects)
     - Each layer has independent Scale, X Position, and Y Position controls
 - **Unified Banner System**: When custom image is set, the banner visually connects with the Sticky Toolbar below it using synchronized horizontal scroll animation (can be disabled via Settings)
+  - **Layer 2 Thumbnail Strip**: Vertical strip to the right of thumbnail showing Layer 2 images from folders
+    - **Position**: `left-[220px]`, spans full banner height (`top-2 bottom-2`)
+    - **4 Slots**: Shows first 4 images from selected folder (clickable to apply)
+    - **Mode Switcher Bar**: Horizontal bar below slots with Folder and Image icons
+      - **Folders Mode**: Shows folders with first image as thumbnail background, name overlay, image count
+      - **Images Mode**: Shows images from selected folder (click to apply as Layer 2)
+    - **Folder Selection**: Click folder → selects it AND switches to images view automatically
+    - **Active Indicator**: Purple border highlights currently active Layer 2 image
 
 **2: File Manifest**
 
@@ -110,6 +117,17 @@ Users see a contextual banner (220px fixed height) at the top of scrollable cont
     - `pageBannerImage2YOffset`: Y position percentage for Layer 2 (0-100%, default 50)
   - **Animation:**
     - `pageBannerScrollEnabled`: Boolean to enable/disable horizontal scroll animation (default true)
+  - **Layer 2 Image Folders System:**
+    - `layer2Folders`: Array of folder objects `{ id, name, images[] }` - default folder is "Default"
+    - `selectedLayer2FolderId`: ID of currently selected folder (default: 'default')
+    - `setSelectedLayer2FolderId(id)`: Sets the selected folder
+    - `addLayer2Folder(name)`: Creates a new folder with optional name
+    - `removeLayer2Folder(folderId)`: Deletes a folder (cannot delete 'default')
+    - `renameLayer2Folder(folderId, newName)`: Renames a folder
+    - `addLayer2Image(folderId, image)`: Adds image with config to folder
+    - `removeLayer2Image(folderId, imageId)`: Removes image from folder
+    - `updateLayer2Image(folderId, imageId, updates)`: Updates image config
+    - `applyLayer2Image(image)`: Applies saved image as Layer 2 (sets customPageBannerImage2 + scale/offsets)
   - **Unified Banner State:**
     - `bannerHeight`: Current banner height (reported by PageBanner for Sticky Toolbar alignment)
     - `setBannerHeight(height)`: Updates banner height in store
@@ -193,7 +211,7 @@ Users see a contextual banner (220px fixed height) at the top of scrollable cont
      - If multiple pins → Shows vertical segmented bar to the right of thumbnail (max 10)
      - ASCII option always available if `userAvatar` is set
    - **Horizontal Segmented Bar** (option navigation):
-     - Fixed width (`w-[160px]`), height (`h-5`), offset `ml-[25px]`
+    - Fixed width (`w-[160px]`), height (`h-5`), offset `ml-[10px]`
      - Icons: Clock (continue), Pin (pinned), Sparkles (ASCII)
      - Active segment: solid white with black icon
      - Inactive segments: semi-transparent with white icon
@@ -210,7 +228,7 @@ Users see a contextual banner (220px fixed height) at the top of scrollable cont
      - Background: `bg-black/60 backdrop-blur-sm`
      - Displays icons based on pin type: pin icon, crown emoji (priority), arrow (follower)
    - **Playlist Navigator Stack** (Videos Page only):
-     - Vertical stack to the left of thumbnail with `gap-[2px]`
+     - Vertical stack to the right of thumbnail with `gap-[2px]`
      - Up chevron → `onNavigateNext()`, Down chevron → `onNavigatePrev()`
      - Return button → `onReturn()` (only active when `showReturnButton` is true)
      - All buttons: white background, black icons (chevrons), grey/black icon (return)
@@ -281,11 +299,11 @@ Users see a contextual banner (220px fixed height) at the top of scrollable cont
 
 **Content Layout:**
 - **Top-Aligned**: Content uses `items-start` for top-left alignment
-- **Title**: Extra-large (`text-6xl md:text-7xl`), no bottom margin (`mb-0`)
+- **Title**: Compact (`text-lg md:text-xl`), no bottom margin (`mb-0`)
 - **Description**: Positioned to the right of thumbnail (`ml-[170px] mt-[7px]`), hidden until info button clicked
 - **Media Carousel**: Positioned at `bottom-1 left-[1px]` (below title)
-- **Playlist Navigator Stack**: Vertical bar (`h-24 w-6`) to the left of thumbnail with `gap-[2px]`
-- **Info Button**: Positioned at `bottom-[2px] left-[2px]` (snug in corner), handles both info toggle and edit (right-click)
+- **Playlist Navigator Stack**: Vertical bar (`h-24 w-6`) to the right of thumbnail with `gap-[2px]`
+- **Info Button**: Positioned to the right of horizontal carousel buttons, handles both info toggle and edit (right-click)
 - **Edit Button**: Removed (functionality moved to info button right-click)
 
 **Media Carousel Component State:**
@@ -300,6 +318,13 @@ Users see a contextual banner (220px fixed height) at the top of scrollable cont
 - `hasAscii`: Boolean - ASCII signature is available (from `userAvatar` or `avatar` prop)
 - `hasMultipleOptions`: Boolean - more than one option exists (shows segmented bar navigation)
 - `hasAnyOption`: Boolean - at least one option exists (shows the carousel)
+
+**Layer 2 Thumbnail Strip State:**
+- `layer2ViewMode`: 'folders' | 'images' - current view mode (default: 'images')
+- `selectedFolder`: Folder object from `layer2Folders` matching `selectedLayer2FolderId`
+- `layer2Images`: Array of images from the selected folder
+- **Folders Mode**: Shows up to 4 folders with first image as thumbnail, clicking selects folder and auto-switches to images mode
+- **Images Mode**: Shows up to 4 images from selected folder, clicking applies image as Layer 2
 
 **Pinned Video Data (from VideosPage):**
 - `folder_color`: First folder color assigned to this video (for pin bar segment coloring)
@@ -325,7 +350,7 @@ Users see a contextual banner (220px fixed height) at the top of scrollable cont
 **5: Page-Specific Usage**
 
 **Videos Page:**
-- Displays playlist name or folder name as title (extra-large `text-6xl md:text-7xl`)
+- Displays playlist name or folder name as title (compact `text-lg md:text-xl`)
 - Description shows to the right of thumbnail when info button is clicked
 - Video count, year, and author shown as overlays on thumbnail when info button is clicked
 - Right-click info button opens `EditPlaylistModal` for renaming and setting custom banner
@@ -336,7 +361,7 @@ Users see a contextual banner (220px fixed height) at the top of scrollable cont
   - Info overlays appear on thumbnail (author top-right, year middle-right, count bottom-right)
 - **Pin Type Badge**: When viewing pinned video, top-left badge shows pin type (normal/follower/priority/priority-follower)
 - **Multi-Pin Bar**: Vertical bar with folder-colored segments, priority crown, and selection dot
-- **Playlist Navigator Stack** (vertical, left of thumbnail):
+- **Playlist Navigator Stack** (vertical, right of thumbnail):
   - **Up Chevron**: Navigates to next playlist in preview mode
   - **Return Button**: Returns to reset point playlist (grey when at reset point, black when away)
   - **Down Chevron**: Navigates to previous playlist in preview mode
@@ -394,6 +419,13 @@ Users see a contextual banner (220px fixed height) at the top of scrollable cont
 - **Pattern Selection**: Toggle between Diagonal, Dots, Mesh, Solid patterns (only visible when no custom images uploaded)
 - **Scroll Animation Toggle**: Enable/disable horizontal scrolling animation for Layer 1
 - **Live Preview**: Changes apply immediately to the actual Page Banner above the settings (no separate preview panel)
+- **Layer 2 Image Library**: Multi-folder system for organizing Layer 2 images
+  - **New Folder Button**: Creates additional folders for organization
+  - **Folder Cards**: Each folder shows name (click to rename), image count, delete button (hover)
+  - **Image Grid**: Thumbnails of saved images in each folder (click to apply, hover to delete)
+  - **Add Image**: Upload new images directly to a folder
+  - **Save Current Config**: Save current Layer 2 image with its scale/position settings to folder
+  - **Active Badge**: Shows which folder is currently selected in PageBanner strip
 
 **Visual Customization:**
 - **ASCII Signature**: Set via Settings → Signature, displayed in right-side carousel as "SIGNATURE" option
