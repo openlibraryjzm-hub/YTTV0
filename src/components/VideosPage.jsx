@@ -1194,47 +1194,10 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
                   }
                 }}
                 seamlessBottom={true}
-                topRightContent={
-                  <div className="flex items-center gap-2">
-                    {/* Return to Reset Point Button - Only shows when navigated away from reset point */}
-                    {showReturnButton && (
-                      <button
-                        onClick={handleReturnToOriginal}
-                        className="p-1.5 bg-amber-500/20 hover:bg-amber-500/40 text-amber-300 hover:text-amber-200 rounded-full backdrop-blur-md transition-all duration-200 transform hover:scale-110 border border-amber-500/30"
-                        title={`Return to ${allPlaylists.find(p => p.id === resetPointId)?.name || 'original playlist'}`}
-                      >
-                        <RotateCcw size={16} />
-                      </button>
-                    )}
-                    
-                    {/* Left Chevron */}
-                    <button
-                      onClick={() => handleNavigatePlaylist('prev')}
-                      className="p-1.5 bg-white/10 hover:bg-white/20 text-white rounded-full backdrop-blur-md transition-all duration-200 transform hover:scale-110"
-                      title="Previous Playlist"
-                    >
-                      <ChevronLeft size={16} />
-                    </button>
-                    
-                    {/* Playlist Name - Fixed width with truncation */}
-                    <span 
-                      className="text-white/90 font-semibold text-sm px-2 py-1 bg-black/20 rounded-md backdrop-blur-sm w-32 text-center truncate block"
-                      style={{ textShadow: '-1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0 2px 4px rgba(0,0,0,0.8)' }}
-                      title={allPlaylists.find(p => p.id === activePlaylistId)?.name || 'Playlist'}
-                    >
-                      {allPlaylists.find(p => p.id === activePlaylistId)?.name || 'Playlist'}
-                    </span>
-                    
-                    {/* Right Chevron */}
-                    <button
-                      onClick={() => handleNavigatePlaylist('next')}
-                      className="p-1.5 bg-white/10 hover:bg-white/20 text-white rounded-full backdrop-blur-md transition-all duration-200 transform hover:scale-110"
-                      title="Next Playlist"
-                    >
-                      <ChevronRight size={16} />
-                    </button>
-                  </div>
-                }
+                onNavigateNext={() => handleNavigatePlaylist('next')}
+                onNavigatePrev={() => handleNavigatePlaylist('prev')}
+                onReturn={handleReturnToOriginal}
+                showReturnButton={showReturnButton}
               />
             </div>
           )}

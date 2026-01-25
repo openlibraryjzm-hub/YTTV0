@@ -1,13 +1,13 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { FOLDER_COLORS } from '../utils/folderColors';
-import { Pen, Play, ChevronRight, Clock, Pin, Sparkles } from 'lucide-react';
+import { Pen, Play, ChevronRight, ChevronUp, ChevronDown, RotateCcw, Clock, Pin, Sparkles, Info } from 'lucide-react';
 import { getThumbnailUrl } from '../utils/youtubeUtils';
 
 
 import UnifiedBannerBackground from './UnifiedBannerBackground';
 import { useConfigStore } from '../store/configStore';
 
-const PageBanner = ({ title, description, folderColor, onEdit, videoCount, countLabel = 'Video', creationYear, author, avatar, continueVideo, onContinue, pinnedVideos = [], onPinnedClick, children, childrenPosition = 'right', topRightContent, seamlessBottom = false, playlistBadges, onPlaylistBadgeLeftClick, onPlaylistBadgeRightClick, allPlaylists, filteredPlaylist, customDescription }) => {
+const PageBanner = ({ title, description, folderColor, onEdit, videoCount, countLabel = 'Video', creationYear, author, avatar, continueVideo, onContinue, pinnedVideos = [], onPinnedClick, children, childrenPosition = 'right', topRightContent, seamlessBottom = false, playlistBadges, onPlaylistBadgeLeftClick, onPlaylistBadgeRightClick, allPlaylists, filteredPlaylist, customDescription, onNavigateNext, onNavigatePrev, onReturn, showReturnButton }) => {
     const { 
         bannerPattern, customPageBannerImage, bannerBgSize, setBannerHeight, setBannerBgSize, 
         pageBannerScrollEnabled, pageBannerImageScale, pageBannerImageXOffset, pageBannerImageYOffset,
@@ -16,6 +16,9 @@ const PageBanner = ({ title, description, folderColor, onEdit, videoCount, count
     } = useConfigStore();
     const [badgesExpanded, setBadgesExpanded] = useState(false);
     const badgesContainerRef = useRef(null);
+    
+    // Info display state - shows author/year/count in thumbnail area
+    const [showInfo, setShowInfo] = useState(false);
     
     // Thumbnail carousel state (0 = continue, 1 = pinned, 2 = ascii)
     const [activeThumbnail, setActiveThumbnail] = useState(0);
@@ -207,25 +210,6 @@ const PageBanner = ({ title, description, folderColor, onEdit, videoCount, count
                         {title}
                     </h1>
 
-                    {/* Metadata Row */}
-                    <div className="flex items-center gap-3 text-white/80 font-medium text-sm md:text-base mb-4" style={{ textShadow: '-1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0 2px 4px rgba(0,0,0,0.9)' }}>
-                        {videoCount !== undefined && (
-                            <span>{videoCount} {videoCount === 1 ? countLabel : `${countLabel}s`}</span>
-                        )}
-                        {(videoCount !== undefined && (creationYear || author)) && (
-                            <span className="w-1 h-1 rounded-full bg-white/60 shadow-sm" />
-                        )}
-                        {creationYear && (
-                            <span>{creationYear}</span>
-                        )}
-                        {(creationYear && author) && (
-                            <span className="w-1 h-1 rounded-full bg-white/60 shadow-sm" />
-                        )}
-                        {author && (
-                            <span>{author}</span>
-                        )}
-                    </div>
-
                     {customDescription ? (
                         <div className="mt-1">
                             {customDescription}
@@ -383,21 +367,84 @@ const PageBanner = ({ title, description, folderColor, onEdit, videoCount, count
 
             {/* Thumbnail/ASCII Section - Continue/Pinned/ASCII with dot navigation */}
             {hasAnyOption && (
-                <div className="absolute bottom-1 left-6 flex flex-col items-start gap-1 z-20">
+                <div className="absolute bottom-1 left-[1px] flex items-end z-20">
                     {/* Fixed-width container for content */}
-                    <div className="w-[170px] flex flex-col items-center">
-                        {/* Content row with optional pin bar */}
-                        <div className="flex items-stretch gap-2">
+                    <div className="flex flex-col items-center">
+                        {/* Content row with optional pin bar and preview stack */}
+                        <div className="flex items-stretch gap-[2px]">
+                            {/* Vertical Playlist Navigator - Up/Return/Down */}
+                            {(onNavigateNext || onNavigatePrev) && (
+                                <div className="flex flex-col h-24 w-6 rounded-md overflow-hidden border border-white/20 bg-black/20 backdrop-blur-sm">
+                                    {/* Up Chevron - Next Playlist */}
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            if (onNavigateNext) onNavigateNext();
+                                        }}
+                                        className="flex-1 flex items-center justify-center bg-white hover:bg-white/80 text-black transition-all"
+                                        title="Next Playlist"
+                                    >
+                                        <ChevronUp size={16} strokeWidth={2.5} />
+                                    </button>
+                                    
+                                    {/* Middle - Return/Refresh Button */}
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            if (onReturn) onReturn();
+                                        }}
+                                        className={`flex-1 flex items-center justify-center transition-all border-y border-black/30 bg-white ${
+                                            showReturnButton 
+                                                ? 'hover:bg-white/80 text-black' 
+                                                : 'text-gray-400 cursor-default'
+                                        }`}
+                                        title={showReturnButton ? "Return to original playlist" : "At original playlist"}
+                                        disabled={!showReturnButton}
+                                    >
+                                        <RotateCcw size={12} />
+                                    </button>
+                                    
+                                    {/* Down Chevron - Previous Playlist */}
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            if (onNavigatePrev) onNavigatePrev();
+                                        }}
+                                        className="flex-1 flex items-center justify-center bg-white hover:bg-white/80 text-black transition-all"
+                                        title="Previous Playlist"
+                                    >
+                                        <ChevronDown size={16} strokeWidth={2.5} />
+                                    </button>
+                                </div>
+                            )}
                             {/* Clickable content area */}
                             <div
-                                className={`flex flex-col items-center gap-2 group/thumb ${activeCallback ? 'cursor-pointer' : ''}`}
+                                className={`flex flex-col items-center gap-2 group/thumb ${activeCallback && !showInfo ? 'cursor-pointer' : ''}`}
                                 onClick={(e) => {
                                     e.stopPropagation();
-                                    if (activeCallback) activeCallback();
+                                    if (!showInfo && activeCallback) activeCallback();
                                 }}
                             >
-                                {/* Show video thumbnail for continue/pinned, ASCII art for signature */}
-                                {currentOption === 'ascii' ? (
+                                {/* Show info panel when info button is clicked */}
+                                {showInfo ? (
+                                    <div className="h-24 w-[160px] flex flex-col items-center justify-center gap-1 rounded-lg bg-black/30 backdrop-blur-sm border-2 border-white/20 overflow-hidden px-2">
+                                        {author && (
+                                            <span className="text-white/90 font-semibold text-sm truncate max-w-full" style={{ textShadow: '-1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000' }}>
+                                                {author}
+                                            </span>
+                                        )}
+                                        {creationYear && (
+                                            <span className="text-white/70 font-medium text-xs" style={{ textShadow: '-1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000' }}>
+                                                {creationYear}
+                                            </span>
+                                        )}
+                                        {videoCount !== undefined && (
+                                            <span className="text-white/70 font-medium text-xs" style={{ textShadow: '-1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000' }}>
+                                                {videoCount} {videoCount === 1 ? countLabel : `${countLabel}s`}
+                                            </span>
+                                        )}
+                                    </div>
+                                ) : currentOption === 'ascii' ? (
                                     <div className="h-24 w-[160px] flex items-center justify-center rounded-lg bg-black/30 backdrop-blur-sm border-2 border-white/20 overflow-hidden">
                                         {displayAvatar && displayAvatar.includes('\n') ? (
                                             <pre className="font-mono text-[5px] leading-none whitespace-pre text-white/90 drop-shadow-md select-none max-w-full max-h-full" style={{ textShadow: '-0.5px -0.5px 0 #000, 0.5px -0.5px 0 #000, -0.5px 0.5px 0 #000, 0.5px 0.5px 0 #000, 0 1px 2px rgba(0,0,0,1)' }}>
@@ -450,7 +497,7 @@ const PageBanner = ({ title, description, folderColor, onEdit, videoCount, count
                         
                         {/* Horizontal segmented bar - show when multiple options exist */}
                         {hasMultipleOptions && (
-                            <div className="flex flex-row h-5 w-[160px] mt-1 rounded-md overflow-hidden border border-white/20 bg-black/20 backdrop-blur-sm">
+                            <div className="flex flex-row h-5 w-[160px] mt-1 ml-[25px] rounded-md overflow-hidden border border-white/20 bg-black/20 backdrop-blur-sm">
                                 {availableOptions.map((option, index) => (
                                     <button
                                         key={option}
@@ -478,6 +525,22 @@ const PageBanner = ({ title, description, folderColor, onEdit, videoCount, count
                     </div>
                 </div>
             )}
+
+            {/* Info Button - Bottom left corner */}
+            <button
+                onClick={(e) => {
+                    e.stopPropagation();
+                    setShowInfo(!showInfo);
+                }}
+                className={`absolute bottom-[2px] left-[2px] w-5 h-5 rounded-full flex items-center justify-center transition-all z-20 ${
+                    showInfo 
+                        ? 'bg-white text-black' 
+                        : 'bg-white text-black hover:bg-white/80'
+                }`}
+                title={showInfo ? "Hide info" : "Show info"}
+            >
+                <Info size={12} strokeWidth={2} />
+            </button>
         </div>
     );
 };

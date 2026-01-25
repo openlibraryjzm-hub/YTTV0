@@ -25,16 +25,24 @@ Users see a contextual banner (220px fixed height) at the top of scrollable cont
   - **Pins Page**: Shows "Pinned Videos"
 - **Visual Elements**:
   - **Title**: Large, bold text with dark text shadow for readability
-  - **Metadata Row**: Video count, creation year, and author pseudonym
   - **Description**: Truncated to 2 lines with generous right padding (can be replaced with `customDescription` prop)
   - **Playlist Badges**: Interactive badges showing playlists (History/Likes pages)
-    - **Styling**: Matches metadata row (text-white/80, font-medium, text-sm md:text-base)
+    - **Styling**: text-white/80, font-medium, text-sm md:text-base
     - **Left Click**: Filters page content to that playlist
     - **Right Click**: Navigates to Videos page for that playlist
     - **Limit**: 2 rows with expand button (>>>) to show all
   - **Pagination Badge**: Compact pagination controls (Likes page)
     - Format: `<< < 1/99 > >>` (First, Previous, Current/Total, Next, Last)
-    - Styled to match metadata row text
+  - **Info Button** (bottom-left corner): Small circular button to toggle metadata display
+    - **Styling**: White background (`bg-white`), black icon (`text-black`)
+    - **Size**: 20px (`w-5 h-5`) with Info icon (12px)
+    - **Position**: `bottom-[2px] left-[2px]` - snug in corner
+    - **On Click**: Toggles info display in the thumbnail area
+  - **Info Display** (in thumbnail area when info button active):
+    - **Author** (top): User's pseudonym
+    - **Year** (middle): Creation year
+    - **Video Count** (bottom): Number of videos with label
+    - Same dimensions as thumbnail (h-24 w-[160px])
   - **Media Carousel** (bottom-left): Shows continue watching, pinned videos, and/or ASCII signature
     - **Continue Video**: Thumbnail of most recently watched video (click to resume)
     - **Pinned Videos**: Thumbnail of pinned video(s) in current playlist
@@ -43,12 +51,16 @@ Users see a contextual banner (220px fixed height) at the top of scrollable cont
       - Clock icon for Continue watching
       - Pin icon for Pinned videos
       - Sparkles icon for ASCII Signature
+      - Offset `ml-[25px]` to align under thumbnail
     - **Multi-Pin Bar**: When multiple pins exist, a vertical segmented bar appears to the right of thumbnail
-    - **Fixed Width**: Container is 170px wide with 160px content area to prevent layout shifts
-  - **Playlist Navigator** (Videos Page): Top-right chevron controls for browsing playlists
-    - Left/right chevrons navigate between playlists in preview mode
-    - Playlist name displayed with fixed width and truncation
-    - Return button appears when navigated away from reset point
+    - **Fixed Width**: Container positioned at `bottom-1 left-[1px]`
+  - **Playlist Navigator Stack** (Videos Page): Vertical stack to the left of thumbnail
+    - **Up Chevron** (top): Navigates to next playlist - white bg, black icon
+    - **Return Button** (middle): Returns to reset point playlist - white bg, grey icon (inactive) / black icon (active)
+    - **Down Chevron** (bottom): Navigates to previous playlist - white bg, black icon
+    - **Size**: `h-24 w-6` (matches thumbnail height)
+    - **Gap**: 2px from thumbnail (`gap-[2px]`)
+    - Preview mode navigation (doesn't affect player)
 - **Background Options**:
   - **Color Gradients**: Vibrant gradients matching folder color (when viewing folders)
   - **Animated Patterns**: CSS-based patterns (Diagonal, Dots, Mesh, Solid) when no custom image
@@ -148,22 +160,25 @@ Users see a contextual banner (220px fixed height) at the top of scrollable cont
    - Sticky Toolbar uses this height for seamless visual connection
    - When custom image is set, both banner and toolbar use `UnifiedBannerBackground` with synchronized animation
 
-5. **Media Carousel Flow (Continue/Pinned/ASCII):**
+5. **Media Carousel Flow (Continue/Pinned/ASCII/Info):**
    - Component receives `continueVideo` and `pinnedVideos` props, gets `userAvatar` from configStore
    - **Continue Video**: Most recently watched video in current playlist (from `videoProgress`)
    - **Pinned Videos**: All pinned videos that exist in current playlist (from `pinStore`)
    - **ASCII Signature**: User's ASCII art from Settings → Signature (from `configStore.userAvatar`)
+   - **Info Display**: Shows author, year, video count when info button is clicked
    - **State Management**:
+     - `showInfo`: Boolean - toggles info display in thumbnail area
      - `activeThumbnail`: Index into `availableOptions` array (0, 1, or 2)
      - `availableOptions`: Dynamic array of available options ('continue', 'pinned', 'ascii')
      - `activePinnedIndex`: Which pin is currently displayed (when multiple)
    - **Display Logic**:
+     - If `showInfo` is true → Shows info panel (author/year/count) instead of thumbnail
      - If only one option exists → Shows that option, no navigation bar
      - If multiple options exist → Shows horizontal segmented bar with icons below content
      - If multiple pins → Shows vertical segmented bar to the right of thumbnail
      - ASCII option always available if `userAvatar` is set
    - **Horizontal Segmented Bar** (option navigation):
-     - Fixed width (`w-[160px]`), height (`h-5`)
+     - Fixed width (`w-[160px]`), height (`h-5`), offset `ml-[25px]`
      - Icons: Clock (continue), Pin (pinned), Sparkles (ASCII)
      - Active segment: solid white with black icon
      - Inactive segments: semi-transparent with white icon
@@ -173,9 +188,15 @@ Users see a contextual banner (220px fixed height) at the top of scrollable cont
      - Segments split equally based on pin count (2 pins = 2 segments, 10 pins = 10 segments)
      - Active segment is solid white, inactive segments are semi-transparent
      - Clicking a segment changes `activePinnedIndex` to show that pin
+   - **Playlist Navigator Stack** (Videos Page only):
+     - Vertical stack to the left of thumbnail with `gap-[2px]`
+     - Up chevron → `onNavigateNext()`, Down chevron → `onNavigatePrev()`
+     - Return button → `onReturn()` (only active when `showReturnButton` is true)
+     - All buttons: white background, black icons (chevrons), grey/black icon (return)
    - User clicks thumbnail → Calls `onContinue` or `onPinnedClick(video)` → Starts playing
    - User clicks ASCII area → No action (display only)
-   - **Positioning**: `bottom-1 left-6` with fixed-width container (170px)
+   - User clicks info button → Toggles `showInfo` state
+   - **Positioning**: `bottom-1 left-[1px]`
 
 **Source of Truth:**
 - `configStore.customPageBannerImage` - Layer 1 image (global, can be overridden per playlist/folder)
@@ -238,11 +259,13 @@ Users see a contextual banner (220px fixed height) at the top of scrollable cont
 
 **Content Layout:**
 - **Top-Aligned**: Content uses `items-start` for top-left alignment
-- **Media Carousel**: Positioned at `bottom-1 left-6` (below title and metadata)
-- **Fixed Container**: 170px outer width, 160px content width prevents layout shifts
-- **Edit Button**: Positioned at top-right (adjusts position when `topRightContent` is present)
+- **Media Carousel**: Positioned at `bottom-1 left-[1px]` (below title and description)
+- **Playlist Navigator Stack**: Vertical bar (`h-24 w-6`) to the left of thumbnail with `gap-[2px]`
+- **Info Button**: Positioned at `bottom-[2px] left-[2px]` (snug in corner)
+- **Edit Button**: Positioned at top-right
 
 **Media Carousel Component State:**
+- `showInfo`: Boolean - toggles info display (author/year/count) in thumbnail area
 - `activeThumbnail`: Index into `availableOptions` array (0, 1, or 2)
 - `availableOptions`: Array of available option types ('continue', 'pinned', 'ascii')
 - `currentOption`: The currently selected option type
@@ -261,22 +284,28 @@ Users see a contextual banner (220px fixed height) at the top of scrollable cont
 - `onPinnedClick(video)`: Callback when pinned thumbnail is clicked (receives selected video)
 - `avatar`: Optional ASCII art prop (fallback, `userAvatar` from configStore takes priority)
 
+**PageBanner Props for Playlist Navigator (Videos Page):**
+- `onNavigateNext`: Callback for up chevron (next playlist)
+- `onNavigatePrev`: Callback for down chevron (previous playlist)
+- `onReturn`: Callback for return button (returns to reset point playlist)
+- `showReturnButton`: Boolean - when true, return button icon is black (active); when false, grey (inactive)
+
 **5: Page-Specific Usage**
 
 **Videos Page:**
 - Displays playlist name or folder name as title
-- Shows video count, year (2026), and author
+- Video count, year, and author available via info button (click info icon in bottom-left corner)
 - Edit button allows renaming and setting custom banner via `EditPlaylistModal`
 - Custom banners persist in `folder_metadata` table
-- **Thumbnail Carousel**: Shows continue watching and/or pinned videos in top-right
-- **Playlist Navigator** (via `topRightContent` prop):
-  - **Chevron Buttons**: Left (`<`) and right (`>`) to navigate between playlists
-  - **Playlist Name**: Fixed-width display (`w-32`) with text truncation and tooltip for full name
+- **Thumbnail Carousel**: Shows continue watching, pinned videos, and/or ASCII signature
+- **Info Display**: When info button clicked, thumbnail area shows author (top), year (middle), video count (bottom)
+- **Playlist Navigator Stack** (vertical, left of thumbnail):
+  - **Up Chevron**: Navigates to next playlist in preview mode
+  - **Return Button**: Returns to reset point playlist (grey when at reset point, black when away)
+  - **Down Chevron**: Navigates to previous playlist in preview mode
+  - **Styling**: All buttons have white background, black icons (chevrons use `strokeWidth={2.5}`)
   - **Preview Mode**: Navigation uses `setPreviewPlaylist` so player continues unaffected
   - **Reset Point Tracking**: Entering from PlaylistsPage or controller sets a "reset point"
-  - **Return Button**: Amber-colored `RotateCcw` icon appears when navigated away from reset point
-    - Clicking returns to the reset point playlist
-    - Only visible when `resetPointId !== activePlaylistId`
   - **State**: Uses `resetPointId` state and `isChevronNavRef` ref to track navigation source
 
 **Playlists Page:**
@@ -336,7 +365,7 @@ Users see a contextual banner (220px fixed height) at the top of scrollable cont
 
 **Playlist Badges:**
 - **Purpose**: Display interactive badges for playlists on History and Likes pages
-- **Styling**: Matches metadata row text (text-white/80, font-medium, text-sm md:text-base)
+- **Styling**: text-white/80, font-medium, text-sm md:text-base
 - **Limit**: 2 rows maximum with expand button (>>>) to show all playlists
 - **Interactions**:
   - **Left Click**: Filters page content to show only items from that playlist
@@ -347,7 +376,7 @@ Users see a contextual banner (220px fixed height) at the top of scrollable cont
 **Pagination Badge:**
 - **Purpose**: Compact pagination controls for Likes page (replaces description text)
 - **Format**: `<< < 1/99 > >>` (First, Previous, Current/Total, Next, Last)
-- **Styling**: Matches metadata row text styling
+- **Styling**: text-white/80, font-medium styling
 - **Visibility**: Only shown when `totalPages > 1`
 - **Props**: `customDescription` prop accepts React node to replace description text
 
