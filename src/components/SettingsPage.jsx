@@ -151,7 +151,8 @@ export default function SettingsPage({ currentThemeId, onThemeChange }) {
                     image: reader.result,
                     scale: 100,
                     xOffset: 50,
-                    yOffset: 50
+                    yOffset: 50,
+                    bgColor: pageBannerBgColor // Save current Layer 1 color with the image
                 });
             };
             reader.readAsDataURL(file);
@@ -173,10 +174,9 @@ export default function SettingsPage({ currentThemeId, onThemeChange }) {
 
     // Layer 2 Folder handlers
     const [hoveredLayer2ImageId, setHoveredLayer2ImageId] = useState(null);
-    const [editingLayer2ImageId, setEditingLayer2ImageId] = useState(null);
-    const [editingLayer2FolderId, setEditingLayer2FolderId] = useState(null);
     const [editingLayer2FolderName, setEditingLayer2FolderName] = useState('');
     const [hoveredLayer2FolderId, setHoveredLayer2FolderId] = useState(null);
+    const [editingLayer2FolderId, setEditingLayer2FolderId] = useState(null);
     
     // Playlist list for folder assignment
     const [allPlaylists, setAllPlaylists] = useState([]);
@@ -280,9 +280,10 @@ export default function SettingsPage({ currentThemeId, onThemeChange }) {
                             <ConfigSection title="Page Banner" icon={Layout}>
                                 {/* Two-column layer controls */}
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                                    {/* Layer 1 - Background Color */}
+                                    {/* Layer 1 - Background Color (Default/Fallback) */}
                                     <div className="space-y-3 p-4 rounded-xl border-2 border-slate-100 bg-white">
-                                        <label className="text-xs font-bold uppercase text-slate-400">Layer 1 (Background Color)</label>
+                                        <label className="text-xs font-bold uppercase text-slate-400">Layer 1 (Default Fallback)</label>
+                                        <p className="text-[9px] text-slate-400 -mt-2">Used when no paired color is set with an image</p>
                                         
                                         {/* Color Preview */}
                                         <div 
@@ -389,6 +390,26 @@ export default function SettingsPage({ currentThemeId, onThemeChange }) {
                                                         onChange={(e) => setPageBannerImage2YOffset(parseInt(e.target.value))}
                                                         className="w-full h-1.5 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-purple-500" />
                                                 </div>
+                                                {/* Paired Background Color */}
+                                                <div className="space-y-1 pt-2 border-t border-slate-100">
+                                                    <label className="text-[10px] font-bold text-slate-500">Paired Background Color</label>
+                                                    <div className="flex items-center gap-2">
+                                                        <input 
+                                                            type="color" 
+                                                            value={pageBannerBgColor}
+                                                            onChange={(e) => setPageBannerBgColor(e.target.value)}
+                                                            className="w-8 h-8 rounded-lg cursor-pointer border-2 border-slate-200"
+                                                        />
+                                                        <input 
+                                                            type="text" 
+                                                            value={pageBannerBgColor}
+                                                            onChange={(e) => setPageBannerBgColor(e.target.value)}
+                                                            className="flex-1 px-2 py-1 bg-slate-50 border border-slate-200 rounded-lg text-[10px] font-mono text-slate-700 uppercase"
+                                                            placeholder="#000000"
+                                                        />
+                                                    </div>
+                                                    <p className="text-[9px] text-slate-400">This color will be saved with the image config</p>
+                                                </div>
                                             </>
                                         ) : (
                                             <label className="w-full py-4 bg-slate-50 border-2 border-dashed border-slate-200 rounded-lg text-[10px] font-bold uppercase text-slate-400 hover:bg-purple-50 hover:border-purple-300 hover:text-purple-500 transition-all flex items-center justify-center gap-2 cursor-pointer">
@@ -401,7 +422,7 @@ export default function SettingsPage({ currentThemeId, onThemeChange }) {
                                 </div>
 
                                 <p className="text-[10px] text-slate-400 leading-relaxed mb-4">
-                                    Layer 1 is the background color. Layer 2 overlays on top - use transparent PNGs for best results.
+                                    Set the paired background color in Layer 2 settings, then save to library. Each saved image remembers its paired color.
                                 </p>
 
                                 {/* Layer 2 Image Folders */}
@@ -583,6 +604,10 @@ export default function SettingsPage({ currentThemeId, onThemeChange }) {
                                                             <button
                                                                 onClick={() => {
                                                                     applyLayer2Image(img);
+                                                                    // Also load the image's paired bgColor
+                                                                    if (img.bgColor) {
+                                                                        setPageBannerBgColor(img.bgColor);
+                                                                    }
                                                                     setSelectedLayer2FolderId(folder.id);
                                                                 }}
                                                                 className={`w-full aspect-video rounded-lg border-2 overflow-hidden transition-all duration-200 ${
@@ -590,11 +615,18 @@ export default function SettingsPage({ currentThemeId, onThemeChange }) {
                                                                         ? 'border-purple-500 ring-2 ring-purple-200 shadow-lg'
                                                                         : 'border-slate-200 hover:border-purple-300 hover:shadow-md'
                                                                 }`}
+                                                                title={`Paired color: ${img.bgColor || 'none'}`}
                                                             >
                                                                 <img
                                                                     src={img.image}
                                                                     alt="Layer 2"
                                                                     className="w-full h-full object-cover"
+                                                                />
+                                                                {/* Paired color indicator */}
+                                                                <div 
+                                                                    className="absolute bottom-1 right-1 w-4 h-4 rounded-full border-2 border-white shadow-md"
+                                                                    style={{ backgroundColor: img.bgColor || '#94a3b8' }}
+                                                                    title={`Paired: ${img.bgColor || 'none'}`}
                                                                 />
                                                                 {/* Active Indicator */}
                                                                 {customPageBannerImage2 === img.image && (
@@ -637,19 +669,20 @@ export default function SettingsPage({ currentThemeId, onThemeChange }) {
                                                 />
                                             </label>
                                             
-                                            {/* Save Current Layer 2 Button */}
+                                            {/* Save Button */}
                                             {customPageBannerImage2 && (
                                                 <button
                                                     onClick={() => addLayer2Image(folder.id, {
                                                         image: customPageBannerImage2,
                                                         scale: pageBannerImage2Scale,
                                                         xOffset: pageBannerImage2XOffset,
-                                                        yOffset: pageBannerImage2YOffset
+                                                        yOffset: pageBannerImage2YOffset,
+                                                        bgColor: pageBannerBgColor
                                                     })}
                                                     className="w-full py-2 bg-purple-500 hover:bg-purple-600 text-white rounded-lg text-[10px] font-bold uppercase transition-all flex items-center justify-center gap-2"
                                                 >
                                                     <Plus size={12} />
-                                                    Save Current Layer 2 Config
+                                                    Save to This Folder
                                                 </button>
                                             )}
                                         </div>

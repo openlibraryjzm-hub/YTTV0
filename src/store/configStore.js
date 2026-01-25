@@ -254,6 +254,7 @@ export const useConfigStore = create(
                                 scale: image.scale ?? 100,
                                 xOffset: image.xOffset ?? 50,
                                 yOffset: image.yOffset ?? 50,
+                                bgColor: image.bgColor ?? state.pageBannerBgColor, // Save Layer 1 color with image
                                 createdAt: Date.now()
                             }]
                         }
@@ -287,8 +288,9 @@ export const useConfigStore = create(
             }),
             
             // Per-Playlist Layer 2 Image Overrides
-            // Maps playlistId -> { image, scale, xOffset, yOffset, imageId, folderId }
+            // Maps playlistId -> { image, scale, xOffset, yOffset, imageId, folderId, bgColor }
             // If a playlist has an override, it uses that image instead of the default
+            // bgColor stores the Layer 1 background color at the time of selection
             playlistLayer2Overrides: {},
             setPlaylistLayer2Override: (playlistId, imageConfig) => set((state) => ({
                 playlistLayer2Overrides: {

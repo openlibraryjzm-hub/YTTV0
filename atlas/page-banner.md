@@ -128,19 +128,22 @@ Users see a contextual banner (220px fixed height) at the top of scrollable cont
   - **Layer 2 Image Folders System:**
     - `layer2Folders`: Array of folder objects `{ id, name, images[], playlistIds[] }` - default folder is "Default"
       - `playlistIds`: Array of playlist IDs this folder appears on (empty = all playlists)
+      - Each image in `images[]` stores: `{ id, image, scale, xOffset, yOffset, bgColor, createdAt }`
     - `selectedLayer2FolderId`: ID of currently selected folder (default: 'default')
     - `setSelectedLayer2FolderId(id)`: Sets the selected folder
     - `addLayer2Folder(name)`: Creates a new folder with optional name
     - `removeLayer2Folder(folderId)`: Deletes a folder (cannot delete 'default')
     - `renameLayer2Folder(folderId, newName)`: Renames a folder
     - `setLayer2FolderPlaylists(folderId, playlistIds)`: Sets which playlists a folder appears on (empty = all)
-    - `playlistLayer2Overrides`: Object mapping `playlistId` → `{ image, scale, xOffset, yOffset, imageId, folderId }`
+    - `playlistLayer2Overrides`: Object mapping `playlistId` → `{ imageId, folderId, image, scale, xOffset, yOffset, bgColor }`
+      - Stores reference (imageId, folderId) to look up current values from library
+      - Also stores fallback values in case image is deleted from library
     - `setPlaylistLayer2Override(playlistId, imageConfig)`: Sets the Layer 2 image override for a specific playlist
     - `clearPlaylistLayer2Override(playlistId)`: Removes the override (falls back to Default folder)
-    - `addLayer2Image(folderId, image)`: Adds image with config to folder
+    - `addLayer2Image(folderId, image)`: Adds image with config to folder (includes bgColor from current pageBannerBgColor)
     - `removeLayer2Image(folderId, imageId)`: Removes image from folder
     - `updateLayer2Image(folderId, imageId, updates)`: Updates image config
-    - `applyLayer2Image(image)`: Applies saved image as Layer 2 (sets customPageBannerImage2 + scale/offsets)
+    - `applyLayer2Image(image)`: Applies saved image as Layer 2 (sets customPageBannerImage2 + scale/offsets + loads bgColor)
   - **Unified Banner State:**
     - `bannerHeight`: Current banner height (reported by PageBanner for Sticky Toolbar alignment)
     - `setBannerHeight(height)`: Updates banner height in store
@@ -329,10 +332,13 @@ Users see a contextual banner (220px fixed height) at the top of scrollable cont
 - **Playlist Assignment**: Each folder can be assigned to specific playlists (configured in Settings → Appearance → Page Banner)
   - Default: Empty `playlistIds` array means folder shows on ALL playlists
   - Specific: Adding playlist IDs makes the folder exclusive to those playlists' Videos pages
-- **Per-Playlist Layer 2 Selection**: Each playlist remembers its own selected Layer 2 image
+- **Per-Playlist Layer 2 Selection**: Each playlist remembers its selected Layer 2 image reference
   - **Default**: First image from Default folder is shown for all playlists initially
-  - **Override**: Clicking an image in the thumbnail strip sets it as the Layer 2 image for that specific playlist
-  - **Persistence**: Selection is stored in `playlistLayer2Overrides` in configStore
+  - **Override**: Clicking an image in the thumbnail strip saves the image reference (imageId, folderId)
+  - **Live Updates**: When viewing a playlist, the banner looks up current image values from the library (scale, position, bgColor)
+  - **Paired Background Color**: Each library image stores its own background color (set via "Paired Background Color" in Settings)
+  - **Color Indicator**: Small colored dot on each image thumbnail shows its paired background color
+  - **Persistence**: Selection stored in `playlistLayer2Overrides` with reference IDs and fallback values
   - **Active Indicator**: Purple border highlights the currently selected image for the current playlist
 
 **Pinned Video Data (from VideosPage):**
@@ -419,20 +425,26 @@ Users see a contextual banner (220px fixed height) at the top of scrollable cont
 **Via Settings:**
 - **Location**: Settings → Appearance → Page Banner (first section at top of Appearance tab)
 - **Two-Layer Controls**:
-  - **Layer 1 (Background Color)**: Color picker with hex input and preset color buttons
+  - **Layer 1 (Default Fallback)**: Color picker with hex input and preset color buttons
+    - Used when no paired color is saved with an image
     - Presets: Slate, Dark, Zinc, Indigo, Blue, Green, Red, Amber
   - **Layer 2 (Overlay)**: Upload, remove, and adjust scale/position (use transparent PNGs)
     - **Scale Slider**: 50% to 200% (controls image height, maintains aspect ratio)
     - **X Position Slider**: 0% (left) to 100% (right)
     - **Y Position Slider**: 0% (top) to 100% (bottom)
+    - **Paired Background Color**: Color picker to set the background color that will be saved WITH this image config
     - **Thumbnail Preview**: Shows uploaded image
 - **Live Preview**: Changes apply immediately to the actual Page Banner above the settings (no separate preview panel)
 - **Layer 2 Image Library**: Multi-folder system for organizing Layer 2 images
   - **New Folder Button**: Creates additional folders for organization
   - **Folder Cards**: Each folder shows name (click to rename), image count, delete button (hover)
-  - **Image Grid**: Thumbnails of saved images in each folder (click to apply, hover to delete)
+  - **Image Grid**: Thumbnails of saved images in each folder
+    - **Click**: Loads image into editor (also loads its paired background color)
+    - **Hover**: Shows delete button
+    - **Color Indicator**: Small colored dot (bottom-right) shows paired background color
   - **Add Image**: Upload new images directly to a folder
-  - **Save Current Config**: Save current Layer 2 image with its scale/position settings to folder
+  - **Save to This Folder**: Save current Layer 2 image with its scale/position/bgColor settings to folder
+  - **Workflow**: Set desired background color → adjust image settings → click "Save to This Folder" to create new entry
   - **Active Badge**: Shows which folder is currently selected in PageBanner strip
 
 **Visual Customization:**

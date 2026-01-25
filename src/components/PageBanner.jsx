@@ -57,13 +57,31 @@ const PageBanner = ({ title, description, folderColor, onEdit, videoCount, count
         // Videos page case: Check for playlist-specific override first
         if (playlistLayer2Overrides[currentPlaylistId]) {
             const override = playlistLayer2Overrides[currentPlaylistId];
+            // Look up the CURRENT image from the library to get latest values
+            const folder = layer2Folders?.find(f => f.id === override.folderId);
+            const libraryImage = folder?.images?.find(img => img.id === override.imageId);
+            
+            if (libraryImage) {
+                // Use latest values from library (live updates from Settings)
+                return {
+                    image: libraryImage.image,
+                    scale: libraryImage.scale,
+                    xOffset: libraryImage.xOffset,
+                    yOffset: libraryImage.yOffset,
+                    imageId: libraryImage.id,
+                    folderId: override.folderId,
+                    bgColor: libraryImage.bgColor
+                };
+            }
+            // Fallback to stored values if image was deleted from library
             return {
                 image: override.image,
                 scale: override.scale,
                 xOffset: override.xOffset,
                 yOffset: override.yOffset,
                 imageId: override.imageId,
-                folderId: override.folderId
+                folderId: override.folderId,
+                bgColor: override.bgColor
             };
         }
         
@@ -77,7 +95,8 @@ const PageBanner = ({ title, description, folderColor, onEdit, videoCount, count
                 xOffset: defaultImage.xOffset,
                 yOffset: defaultImage.yOffset,
                 imageId: defaultImage.id,
-                folderId: 'default'
+                folderId: 'default',
+                bgColor: defaultImage.bgColor // Include the image's paired background color
             };
         }
         
@@ -91,17 +110,23 @@ const PageBanner = ({ title, description, folderColor, onEdit, videoCount, count
     const effectiveLayer2XOffset = effectiveLayer2?.xOffset ?? 50;
     const effectiveLayer2YOffset = effectiveLayer2?.yOffset ?? 50;
     const effectiveLayer2ImageId = effectiveLayer2?.imageId || null;
+    // Use per-playlist bgColor if available, otherwise fall back to global pageBannerBgColor
+    const effectiveBgColor = effectiveLayer2?.bgColor || pageBannerBgColor;
     
     // Handler to select Layer 2 image for current playlist
+    // Stores reference (imageId, folderId) plus fallback values in case image is deleted
+    // Actual values are looked up from library at render time for live updates
     const handleSelectLayer2Image = (img, folderId) => {
         if (!currentPlaylistId) return;
         setPlaylistLayer2Override(currentPlaylistId, {
+            imageId: img.id,
+            folderId: folderId,
+            // Store as fallback in case image is deleted from library
             image: img.image,
             scale: img.scale,
             xOffset: img.xOffset,
             yOffset: img.yOffset,
-            imageId: img.id,
-            folderId: folderId
+            bgColor: img.bgColor || pageBannerBgColor
         });
     };
     const [badgesExpanded, setBadgesExpanded] = useState(false);
@@ -179,8 +204,8 @@ const PageBanner = ({ title, description, folderColor, onEdit, videoCount, count
             <div
                 className="absolute inset-0 overflow-hidden shadow-lg"
                 style={{
-                    backgroundColor: pageBannerBgColor,
-                    boxShadow: seamlessBottom ? 'none' : `0 10px 25px -5px ${pageBannerBgColor}50`
+                    backgroundColor: effectiveBgColor,
+                    boxShadow: seamlessBottom ? 'none' : `0 10px 25px -5px ${effectiveBgColor}50`
                 }}
             >
                 {/* Abstract Background Shapes */}
@@ -705,17 +730,23 @@ const PageBanner = ({ title, description, folderColor, onEdit, videoCount, count
                                     <button
                                         key={img.id || index}
                                         onClick={() => img && handleSelectLayer2Image(img, selectedFolder?.id)}
-                                        className={`flex-shrink-0 h-[45px] w-[100px] rounded-md overflow-hidden border transition-all ${
+                                        className={`relative flex-shrink-0 h-[45px] w-[100px] rounded-md overflow-hidden border transition-all ${
                                             isActive 
                                                 ? 'border-2 border-purple-400 ring-1 ring-purple-300' 
                                                 : 'border border-white/20 hover:border-white/40'
                                         } bg-black/30 backdrop-blur-sm cursor-pointer hover:scale-105`}
-                                        title={currentPlaylistId ? "Click to set as banner for this playlist" : "Select a playlist first"}
+                                        title={currentPlaylistId ? `Click to apply (paired color: ${img.bgColor || 'default'})` : "Select a playlist first"}
                                     >
                                         <img 
                                             src={img.image} 
                                             alt={`Layer 2 Option ${index + 1}`} 
                                             className="w-full h-full object-cover"
+                                        />
+                                        {/* Paired color indicator */}
+                                        <div 
+                                            className="absolute bottom-1 right-1 w-3 h-3 rounded-full border border-white/50 shadow-sm"
+                                            style={{ backgroundColor: img.bgColor || pageBannerBgColor }}
+                                            title={`Paired color: ${img.bgColor || 'default'}`}
                                         />
                                     </button>
                                 );
