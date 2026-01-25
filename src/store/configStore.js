@@ -201,6 +201,23 @@ export const useConfigStore = create(
             setBannerPattern: (val) => set({ bannerPattern: val }),
             customPageBannerImage: null,
             setCustomPageBannerImage: (val) => set({ customPageBannerImage: val }),
+            pageBannerScrollEnabled: true,
+            setPageBannerScrollEnabled: (val) => set({ pageBannerScrollEnabled: val }),
+            pageBannerImageScale: 100,
+            setPageBannerImageScale: (val) => set({ pageBannerImageScale: val }),
+            pageBannerImageXOffset: 50,
+            setPageBannerImageXOffset: (val) => set({ pageBannerImageXOffset: val }),
+            pageBannerImageYOffset: 50,
+            setPageBannerImageYOffset: (val) => set({ pageBannerImageYOffset: val }),
+            // Second Page Banner Image (Layer 2)
+            customPageBannerImage2: null,
+            setCustomPageBannerImage2: (val) => set({ customPageBannerImage2: val }),
+            pageBannerImage2Scale: 100,
+            setPageBannerImage2Scale: (val) => set({ pageBannerImage2Scale: val }),
+            pageBannerImage2XOffset: 50,
+            setPageBannerImage2XOffset: (val) => set({ pageBannerImage2XOffset: val }),
+            pageBannerImage2YOffset: 50,
+            setPageBannerImage2YOffset: (val) => set({ pageBannerImage2YOffset: val }),
 
             // Player Border Pattern
             playerBorderPattern: 'diagonal',

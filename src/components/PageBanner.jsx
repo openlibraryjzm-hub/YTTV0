@@ -8,7 +8,11 @@ import UnifiedBannerBackground from './UnifiedBannerBackground';
 import { useConfigStore } from '../store/configStore';
 
 const PageBanner = ({ title, description, folderColor, onEdit, videoCount, countLabel = 'Video', creationYear, author, avatar, continueVideo, onContinue, pinnedVideos = [], onPinnedClick, children, childrenPosition = 'right', topRightContent, seamlessBottom = false, playlistBadges, onPlaylistBadgeLeftClick, onPlaylistBadgeRightClick, allPlaylists, filteredPlaylist, customDescription }) => {
-    const { bannerPattern, customPageBannerImage, bannerBgSize, setBannerHeight, setBannerBgSize } = useConfigStore();
+    const { 
+        bannerPattern, customPageBannerImage, bannerBgSize, setBannerHeight, setBannerBgSize, 
+        pageBannerScrollEnabled, pageBannerImageScale, pageBannerImageXOffset, pageBannerImageYOffset,
+        customPageBannerImage2, pageBannerImage2Scale, pageBannerImage2XOffset, pageBannerImage2YOffset
+    } = useConfigStore();
     const [badgesExpanded, setBadgesExpanded] = useState(false);
     const badgesContainerRef = useRef(null);
     
@@ -133,17 +137,25 @@ const PageBanner = ({ title, description, folderColor, onEdit, videoCount, count
                 }}
             >
                 {/* Unified GPU Banner */}
-                {customPageBannerImage && (
+                {(customPageBannerImage || customPageBannerImage2) && (
                     <UnifiedBannerBackground
                         image={customPageBannerImage}
                         bgSize="cover"
                         yOffset="center"
                         isGif={isGif}
+                        scrollEnabled={pageBannerScrollEnabled}
+                        imageScale={pageBannerImageScale}
+                        imageXOffset={pageBannerImageXOffset}
+                        imageYOffset={pageBannerImageYOffset}
+                        image2={customPageBannerImage2}
+                        image2Scale={pageBannerImage2Scale}
+                        image2XOffset={pageBannerImage2XOffset}
+                        image2YOffset={pageBannerImage2YOffset}
                     />
                 )}
 
                 {/* Animated Pattern Overlay */}
-                {!customPageBannerImage && (
+                {!customPageBannerImage && !customPageBannerImage2 && (
                     <div className={`absolute inset-0 pointer-events-none z-0 pattern-${bannerPattern || 'diagonal'}`} />
                 )}
 

@@ -662,6 +662,16 @@ Access videos that have been temporarily pinned during the current session.
 Users access the configuration area via the "Config" (Settings icon) button on the main Player Controller orb. The Settings Page provides a tabbed interface for application-wide customization:
 
 - **Appearance Tab**:
+  - **Page Banner** (first section - positioned at top for live preview via actual banner above):
+    - **Two-Layer Image System**:
+      - **Layer 1 (Background)**: Upload button, thumbnail preview, remove button, and adjustment sliders
+      - **Layer 2 (Overlay)**: Upload button, thumbnail preview, remove button, and adjustment sliders
+      - Each layer has independent **Scale** (50-200%), **X Position** (0-100%), and **Y Position** (0-100%) sliders
+      - Recommended image size: 1920×220px
+      - Layer 2 best used with transparent PNGs for composite effects
+    - **Pattern Presets**: Toggles for CSS-based animated patterns (Diagonal, Dots, Mesh, Solid) - only visible when no custom images uploaded
+    - **Scroll Animation Toggle**: Enable/disable horizontal scrolling animation for Layer 1
+    - **Live Preview**: No separate preview panel - changes apply immediately to the actual Page Banner above the settings
   - **Color Palette**:
     - Allows selection of the global visual theme (e.g., Blue, Rose, Amber, etc.).
     - Displays preview cards for each theme.
@@ -670,10 +680,6 @@ Users access the configuration area via the "Config" (Settings icon) button on t
     - **Presets**: Quick toggles for mock presets (Default, Cosmic, etc.) - "Default" resets to standard.
     - **Custom Upload**: Upload button for App Banner images (supports GIF for native animation).
     - **Preview**: Live preview of the active banner image.
-  - **Page Banner**:
-    - **Patterns**: Toggles for CSS-based animated patterns (Diagonal, Dots, Mesh, Solid).
-    - **Custom Upload**: Button to upload a custom Page Banner texture/image.
-    - **Preview**: Shows the currently selected pattern or uploaded image.
   
 - **Visualizer Tab**:
   - **Visualizer Style**: Selection grid for visualizer types (currently "Frequency Bars" is implemented).
@@ -732,6 +738,13 @@ Users access the configuration area via the "Config" (Settings icon) button on t
   - `currentThemeId`: Active theme ID.
   - `userName`: User's display name.
   - `userAvatar`: User's ASCII avatar string.
+  - **Page Banner States**:
+    - `customPageBannerImage`: Layer 1 image (Base64 string).
+    - `pageBannerImageScale`, `pageBannerImageXOffset`, `pageBannerImageYOffset`: Layer 1 positioning.
+    - `customPageBannerImage2`: Layer 2 overlay image (Base64 string).
+    - `pageBannerImage2Scale`, `pageBannerImage2XOffset`, `pageBannerImage2YOffset`: Layer 2 positioning.
+    - `pageBannerScrollEnabled`: Boolean toggle for horizontal scroll animation.
+    - `bannerPattern`: Selected pattern ('diagonal' | 'dots' | 'mesh' | 'solid').
   - `customOrbImage`: Base64 string of uploaded orb image.
   - `isSpillEnabled`: Boolean master toggle for orb spill.
   - `orbSpill`: Object `{ tl: bool, tr: bool, bl: bool, br: bool }` for quadrant control.

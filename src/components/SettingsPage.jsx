@@ -57,6 +57,14 @@ export default function SettingsPage({ currentThemeId, onThemeChange }) {
         bannerPattern, setBannerPattern,
         customBannerImage, setCustomBannerImage,
         customPageBannerImage, setCustomPageBannerImage,
+        pageBannerScrollEnabled, setPageBannerScrollEnabled,
+        pageBannerImageScale, setPageBannerImageScale,
+        pageBannerImageXOffset, setPageBannerImageXOffset,
+        pageBannerImageYOffset, setPageBannerImageYOffset,
+        customPageBannerImage2, setCustomPageBannerImage2,
+        pageBannerImage2Scale, setPageBannerImage2Scale,
+        pageBannerImage2XOffset, setPageBannerImage2XOffset,
+        pageBannerImage2YOffset, setPageBannerImage2YOffset,
         playerBorderPattern, setPlayerBorderPattern,
         visualizerGradient, setVisualizerGradient,
         // Orb Favorites
@@ -117,6 +125,17 @@ export default function SettingsPage({ currentThemeId, onThemeChange }) {
             const reader = new FileReader();
             reader.onloadend = () => {
                 setCustomPageBannerImage(reader.result);
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+
+    const handlePageBanner2Upload = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setCustomPageBannerImage2(reader.result);
             };
             reader.readAsDataURL(file);
         }
@@ -215,6 +234,185 @@ export default function SettingsPage({ currentThemeId, onThemeChange }) {
                 <div className="space-y-8 pb-20">
                     {activeTab === 'theme' ? (
                         <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
+                            <ConfigSection title="Page Banner" icon={Layout}>
+                                {/* Two-column layer controls */}
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                                    {/* Layer 1 - Background */}
+                                    <div className="space-y-3 p-4 rounded-xl border-2 border-slate-100 bg-white">
+                                        <div className="flex items-center justify-between">
+                                            <label className="text-xs font-bold uppercase text-slate-400">Layer 1 (Background)</label>
+                                            {customPageBannerImage && (
+                                                <button
+                                                    onClick={() => {
+                                                        setCustomPageBannerImage(null);
+                                                        setPageBannerImageScale(100);
+                                                        setPageBannerImageXOffset(50);
+                                                        setPageBannerImageYOffset(50);
+                                                    }}
+                                                    className="text-[9px] font-bold text-red-400 hover:text-red-500 transition-colors"
+                                                >
+                                                    Remove
+                                                </button>
+                                            )}
+                                        </div>
+                                        
+                                        {customPageBannerImage ? (
+                                            <>
+                                                {/* Thumbnail */}
+                                                <div className="w-full h-16 rounded-lg overflow-hidden bg-slate-100 relative">
+                                                    <img src={customPageBannerImage} alt="Layer 1" className="w-full h-full object-cover" />
+                                                </div>
+                                                {/* Scale */}
+                                                <div className="space-y-1">
+                                                    <div className="flex justify-between items-center">
+                                                        <label className="text-[10px] font-bold text-slate-500">Scale</label>
+                                                        <span className="text-[10px] font-mono font-bold text-sky-600">{pageBannerImageScale}%</span>
+                                                    </div>
+                                                    <input type="range" min="50" max="200" step="5" value={pageBannerImageScale}
+                                                        onChange={(e) => setPageBannerImageScale(parseInt(e.target.value))}
+                                                        className="w-full h-1.5 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-sky-500" />
+                                                </div>
+                                                {/* X Position */}
+                                                <div className="space-y-1">
+                                                    <div className="flex justify-between items-center">
+                                                        <label className="text-[10px] font-bold text-slate-500">X Position</label>
+                                                        <span className="text-[10px] font-mono font-bold text-sky-600">{pageBannerImageXOffset}%</span>
+                                                    </div>
+                                                    <input type="range" min="0" max="100" step="1" value={pageBannerImageXOffset}
+                                                        onChange={(e) => setPageBannerImageXOffset(parseInt(e.target.value))}
+                                                        className="w-full h-1.5 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-sky-500" />
+                                                </div>
+                                                {/* Y Position */}
+                                                <div className="space-y-1">
+                                                    <div className="flex justify-between items-center">
+                                                        <label className="text-[10px] font-bold text-slate-500">Y Position</label>
+                                                        <span className="text-[10px] font-mono font-bold text-sky-600">{pageBannerImageYOffset}%</span>
+                                                    </div>
+                                                    <input type="range" min="0" max="100" step="1" value={pageBannerImageYOffset}
+                                                        onChange={(e) => setPageBannerImageYOffset(parseInt(e.target.value))}
+                                                        className="w-full h-1.5 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-sky-500" />
+                                                </div>
+                                            </>
+                                        ) : (
+                                            <label className="w-full py-4 bg-slate-50 border-2 border-dashed border-slate-200 rounded-lg text-[10px] font-bold uppercase text-slate-400 hover:bg-sky-50 hover:border-sky-300 hover:text-sky-500 transition-all flex items-center justify-center gap-2 cursor-pointer">
+                                                <Image size={12} />
+                                                Upload Layer 1
+                                                <input type="file" accept="image/*" onChange={handlePageBannerUpload} className="hidden" />
+                                            </label>
+                                        )}
+                                    </div>
+
+                                    {/* Layer 2 - Overlay */}
+                                    <div className="space-y-3 p-4 rounded-xl border-2 border-slate-100 bg-white">
+                                        <div className="flex items-center justify-between">
+                                            <label className="text-xs font-bold uppercase text-slate-400">Layer 2 (Overlay)</label>
+                                            {customPageBannerImage2 && (
+                                                <button
+                                                    onClick={() => {
+                                                        setCustomPageBannerImage2(null);
+                                                        setPageBannerImage2Scale(100);
+                                                        setPageBannerImage2XOffset(50);
+                                                        setPageBannerImage2YOffset(50);
+                                                    }}
+                                                    className="text-[9px] font-bold text-red-400 hover:text-red-500 transition-colors"
+                                                >
+                                                    Remove
+                                                </button>
+                                            )}
+                                        </div>
+                                        
+                                        {customPageBannerImage2 ? (
+                                            <>
+                                                {/* Thumbnail */}
+                                                <div className="w-full h-16 rounded-lg overflow-hidden bg-slate-100 relative">
+                                                    <img src={customPageBannerImage2} alt="Layer 2" className="w-full h-full object-cover" />
+                                                </div>
+                                                {/* Scale */}
+                                                <div className="space-y-1">
+                                                    <div className="flex justify-between items-center">
+                                                        <label className="text-[10px] font-bold text-slate-500">Scale</label>
+                                                        <span className="text-[10px] font-mono font-bold text-purple-600">{pageBannerImage2Scale}%</span>
+                                                    </div>
+                                                    <input type="range" min="50" max="200" step="5" value={pageBannerImage2Scale}
+                                                        onChange={(e) => setPageBannerImage2Scale(parseInt(e.target.value))}
+                                                        className="w-full h-1.5 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-purple-500" />
+                                                </div>
+                                                {/* X Position */}
+                                                <div className="space-y-1">
+                                                    <div className="flex justify-between items-center">
+                                                        <label className="text-[10px] font-bold text-slate-500">X Position</label>
+                                                        <span className="text-[10px] font-mono font-bold text-purple-600">{pageBannerImage2XOffset}%</span>
+                                                    </div>
+                                                    <input type="range" min="0" max="100" step="1" value={pageBannerImage2XOffset}
+                                                        onChange={(e) => setPageBannerImage2XOffset(parseInt(e.target.value))}
+                                                        className="w-full h-1.5 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-purple-500" />
+                                                </div>
+                                                {/* Y Position */}
+                                                <div className="space-y-1">
+                                                    <div className="flex justify-between items-center">
+                                                        <label className="text-[10px] font-bold text-slate-500">Y Position</label>
+                                                        <span className="text-[10px] font-mono font-bold text-purple-600">{pageBannerImage2YOffset}%</span>
+                                                    </div>
+                                                    <input type="range" min="0" max="100" step="1" value={pageBannerImage2YOffset}
+                                                        onChange={(e) => setPageBannerImage2YOffset(parseInt(e.target.value))}
+                                                        className="w-full h-1.5 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-purple-500" />
+                                                </div>
+                                            </>
+                                        ) : (
+                                            <label className="w-full py-4 bg-slate-50 border-2 border-dashed border-slate-200 rounded-lg text-[10px] font-bold uppercase text-slate-400 hover:bg-purple-50 hover:border-purple-300 hover:text-purple-500 transition-all flex items-center justify-center gap-2 cursor-pointer">
+                                                <Image size={12} />
+                                                Upload Layer 2
+                                                <input type="file" accept="image/*" onChange={handlePageBanner2Upload} className="hidden" />
+                                            </label>
+                                        )}
+                                    </div>
+                                </div>
+
+                                <p className="text-[10px] text-slate-400 leading-relaxed mb-4">
+                                    Layer 1 is the background, Layer 2 overlays on top. Use transparent PNGs for Layer 2. Recommended: 1920×220px images.
+                                </p>
+
+                                {/* Pattern Presets - Only show when no custom images */}
+                                {!customPageBannerImage && !customPageBannerImage2 && (
+                                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+                                        {['Diagonal', 'Dots', 'Mesh', 'Solid'].map((name) => {
+                                            const id = name === 'Mesh' ? 'waves' : name.toLowerCase();
+                                            return (
+                                                <button
+                                                    key={id}
+                                                    onClick={() => setBannerPattern(id)}
+                                                    className={`p-2 rounded-xl text-xs font-bold uppercase transition-all border-2 flex flex-col gap-2 items-center ${bannerPattern === id
+                                                        ? 'border-sky-500 bg-sky-50 text-sky-700 shadow-md'
+                                                        : 'border-slate-100 bg-white text-slate-400 hover:border-sky-200 hover:text-sky-600'
+                                                        }`}
+                                                >
+                                                    <div className="w-full h-12 bg-gradient-to-r from-sky-400 to-blue-600 rounded-lg overflow-hidden relative shadow-inner">
+                                                        <div className={`absolute inset-0 pattern-${id}`}></div>
+                                                    </div>
+                                                    <span>{name}</span>
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                )}
+
+                                {/* Scroll Animation Toggle */}
+                                <div className="flex items-center justify-between p-4 rounded-xl border-2 border-slate-100 bg-white">
+                                    <div className="space-y-1">
+                                        <span className="text-sm font-bold text-slate-700 block">Scroll Animation</span>
+                                        <p className="text-xs text-slate-400">
+                                            Enable horizontal scrolling animation for Layer 1.
+                                        </p>
+                                    </div>
+                                    <button
+                                        onClick={() => setPageBannerScrollEnabled(!pageBannerScrollEnabled)}
+                                        className={`w-12 h-6 rounded-full transition-colors relative ${pageBannerScrollEnabled ? 'bg-sky-500' : 'bg-slate-200'}`}
+                                    >
+                                        <div className={`w-4 h-4 bg-white rounded-full absolute top-1 transition-all ${pageBannerScrollEnabled ? 'left-7 shadow-sm' : 'left-1'}`} />
+                                    </button>
+                                </div>
+                            </ConfigSection>
+
                             <ConfigSection title="Color Palette" icon={Palette}>
                                 <div className="grid grid-cols-2 gap-3">
                                     {Object.entries(THEMES).map(([id, theme]) => (
@@ -320,87 +518,6 @@ export default function SettingsPage({ currentThemeId, onThemeChange }) {
                                     </label>
                                     <p className="text-[10px] text-slate-400 text-center mt-2">
                                         Supports PNG, JPG, WEBP. Recommended size: 1920x200px.
-                                    </p>
-                                </div>
-                            </ConfigSection>
-
-                            <ConfigSection title="Page Banner" icon={Layout}>
-                                {/* Live Preview */}
-                                <div className="mb-4 space-y-2">
-                                    <label className="text-xs font-bold uppercase text-slate-400 ml-1">Live Preview</label>
-                                    <div className="w-full h-24 bg-gradient-to-r from-sky-400 to-blue-600 rounded-xl overflow-hidden relative shadow-inner border-2 border-slate-100 flex items-center justify-center group">
-                                        {customPageBannerImage ? (
-                                            <>
-                                                <div
-                                                    className="absolute inset-0 bg-cover bg-center"
-                                                    style={{ backgroundImage: `url(${customPageBannerImage})` }}
-                                                />
-
-                                                <span className="relative z-10 text-white font-black text-2xl tracking-widest drop-shadow-md uppercase opacity-90">
-                                                    CUSTOM
-                                                </span>
-                                                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity z-20">
-                                                    <button
-                                                        onClick={() => setCustomPageBannerImage(null)}
-                                                        className="px-4 py-2 bg-red-500 text-white rounded-lg text-xs font-bold uppercase tracking-wider hover:bg-red-600 transition-colors shadow-lg"
-                                                    >
-                                                        Remove
-                                                    </button>
-                                                </div>
-                                            </>
-                                        ) : (
-                                            <>
-                                                <div className={`absolute inset-0 pattern-${bannerPattern || 'diagonal'}`}></div>
-                                                <span className="relative z-10 text-white font-black text-2xl tracking-widest drop-shadow-md uppercase opacity-90">
-                                                    {bannerPattern === 'waves' ? 'MESH' : bannerPattern || 'DIAGONAL'}
-                                                </span>
-                                            </>
-                                        )}
-                                    </div>
-                                </div>
-
-                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                                    {['Diagonal', 'Dots', 'Mesh', 'Solid'].map((name) => {
-                                        // Map 'Mesh' to the 'waves' ID for compatibility with existing CSS
-                                        const id = name === 'Mesh' ? 'waves' : name.toLowerCase();
-
-                                        return (
-                                            <button
-                                                key={id}
-                                                onClick={() => {
-                                                    setBannerPattern(id);
-                                                    setCustomPageBannerImage(null); // Clear custom image when selecting a pattern
-                                                }}
-                                                className={`p-2 rounded-xl text-xs font-bold uppercase transition-all border-2 flex flex-col gap-2 items-center ${bannerPattern === id && !customPageBannerImage
-                                                    ? 'border-sky-500 bg-sky-50 text-sky-700 shadow-md'
-                                                    : 'border-slate-100 bg-white text-slate-400 hover:border-sky-200 hover:text-sky-600'
-                                                    }`}
-                                            >
-                                                <div className="w-full h-12 bg-gradient-to-r from-sky-400 to-blue-600 rounded-lg overflow-hidden relative shadow-inner">
-                                                    <div className={`absolute inset-0 pattern-${id}`}></div>
-                                                </div>
-                                                <span>{name}</span>
-                                            </button>
-                                        );
-                                    })}
-                                </div>
-
-                                {/* Upload Action */}
-                                <div className="pt-2 border-t border-slate-100 mt-2">
-                                    <label className="w-full py-3 bg-white border-2 border-dashed border-slate-300 rounded-xl text-xs font-bold uppercase text-slate-500 hover:bg-sky-50 hover:border-sky-400 hover:text-sky-600 hover:shadow-sm transition-all flex items-center justify-center gap-2 group cursor-pointer relative overflow-hidden">
-                                        <div className="p-1 bg-slate-100 rounded-md group-hover:bg-white transition-colors">
-                                            <Image size={14} />
-                                        </div>
-                                        Upload Custom Pattern
-                                        <input
-                                            type="file"
-                                            accept="image/*"
-                                            onChange={handlePageBannerUpload}
-                                            className="hidden"
-                                        />
-                                    </label>
-                                    <p className="text-[10px] text-slate-400 text-center mt-2">
-                                        RECOMMENDED: Seamless textures or wide banners.
                                     </p>
                                 </div>
                             </ConfigSection>

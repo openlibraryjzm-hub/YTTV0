@@ -48,8 +48,11 @@ Users see a contextual banner (220px fixed height) at the top of scrollable cont
 - **Background Options**:
   - **Color Gradients**: Vibrant gradients matching folder color (when viewing folders)
   - **Animated Patterns**: CSS-based patterns (Diagonal, Dots, Mesh, Solid) when no custom image
-  - **Custom Images**: User-uploaded images via `EditPlaylistModal` (for playlists/folders)
-- **Unified Banner System**: When custom image is set, the banner visually connects with the Sticky Toolbar below it using synchronized horizontal scroll animation
+  - **Two-Layer Image System**: User can upload up to two images via Settings → Appearance → Page Banner:
+    - **Layer 1 (Background)**: Primary image that can optionally scroll horizontally
+    - **Layer 2 (Overlay)**: Secondary image rendered on top (use transparent PNGs for composite effects)
+    - Each layer has independent Scale, X Position, and Y Position controls
+- **Unified Banner System**: When custom image is set, the banner visually connects with the Sticky Toolbar below it using synchronized horizontal scroll animation (can be disabled via Settings)
 
 **2: File Manifest**
 
@@ -66,10 +69,22 @@ Users see a contextual banner (220px fixed height) at the top of scrollable cont
 **State Management:**
 - `src/store/configStore.js`:
   - `bannerPattern`: Selected pattern ('diagonal' | 'dots' | 'mesh' | 'solid')
-  - `customPageBannerImage`: Base64 string of uploaded page banner image (null = use gradient/pattern)
-  - `bannerHeight`: Current banner height (reported by PageBanner for Sticky Toolbar alignment)
-  - `setBannerHeight(height)`: Updates banner height in store
-  - `setBannerBgSize(size)`: Updates background size calculation
+  - **Layer 1 (Background Image):**
+    - `customPageBannerImage`: Base64 string of uploaded Layer 1 image (null = use gradient/pattern)
+    - `pageBannerImageScale`: Scale percentage (50-200%, default 100)
+    - `pageBannerImageXOffset`: X position percentage (0-100%, default 50 = center)
+    - `pageBannerImageYOffset`: Y position percentage (0-100%, default 50 = center)
+  - **Layer 2 (Overlay Image):**
+    - `customPageBannerImage2`: Base64 string of uploaded Layer 2 image (null = no overlay)
+    - `pageBannerImage2Scale`: Scale percentage for Layer 2 (50-200%, default 100)
+    - `pageBannerImage2XOffset`: X position percentage for Layer 2 (0-100%, default 50)
+    - `pageBannerImage2YOffset`: Y position percentage for Layer 2 (0-100%, default 50)
+  - **Animation:**
+    - `pageBannerScrollEnabled`: Boolean to enable/disable horizontal scroll animation (default true)
+  - **Unified Banner State:**
+    - `bannerHeight`: Current banner height (reported by PageBanner for Sticky Toolbar alignment)
+    - `setBannerHeight(height)`: Updates banner height in store
+    - `setBannerBgSize(size)`: Updates background size calculation
 - `src/store/folderStore.js`:
   - Folder color information for gradient generation
 - Database (for custom folder banners):
@@ -102,12 +117,15 @@ Users see a contextual banner (220px fixed height) at the top of scrollable cont
    - `PageBanner.jsx` renders with appropriate styling
 
 2. **Background Selection Flow:**
-   - Component checks `customPageBannerImage` from `configStore`
-   - **If Custom Image Set**:
-     - Uses `UnifiedBannerBackground` component for GPU-accelerated scrolling
-     - Checks if image is GIF → Disables scroll animation if GIF
-     - Applies custom image as background with `background-size: cover`
-   - **If No Custom Image**:
+   - Component checks `customPageBannerImage` and `customPageBannerImage2` from `configStore`
+   - **If Any Custom Image Set**:
+     - Uses `UnifiedBannerBackground` component for GPU-accelerated rendering
+     - **Layer 1 (Background)**: Renders first with `z-0`, applies scale/position settings
+       - If `pageBannerScrollEnabled` is true and not a GIF → Animates horizontally
+       - If disabled or GIF → Static image with position settings
+     - **Layer 2 (Overlay)**: Renders on top with `z-[1]`, always static (no scroll animation)
+     - Each layer applies its own scale (auto height%) and position (X%, Y%) settings
+   - **If No Custom Images**:
      - Checks `folderColor` prop → Generates gradient from folder color
      - If `folderColor === 'unsorted'` → Uses gray gradient
      - If no folder color → Uses default blue gradient
@@ -147,16 +165,23 @@ Users see a contextual banner (220px fixed height) at the top of scrollable cont
    - Positioned at `top-12 right-6` with centered label alignment
 
 **Source of Truth:**
-- `configStore.customPageBannerImage` - Custom page banner image (global, can be overridden per playlist/folder)
-- `configStore.bannerPattern` - Selected animated pattern
+- `configStore.customPageBannerImage` - Layer 1 image (global, can be overridden per playlist/folder)
+- `configStore.customPageBannerImage2` - Layer 2 overlay image
+- `configStore.pageBannerImageScale/XOffset/YOffset` - Layer 1 positioning
+- `configStore.pageBannerImage2Scale/XOffset/YOffset` - Layer 2 positioning
+- `configStore.pageBannerScrollEnabled` - Scroll animation toggle
+- `configStore.bannerPattern` - Selected animated pattern (when no custom images)
 - Database `folder_metadata` table - Custom folder banners and ASCII art (per folder)
 - Database `playlists` table - Playlist descriptions and metadata
 - Props passed from parent page component - Title, description, video count, folder color, playlist badges, customDescription
 - Page component state - Filtered playlist state, pagination state (for badges and pagination badge)
 
 **State Dependencies:**
-- When `customPageBannerImage` changes → Banner background updates → UnifiedBannerBackground renders
-- When `bannerPattern` changes → Pattern overlay updates (only when no custom image)
+- When `customPageBannerImage` or `customPageBannerImage2` changes → Banner background updates → UnifiedBannerBackground renders
+- When `pageBannerImageScale/XOffset/YOffset` changes → Layer 1 position/size updates in real-time
+- When `pageBannerImage2Scale/XOffset/YOffset` changes → Layer 2 position/size updates in real-time
+- When `pageBannerScrollEnabled` changes → Scroll animation toggles on/off for Layer 1
+- When `bannerPattern` changes → Pattern overlay updates (only when no custom images)
 - When `folderColor` changes → Gradient colors update → Banner re-renders with new colors
 - When banner height changes → `setBannerHeight` called → Sticky Toolbar adjusts positioning
 - When custom image uploaded → Saved to database → Banner fetches and displays on next load
@@ -168,9 +193,17 @@ Users see a contextual banner (220px fixed height) at the top of scrollable cont
 
 **Unified Banner System:**
 - Uses `UnifiedBannerBackground` component for custom images
-- GPU-accelerated horizontal scroll animation (60fps)
-- Two side-by-side divs (200% width total) slide from 0 to -50% for seamless loop
-- Ensures `background-size: 100%` corresponds to one viewport width
+- Supports two independent image layers (background + overlay)
+- **Layer 1 (Background)**:
+  - GPU-accelerated horizontal scroll animation (60fps) when enabled
+  - Two side-by-side divs (200% width total) slide from 0 to -50% for seamless loop
+  - Animation can be disabled via `pageBannerScrollEnabled` setting
+  - Configurable scale (50-200%) and position (X: 0-100%, Y: 0-100%)
+- **Layer 2 (Overlay)**:
+  - Always static (no scroll animation)
+  - Rendered with `z-[1]` to appear on top of Layer 1
+  - Ideal for transparent PNGs to create composite/layered effects
+  - Independent scale and position controls
 
 **Gradient Generation:**
 - Folder colors mapped via `FOLDER_COLORS` utility
@@ -266,10 +299,17 @@ Users see a contextual banner (220px fixed height) at the top of scrollable cont
 - **Not Available**: For "Unsorted Videos" view (no edit button shown)
 
 **Via Settings:**
-- **Location**: Settings → Appearance → Page Banner
-- **Pattern Selection**: Toggle between Diagonal, Dots, Mesh, Solid patterns
-- **Custom Upload**: Upload global custom page banner (applies when no folder-specific banner)
-- **Preview**: Live preview of selected pattern or uploaded image
+- **Location**: Settings → Appearance → Page Banner (first section at top of Appearance tab)
+- **Two-Layer Image Controls**:
+  - **Layer 1 (Background)**: Upload, remove, and adjust scale/position
+  - **Layer 2 (Overlay)**: Upload, remove, and adjust scale/position (use transparent PNGs)
+  - **Scale Slider**: 50% to 200% (controls image height, maintains aspect ratio)
+  - **X Position Slider**: 0% (left) to 100% (right)
+  - **Y Position Slider**: 0% (top) to 100% (bottom)
+  - **Thumbnail Preview**: Shows uploaded image in each layer's control panel
+- **Pattern Selection**: Toggle between Diagonal, Dots, Mesh, Solid patterns (only visible when no custom images uploaded)
+- **Scroll Animation Toggle**: Enable/disable horizontal scrolling animation for Layer 1
+- **Live Preview**: Changes apply immediately to the actual Page Banner above the settings (no separate preview panel)
 
 **Visual Customization:**
 - **ASCII Art**: Set via Settings → Signature, or per-folder via `folder_metadata.custom_ascii`
