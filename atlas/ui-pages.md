@@ -14,9 +14,14 @@ This document covers all page components in the UI system. For card components, 
 
 **1: User-Perspective Description**
 
-Users see a 2-column grid of playlist cards. For detailed description of playlist functionality, see **Section 2.1: Playlists**. This section focuses on the UI/visual aspects:
+Users see a horizontal scrolling layout with playlist and folder cards arranged in a single row. For detailed description of playlist functionality, see **Section 2.1: Playlists**. This section focuses on the UI/visual aspects:
 
-- **Grid Layout**: 2 columns, responsive spacing, scrollable vertical list
+- **Horizontal Scrolling Layout**: Playlist and folder cards arranged horizontally with horizontal scrolling
+  - **Layout**: Single horizontal row of cards, each card fixed at 500px width
+  - **Scrolling**: Horizontal scroll container with visible scrollbar (thin style)
+  - **Wheel Scrolling**: Mouse wheel events are converted to horizontal scrolling for natural navigation
+  - **Vertical Scrolling Disabled**: Page does not scroll vertically - only horizontal scrolling is active
+
 - **Playlist Cards**: Each card displays:
   - Thumbnail (16:9 aspect ratio, first video's thumbnail)
   - Playlist name (truncated if too long)
@@ -33,13 +38,17 @@ Users see a 2-column grid of playlist cards. For detailed description of playlis
     - **Folder Toggle (Icon)**: Toggles inline folder display.
     - **Add Playlist (Icon)**: Opens playlist import/create modal.
 
-- **Colored Folders**: When folder toggle is on, folder cards appear in grid above playlists:
+- **Colored Folders**: When folder toggle is on, folder cards appear in the horizontal scroll above playlists:
   - **Grouped by Playlist**: Folders are organized under their parent playlist with section headers
   - **Playlist Headers**: Each group has an uppercase header with gradient divider lines showing the playlist name
   - **Folder Card Schema**: Folder cards use the same structure as playlist cards (bordered container, title bar with colored dot + name, hover controls, thumbnail with 3-dot menu)
   - **Custom Names**: Folders display custom names if renamed, otherwise show the color name
   - **3-Dot Menu**: Options include "Stick/Unstick Folder" and "Convert to Playlist"
   - **"Source Playlists" Header**: Separates folder section from regular playlists (only visible when folders are shown)
+
+- **Scroll to Top Arrow**: A centered up-facing arrow button at the bottom of the page
+  - **Functionality**: Clicking the arrow smoothly scrolls the horizontal container back to the beginning (left edge)
+  - **Styling**: Circular button with hover effects, positioned at the bottom center of the page
 
 **2: File Manifest**
 
@@ -60,6 +69,9 @@ Users see a 2-column grid of playlist cards. For detailed description of playlis
   - `folders`: Array of folder objects (from `getAllFoldersWithVideos()`)
   - `folderMetadata`: Map of `"playlistId:folderColor"` to `{ name, description }` for custom folder names
   - `stuckFolders`: Set of stuck folder keys (`"playlistId:folderColor"`)
+  - `horizontalScrollRef`: Ref to the horizontal scroll container
+  - `arrowButtonRef`: Ref to the scroll-to-top arrow button
+  - `scrollToTop()`: Function that smoothly scrolls horizontal container to the beginning
 
 **API/Bridge:**
 - See Section 2.1 for full API details
@@ -81,10 +93,16 @@ See **Section 2.1: Playlists** for complete logic flow. The UI-specific aspects:
    - Card uses `<CardContent>` for text → Title, description, video count, and menu
    - Card uses `<CardActions>` for menu → 3-dot menu positioned inline with title
 
-2. **Grid Layout Flow:**
-   - CSS Grid: `grid grid-cols-2 gap-4` → 2 columns, 4-unit gap
-   - Responsive: Adjusts to container width
-   - Scrollable: `overflow-y-auto` on container
+2. **Horizontal Scrolling Flow:**
+   - Cards arranged in single horizontal row with fixed 500px width
+   - Horizontal scroll container uses `overflowX: 'scroll'` with visible scrollbar
+   - Mouse wheel events are intercepted and converted to horizontal scrolling via `useEffect`
+   - When wheel event detected → `preventDefault()` stops vertical scroll → `scrollLeft` updated with `deltaY` value
+   - Vertical scrolling is disabled on the page container (`overflow-y-hidden`)
+
+3. **Scroll to Top Flow:**
+   - User clicks arrow button → `scrollToTop()` function called
+   - Horizontal scroll container smoothly scrolls to `scrollLeft: 0`
 
 **Source of Truth:**
 - See Section 2.1

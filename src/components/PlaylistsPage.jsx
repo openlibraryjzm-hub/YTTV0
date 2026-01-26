@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { createPlaylist, getAllPlaylists, getPlaylistItems, deletePlaylist, deletePlaylistByName, getAllFoldersWithVideos, exportPlaylist, getFoldersForPlaylist, toggleStuckFolder, getAllStuckFolders, getVideosInFolder, getAllVideoProgress, getAllPlaylistMetadata, addVideoToPlaylist, getFolderMetadata } from '../api/playlistApi';
 import { getThumbnailUrl } from '../utils/youtubeUtils';
 import { usePlaylistStore } from '../store/playlistStore';
-import { Play, Shuffle, Grid3x3, RotateCcw, Info } from 'lucide-react';
+import { Play, Shuffle, Grid3x3, RotateCcw, Info, ChevronUp } from 'lucide-react';
 import { useFolderStore } from '../store/folderStore';
 import { useTabStore } from '../store/tabStore';
 import { useTabPresetStore } from '../store/tabPresetStore';
@@ -78,6 +78,12 @@ const PlaylistsPage = ({ onVideoSelect }) => {
   const [isStuck, setIsStuck] = useState(false);
   const stickySentinelRef = useRef(null);
   const scrollContainerRef = useRef(null);
+  const horizontalScrollRef = useRef(null);
+  const arrowButtonRef = useRef(null);
+
+  const scrollToTop = () => {
+    horizontalScrollRef.current?.scrollTo({ left: 0, behavior: 'smooth' });
+  };
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -92,6 +98,33 @@ const PlaylistsPage = ({ onVideoSelect }) => {
     }
     return () => observer.disconnect();
   }, []);
+
+  // Convert vertical wheel scrolling to horizontal scrolling (optimized)
+  useEffect(() => {
+    const container = horizontalScrollRef.current;
+    if (!container) return;
+
+    const handleWheel = (e) => {
+      // Check if there's horizontal scroll available
+      const hasHorizontalScroll = container.scrollWidth > container.clientWidth;
+      
+      if (hasHorizontalScroll) {
+        // Prevent default vertical scrolling
+        e.preventDefault();
+        e.stopPropagation();
+        
+        // Direct scrollLeft assignment for better performance
+        container.scrollLeft += e.deltaY;
+      }
+    };
+
+    // Add listener to container
+    container.addEventListener('wheel', handleWheel, { passive: false });
+
+    return () => {
+      container.removeEventListener('wheel', handleWheel);
+    };
+  }, []); // Attach once when component mounts
 
   useEffect(() => {
     loadPlaylists();
@@ -608,8 +641,8 @@ const PlaylistsPage = ({ onVideoSelect }) => {
         <>
 
 
-          {/* Playlist Grid - 3 per row */}
-          <div ref={scrollContainerRef} className="flex-1 overflow-y-auto bg-transparent relative">
+          {/* Playlist Grid - Horizontal Scrolling */}
+          <div ref={scrollContainerRef} className="flex-1 overflow-y-hidden bg-transparent relative">
             {(() => {
               const activePreset = presets.find(p => p.id === activePresetId);
               let bannerTitle = activePresetId === 'all' || !activePreset
@@ -759,9 +792,40 @@ const PlaylistsPage = ({ onVideoSelect }) => {
               </div>
             </div>
 
-            {/* Grid */}
-            <div className="grid grid-cols-2 gap-4 px-8 pb-8 items-start">
-              {/* Colored Folders - Grouped by playlist with headers */}
+            {/* Horizontal Scrolling Grid */}
+            <div 
+              className="px-4 pb-8"
+              onWheel={(e) => {
+                // Handle wheel scrolling on the entire playlist area
+                const container = horizontalScrollRef.current;
+                if (container && container.scrollWidth > container.clientWidth) {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  // Direct scrollLeft assignment for better performance
+                  container.scrollLeft += e.deltaY;
+                  
+                  // Trigger scroll handler for auto-center detection
+                  container.dispatchEvent(new Event('scroll'));
+                }
+              }}
+            >
+              <div 
+                ref={horizontalScrollRef}
+                className="horizontal-video-scroll"
+                style={{ 
+                  width: '100%',
+                  overflowX: 'scroll',
+                  overflowY: 'hidden',
+                  scrollbarWidth: 'thin',
+                  scrollbarColor: 'rgba(148, 163, 184, 0.6) rgba(15, 23, 42, 0.3)',
+                  WebkitOverflowScrolling: 'touch',
+                  marginTop: '-32px'
+                }}
+              >
+                <div className="flex flex-col gap-4" style={{ width: 'max-content' }}>
+                {/* Row containers for two-row layout */}
+                <div className="flex gap-4" style={{ width: 'max-content' }}>
+                  {/* Colored Folders - Grouped by playlist with headers */}
               {showColoredFolders && (() => {
                 // Filter folders
                 const filteredFolders = folders.filter((folder) => {
@@ -797,8 +861,8 @@ const PlaylistsPage = ({ onVideoSelect }) => {
 
                   return (
                     <React.Fragment key={`folder-group-${playlistId}`}>
-                      {/* Playlist Header - spans full width */}
-                      <div className="col-span-2 flex items-center gap-3 mt-2 mb-1">
+                      {/* Playlist Header - full width in horizontal scroll */}
+                      <div className="flex items-center gap-3 mt-2 mb-1" style={{ minWidth: '800px' }}>
                         <div className="h-px flex-1 bg-gradient-to-r from-transparent via-slate-600/50 to-transparent" />
                         <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wider px-2">
                           {playlistName}
@@ -846,6 +910,8 @@ const PlaylistsPage = ({ onVideoSelect }) => {
                               }
                             }}
                             className="cursor-pointer group relative"
+                            style={{ width: '500px', flexShrink: 0 }}
+                            data-playlist-card="true"
                           >
                             <div className="border-2 border-slate-700/50 rounded-xl p-2 bg-slate-800/20 hover:border-sky-500/50 transition-colors h-full flex flex-col">
                               {/* Folder Title Bar */}
@@ -1209,7 +1275,7 @@ const PlaylistsPage = ({ onVideoSelect }) => {
 
               {/* Source Playlists Header - only show when colored folders are visible */}
               {showColoredFolders && (
-                <div className="col-span-2 flex items-center gap-3 mt-4 mb-2">
+                <div className="flex items-center gap-3 mt-4 mb-2" style={{ minWidth: '800px' }}>
                   <div className="h-px flex-1 bg-gradient-to-r from-transparent via-sky-600/50 to-transparent" />
                   <h2 className="text-sm font-semibold text-sky-400 uppercase tracking-wider px-2">
                     Source Playlists
@@ -1312,6 +1378,8 @@ const PlaylistsPage = ({ onVideoSelect }) => {
                         }}
                         className="cursor-pointer group relative"
                         title={getInspectTitle(`Playlist: ${playlist.name}`)}
+                        style={{ width: '500px', flexShrink: 0 }}
+                        data-playlist-card="true"
                       >
                         <div
                           className={`border-2 border-slate-700/50 rounded-xl p-2 bg-slate-800/20 hover:border-sky-500/50 transition-colors h-full flex flex-col ${String(playlist.id) === String(activePlaylistId) ? 'active-playlist-marker' : ''}`}
@@ -1993,6 +2061,7 @@ const PlaylistsPage = ({ onVideoSelect }) => {
                         }}
                         className="cursor-pointer group relative"
                         title={getInspectTitle(`${folderColor.name} folder`)}
+                        data-playlist-card="true"
                       >
                         <div
                           className={`border-2 border-slate-700/50 rounded-xl p-2 bg-slate-800/20 hover:border-sky-500/50 transition-colors h-full flex flex-col ${String(playlist.id) === String(activePlaylistId) ? 'active-playlist-marker' : ''}`}
@@ -2311,12 +2380,31 @@ const PlaylistsPage = ({ onVideoSelect }) => {
                   }
                 });
               })()}
+                </div>
+                
+                {/* Row 2 - Will be populated similarly */}
+                <div className="flex gap-4" style={{ width: 'max-content' }}>
+                  {/* Second row cards would go here if we split into two rows */}
+                </div>
+              </div>
+            </div>
+            
+            {/* Up Arrow - Centered at bottom */}
+            <div className="flex justify-center py-8">
+              <button
+                ref={arrowButtonRef}
+                onClick={() => scrollToTop()}
+                className="p-3 rounded-full bg-slate-800/80 hover:bg-slate-700 text-slate-400 hover:text-sky-400 transition-all border border-white/10 hover:border-sky-500/50 shadow-lg hover:shadow-sky-500/25"
+                title="Scroll to top"
+              >
+                <ChevronUp size={24} />
+              </button>
             </div>
           </div>
+        </div>
         </>
-      )
-      }
-    </div >
+      )}
+    </div>
   );
 };
 
