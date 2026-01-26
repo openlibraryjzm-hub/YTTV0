@@ -821,7 +821,7 @@ OrbPage is a dedicated page for orb configuration, accessed via the "Orb" button
   - **Tab Navigation**: Three tabs below the sticky toolbar
     - **Presets Tab**: Horizontal scrolling grid of saved presets
     - **Configuration Tab**: Orb configuration controls
-    - **Groups Tab**: Two-column layout with orb image preview grids
+    - **Groups Tab**: Two-column layout for group management (left: select group leader, right: assign presets to group)
 
 - **Presets Tab**:
   - **Layout**: Horizontal scrolling grid (4 columns visible, scrolls horizontally)
@@ -854,13 +854,19 @@ OrbPage is a dedicated page for orb configuration, accessed via the "Orb" button
   - **Compact Layout**: All controls visible without vertical scrolling
 
 - **Groups Tab**:
-  - **Two-Column Layout**: Left and right sides both show orb image preview grids
-  - **Grid Layout**: 4 columns on mobile, 5 on small screens, 6 on medium+ screens
-  - **Preview Size**: 64px × 64px circular orb previews (same as PagePage thumbnail size)
-  - **Scrollable**: Max height 600px with vertical scrolling
-  - **Selection**: Clicking a preset applies it and sets it as the group leader
-  - **Visual Feedback**: Selected preset shows sky-blue border and ring
-  - **Hover Tooltips**: Preset name appears on hover
+  - **Two-Column Layout**: 
+    - **Left Side**: Grid of all orb presets for selecting group leader
+      - Shows all presets in 4-6 column grid (64px × 64px circular previews)
+      - When group leader selected, shows info banner with assigned count
+      - Clicking any preset selects it as group leader
+      - Selected group leader shows sky-blue border and "Leader" badge
+    - **Right Side**: Grid of all orb presets for assigning to group
+      - Shows all presets in 4-6 column grid
+      - Highlights assigned presets with purple border and checkmark badge
+      - Clicking assigns/unassigns preset to currently selected group leader
+      - Group leader cannot be assigned to itself
+  - **Scrollable**: Max height 600px with vertical scrolling on both sides
+  - **Hover Tooltips**: Preset name and status (Leader/Assigned) appears on hover
   - **Empty State**: Shows message when no presets are saved
 
 **2: File Manifest**
@@ -872,8 +878,9 @@ OrbPage is a dedicated page for orb configuration, accessed via the "Orb" button
 
 **State Management:**
 - `src/store/configStore.js`: Orb state and preset management
-  - `orbFavorites`: Array of saved preset objects, each with `folderColors` array
+  - `orbFavorites`: Array of saved preset objects, each with `folderColors`, `groupLeaderId`, and `groupMembers` properties
   - `updateOrbFavoriteFolders(id, folderColors)`: Updates folder color assignments for a preset
+  - `assignOrbToGroup(presetId, groupLeaderId)`: Assigns/unassigns orb preset to group leader
   - All orb configuration state is shared between SettingsPage and OrbPage
 
 **3: The Logic & State Chain**
@@ -903,6 +910,13 @@ OrbPage is a dedicated page for orb configuration, accessed via the "Orb" button
 - **Folder Assignment**: User hovers preset → Clicks folder icon → Selects folder colors → `updateOrbFavoriteFolders()` updates assignments
 - **Filtering**: User clicks prism bar color → Grid filters to show only presets assigned to that color
 
+**Group Management (Groups Tab):**
+- Select Leader: User clicks preset on left side → Sets `selectedGroupLeaderId` → Shows info banner with assigned count
+- Assign to Group: User clicks preset on right side → `assignOrbToGroup()` assigns/unassigns preset to currently selected group leader
+- Group leader stores `groupMembers` array (preset IDs)
+- Assigned presets store `groupLeaderId` (preset ID)
+- Visual feedback shows assigned presets with purple borders and checkmark badges
+
 **Horizontal Scrolling (Presets Tab):**
 - Uses `horizontalScrollRef` (useRef) for scrollable container
 - `onWheel` handler converts vertical mouse wheel to horizontal scrolling
@@ -911,10 +925,13 @@ OrbPage is a dedicated page for orb configuration, accessed via the "Orb" button
 - Custom scrollbar styling: thin scrollbar with custom colors
 
 **Groups Tab:**
-- Two identical grids showing all orb presets
-- Clicking a preset in either grid applies it and sets `selectedGroupLeaderId`
+- Left side: Grid of all orb presets for selecting group leader
+  - Shows info banner with assigned count when group leader is selected
+  - Clicking any preset selects it as group leader
+- Right side: Grid of all orb presets for assigning to group
+  - Highlights assigned presets with purple borders and checkmark badges
+  - Clicking assigns/unassigns preset to currently selected group leader
 - Both grids use same styling and behavior as Presets tab previews
-- Future: Left side will be used for group management functionality
 
 ---
 
@@ -987,7 +1004,12 @@ PagePage is a dedicated page for Page Banner and Layer 2 image library configura
     - **Color Bars**: Each of 16 folder colors is clickable to filter folders by assigned folder
     - **Counts**: Shows number of folders assigned to each folder color
     - **Active Filter**: Selected color shows white ring highlight
-  - **Scrollable Content**: Banner editor and Layer 2 library below the banner
+  - **Tab Navigation**: Four tabs below the sticky toolbar
+    - **Page Banner Tab**: Banner editor and Layer 2 configuration
+    - **Image Library Tab**: Folder and image management
+    - **Folders Tab**: Horizontal scrolling carousel of all Layer 2 images
+    - **Groups Tab**: Two-column layout for group management (left: select group leader, right: assign images to group)
+  - **Scrollable Content**: Tab content below the banner
 
 - **Page Banner Editor Section** (collapsible, starts collapsed):
   - **Collapse/Expand Toggle**: Button in section header to show/hide configuration
@@ -1033,19 +1055,34 @@ PagePage is a dedicated page for Page Banner and Layer 2 image library configura
     - Assign destinations (pages/folder colors)
     - Save current Layer 2 image to folder
 
-- **Layer 2 Folders Grid** (below config sections):
-  - **Layout**: 4-column scrollable grid (max-height 600px)
-  - **Filtering**: Grid filters based on selected folder color from prism bar
-  - **Thumbnails**: First image of each folder used as representative thumbnail
-    - Folder icon placeholder if folder has no images
-  - **Badges**:
-    - Image count (top-right)
-    - Theme badge (top-left) if folder is theme
-    - Random badge (bottom-left) if random selection enabled
-  - **Folder Assignment**: Folder icon button (top-left on hover) opens color grid to assign folders to folder colors
-    - Checkmarks indicate assigned folders
-    - Assigned folder indicators shown as colored dots at bottom of thumbnail (up to 3, with +N for more)
-  - **One-Click Apply**: Click thumbnail applies first image and selects folder
+- **Folders Tab**:
+  - **Layout**: Horizontal scrolling carousel (same format as previous folder thumbnails)
+  - **Content**: Shows all Layer 2 images from all folders (not just representative thumbnails)
+  - **Card Size**: 320px width, aspect-video (16:9) thumbnails
+  - **Filtering**: Carousel filters based on selected folder color from prism bar
+  - **Image Display**: Each image shows:
+    - Large thumbnail with folder name below
+    - Active indicator (purple checkmark) if currently applied
+    - Highlighting (purple border) if from selected folder
+    - Hover tooltip with folder name
+  - **One-Click Apply**: Clicking an image applies it and selects its folder
+  - **Wheel Scrolling**: Mouse wheel scrolls horizontally through images
+
+- **Groups Tab**:
+  - **Two-Column Layout**: 
+    - **Left Side**: Grid of all Layer 2 images for selecting group leader
+      - Shows all images from all folders in 4-6 column grid (64px × 64px square previews)
+      - When group leader selected, shows info banner with assigned count
+      - Clicking any image selects it as group leader
+      - Selected group leader shows sky-blue border and "Leader" badge
+    - **Right Side**: Grid of all Layer 2 images for assigning to group
+      - Shows all images from all folders in 4-6 column grid
+      - Highlights assigned images with purple border and checkmark badge
+      - Clicking assigns/unassigns image to currently selected group leader
+      - Group leader cannot be assigned to itself
+  - **Scrollable**: Max height 600px with vertical scrolling on both sides
+  - **Hover Tooltips**: Folder name and status (Leader/Assigned) appears on hover
+  - **Empty State**: Shows message when no images are saved
 
 **2: File Manifest**
 
@@ -1060,9 +1097,12 @@ PagePage is a dedicated page for Page Banner and Layer 2 image library configura
   - `pageBannerImage2Scale`, `setPageBannerImage2Scale`: Layer 2 scale
   - `pageBannerImage2XOffset`, `setPageBannerImage2XOffset`: Layer 2 X position
   - `pageBannerImage2YOffset`, `setPageBannerImage2YOffset`: Layer 2 Y position
-  - `layer2Folders`: Array of folder objects, each with `folderColors` array
+  - `layer2Folders`: Array of folder objects, each with `folderColors` array and images with `groupLeaderId` and `groupMembers` properties
   - `updateLayer2FolderFolders(id, folderColors)`: Updates folder color assignments for a Layer 2 folder
-  - All Layer 2 state persisted to localStorage
+  - `assignLayer2ToGroup(imageId, folderId, groupLeaderId, groupLeaderFolderId)`: Assigns/unassigns Layer 2 image to group leader
+  - `orbFavorites`: Array of orb preset objects, each with `groupLeaderId` and `groupMembers` properties
+  - `assignOrbToGroup(presetId, groupLeaderId)`: Assigns/unassigns orb preset to group leader
+  - All Layer 2 and orb group state persisted to localStorage
 
 **3: The Logic & State Chain**
 
@@ -1087,7 +1127,14 @@ PagePage is a dedicated page for Page Banner and Layer 2 image library configura
 2. User uploads image → `addLayer2Image()` adds to folder's images array
 3. User applies image → `applyLayer2Image()` sets Layer 2 and loads paired color
 4. **Folder Assignment**: User hovers folder → Clicks folder icon → Selects folder colors → `updateLayer2FolderFolders()` updates assignments
-5. **Filtering**: User clicks prism bar color → Grid filters to show only folders assigned to that color
+5. **Filtering**: User clicks prism bar color → Carousel filters to show only images from folders assigned to that color
+
+**Group Management Flow (Groups Tab):**
+1. User selects group leader → Clicks image on left side → Sets `selectedGroupLeaderId` and `selectedGroupLeaderFolderId`
+2. User assigns images to group → Clicks images on right side → `assignLayer2ToGroup()` updates group assignments
+3. Group leader stores `groupMembers` array (format: "folderId:imageId")
+4. Assigned images store `groupLeaderId` (format: "folderId:imageId")
+5. Visual feedback shows assigned images with purple borders and checkmark badges
 
 ---
 #### ### 4.1.9 Support Page

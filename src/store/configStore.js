@@ -145,6 +145,46 @@ export const useConfigStore = create(
                     f.id === id ? { ...f, folderColors: folderColors || [] } : f
                 )
             })),
+            // Group management for orb presets
+            // groupLeaderId: ID of the orb preset that is the group leader
+            // groupMembers: Array of orb preset IDs that belong to this group
+            setOrbGroupLeader: (leaderId, memberIds) => set((state) => ({
+                orbFavorites: state.orbFavorites.map(f => 
+                    f.id === leaderId 
+                        ? { ...f, groupMembers: memberIds || [] }
+                        : memberIds && memberIds.includes(f.id)
+                        ? { ...f, groupLeaderId: leaderId }
+                        : f.groupLeaderId === leaderId
+                        ? { ...f, groupLeaderId: null }
+                        : f
+                )
+            })),
+            assignOrbToGroup: (presetId, groupLeaderId) => set((state) => {
+                const leader = state.orbFavorites.find(f => f.id === groupLeaderId);
+                const currentMembers = leader?.groupMembers || [];
+                const isAlreadyMember = currentMembers.includes(presetId);
+                
+                return {
+                    orbFavorites: state.orbFavorites.map(f => {
+                        if (f.id === groupLeaderId) {
+                            // Update leader's member list
+                            return {
+                                ...f,
+                                groupMembers: isAlreadyMember
+                                    ? currentMembers.filter(id => id !== presetId)
+                                    : [...currentMembers, presetId]
+                            };
+                        } else if (f.id === presetId) {
+                            // Update preset's group leader
+                            return {
+                                ...f,
+                                groupLeaderId: isAlreadyMember ? null : groupLeaderId
+                            };
+                        }
+                        return f;
+                    })
+                };
+            }),
 
             // Restored Missing Keys (Defaults)
             pinFirstButtonSize: 34,
@@ -339,6 +379,64 @@ export const useConfigStore = create(
                 pageBannerImage2Scale: image.scale,
                 pageBannerImage2XOffset: image.xOffset,
                 pageBannerImage2YOffset: image.yOffset
+            }),
+            // Group management for Layer 2 images
+            // groupLeaderId: ID of the layer2 image that is the group leader (format: "folderId:imageId")
+            // groupMembers: Array of image IDs that belong to this group (format: "folderId:imageId")
+            assignLayer2ToGroup: (imageId, folderId, groupLeaderId, groupLeaderFolderId) => set((state) => {
+                const currentImageKey = `${folderId}:${imageId}`;
+                const leaderKey = `${groupLeaderFolderId}:${groupLeaderId}`;
+                
+                // Find the leader image to get its current members
+                let leaderImage = null;
+                state.layer2Folders.forEach(folder => {
+                    if (folder.id === groupLeaderFolderId) {
+                        const img = folder.images.find(i => i.id === groupLeaderId);
+                        if (img) {
+                            leaderImage = { ...img, folderId: folder.id };
+                        }
+                    }
+                });
+                
+                const currentMembers = leaderImage?.groupMembers || [];
+                const isAlreadyMember = currentMembers.includes(currentImageKey);
+                
+                return {
+                    layer2Folders: state.layer2Folders.map(folder => {
+                        if (folder.id === groupLeaderFolderId) {
+                            // Update leader image's member list
+                            return {
+                                ...folder,
+                                images: folder.images.map(img => 
+                                    img.id === groupLeaderId
+                                        ? {
+                                            ...img,
+                                            groupMembers: isAlreadyMember
+                                                ? currentMembers.filter(id => id !== currentImageKey)
+                                                : [...currentMembers, currentImageKey]
+                                        }
+                                        : img
+                                )
+                            };
+                        } else if (folder.id === folderId) {
+                            // Update the image being assigned (only if it's not the leader itself)
+                            if (imageId !== groupLeaderId || folderId !== groupLeaderFolderId) {
+                                return {
+                                    ...folder,
+                                    images: folder.images.map(img =>
+                                        img.id === imageId
+                                            ? {
+                                                ...img,
+                                                groupLeaderId: isAlreadyMember ? null : leaderKey
+                                            }
+                                            : img
+                                    )
+                                };
+                            }
+                        }
+                        return folder;
+                    })
+                };
             }),
             
             // Per-Playlist Layer 2 Image Overrides
