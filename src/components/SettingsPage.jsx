@@ -1,11 +1,12 @@
-import React, { useState, useEffect } from 'react';
-import { Palette, User, Smile, ExternalLink, Copy, Check, Image, Layout, Music, Box, Volume2, Heart, Trash2, Plus, Star, Folder, ChevronDown, Shuffle, MapPin } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Palette, User, Smile, ExternalLink, Copy, Check, Image, Layout, Music, Box, Volume2, Heart, Trash2, Plus, Star, Folder, ChevronDown, Shuffle, MapPin, FileText, Settings } from 'lucide-react';
 import { openUrl } from '@tauri-apps/plugin-opener';
 import { useConfigStore } from '../store/configStore';
 import { THEMES } from '../utils/themes';
 import { FOLDER_COLORS } from '../utils/folderColors';
 import PageBanner from './PageBanner';
 import { getAllPlaylists } from '../api/playlistApi';
+import OrbPage from './OrbPage';
 
 const AVATARS = [
     '( ͡° ͜ʖ ͡°)',
@@ -81,6 +82,14 @@ export default function SettingsPage({ currentThemeId, onThemeChange }) {
     const [mockBorder, setMockBorder] = useState('neon');
     const [mockVisualizer, setMockVisualizer] = useState('bars');
     const [mockVisColor, setMockVisColor] = useState('theme');
+
+    // Sticky toolbar state
+    const [isStuck, setIsStuck] = useState(false);
+    const stickySentinelRef = useRef(null);
+    const scrollContainerRef = useRef(null);
+
+    // Orb page modal state
+    const [showOrbPage, setShowOrbPage] = useState(false);
 
     const promptText = 'maintain style as much as possible. dont change anything about original image. im looking for a "zoom out" so that I can [insert desired changes]. reference the single primary color markings which mark out how I want things expanded. remove single primary color markings from final image.';
 
@@ -227,57 +236,160 @@ export default function SettingsPage({ currentThemeId, onThemeChange }) {
         setEditingFavoriteName('');
     };
 
+    // Sticky toolbar detection
+    useEffect(() => {
+        const observer = new IntersectionObserver(
+            ([entry]) => {
+                // When sentinel is NOT visible (scrolled past top), we are stuck
+                setIsStuck(entry.intersectionRatio < 1 && entry.boundingClientRect.top < 0);
+            },
+            { threshold: [1], rootMargin: '-1px 0px 0px 0px' }
+        );
+
+        if (stickySentinelRef.current) {
+            observer.observe(stickySentinelRef.current);
+        }
+        return () => observer.disconnect();
+    }, []);
+
+    // Mock folder counts for prism bar (will be wired up later)
+    const folderCounts = {};
+
+    // If Orb page is active, render it instead of settings
+    if (showOrbPage) {
+        return <OrbPage onBack={() => setShowOrbPage(false)} />;
+    }
+
     return (
         <div className="w-full h-full flex flex-col bg-transparent">
-            <div className="flex-1 overflow-y-auto p-6 text-slate-800 space-y-6">
-                <PageBanner
-                    title="Settings"
-                    description={null}
-                    color={null}
-                    isEditable={false}
-                    childrenPosition="bottom"
-                >
-                    <div className="flex p-1 bg-black/20 backdrop-blur-md rounded-xl w-fit flex-wrap gap-1 mt-4 border border-white/10">
-                        <button
-                            onClick={() => setActiveTab('theme')}
-                            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'theme'
-                                ? 'bg-white/20 text-white shadow-sm'
-                                : 'text-white/60 hover:text-white hover:bg-white/10'
-                                }`}
-                        >
-                            <Palette size={16} /> Appearance
-                        </button>
-                        <button
-                            onClick={() => setActiveTab('visualizer')}
-                            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'visualizer'
-                                ? 'bg-white/20 text-white shadow-sm'
-                                : 'text-white/60 hover:text-white hover:bg-white/10'
-                                }`}
-                        >
-                            <Music size={16} /> Visualizer
-                        </button>
-                        <button
-                            onClick={() => setActiveTab('orb')}
-                            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'orb'
-                                ? 'bg-white/20 text-white shadow-sm'
-                                : 'text-white/60 hover:text-white hover:bg-white/10'
-                                }`}
-                        >
-                            <Smile size={16} /> Orb
-                        </button>
-                        <button
-                            onClick={() => setActiveTab('profile')}
-                            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'profile'
-                                ? 'bg-white/20 text-white shadow-sm'
-                                : 'text-white/60 hover:text-white hover:bg-white/10'
-                                }`}
-                        >
-                            <User size={16} /> Signature
-                        </button>
-                    </div>
-                </PageBanner>
+            <div ref={scrollContainerRef} className="flex-1 overflow-y-auto bg-transparent relative">
+                {/* Page Banner */}
+                <div className="px-4 pt-8">
+                    <PageBanner
+                        title="Settings"
+                        description={null}
+                        color={null}
+                        isEditable={false}
+                        childrenPosition="bottom"
+                    >
+                        <div className="flex p-1 bg-black/20 backdrop-blur-md rounded-xl w-fit flex-wrap gap-1 mt-4 border border-white/10">
+                            <button
+                                onClick={() => setActiveTab('theme')}
+                                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'theme'
+                                    ? 'bg-white/20 text-white shadow-sm'
+                                    : 'text-white/60 hover:text-white hover:bg-white/10'
+                                    }`}
+                            >
+                                <Palette size={16} /> Appearance
+                            </button>
+                            <button
+                                onClick={() => setActiveTab('visualizer')}
+                                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'visualizer'
+                                    ? 'bg-white/20 text-white shadow-sm'
+                                    : 'text-white/60 hover:text-white hover:bg-white/10'
+                                    }`}
+                            >
+                                <Music size={16} /> Visualizer
+                            </button>
+                            <button
+                                onClick={() => setActiveTab('orb')}
+                                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'orb'
+                                    ? 'bg-white/20 text-white shadow-sm'
+                                    : 'text-white/60 hover:text-white hover:bg-white/10'
+                                    }`}
+                            >
+                                <Smile size={16} /> Orb
+                            </button>
+                            <button
+                                onClick={() => setActiveTab('profile')}
+                                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'profile'
+                                    ? 'bg-white/20 text-white shadow-sm'
+                                    : 'text-white/60 hover:text-white hover:bg-white/10'
+                                    }`}
+                            >
+                                <User size={16} /> Signature
+                            </button>
+                        </div>
+                    </PageBanner>
+                </div>
 
-                <div className="space-y-8 pb-20">
+                {/* Sticky Sentinel */}
+                <div ref={stickySentinelRef} className="absolute h-px w-full -mt-px pointer-events-none opacity-0" />
+
+                {/* Sticky Toolbar */}
+                <div
+                    className={`sticky top-0 z-50 transition-all duration-500 cubic-bezier(0.4, 0, 0.2, 1) overflow-hidden -mt-16
+                    ${isStuck
+                        ? 'backdrop-blur-xl border-y shadow-2xl mx-0 rounded-none mb-6 pt-2 pb-2 bg-slate-900/70'
+                        : 'backdrop-blur-[2px] border-b border-x border-t border-white/10 shadow-xl mx-8 rounded-b-2xl mb-8 mt-0 pt-1 pb-0 bg-slate-900/40'
+                    }
+                    `}
+                >
+                    <div className={`px-4 flex items-center justify-between transition-all duration-300 relative z-10 ${isStuck ? 'h-[52px]' : 'py-0.5'}`}>
+                        {/* Left Side: 4 Buttons + Colored Prism */}
+                        <div className="flex items-center gap-0 overflow-x-auto no-scrollbar mask-gradient-right flex-1 min-w-0 pr-0">
+                            {/* 4 Navigation Buttons */}
+                            <div className="flex items-center gap-1.5 shrink-0 pr-3">
+                                <button
+                                    onClick={() => setShowOrbPage(!showOrbPage)}
+                                    className={`px-2 py-0.5 rounded-md text-[10px] font-bold transition-all uppercase tracking-wider border border-white/5 ${
+                                        showOrbPage
+                                            ? 'bg-sky-500 text-white shadow-sm'
+                                            : 'bg-slate-800/80 text-slate-400 hover:bg-slate-700 hover:text-slate-200'
+                                    }`}
+                                    title="Orb"
+                                >
+                                    Orb
+                                </button>
+                                <button
+                                    className="px-2 py-0.5 rounded-md text-[10px] font-bold transition-all uppercase tracking-wider bg-slate-800/80 text-slate-400 hover:bg-slate-700 hover:text-slate-200 border border-white/5"
+                                    title="You"
+                                >
+                                    You
+                                </button>
+                                <button
+                                    className="px-2 py-0.5 rounded-md text-[10px] font-bold transition-all uppercase tracking-wider bg-slate-800/80 text-slate-400 hover:bg-slate-700 hover:text-slate-200 border border-white/5"
+                                    title="Page"
+                                >
+                                    Page
+                                </button>
+                                <button
+                                    className="px-2 py-0.5 rounded-md text-[10px] font-bold transition-all uppercase tracking-wider bg-slate-800/80 text-slate-400 hover:bg-slate-700 hover:text-slate-200 border border-white/5"
+                                    title="App"
+                                >
+                                    App
+                                </button>
+                            </div>
+
+                            {/* Colored Prism Bar */}
+                            <div className="flex-1 flex items-center shrink-0 h-6 mr-3 border-2 border-black rounded-lg overflow-hidden">
+                                {FOLDER_COLORS.map((color, index) => {
+                                    const isFirst = index === 0;
+                                    const isLast = index === FOLDER_COLORS.length - 1;
+                                    const count = folderCounts[color.id] || 0;
+
+                                    return (
+                                        <button
+                                            key={color.id}
+                                            className={`h-full flex-1 flex items-center justify-center transition-all opacity-60 hover:opacity-100 ${isFirst ? 'rounded-l-md' : ''} ${isLast ? 'rounded-r-md' : ''}`}
+                                            style={{ backgroundColor: color.hex }}
+                                            title={color.name}
+                                        >
+                                            {count > 0 && (
+                                                <span className="text-sm font-bold text-white/90 drop-shadow-md">
+                                                    {count}
+                                                </span>
+                                            )}
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="p-6 text-slate-800 space-y-6">
+                    <div className="space-y-8 pb-20">
                     {activeTab === 'theme' ? (
                         <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
                             <ConfigSection title="Page Banner" icon={Layout}>

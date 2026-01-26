@@ -659,7 +659,20 @@ Access videos that have been temporarily pinned during the current session.
 
 **1: User-Perspective Description**
 
-Users access the configuration area via the "Config" (Settings icon) button on the main Player Controller orb. The Settings Page provides a tabbed interface for application-wide customization:
+Users access the configuration area via the "Config" (Settings icon) button on the main Player Controller orb. The Settings Page provides a tabbed interface for application-wide customization with a **Sticky Toolbar** for quick navigation:
+
+- **Sticky Toolbar** (below Page Banner):
+  - **Navigation Buttons**: Four horizontally aligned buttons on the left:
+    - **Orb**: Opens dedicated Orb configuration page (highlighted when active)
+    - **You**: Placeholder for future functionality
+    - **Page**: Placeholder for future functionality
+    - **App**: Placeholder for future functionality
+  - **Colored Prism Bar**: A unified horizontal bar displaying all 16 folder colors (matches Videos Page styling)
+    - Each color segment is clickable (functionality to be wired up)
+    - Shows video counts when available
+    - Black border with rounded corners
+  - **Sticky Behavior**: Toolbar sticks to top of viewport when scrolling, matching Videos Page behavior
+  - **Visual States**: Transparent when resting, semi-transparent dark when stuck
 
 - **Appearance Tab**:
   - **Page Banner** (first section - positioned at top for live preview via actual banner above):
@@ -696,42 +709,14 @@ Users access the configuration area via the "Config" (Settings icon) button on t
   - **External Resources**:
     - **ASCII Art Banner**: A large, interactive banner linking to *EmojiCombos.com* for finding or creating ASCII art. Opens in the user's default browser.
 
-- **Orb Tab**:
-  - **Saved Orb Presets** (top of tab):
-    - **Presets Grid**: Displays saved orb configurations as circular thumbnails in a responsive grid (3-5 columns).
-    - **One-Click Apply**: Click any preset to instantly apply its image, spill settings, scale, and position offsets.
-    - **Active Indicator**: Currently active preset shows a sky-blue ring border and checkmark overlay.
-    - **Delete on Hover**: Red trash button appears on hover to remove a preset.
-    - **Rename**: Click the name label below any preset to edit it inline.
-    - **Spill Badge**: Small "Spill" badge appears on presets that have spill enabled.
-    - **Empty State**: When no presets exist, shows a placeholder with instructions.
-  - **Custom Orb Image**:
-    - **Upload**: Button to select a local image file for the central orb.
-    - **Preview**: Shows the currently selected custom image.
-    - **Remove**: Button to clear the custom image and revert to default.
-  - **Spill Controls**:
-    - **Spill Toggle**: Master switch to enable/disable image overflow (spill).
-    - **Quadrant Selection**: An interactive visualizer allows users to click four quadrants (TL, TR, BL, BR) to individually enable/disable spill for that corner.
-    - **Visual Feedback**: The visualizer shows the image with a circular mask and highlights selected spill areas using the actual image data.
-  - **Image Scaling**:
-    - **Zoom Slider**: A range slider (0.5x to 3.0x) allows users to zoom the orb image in/out within the spill boundaries.
-  - **Image Position**:
-    - **Horizontal (X) Offset Slider**: Range slider (-100 to +100 px) to pan the image left/right.
-    - **Vertical (Y) Offset Slider**: Range slider (-100 to +100 px) to pan the image up/down.
-    - **Reset Buttons**: Individual reset buttons appear next to each slider when value is non-zero.
-    - **Live Preview**: The spill areas visualizer reflects position changes in real-time.
-  - **Save Configuration Button**: Located below the spill/position controls, saves the current orb setup (image, spill, scale, offsets) as a new preset.
-  - **External Resources**:
-    - **Background Removal Banner**: A large, interactive banner linking to *remove.bg* for easily removing backgrounds from images. This facilitates the creation of "pop-out" 3D effects when used with the Orb's spill functionality. Opens in the user's default browser.
-    - **Pro Tip**: A dedicated section explaining how to handle cropped or "zoomed-in" images using generative fill.
-      - Includes an example image (`tip.png`).
-      - Provides a **copyable prompt** for use with AI generation tools to "zoom out" and extend artwork while maintaining style.
+- **Orb Navigation**: Clicking the "Orb" button in the sticky toolbar opens a dedicated **OrbPage** (see below) instead of the Orb tab. The Orb tab functionality has been moved to this dedicated page for better organization.
 
 **2: File Manifest**
 
 **UI/Components:**
-- `src/components/SettingsPage.jsx`: Main settings container and tabs.
-- `src/store/configStore.js`: centralized state for all settings.
+- `src/components/SettingsPage.jsx`: Main settings container and tabs with sticky toolbar.
+- `src/components/OrbPage.jsx`: Dedicated Orb configuration page (accessed via sticky toolbar).
+- `src/store/configStore.js`: Centralized state for all settings.
 
 **State Management:**
 - `src/store/configStore.js`:
@@ -800,6 +785,77 @@ Users access the configuration area via the "Config" (Settings icon) button on t
 7. **Rename/Delete Preset:**
    - User clicks name → Inline input appears → On blur/enter → `renameOrbFavorite(id, newName)` updates store.
    - User hovers and clicks trash icon → `removeOrbFavorite(id)` removes preset from array.
+
+**4: Sticky Toolbar Navigation**
+
+- **Orb Button**: Toggles between Settings Page and OrbPage
+  - When on OrbPage, button is highlighted (sky blue background)
+  - Clicking returns to Settings Page
+- **You/Page/App Buttons**: Placeholder buttons for future functionality
+- **Colored Prism Bar**: Displays all 16 folder colors (functionality to be wired up)
+
+---
+#### ### 4.1.8.1 OrbPage
+
+**1: User-Perspective Description**
+
+OrbPage is a dedicated page for orb configuration, accessed via the "Orb" button in the Settings Page sticky toolbar. It appears as a full page below the Page Banner (not a modal), matching the structure of VideosPage:
+
+- **Page Structure**:
+  - **Page Banner**: "Orb Configuration" title with description, author, and avatar
+  - **Back Button**: "Back to Settings" button in banner's top-right corner
+  - **Sticky Toolbar**: Persists when navigating to OrbPage, with same 4 navigation buttons and colored prism bar
+  - **Scrollable Content**: Orb configuration and presets below the banner
+
+- **Orb Configuration Section** (at top):
+  - **Custom Orb Image**: Upload button with preview thumbnail
+  - **Spill Toggle**: Master switch to enable/disable image overflow
+  - **Image Scale Slider**: 0.5x to 3.0x zoom control (visible when spill enabled)
+  - **Image Position Sliders**: X and Y offset controls (-100 to +100px) with reset buttons
+  - **Spill Areas Visualizer**: Interactive quadrant selector showing actual image with circular mask
+  - **Save Configuration Button**: Saves current setup as a new preset
+
+- **Saved Presets Grid** (below configuration):
+  - **Layout**: 4-column vertical grid (wraps to new rows as presets are added)
+  - **Preset Thumbnails**: Circular orbs showing actual spill effects using SVG clipPath
+    - Each preset displays with its saved spill configuration (image overflows in enabled quadrants)
+    - Scale and position offsets are applied to match the actual orb appearance
+    - Active preset shows sky-blue border and ring indicator (no overlay)
+  - **Preset Name**: Displayed below each thumbnail
+  - **Spill Badge**: Top-right badge on presets with spill enabled
+  - **Delete on Hover**: Red trash button appears when hovering over a preset
+  - **One-Click Apply**: Click any preset thumbnail to instantly apply its configuration
+
+**2: File Manifest**
+
+**UI/Components:**
+- `src/components/OrbPage.jsx`: Dedicated orb configuration page component
+- `src/components/PageBanner.jsx`: Page banner with back button
+- `src/components/SettingsPage.jsx`: Parent component that conditionally renders OrbPage
+
+**State Management:**
+- `src/store/configStore.js`: Same orb state as Settings Page (shared)
+  - All orb configuration state is shared between SettingsPage and OrbPage
+  - OrbPage reads from and writes to the same configStore
+
+**3: The Logic & State Chain**
+
+**Navigation Flow:**
+1. User clicks "Orb" button in Settings Page sticky toolbar → `showOrbPage` state becomes `true`
+2. SettingsPage conditionally renders `<OrbPage />` instead of settings content
+3. OrbPage displays with its own Page Banner and sticky toolbar
+4. User clicks "Back to Settings" or "Orb" button again → Returns to Settings Page
+
+**Preset Display:**
+1. Each preset uses unique SVG clipPath based on saved `orbSpill` configuration
+2. ClipPath includes circle base + rectangles for enabled spill quadrants
+3. Image is scaled and positioned using saved `orbImageScale`, `orbImageXOffset`, `orbImageYOffset`
+4. Result matches exactly how the orb appears in PlayerController
+
+**Preset Management:**
+- Save: User configures orb → Clicks "Save Current Configuration" → `addOrbFavorite()` adds to array
+- Apply: User clicks preset → `applyOrbFavorite()` restores all settings → PlayerController updates
+- Delete: User hovers preset → Clicks trash icon → `removeOrbFavorite()` removes from array
 
 ---
 #### ### 4.1.9 Support Page

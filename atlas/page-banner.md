@@ -629,6 +629,25 @@ The Sticky Toolbar is a dynamic toolbar component that sits directly below the P
   - Styled: Sky blue (`bg-sky-500`), white text, shadow with hover effects
   - Action: Opens Playlist Import modal (`setShowImportModal(true)`)
 
+**5: Settings Page Sticky Toolbar Layout**
+
+**Left Side - Navigation Buttons + Colored Prism:**
+- **4 Navigation Buttons**: Horizontally aligned compact buttons:
+  - **Orb**: Opens dedicated OrbPage (highlighted when active)
+  - **You**: Placeholder for future functionality
+  - **Page**: Placeholder for future functionality
+  - **App**: Placeholder for future functionality
+  - Styled: `bg-slate-800/80` with hover effects, active state uses `bg-sky-500`
+- **Colored Prism Bar**: Unified horizontal bar displaying all 16 folder colors
+  - **Layout**: Flex container with `flex-1` to fill available space
+  - **Structure**: Each folder color is a flex-1 button, creating equal-width segments
+  - **Styling**: 
+    - Black border (`border-2 border-black`) with rounded corners (`rounded-lg`)
+    - Each segment uses the folder's hex color as background
+    - Unselected folders: Reduced opacity (`opacity-60`) that increases on hover (`hover:opacity-100`)
+  - **Tooltip**: Shows folder color name on hover
+  - **Functionality**: To be wired up (currently display-only)
+
 **5: Background Sharing (Unified Banner System)**
 
 **Current Implementation:**
@@ -665,3 +684,11 @@ The Sticky Toolbar is a dynamic toolbar component that sits directly below the P
 - Content area adjusts padding to accommodate toolbar
 - Horizontal scrolling for folder selector on smaller screens
 - Mask gradient prevents hard scroll edge
+
+**7: OrbPage Sticky Toolbar**
+
+OrbPage includes its own sticky toolbar that persists when navigating from Settings Page:
+- **Same Layout**: Matches Settings Page sticky toolbar (4 navigation buttons + colored prism bar)
+- **Orb Button Active**: Highlighted to show current page
+- **Navigation**: Clicking Orb button returns to Settings Page
+- **Visual Continuity**: Maintains same styling and behavior as Settings Page toolbar
