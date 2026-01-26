@@ -928,14 +928,30 @@ PagePage is a dedicated page for Page Banner and Layer 2 image library configura
 - **Page Banner Editor Section** (collapsible, starts collapsed):
   - **Collapse/Expand Toggle**: Button in section header to show/hide configuration
   - **Two-Column Layout**:
-    - **Layer 1**: Background color dropdown (fallback/default)
-    - **Layer 2**: Overlay image upload and configuration
+    - **Layer 1 - Active Theme Folder** (Left Column):
+      - **Header**: "Active Theme Folder" with star icon and "Clear Theme" button
+      - **Folder Info Display**: Shows current theme folder name, badges (Theme, Random), and image count
+      - **Interactive Controls**:
+        - **Rename Folder**: Click folder name to edit inline
+        - **Condition Selector**: Toggle between "First" and "Random" selection modes
+        - **Playlist Assignment**: Dropdown to assign theme folder to specific playlists or all playlists
+        - **Folder Color Assignment**: Grid to assign theme folder to colored folders
+      - **Images Grid**: Displays all images from theme folder in a 2-3-4 column grid (larger thumbnails)
+        - Click any image to apply it (loads paired background color)
+        - Hover to reveal delete button
+        - Destination assignment button (MapPin) for each image
+        - Active indicator overlay when image is currently applied
+        - Paired color indicators and destination badges
+      - **Add Image Button**: Upload button at bottom to add new images directly to theme folder
+      - **Save Current Image Button**: Button at bottom to save current Layer 2 image to theme folder
+      - **Empty State**: Shows message when no theme folder is set
+    - **Layer 2 - Overlay** (Right Column):
       - Image upload/thumbnail
       - Scale slider (50-200%)
       - X/Y position sliders (0-100%)
       - Paired background color picker
       - Remove button
-  - **Save to Library**: Button to save current Layer 2 image to selected folder
+      - Layer 1 default color dropdown
 
 - **Layer 2 Image Library Section** (collapsible, starts collapsed):
   - **Collapse/Expand Toggle**: Button in section header to show/hide library
@@ -991,6 +1007,16 @@ PagePage is a dedicated page for Page Banner and Layer 2 image library configura
 2. User adjusts scale/position → Store updates → PageBanner reflects changes
 3. User sets paired background color → Saved with image when added to library
 4. User saves to folder → `addLayer2Image()` adds image with current config to selected folder
+
+**Theme Folder Management Flow (Left Column):**
+1. Theme folder displays in left column when a folder is set as theme
+2. User can rename theme folder → Click name → Edit inline → `renameLayer2Folder()` updates
+3. User can change selection mode → Condition selector → `setLayer2FolderCondition()` updates
+4. User can assign to playlists → Playlist dropdown → `setLayer2FolderPlaylists()` updates
+5. User can assign to folder colors → Folder color grid → `updateLayer2FolderFolders()` updates
+6. User can manage images → Click to apply, hover to delete, assign destinations
+7. User can add images → Upload button at bottom → `addLayer2Image()` adds to theme folder
+8. User can save current image → Save button at bottom → `addLayer2Image()` saves current Layer 2 config
 
 **Folder Management Flow:**
 1. User creates folder → `addLayer2Folder()` adds to array
