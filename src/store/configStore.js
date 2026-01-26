@@ -214,24 +214,58 @@ export const useConfigStore = create(
 
             // Layer 2 Image Folders System
             // playlistIds: [] means show on ALL playlists, specific IDs means show only on those playlists
+            // isThemeFolder: true means this folder's images apply app-wide as the theme
+            // condition: 'random' means randomly select from folder images on each page entry, null means use first image
             layer2Folders: [
-                { id: 'default', name: 'Default', images: [], playlistIds: [] }
+                { id: 'default', name: 'Default', images: [], playlistIds: [], isThemeFolder: false, condition: null }
             ],
             selectedLayer2FolderId: 'default',
             setSelectedLayer2FolderId: (val) => set({ selectedLayer2FolderId: val }),
+            // Theme folder ID - the folder that applies app-wide
+            themeFolderId: null,
+            setThemeFolder: (folderId) => set((state) => {
+                // Clear theme flag from all folders, then set it on the selected folder
+                const updatedFolders = state.layer2Folders.map(f => ({
+                    ...f,
+                    isThemeFolder: f.id === folderId ? true : false
+                }));
+                return {
+                    layer2Folders: updatedFolders,
+                    themeFolderId: folderId || null
+                };
+            }),
+            clearThemeFolder: () => set((state) => {
+                // Clear theme flag from all folders
+                const updatedFolders = state.layer2Folders.map(f => ({
+                    ...f,
+                    isThemeFolder: false
+                }));
+                return {
+                    layer2Folders: updatedFolders,
+                    themeFolderId: null
+                };
+            }),
             addLayer2Folder: (name) => set((state) => ({
                 layer2Folders: [...state.layer2Folders, {
                     id: Date.now().toString(),
                     name: name || `Folder ${state.layer2Folders.length + 1}`,
                     images: [],
-                    playlistIds: [] // Empty = show on all playlists
+                    playlistIds: [], // Empty = show on all playlists
+                    isThemeFolder: false,
+                    condition: null // null = first image, 'random' = random selection
                 }]
             })),
-            removeLayer2Folder: (folderId) => set((state) => ({
-                layer2Folders: state.layer2Folders.filter(f => f.id !== folderId),
-                // Reset to default if deleted folder was selected
-                selectedLayer2FolderId: state.selectedLayer2FolderId === folderId ? 'default' : state.selectedLayer2FolderId
-            })),
+            removeLayer2Folder: (folderId) => set((state) => {
+                // If deleting the theme folder, clear the theme
+                const isTheme = state.themeFolderId === folderId;
+                return {
+                    layer2Folders: state.layer2Folders.filter(f => f.id !== folderId),
+                    // Reset to default if deleted folder was selected
+                    selectedLayer2FolderId: state.selectedLayer2FolderId === folderId ? 'default' : state.selectedLayer2FolderId,
+                    // Clear theme if deleting theme folder
+                    themeFolderId: isTheme ? null : state.themeFolderId
+                };
+            }),
             renameLayer2Folder: (folderId, newName) => set((state) => ({
                 layer2Folders: state.layer2Folders.map(f =>
                     f.id === folderId ? { ...f, name: newName } : f
@@ -241,6 +275,12 @@ export const useConfigStore = create(
             setLayer2FolderPlaylists: (folderId, playlistIds) => set((state) => ({
                 layer2Folders: state.layer2Folders.map(f =>
                     f.id === folderId ? { ...f, playlistIds: playlistIds || [] } : f
+                )
+            })),
+            // Update folder condition (null = first image, 'random' = random selection)
+            setLayer2FolderCondition: (folderId, condition) => set((state) => ({
+                layer2Folders: state.layer2Folders.map(f =>
+                    f.id === folderId ? { ...f, condition: condition || null } : f
                 )
             })),
             addLayer2Image: (folderId, image) => set((state) => ({
@@ -255,6 +295,7 @@ export const useConfigStore = create(
                                 xOffset: image.xOffset ?? 50,
                                 yOffset: image.yOffset ?? 50,
                                 bgColor: image.bgColor ?? state.pageBannerBgColor, // Save Layer 1 color with image
+                                destinations: image.destinations || null, // { pages: [], folderColors: [] } or null for all
                                 createdAt: Date.now()
                             }]
                         }

@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Palette, User, Smile, ExternalLink, Copy, Check, Image, Layout, Music, Box, Volume2, Heart, Trash2, Plus, Star, Folder, ChevronDown } from 'lucide-react';
+import { Palette, User, Smile, ExternalLink, Copy, Check, Image, Layout, Music, Box, Volume2, Heart, Trash2, Plus, Star, Folder, ChevronDown, Shuffle, MapPin } from 'lucide-react';
 import { openUrl } from '@tauri-apps/plugin-opener';
 import { useConfigStore } from '../store/configStore';
 import { THEMES } from '../utils/themes';
+import { FOLDER_COLORS } from '../utils/folderColors';
 import PageBanner from './PageBanner';
 import { getAllPlaylists } from '../api/playlistApi';
 
@@ -69,7 +70,7 @@ export default function SettingsPage({ currentThemeId, onThemeChange }) {
         // Layer 2 Folders
         layer2Folders, addLayer2Image, removeLayer2Image, updateLayer2Image, applyLayer2Image,
         addLayer2Folder, removeLayer2Folder, renameLayer2Folder, selectedLayer2FolderId, setSelectedLayer2FolderId,
-        setLayer2FolderPlaylists
+        setLayer2FolderPlaylists, setLayer2FolderCondition, themeFolderId, setThemeFolder, clearThemeFolder
     } = useConfigStore();
     const [customAvatar, setCustomAvatar] = useState('');
     const [copied, setCopied] = useState(false);
@@ -177,6 +178,8 @@ export default function SettingsPage({ currentThemeId, onThemeChange }) {
     const [editingLayer2FolderName, setEditingLayer2FolderName] = useState('');
     const [hoveredLayer2FolderId, setHoveredLayer2FolderId] = useState(null);
     const [editingLayer2FolderId, setEditingLayer2FolderId] = useState(null);
+    const [expandedConditionSelector, setExpandedConditionSelector] = useState(null); // folderId
+    const [expandedDestinationSelector, setExpandedDestinationSelector] = useState(null); // imageId
     
     // Playlist list for folder assignment
     const [allPlaylists, setAllPlaylists] = useState([]);
@@ -494,9 +497,107 @@ export default function SettingsPage({ currentThemeId, onThemeChange }) {
                                                     {selectedLayer2FolderId === folder.id && (
                                                         <span className="text-[8px] font-bold bg-purple-500 text-white px-1.5 py-0.5 rounded-full uppercase">Active</span>
                                                     )}
+                                                    {themeFolderId === folder.id && (
+                                                        <span className="text-[8px] font-bold bg-amber-500 text-white px-1.5 py-0.5 rounded-full uppercase flex items-center gap-1">
+                                                            <Star size={8} className="fill-current" />
+                                                            Theme
+                                                        </span>
+                                                    )}
+                                                    {folder.condition === 'random' && (
+                                                        <span className="text-[8px] font-bold bg-amber-500 text-white px-1.5 py-0.5 rounded-full uppercase flex items-center gap-1">
+                                                            <Shuffle size={8} />
+                                                            Random
+                                                        </span>
+                                                    )}
                                                 </div>
                                                 <div className="flex items-center gap-2">
                                                     <span className="text-[10px] text-slate-400">{folder.images.length} images</span>
+                                                    {/* Condition Selector */}
+                                                    {folder.images.length > 0 && (
+                                                        <div className="relative">
+                                                            <button
+                                                                onClick={() => {
+                                                                    setExpandedConditionSelector(
+                                                                        expandedConditionSelector === folder.id ? null : folder.id
+                                                                    );
+                                                                }}
+                                                                className={`px-2 py-1 rounded-lg text-[9px] font-bold uppercase transition-all flex items-center gap-1 ${
+                                                                    folder.condition === 'random'
+                                                                        ? 'bg-amber-500 hover:bg-amber-600 text-white'
+                                                                        : 'bg-slate-200 hover:bg-slate-300 text-slate-700'
+                                                                }`}
+                                                                title={folder.condition === 'random' ? 'Random selection enabled' : 'Set selection mode'}
+                                                            >
+                                                                <Shuffle size={9} className={folder.condition === 'random' ? 'fill-current' : ''} />
+                                                                {folder.condition === 'random' ? 'Random' : 'First'}
+                                                            </button>
+                                                            {/* Condition Dropdown */}
+                                                            {expandedConditionSelector === folder.id && (
+                                                                <div className="absolute top-full right-0 mt-1 bg-white border border-slate-200 rounded-lg shadow-lg z-20 min-w-[160px]">
+                                                                    <div className="px-2 py-1 text-[9px] font-bold uppercase text-slate-400 border-b border-slate-100">
+                                                                        Selection Mode
+                                                                    </div>
+                                                                    <button
+                                                                        onClick={() => {
+                                                                            setLayer2FolderCondition(folder.id, null);
+                                                                            setExpandedConditionSelector(null);
+                                                                        }}
+                                                                        className={`w-full px-3 py-1.5 text-left text-[10px] font-medium transition-all flex items-center gap-2 ${
+                                                                            !folder.condition || folder.condition === null
+                                                                                ? 'bg-purple-50 text-purple-700'
+                                                                                : 'hover:bg-slate-50 text-slate-600'
+                                                                        }`}
+                                                                    >
+                                                                        {(!folder.condition || folder.condition === null) && <Check size={10} />}
+                                                                        <span className={(!folder.condition || folder.condition === null) ? '' : 'ml-[18px]'}>
+                                                                            First (Default)
+                                                                        </span>
+                                                                    </button>
+                                                                    <button
+                                                                        onClick={() => {
+                                                                            setLayer2FolderCondition(folder.id, 'random');
+                                                                            setExpandedConditionSelector(null);
+                                                                        }}
+                                                                        className={`w-full px-3 py-1.5 text-left text-[10px] font-medium transition-all flex items-center gap-2 ${
+                                                                            folder.condition === 'random'
+                                                                                ? 'bg-amber-50 text-amber-700'
+                                                                                : 'hover:bg-slate-50 text-slate-600'
+                                                                        }`}
+                                                                    >
+                                                                        {folder.condition === 'random' && <Check size={10} />}
+                                                                        <span className={folder.condition === 'random' ? '' : 'ml-[18px]'}>
+                                                                            <Shuffle size={10} className="inline mr-1" />
+                                                                            Random
+                                                                        </span>
+                                                                    </button>
+                                                                    <div className="px-2 py-1 text-[8px] text-slate-400 border-t border-slate-100">
+                                                                        Random selects different image on each page entry
+                                                                    </div>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    )}
+                                                    {/* Set as Theme Button */}
+                                                    {folder.images.length > 0 && (
+                                                        <button
+                                                            onClick={() => {
+                                                                if (themeFolderId === folder.id) {
+                                                                    clearThemeFolder();
+                                                                } else {
+                                                                    setThemeFolder(folder.id);
+                                                                }
+                                                            }}
+                                                            className={`px-2 py-1 rounded-lg text-[9px] font-bold uppercase transition-all flex items-center gap-1 ${
+                                                                themeFolderId === folder.id
+                                                                    ? 'bg-amber-500 hover:bg-amber-600 text-white'
+                                                                    : 'bg-slate-200 hover:bg-slate-300 text-slate-700'
+                                                            }`}
+                                                            title={themeFolderId === folder.id ? 'Remove theme (applies app-wide)' : 'Set as page banner theme (applies app-wide)'}
+                                                        >
+                                                            <Star size={9} className={themeFolderId === folder.id ? 'fill-current' : ''} />
+                                                            {themeFolderId === folder.id ? 'Theme' : 'Set Theme'}
+                                                        </button>
+                                                    )}
                                                     {folder.id !== 'default' && hoveredLayer2FolderId === folder.id && (
                                                         <button
                                                             onClick={() => removeLayer2Folder(folder.id)}
@@ -628,6 +729,12 @@ export default function SettingsPage({ currentThemeId, onThemeChange }) {
                                                                     style={{ backgroundColor: img.bgColor || '#94a3b8' }}
                                                                     title={`Paired: ${img.bgColor || 'none'}`}
                                                                 />
+                                                                {/* Destination Badge */}
+                                                                {img.destinations && (img.destinations.pages?.length > 0 || img.destinations.folderColors?.length > 0) && (
+                                                                    <div className="absolute top-1 right-1 bg-blue-500 text-white rounded-full p-0.5 shadow-md" title="Has destination assignments">
+                                                                        <MapPin size={10} />
+                                                                    </div>
+                                                                )}
                                                                 {/* Active Indicator */}
                                                                 {customPageBannerImage2 === img.image && (
                                                                     <div className="absolute inset-0 bg-purple-500/20 flex items-center justify-center">
@@ -635,6 +742,135 @@ export default function SettingsPage({ currentThemeId, onThemeChange }) {
                                                                     </div>
                                                                 )}
                                                             </button>
+                                                            
+                                                            {/* Destination Assignment Button */}
+                                                            <button
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    setExpandedDestinationSelector(
+                                                                        expandedDestinationSelector === img.id ? null : img.id
+                                                                    );
+                                                                }}
+                                                                className={`absolute top-1 left-1 w-5 h-5 rounded-full flex items-center justify-center shadow-md transition-all z-10 ${
+                                                                    img.destinations && (img.destinations.pages?.length > 0 || img.destinations.folderColors?.length > 0)
+                                                                        ? 'bg-blue-500 hover:bg-blue-600 text-white'
+                                                                        : 'bg-slate-700/80 hover:bg-slate-600 text-white'
+                                                                }`}
+                                                                title="Assign destinations (pages/folders)"
+                                                            >
+                                                                <MapPin size={10} />
+                                                            </button>
+                                                            
+                                                            {/* Destination Assignment Dropdown */}
+                                                            {expandedDestinationSelector === img.id && (
+                                                                <div className="absolute top-6 left-0 bg-white border border-slate-200 rounded-lg shadow-lg z-20 min-w-[280px] max-w-[320px] max-h-[400px] overflow-y-auto">
+                                                                    <div className="px-2 py-1 text-[9px] font-bold uppercase text-slate-400 border-b border-slate-100 sticky top-0 bg-white">
+                                                                        Assign Destinations
+                                                                    </div>
+                                                                    
+                                                                    {/* Pages Section */}
+                                                                    <div className="px-2 py-1">
+                                                                        <div className="text-[9px] font-bold uppercase text-slate-500 mb-1">Pages</div>
+                                                                        <div className="text-[8px] text-slate-400 mb-2">Select pages where this image appears</div>
+                                                                        {['videos', 'playlists', 'likes', 'history', 'pins'].map((page) => {
+                                                                            const isSelected = img.destinations?.pages?.includes(page);
+                                                                            return (
+                                                                                <button
+                                                                                    key={page}
+                                                                                    onClick={(e) => {
+                                                                                        e.stopPropagation();
+                                                                                        const currentPages = img.destinations?.pages || [];
+                                                                                        const newPages = isSelected
+                                                                                            ? currentPages.filter(p => p !== page)
+                                                                                            : [...currentPages, page];
+                                                                                        const newDestinations = {
+                                                                                            ...(img.destinations || {}),
+                                                                                            pages: newPages.length > 0 ? newPages : undefined
+                                                                                        };
+                                                                                        updateLayer2Image(folder.id, img.id, { 
+                                                                                            destinations: newPages.length > 0 || newDestinations.folderColors?.length > 0 ? newDestinations : null
+                                                                                        });
+                                                                                    }}
+                                                                                    className={`w-full px-2 py-1.5 text-left text-[10px] font-medium transition-all flex items-center gap-2 rounded ${
+                                                                                        isSelected
+                                                                                            ? 'bg-blue-50 text-blue-700'
+                                                                                            : 'hover:bg-slate-50 text-slate-600'
+                                                                                    }`}
+                                                                                >
+                                                                                    <div className={`w-3.5 h-3.5 rounded border-2 flex items-center justify-center ${
+                                                                                        isSelected ? 'bg-blue-500 border-blue-500' : 'border-slate-300'
+                                                                                    }`}>
+                                                                                        {isSelected && <Check size={8} className="text-white" />}
+                                                                                    </div>
+                                                                                    <span className="capitalize">{page}</span>
+                                                                                </button>
+                                                                            );
+                                                                        })}
+                                                                    </div>
+                                                                    
+                                                                    <div className="border-t border-slate-100 my-1" />
+                                                                    
+                                                                    {/* Folder Colors Section */}
+                                                                    <div className="px-2 py-1">
+                                                                        <div className="text-[9px] font-bold uppercase text-slate-500 mb-1">Colored Folders</div>
+                                                                        <div className="text-[8px] text-slate-400 mb-2">Select folder colors where this image appears</div>
+                                                                        <div className="grid grid-cols-4 gap-1">
+                                                                            {FOLDER_COLORS.map((color) => {
+                                                                                const isSelected = img.destinations?.folderColors?.includes(color.id);
+                                                                                return (
+                                                                                    <button
+                                                                                        key={color.id}
+                                                                                        onClick={(e) => {
+                                                                                            e.stopPropagation();
+                                                                                            const currentColors = img.destinations?.folderColors || [];
+                                                                                            const newColors = isSelected
+                                                                                                ? currentColors.filter(c => c !== color.id)
+                                                                                                : [...currentColors, color.id];
+                                                                                            const newDestinations = {
+                                                                                                ...(img.destinations || {}),
+                                                                                                folderColors: newColors.length > 0 ? newColors : undefined
+                                                                                            };
+                                                                                            updateLayer2Image(folder.id, img.id, { 
+                                                                                                destinations: newColors.length > 0 || newDestinations.pages?.length > 0 ? newDestinations : null
+                                                                                            });
+                                                                                        }}
+                                                                                        className={`w-full aspect-square rounded border-2 transition-all ${
+                                                                                            isSelected
+                                                                                                ? 'border-white ring-2 ring-blue-500 ring-offset-1'
+                                                                                                : 'border-slate-300 hover:border-slate-400'
+                                                                                        }`}
+                                                                                        style={{ backgroundColor: color.hex }}
+                                                                                        title={color.name}
+                                                                                    >
+                                                                                        {isSelected && (
+                                                                                            <div className="w-full h-full flex items-center justify-center">
+                                                                                                <Check size={10} className="text-white drop-shadow-md" />
+                                                                                            </div>
+                                                                                        )}
+                                                                                    </button>
+                                                                                );
+                                                                            })}
+                                                                        </div>
+                                                                    </div>
+                                                                    
+                                                                    {/* Clear All Button */}
+                                                                    <div className="border-t border-slate-100 px-2 py-2">
+                                                                        <button
+                                                                            onClick={(e) => {
+                                                                                e.stopPropagation();
+                                                                                updateLayer2Image(folder.id, img.id, { destinations: null });
+                                                                                setExpandedDestinationSelector(null);
+                                                                            }}
+                                                                            className="w-full px-2 py-1.5 text-[10px] font-medium text-red-600 hover:bg-red-50 rounded transition-all"
+                                                                        >
+                                                                            Clear All Destinations
+                                                                        </button>
+                                                                        <div className="text-[8px] text-slate-400 mt-1">
+                                                                            No destinations = appears everywhere
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            )}
                                                             
                                                             {/* Delete Button */}
                                                             {hoveredLayer2ImageId === img.id && (

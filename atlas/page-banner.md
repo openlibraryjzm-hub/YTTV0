@@ -98,6 +98,10 @@ Users see a contextual banner (220px fixed height) at the top of scrollable cont
   - Creates visual effect of two separate banner sections
 - **Unified Banner System**: When custom image is set, the banner visually connects with the Sticky Toolbar below it using synchronized horizontal scroll animation (can be disabled via Settings)
   - Layer 2 images are managed via Settings → Appearance → Page Banner (no inline thumbnail strip)
+- **Theme Folder System**: Folders can be set as app-wide page banner themes that apply to all pages
+- **Folder Conditions**: Folders support "Random" condition for random image selection on each page entry
+- **Image Destinations**: Images can be assigned to specific pages (Videos, Playlists, Likes, History, Pins) and colored folders for targeted display
+- **Smooth Transitions**: Fade transitions between images when navigating between pages/folders
 
 **2: File Manifest**
 
@@ -121,20 +125,30 @@ Users see a contextual banner (220px fixed height) at the top of scrollable cont
     - `pageBannerImage2XOffset`: X position percentage for Layer 2 (0-100%, default 50)
     - `pageBannerImage2YOffset`: Y position percentage for Layer 2 (0-100%, default 50)
   - **Layer 2 Image Folders System:**
-    - `layer2Folders`: Array of folder objects `{ id, name, images[], playlistIds[] }` - default folder is "Default"
+    - `layer2Folders`: Array of folder objects `{ id, name, images[], playlistIds[], isThemeFolder, condition }` - default folder is "Default"
       - `playlistIds`: Array of playlist IDs this folder appears on (empty = all playlists)
-      - Each image in `images[]` stores: `{ id, image, scale, xOffset, yOffset, bgColor, createdAt }`
+      - `isThemeFolder`: Boolean flag indicating if this folder is set as the app-wide theme
+      - `condition`: Folder-wide selection mode - `'random'` for random selection on each page entry, `null` for first image (default)
+      - Each image in `images[]` stores: `{ id, image, scale, xOffset, yOffset, bgColor, destinations, createdAt }`
+        - `destinations`: Object with `{ pages: [], folderColors: [] }` or `null` for all destinations
+          - `pages`: Array of page types: `'videos'`, `'playlists'`, `'likes'`, `'history'`, `'pins'`
+          - `folderColors`: Array of folder color IDs: `'red'`, `'blue'`, `'yellow'`, etc.
+          - If `null` or empty arrays, image appears on all pages/folders
     - `selectedLayer2FolderId`: ID of currently selected folder (default: 'default')
     - `setSelectedLayer2FolderId(id)`: Sets the selected folder
+    - `themeFolderId`: ID of the folder set as app-wide theme (null if no theme folder)
+    - `setThemeFolder(folderId)`: Sets a folder as the app-wide theme (applies to all pages)
+    - `clearThemeFolder()`: Removes the theme folder setting
     - `addLayer2Folder(name)`: Creates a new folder with optional name
-    - `removeLayer2Folder(folderId)`: Deletes a folder (cannot delete 'default')
+    - `removeLayer2Folder(folderId)`: Deletes a folder (cannot delete 'default', clears theme if deleting theme folder)
     - `renameLayer2Folder(folderId, newName)`: Renames a folder
     - `setLayer2FolderPlaylists(folderId, playlistIds)`: Sets which playlists a folder appears on (empty = all)
+    - `setLayer2FolderCondition(folderId, condition)`: Sets folder-wide selection mode (`'random'` or `null` for first)
     - `playlistLayer2Overrides`: Object mapping `playlistId` → `{ imageId, folderId, image, scale, xOffset, yOffset, bgColor }`
       - Stores reference (imageId, folderId) to look up current values from library
       - Also stores fallback values in case image is deleted from library
     - `setPlaylistLayer2Override(playlistId, imageConfig)`: Sets the Layer 2 image override for a specific playlist
-    - `clearPlaylistLayer2Override(playlistId)`: Removes the override (falls back to Default folder)
+    - `clearPlaylistLayer2Override(playlistId)`: Removes the override (falls back to theme folder or Default folder)
     - `addLayer2Image(folderId, image)`: Adds image with config to folder (includes bgColor from current pageBannerBgColor)
     - `removeLayer2Image(folderId, imageId)`: Removes image from folder
     - `updateLayer2Image(folderId, imageId, updates)`: Updates image config
@@ -176,7 +190,19 @@ Users see a contextual banner (220px fixed height) at the top of scrollable cont
 
 2. **Background Rendering Flow:**
    - Component uses `pageBannerBgColor` from `configStore` as solid background color (Layer 1)
-   - **Layer 2 (Overlay)**:
+   - **Layer 2 (Overlay)** - Priority order:
+     1. **Theme Folder**: If a folder is set as theme, selects image from that folder (app-wide)
+     2. **Playlist Override**: Per-playlist override takes precedence over theme for that specific playlist
+     3. **Default Folder**: Falls back to image from Default folder
+     - **Image Selection Logic**: Within each folder, images are selected based on folder condition and image destinations:
+       - **Destination Filtering**: Images are first filtered by their destination assignments
+         - Images with `destinations.pages` only appear on those page types
+         - Images with `destinations.folderColors` only appear when viewing those colored folders
+         - Images with no destinations appear everywhere
+       - **Random Condition**: If folder has `condition='random'`, randomly selects from filtered available images on each page entry
+       - **Default/First**: If folder condition is `null`, uses first available image from filtered set
+       - **Page Entry Detection**: Random selection triggers on every page entry (colored folder click, playlist navigation, page change)
+       - **True Random**: Each page entry gets a fresh random selection (not based on page key)
      - If `effectiveLayer2Image` exists, renders via `UnifiedBannerBackground` component
      - Layer 2 applies its scale (auto height%) and position (X%, Y%) settings
    - Shadow color derived from `pageBannerBgColor`
@@ -313,8 +339,35 @@ Users see a contextual banner (220px fixed height) at the top of scrollable cont
 
 **Layer 2 Image Management:**
 - Layer 2 images are managed exclusively via Settings → Appearance → Page Banner
+- **Theme Folder System**: Folders can be set as app-wide themes
+  - **Set as Theme**: Click "Set Theme" button on any folder with images to apply it app-wide
+  - **App-Wide Application**: Theme folder's images apply to all pages (Videos, Playlists, Likes, Pins, etc.)
+  - **Visual Indicator**: Theme folders show a golden "Theme" badge with star icon
+  - **Priority**: Theme folder is checked first, but playlist-specific overrides take precedence for that playlist
+  - **Clear Theme**: Click "Theme" button again to remove theme (falls back to Default folder)
+- **Folder Conditions**: Each folder has a condition that determines how images are selected
+  - **Random Condition**: Folders with `condition='random'` randomly select from available images on each page entry
+    - **Page Entry Triggers**: Random selection happens on every page entry (colored folder click, playlist navigation, page change)
+    - **True Random**: Each page entry gets a fresh random selection (not deterministic)
+    - **Visual Indicator**: Random folders show an amber "Random" badge with shuffle icon next to folder name
+    - **Filtered Selection**: Only images matching current page/folder destinations are eligible
+  - **Default/First Condition**: Folders with `condition=null` always use the first available image in the folder
+  - **Setting Conditions**: Click the "First"/"Random" button next to folder name to set folder condition
+    - Options: "First (Default)" or "Random"
+    - Dropdown shows current selection and allows toggling between modes
+- **Image Destinations**: Each image can be assigned to specific pages and colored folders
+  - **Destination Assignment**: Click the map pin button (top-left of image thumbnail) to assign destinations
+  - **Pages**: Select which page types the image appears on:
+    - Videos, Playlists, Likes, History, Pins
+    - If none selected, image appears on all pages
+  - **Colored Folders**: Select which folder colors the image appears on:
+    - All 16 folder colors (Red, Orange, Amber, Yellow, Lime, Green, Emerald, Teal, Cyan, Sky, Blue, Indigo, Violet, Purple, Fuchsia, Pink)
+    - If none selected, image appears on all folders (or when no folder is selected)
+  - **Visual Indicator**: Images with destinations show a blue map pin badge (top-right)
+  - **Clear Destinations**: Click "Clear All Destinations" to make image appear everywhere
+  - **Priority**: Destination filtering happens before folder condition (random/first) selection
 - **Per-Playlist Layer 2 Selection**: Each playlist remembers its selected Layer 2 image reference
-  - **Default**: First image from Default folder is shown for all playlists initially
+  - **Default**: First image from Default folder is shown for all playlists initially (if no theme)
   - **Override**: Image selection stored in `playlistLayer2Overrides` with reference IDs and fallback values
   - **Live Updates**: When viewing a playlist, the banner looks up current image values from the library (scale, position, bgColor)
   - **Paired Background Color**: Each library image stores its own background color (set via "Paired Background Color" in Settings)
@@ -421,10 +474,24 @@ Users see a contextual banner (220px fixed height) at the top of scrollable cont
 - **Layer 2 Image Library**: Multi-folder system for organizing Layer 2 images
   - **New Folder Button**: Creates additional folders for organization
   - **Folder Cards**: Each folder shows name (click to rename), image count, delete button (hover)
+  - **Set as Theme Button**: Appears on folders with images - sets folder as app-wide page banner theme
+    - **Golden Badge**: Theme folders display a golden "Theme" badge with star icon
+    - **App-Wide**: Theme applies to all pages (Videos, Playlists, Likes, Pins, etc.)
+    - **First Image**: Uses the first image from the theme folder
+    - **Clear Theme**: Click "Theme" button again to remove theme setting
+  - **Folder Condition Selector**: Button next to folder name to set folder-wide selection mode
+    - **First (Default)**: Gray button - always uses first image in folder
+    - **Random**: Amber button with shuffle icon - randomly selects from all images on each page entry
+    - **Visual Indicator**: Random folders show amber "Random" badge with shuffle icon
+    - **Condition Dropdown**: Click button to toggle between "First (Default)" and "Random"
   - **Image Grid**: Thumbnails of saved images in each folder
     - **Click**: Loads image into editor (also loads its paired background color)
     - **Hover**: Shows delete button
     - **Color Indicator**: Small colored dot (bottom-right) shows paired background color
+    - **Destination Button**: Map pin button (top-left) to assign pages and folder colors
+      - **Blue Badge**: Shows when image has destination assignments
+      - **Dropdown**: Select pages (Videos, Playlists, Likes, History, Pins) and folder colors
+      - **Clear All**: Remove all destination assignments (image appears everywhere)
   - **Add Image**: Upload new images directly to a folder
   - **Save to This Folder**: Save current Layer 2 image with its scale/position/bgColor settings to folder
   - **Workflow**: Set desired background color → adjust image settings → click "Save to This Folder" to create new entry

@@ -7,19 +7,111 @@ import { getThumbnailUrl } from '../utils/youtubeUtils';
 import UnifiedBannerBackground from './UnifiedBannerBackground';
 import { useConfigStore } from '../store/configStore';
 
+// Seeded random function for consistent random selection per page
+const seededRandom = (seed) => {
+    // Simple seeded random using a hash of the seed string
+    let hash = 0;
+    if (seed) {
+        for (let i = 0; i < seed.length; i++) {
+            const char = seed.charCodeAt(i);
+            hash = ((hash << 5) - hash) + char;
+            hash = hash & hash; // Convert to 32-bit integer
+        }
+    }
+    // Convert to 0-1 range
+    return (Math.abs(hash) % 10000) / 10000;
+};
+
+// Helper function to determine current page type from title
+const getPageType = (title) => {
+    if (!title) return null;
+    const titleLower = title.toLowerCase();
+    if (titleLower.includes('liked')) return 'likes';
+    if (titleLower === 'history') return 'history';
+    if (titleLower.includes('pinned')) return 'pins';
+    if (titleLower === 'all' || titleLower.includes('all -')) return 'playlists';
+    // Videos page or folder view
+    return 'videos';
+};
+
+// Helper function to check if image matches current destination
+const imageMatchesDestination = (image, pageType, folderColor) => {
+    // If image has no destinations, it's available everywhere
+    if (!image.destinations) return true;
+    
+    const { pages, folderColors } = image.destinations;
+    
+    // Check page match
+    if (pages && pages.length > 0) {
+        if (!pages.includes(pageType)) return false;
+    }
+    
+    // Check folder color match
+    if (folderColor) {
+        if (folderColors && folderColors.length > 0) {
+            if (!folderColors.includes(folderColor)) return false;
+        }
+    } else {
+        // No folder color - if image requires specific folder colors, exclude it
+        if (folderColors && folderColors.length > 0) return false;
+    }
+    
+    return true;
+};
+
+// Helper function to select an image from a folder based on folder condition and destinations
+const selectImageFromFolder = (folder, pageKey, pageType, folderColor) => {
+    if (!folder || !folder.images || folder.images.length === 0) {
+        return null;
+    }
+    
+    // Filter images by destinations first
+    const availableImages = folder.images.filter(img => 
+        imageMatchesDestination(img, pageType, folderColor)
+    );
+    
+    if (availableImages.length === 0) {
+        // No images match destinations, return null
+        return null;
+    }
+    
+    // If folder has random condition, use seeded random based on pageKey for consistency
+    if (folder.condition === 'random') {
+        const seed = pageKey || `${Date.now()}-${Math.random()}`;
+        const randomValue = seededRandom(seed);
+        const randomIndex = Math.floor(randomValue * availableImages.length);
+        return availableImages[randomIndex];
+    }
+    
+    // Default: use first available image
+    return availableImages[0];
+};
+
 const PageBanner = ({ title, description, folderColor, onEdit, videoCount, countLabel = 'Video', creationYear, author, avatar, continueVideo, onContinue, pinnedVideos = [], onPinnedClick, children, childrenPosition = 'right', topRightContent, seamlessBottom = false, playlistBadges, onPlaylistBadgeLeftClick, onPlaylistBadgeRightClick, allPlaylists, filteredPlaylist, customDescription, onNavigateNext, onNavigatePrev, onReturn, showReturnButton, currentPlaylistId }) => {
     const { 
         pageBannerBgColor, setBannerHeight,
         customPageBannerImage2, pageBannerImage2Scale, pageBannerImage2XOffset, pageBannerImage2YOffset,
         userAvatar,
         layer2Folders,
-        playlistLayer2Overrides
+        playlistLayer2Overrides,
+        themeFolderId
     } = useConfigStore();
     
+    // Create a page key that changes when entering a new page or folder
+    // This ensures random selection is consistent for the same page but different for different pages
+    const pageKey = React.useMemo(() => {
+        return `${currentPlaylistId || 'no-playlist'}-${folderColor || 'no-folder'}-${title || 'no-title'}`;
+    }, [currentPlaylistId, folderColor, title]);
+    
+    // Determine current page type for destination matching
+    const pageType = React.useMemo(() => getPageType(title), [title]);
+    
     // Per-Playlist Layer 2 Image Selection
-    // Each playlist can have its own selected Layer 2 image
-    // Settings page (no currentPlaylistId): Uses global customPageBannerImage2 with global scale/offset
-    // Videos page (with currentPlaylistId): Uses per-playlist override or defaults to Default folder's first image
+    // Priority order:
+    // 1. Settings page (no currentPlaylistId): Uses global customPageBannerImage2 with global scale/offset
+    // 2. Theme folder: App-wide theme folder (applies to all pages)
+    // 3. Playlist override: Per-playlist override (takes precedence over theme for that playlist)
+    // 4. Default folder: First image from Default folder as fallback
     const getEffectiveLayer2Image = () => {
         // Settings page case: No playlist context, use global values for live preview
         if (!currentPlaylistId) {
@@ -36,7 +128,28 @@ const PageBanner = ({ title, description, folderColor, onEdit, videoCount, count
             return null;
         }
         
-        // Videos page case: Check for playlist-specific override first
+        // Check for theme folder first (app-wide theme)
+        if (themeFolderId) {
+            const themeFolder = layer2Folders?.find(f => f.id === themeFolderId && f.isThemeFolder);
+            if (themeFolder && themeFolder.images?.length > 0) {
+                // Select image based on folder condition and destinations (random, first, etc.)
+                // pageKey ensures random selection is consistent for same page but different for different pages
+                const themeImage = selectImageFromFolder(themeFolder, pageKey, pageType, folderColor);
+                if (themeImage) {
+                    return {
+                        image: themeImage.image,
+                        scale: themeImage.scale,
+                        xOffset: themeImage.xOffset,
+                        yOffset: themeImage.yOffset,
+                        imageId: themeImage.id,
+                        folderId: themeFolderId,
+                        bgColor: themeImage.bgColor
+                    };
+                }
+            }
+        }
+        
+        // Videos page case: Check for playlist-specific override (takes precedence over theme)
         if (playlistLayer2Overrides[currentPlaylistId]) {
             const override = playlistLayer2Overrides[currentPlaylistId];
             // Look up the CURRENT image from the library to get latest values
@@ -67,33 +180,88 @@ const PageBanner = ({ title, description, folderColor, onEdit, videoCount, count
             };
         }
         
-        // No override - use first image from Default folder as fallback
+        // No override - use Default folder as fallback
         const defaultFolder = layer2Folders?.find(f => f.id === 'default');
         if (defaultFolder && defaultFolder.images?.length > 0) {
-            const defaultImage = defaultFolder.images[0];
-            return {
-                image: defaultImage.image,
-                scale: defaultImage.scale,
-                xOffset: defaultImage.xOffset,
-                yOffset: defaultImage.yOffset,
-                imageId: defaultImage.id,
-                folderId: 'default',
-                bgColor: defaultImage.bgColor // Include the image's paired background color
-            };
+            // Select image based on folder condition and destinations (random, first, etc.)
+            // pageKey ensures random selection is consistent for same page but different for different pages
+            const defaultImage = selectImageFromFolder(defaultFolder, pageKey, pageType, folderColor);
+            if (defaultImage) {
+                return {
+                    image: defaultImage.image,
+                    scale: defaultImage.scale,
+                    xOffset: defaultImage.xOffset,
+                    yOffset: defaultImage.yOffset,
+                    imageId: defaultImage.id,
+                    folderId: 'default',
+                    bgColor: defaultImage.bgColor // Include the image's paired background color
+                };
+            }
         }
         
         // No default images available
         return null;
     };
     
-    const effectiveLayer2 = getEffectiveLayer2Image();
-    const effectiveLayer2Image = effectiveLayer2?.image || null;
-    const effectiveLayer2Scale = effectiveLayer2?.scale ?? 100;
-    const effectiveLayer2XOffset = effectiveLayer2?.xOffset ?? 50;
-    const effectiveLayer2YOffset = effectiveLayer2?.yOffset ?? 50;
-    const effectiveLayer2ImageId = effectiveLayer2?.imageId || null;
+    // Memoize effective layer 2 image - pageKey ensures consistent random selection per page
+    const effectiveLayer2 = React.useMemo(() => getEffectiveLayer2Image(), [pageKey, pageType, folderColor, themeFolderId, currentPlaylistId, layer2Folders, playlistLayer2Overrides, customPageBannerImage2, pageBannerImage2Scale, pageBannerImage2XOffset, pageBannerImage2YOffset]);
+    
+    // Track image changes for smooth transitions
+    const prevImageIdRef = useRef(null);
+    const [imageOpacity, setImageOpacity] = useState(1);
+    const [displayImage, setDisplayImage] = useState(null);
+    const [displayImageConfig, setDisplayImageConfig] = useState(null);
+    
+    // Handle smooth image transitions with fade effect
+    useEffect(() => {
+        const currentImageId = effectiveLayer2?.imageId || effectiveLayer2?.image;
+        
+        if (currentImageId !== prevImageIdRef.current) {
+            // Image is changing - fade out old, then fade in new
+            if (prevImageIdRef.current !== null && displayImage) {
+                // Fade out current image
+                setImageOpacity(0);
+                // After fade out completes, switch to new image and fade in
+                const fadeTimer = setTimeout(() => {
+                    setDisplayImage(effectiveLayer2?.image || null);
+                    setDisplayImageConfig(effectiveLayer2);
+                    // Small delay before fade in to ensure image is loaded
+                    requestAnimationFrame(() => {
+                        requestAnimationFrame(() => {
+                            setImageOpacity(1);
+                        });
+                    });
+                    prevImageIdRef.current = currentImageId;
+                }, 250); // Slightly more than half transition for smoother switch
+                
+                return () => clearTimeout(fadeTimer);
+            } else {
+                // First image or no previous image - set immediately with fade in
+                setDisplayImage(effectiveLayer2?.image || null);
+                setDisplayImageConfig(effectiveLayer2);
+                setImageOpacity(0);
+                requestAnimationFrame(() => {
+                    setImageOpacity(1);
+                });
+                prevImageIdRef.current = currentImageId;
+            }
+        } else {
+            // Same image - just update config in case settings changed
+            if (displayImage !== effectiveLayer2?.image) {
+                setDisplayImage(effectiveLayer2?.image || null);
+            }
+            setDisplayImageConfig(effectiveLayer2);
+        }
+    }, [effectiveLayer2, displayImage]);
+    
+    // Use displayed image with smooth opacity transition
+    const effectiveLayer2Image = displayImage;
+    const effectiveLayer2Scale = displayImageConfig?.scale ?? 100;
+    const effectiveLayer2XOffset = displayImageConfig?.xOffset ?? 50;
+    const effectiveLayer2YOffset = displayImageConfig?.yOffset ?? 50;
+    const effectiveLayer2ImageId = displayImageConfig?.imageId || null;
     // Use per-playlist bgColor if available, otherwise fall back to global pageBannerBgColor
-    const effectiveBgColor = effectiveLayer2?.bgColor || pageBannerBgColor;
+    const effectiveBgColor = displayImageConfig?.bgColor || effectiveLayer2?.bgColor || pageBannerBgColor;
     const [badgesExpanded, setBadgesExpanded] = useState(false);
     const badgesContainerRef = useRef(null);
     
@@ -181,8 +349,11 @@ const PageBanner = ({ title, description, folderColor, onEdit, videoCount, count
             {/* Layer 2 Overlay - only covers right panel area (starts at border line) */}
             {effectiveLayer2Image && (
                 <div 
-                    className="absolute top-0 bottom-0 right-0 overflow-hidden"
-                    style={{ left: '332px' }}
+                    className="absolute top-0 bottom-0 right-0 overflow-hidden transition-opacity duration-[400ms] ease-in-out"
+                    style={{ 
+                        left: '332px',
+                        opacity: imageOpacity
+                    }}
                 >
                     <UnifiedBannerBackground
                         image={null}
