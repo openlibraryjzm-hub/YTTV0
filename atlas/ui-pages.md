@@ -818,28 +818,19 @@ OrbPage is a dedicated page for orb configuration, accessed via the "Orb" button
     - **Color Bars**: Each of 16 folder colors is clickable to filter presets by assigned folder
     - **Counts**: Shows number of presets assigned to each folder color
     - **Active Filter**: Selected color shows white ring highlight
-  - **Scrollable Content**: Orb configuration and presets below the banner
+  - **Tab Navigation**: Three tabs below the sticky toolbar
+    - **Presets Tab**: Horizontal scrolling grid of saved presets
+    - **Configuration Tab**: Orb configuration controls
+    - **Groups Tab**: Two-column layout with orb image preview grids
 
-- **Orb Configuration Section** (collapsible, starts collapsed):
-  - **Collapse/Expand Toggle**: Button in section header to show/hide configuration
-  - **Custom Orb Image**: Upload button with preview thumbnail (when expanded)
-  - **Spill Toggle**: Master switch to enable/disable image overflow (also in banner)
-  - **Image Scale Slider**: 0.5x to 3.0x zoom control (max-width 50%, visible when spill enabled)
-    - Value displayed centered above slider
-  - **Image Position Sliders**: X and Y offset controls (-100 to +100px) with reset buttons (max-width 50%)
-    - Values and reset buttons displayed centered above each slider
-  - **Spill Areas Visualizer**: Interactive quadrant selector positioned to the right of sliders
-    - Shows actual image with circular mask
-    - Description/tip displayed underneath
-  - **Save Configuration Button**: Saves current setup as a new preset
-
-- **Saved Presets Grid** (below configuration):
-  - **Layout**: 4-column vertical grid (wraps to new rows as presets are added)
+- **Presets Tab**:
+  - **Layout**: Horizontal scrolling grid (4 columns visible, scrolls horizontally)
+  - **Scroll Wheel Support**: Mouse wheel scrolls horizontally through presets
   - **Filtering**: Grid filters based on selected folder color from prism bar
   - **Preset Thumbnails**: Circular orbs showing actual spill effects using SVG clipPath
     - Each preset displays with its saved spill configuration (image overflows in enabled quadrants)
     - Scale and position offsets are applied to match the actual orb appearance
-    - Active preset shows sky-blue border and ring indicator (no overlay)
+    - Active preset shows sky-blue border and ring indicator
   - **Preset Name**: Displayed below each thumbnail
   - **Spill Badge**: Top-right badge on presets with spill enabled
   - **Folder Assignment**: Folder icon button (top-left on hover) opens color grid to assign presets to folder colors
@@ -847,6 +838,30 @@ OrbPage is a dedicated page for orb configuration, accessed via the "Orb" button
     - Assigned folder indicators shown as colored dots at bottom of thumbnail (up to 3, with +N for more)
   - **Delete on Hover**: Red trash button appears when hovering over a preset (top-right)
   - **One-Click Apply**: Click any preset thumbnail to instantly apply its configuration
+  - **Empty State**: Shows message when no presets are saved
+
+- **Configuration Tab**:
+  - **Custom Orb Image**: Upload button with preview thumbnail
+  - **Spill Toggle**: Master switch to enable/disable image overflow (also in banner)
+  - **Image Scale Slider**: 0.5x to 3.0x zoom control (max-width 50%, visible when spill enabled)
+    - Value displayed centered above slider
+  - **Image Position Sliders**: X and Y offset controls (-100 to +100px) with reset buttons (max-width 50%)
+    - Values and reset buttons displayed centered above each slider
+  - **Spill Areas Visualizer**: Interactive quadrant selector positioned to the right of sliders
+    - Shows actual image with circular mask (compact size: 144px × 144px)
+    - Description/tip displayed underneath
+  - **Save Configuration Button**: Saves current setup as a new preset
+  - **Compact Layout**: All controls visible without vertical scrolling
+
+- **Groups Tab**:
+  - **Two-Column Layout**: Left and right sides both show orb image preview grids
+  - **Grid Layout**: 4 columns on mobile, 5 on small screens, 6 on medium+ screens
+  - **Preview Size**: 64px × 64px circular orb previews (same as PagePage thumbnail size)
+  - **Scrollable**: Max height 600px with vertical scrolling
+  - **Selection**: Clicking a preset applies it and sets it as the group leader
+  - **Visual Feedback**: Selected preset shows sky-blue border and ring
+  - **Hover Tooltips**: Preset name appears on hover
+  - **Empty State**: Shows message when no presets are saved
 
 **2: File Manifest**
 
@@ -876,12 +891,30 @@ OrbPage is a dedicated page for orb configuration, accessed via the "Orb" button
 3. Image is scaled and positioned using saved `orbImageScale`, `orbImageXOffset`, `orbImageYOffset`
 4. Result matches exactly how the orb appears in PlayerController
 
+**Tab Navigation:**
+- Three tabs: "Presets", "Configuration", and "Groups"
+- Active tab state managed by `activeTab` (useState: 'presets', 'configuration', or 'groups')
+- Tab buttons styled similar to TopNavigation with icons (Smile, Settings, Folder)
+
 **Preset Management:**
 - Save: User configures orb → Clicks "Save Current Configuration" → `addOrbFavorite()` adds to array
 - Apply: User clicks preset → `applyOrbFavorite()` restores all settings → PlayerController updates
 - Delete: User hovers preset → Clicks trash icon → `removeOrbFavorite()` removes from array
 - **Folder Assignment**: User hovers preset → Clicks folder icon → Selects folder colors → `updateOrbFavoriteFolders()` updates assignments
 - **Filtering**: User clicks prism bar color → Grid filters to show only presets assigned to that color
+
+**Horizontal Scrolling (Presets Tab):**
+- Uses `horizontalScrollRef` (useRef) for scrollable container
+- `onWheel` handler converts vertical mouse wheel to horizontal scrolling
+- `useEffect` hook attaches wheel event listener (dependent on `activeTab`)
+- Container styled with `overflowX: 'scroll'`, `overflowY: 'visible'` for overflow buttons
+- Custom scrollbar styling: thin scrollbar with custom colors
+
+**Groups Tab:**
+- Two identical grids showing all orb presets
+- Clicking a preset in either grid applies it and sets `selectedGroupLeaderId`
+- Both grids use same styling and behavior as Presets tab previews
+- Future: Left side will be used for group management functionality
 
 ---
 

@@ -1,38 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Layout, Plus, ArrowLeft, Trash2, Check, Image, Folder, ChevronDown, ChevronUp, Shuffle, Star, MapPin } from 'lucide-react';
+import { Layout, Plus, ArrowLeft, Trash2, Check, Image, Folder, Shuffle, Star, MapPin, ChevronDown } from 'lucide-react';
 import { useConfigStore } from '../store/configStore';
 import PageBanner from './PageBanner';
 import { FOLDER_COLORS } from '../utils/folderColors';
 import { getAllPlaylists } from '../api/playlistApi';
-
-function ConfigSection({ title, icon: Icon, children, isExpanded, onToggle }) {
-    return (
-        <div className="space-y-4 border-t border-sky-50 pt-6 first:border-0 first:pt-0 bg-white/50 p-4 rounded-2xl">
-            <div className="flex items-center justify-between">
-                <h3 className="text-xs font-black uppercase text-slate-400 tracking-widest flex items-center gap-2">{Icon && <Icon size={14} />} {title}</h3>
-                {onToggle && (
-                    <button
-                        onClick={onToggle}
-                        className="px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-all border-2 bg-white border-slate-200 text-slate-600 hover:border-sky-300 hover:text-sky-600 flex items-center gap-1.5"
-                    >
-                        {isExpanded ? (
-                            <>
-                                <ChevronUp size={12} />
-                                Collapse
-                            </>
-                        ) : (
-                            <>
-                                <ChevronDown size={12} />
-                                Expand
-                            </>
-                        )}
-                    </button>
-                )}
-            </div>
-            {isExpanded && <div className="space-y-4 px-1">{children}</div>}
-        </div>
-    );
-}
 
 export default function PagePage({ onBack, onNavigateToOrb, onNavigateToYou, onNavigateToApp }) {
     const {
@@ -49,14 +20,14 @@ export default function PagePage({ onBack, onNavigateToOrb, onNavigateToYou, onN
     } = useConfigStore();
 
     const scrollContainerRef = useRef(null);
+    const horizontalScrollRef = useRef(null);
 
     // Sticky toolbar state
     const [isStuck, setIsStuck] = useState(false);
     const stickySentinelRef = useRef(null);
 
-    // Config section collapse state
-    const [isBannerConfigExpanded, setIsBannerConfigExpanded] = useState(false);
-    const [isLayer2LibraryExpanded, setIsLayer2LibraryExpanded] = useState(false);
+    // Tab state
+    const [activeTab, setActiveTab] = useState('banner'); // 'banner', 'library', or 'folders'
 
     // Layer 2 Folder handlers
     const [hoveredLayer2ImageId, setHoveredLayer2ImageId] = useState(null);
@@ -100,6 +71,36 @@ export default function PagePage({ onBack, onNavigateToOrb, onNavigateToYou, onN
         document.addEventListener('mousedown', handleClickOutside);
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, [folderAssignmentOpenId]);
+
+    // Convert vertical wheel scrolling to horizontal scrolling (optimized)
+    useEffect(() => {
+        // Only attach when folders tab is active
+        if (activeTab !== 'folders') return;
+        
+        const container = horizontalScrollRef.current;
+        if (!container) return;
+
+        const handleWheel = (e) => {
+            // Check if there's horizontal scroll available
+            const hasHorizontalScroll = container.scrollWidth > container.clientWidth;
+            
+            if (hasHorizontalScroll) {
+                // Prevent default vertical scrolling
+                e.preventDefault();
+                e.stopPropagation();
+                
+                // Direct scrollLeft assignment for better performance
+                container.scrollLeft += e.deltaY;
+            }
+        };
+
+        // Add listener to container
+        container.addEventListener('wheel', handleWheel, { passive: false });
+
+        return () => {
+            container.removeEventListener('wheel', handleWheel);
+        };
+    }, [activeTab]); // Re-attach when tab changes or component mounts
 
     const handlePageBanner2Upload = (e) => {
         const file = e.target.files[0];
@@ -278,20 +279,58 @@ export default function PagePage({ onBack, onNavigateToOrb, onNavigateToYou, onN
                 </div>
 
                 {/* Content */}
-                <div className="px-6 pt-0 pb-6 text-slate-800 space-y-6">
-                    <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
-                        {/* Page Banner Editor/Upload - Collapsible */}
-                        <ConfigSection 
-                            title="Page Banner Editor" 
-                            icon={Layout}
-                            isExpanded={isBannerConfigExpanded}
-                            onToggle={() => setIsBannerConfigExpanded(!isBannerConfigExpanded)}
-                        >
-                            {/* Two-column layer controls */}
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                                {/* Layer 1 - Active Theme Folder */}
-                                <div className="space-y-3 p-4 rounded-xl border-2 border-amber-200 bg-amber-50/30">
-                                    <div className="flex items-center justify-between">
+                <div className="px-6 pt-2 pb-6 text-slate-800 space-y-3">
+                    <div className="space-y-3 animate-in fade-in slide-in-from-right-4 duration-300">
+                        {/* Tab Navigation */}
+                        <div className="flex items-center gap-2 border-b border-slate-200 pb-2">
+                            <button
+                                onClick={() => setActiveTab('banner')}
+                                className={`rounded-full flex items-center justify-center border-2 shadow-sm transition-all duration-200 px-4 h-9 gap-1.5 ${
+                                    activeTab === 'banner'
+                                        ? 'bg-white border-sky-500 text-sky-600 transform scale-105'
+                                        : 'bg-white border-[#334155] text-slate-600 hover:bg-slate-50 active:scale-95'
+                                }`}
+                            >
+                                <Layout size={14} />
+                                <span className="font-bold text-xs uppercase tracking-wide">Page Banner</span>
+                            </button>
+                            <button
+                                onClick={() => setActiveTab('library')}
+                                className={`rounded-full flex items-center justify-center border-2 shadow-sm transition-all duration-200 px-4 h-9 gap-1.5 ${
+                                    activeTab === 'library'
+                                        ? 'bg-white border-sky-500 text-sky-600 transform scale-105'
+                                        : 'bg-white border-[#334155] text-slate-600 hover:bg-slate-50 active:scale-95'
+                                }`}
+                            >
+                                <Image size={14} />
+                                <span className="font-bold text-xs uppercase tracking-wide">Image Library</span>
+                            </button>
+                            <button
+                                onClick={() => setActiveTab('folders')}
+                                className={`rounded-full flex items-center justify-center border-2 shadow-sm transition-all duration-200 px-4 h-9 gap-1.5 ${
+                                    activeTab === 'folders'
+                                        ? 'bg-white border-sky-500 text-sky-600 transform scale-105'
+                                        : 'bg-white border-[#334155] text-slate-600 hover:bg-slate-50 active:scale-95'
+                                }`}
+                            >
+                                <Folder size={14} />
+                                <span className="font-bold text-xs uppercase tracking-wide">Folders</span>
+                            </button>
+                        </div>
+
+                        {/* Tab Content */}
+                        {/* Page Banner Editor Tab */}
+                        {activeTab === 'banner' && (
+                            <div className="space-y-4 border-t border-sky-50 pt-3 bg-white/50 p-3 rounded-2xl">
+                                <h3 className="text-xs font-black uppercase text-slate-400 tracking-widest flex items-center gap-2">
+                                    <Layout size={14} /> Page Banner Editor
+                                </h3>
+                                <div className="space-y-4 px-1">
+                                    {/* Two-column layer controls */}
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                                        {/* Layer 1 - Active Theme Folder */}
+                                        <div className="space-y-3 p-4 rounded-xl border-2 border-amber-200 bg-amber-50/30">
+                                            <div className="flex items-center justify-between">
                                         <label className="text-xs font-bold uppercase text-slate-400 flex items-center gap-2">
                                             <Star size={12} className="text-amber-500 fill-amber-500" />
                                             Active Theme Folder
@@ -304,9 +343,9 @@ export default function PagePage({ onBack, onNavigateToOrb, onNavigateToYou, onN
                                                 Clear Theme
                                             </button>
                                         )}
-                                    </div>
-                                    
-                                    {themeFolderId ? (() => {
+                                            </div>
+                                            
+                                            {themeFolderId ? (() => {
                                         const themeFolder = layer2Folders.find(f => f.id === themeFolderId);
                                         if (!themeFolder) return null;
                                         
@@ -793,148 +832,150 @@ export default function PagePage({ onBack, onNavigateToOrb, onNavigateToYou, onN
                                             </p>
                                         </div>
                                     )}
-                                </div>
+                                            </div>
 
-                                {/* Layer 2 - Overlay */}
-                                <div className="space-y-3 p-4 rounded-xl border-2 border-slate-100 bg-white">
-                                    <div className="flex items-center justify-between">
-                                        <label className="text-xs font-bold uppercase text-slate-400">Layer 2 (Overlay)</label>
-                                        {customPageBannerImage2 && (
-                                            <button
-                                                onClick={() => {
-                                                    setCustomPageBannerImage2(null);
-                                                    setPageBannerImage2Scale(100);
-                                                    setPageBannerImage2XOffset(50);
-                                                    setPageBannerImage2YOffset(50);
-                                                }}
-                                                className="text-[9px] font-bold text-red-400 hover:text-red-500 transition-colors"
-                                            >
-                                                Remove
-                                            </button>
-                                        )}
+                                        {/* Layer 2 - Overlay */}
+                                        <div className="space-y-3 p-4 rounded-xl border-2 border-slate-100 bg-white">
+                                            <div className="flex items-center justify-between">
+                                                <label className="text-xs font-bold uppercase text-slate-400">Layer 2 (Overlay)</label>
+                                                {customPageBannerImage2 && (
+                                                    <button
+                                                        onClick={() => {
+                                                            setCustomPageBannerImage2(null);
+                                                            setPageBannerImage2Scale(100);
+                                                            setPageBannerImage2XOffset(50);
+                                                            setPageBannerImage2YOffset(50);
+                                                        }}
+                                                        className="text-[9px] font-bold text-red-400 hover:text-red-500 transition-colors"
+                                                    >
+                                                        Remove
+                                                    </button>
+                                                )}
+                                            </div>
+                                            
+                                            {customPageBannerImage2 ? (
+                                                <>
+                                                    {/* Thumbnail */}
+                                                    <div className="w-full h-16 rounded-lg overflow-hidden bg-slate-100 relative">
+                                                        <img src={customPageBannerImage2} alt="Layer 2" className="w-full h-full object-cover" />
+                                                    </div>
+                                                    {/* Scale */}
+                                                    <div className="space-y-1">
+                                                        <div className="flex justify-between items-center">
+                                                            <label className="text-[10px] font-bold text-slate-500">Scale</label>
+                                                            <span className="text-[10px] font-mono font-bold text-purple-600">{pageBannerImage2Scale}%</span>
+                                                        </div>
+                                                        <input type="range" min="50" max="200" step="5" value={pageBannerImage2Scale}
+                                                            onChange={(e) => setPageBannerImage2Scale(parseInt(e.target.value))}
+                                                            className="w-full h-1.5 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-purple-500" />
+                                                    </div>
+                                                    {/* X Position */}
+                                                    <div className="space-y-1">
+                                                        <div className="flex justify-between items-center">
+                                                            <label className="text-[10px] font-bold text-slate-500">X Position</label>
+                                                            <span className="text-[10px] font-mono font-bold text-purple-600">{pageBannerImage2XOffset}%</span>
+                                                        </div>
+                                                        <input type="range" min="0" max="100" step="1" value={pageBannerImage2XOffset}
+                                                            onChange={(e) => setPageBannerImage2XOffset(parseInt(e.target.value))}
+                                                            className="w-full h-1.5 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-purple-500" />
+                                                    </div>
+                                                    {/* Y Position */}
+                                                    <div className="space-y-1">
+                                                        <div className="flex justify-between items-center">
+                                                            <label className="text-[10px] font-bold text-slate-500">Y Position</label>
+                                                            <span className="text-[10px] font-mono font-bold text-purple-600">{pageBannerImage2YOffset}%</span>
+                                                        </div>
+                                                        <input type="range" min="0" max="100" step="1" value={pageBannerImage2YOffset}
+                                                            onChange={(e) => setPageBannerImage2YOffset(parseInt(e.target.value))}
+                                                            className="w-full h-1.5 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-purple-500" />
+                                                    </div>
+                                                    {/* Paired Background Color */}
+                                                    <div className="space-y-1 pt-2 border-t border-slate-100">
+                                                        <label className="text-[10px] font-bold text-slate-500">Paired Background Color</label>
+                                                        <div className="flex items-center gap-2">
+                                                            <input 
+                                                                type="color" 
+                                                                value={pageBannerBgColor}
+                                                                onChange={(e) => setPageBannerBgColor(e.target.value)}
+                                                                className="w-8 h-8 rounded-lg cursor-pointer border-2 border-slate-200"
+                                                            />
+                                                            <input 
+                                                                type="text" 
+                                                                value={pageBannerBgColor}
+                                                                onChange={(e) => setPageBannerBgColor(e.target.value)}
+                                                                className="flex-1 px-2 py-1 bg-slate-50 border border-slate-200 rounded-lg text-[10px] font-mono text-slate-700 uppercase"
+                                                                placeholder="#000000"
+                                                            />
+                                                        </div>
+                                                        <p className="text-[9px] text-slate-400">This color will be saved with the image config</p>
+                                                    </div>
+                                                    
+                                                    {/* Layer 1 Default Color Dropdown */}
+                                                    <div className="space-y-1 pt-2 border-t border-slate-100">
+                                                        <label className="text-[10px] font-bold text-slate-500">Layer 1 Default (Fallback)</label>
+                                                        <p className="text-[9px] text-slate-400 mb-1">Used when no paired color is set with an image</p>
+                                                        <select
+                                                            value={pageBannerBgColor}
+                                                            onChange={(e) => setPageBannerBgColor(e.target.value)}
+                                                            className="w-full px-2 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-[10px] font-mono text-slate-700 uppercase focus:border-sky-400 focus:ring-2 focus:ring-sky-100 outline-none"
+                                                        >
+                                                            <option value="#1e293b">Slate (#1e293b)</option>
+                                                            <option value="#0f172a">Dark (#0f172a)</option>
+                                                            <option value="#18181b">Zinc (#18181b)</option>
+                                                            <option value="#1e1b4b">Indigo (#1e1b4b)</option>
+                                                            <option value="#172554">Blue (#172554)</option>
+                                                            <option value="#14532d">Green (#14532d)</option>
+                                                            <option value="#7f1d1d">Red (#7f1d1d)</option>
+                                                            <option value="#78350f">Amber (#78350f)</option>
+                                                        </select>
+                                                    </div>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <label className="w-full py-4 bg-slate-50 border-2 border-dashed border-slate-200 rounded-lg text-[10px] font-bold uppercase text-slate-400 hover:bg-purple-50 hover:border-purple-300 hover:text-purple-500 transition-all flex items-center justify-center gap-2 cursor-pointer">
+                                                        <Image size={12} />
+                                                        Upload Layer 2
+                                                        <input type="file" accept="image/*" onChange={handlePageBanner2Upload} className="hidden" />
+                                                    </label>
+                                                    
+                                                    {/* Layer 1 Default Color Dropdown */}
+                                                    <div className="space-y-1 pt-2 border-t border-slate-100">
+                                                        <label className="text-[10px] font-bold text-slate-500">Layer 1 Default (Fallback)</label>
+                                                        <p className="text-[9px] text-slate-400 mb-1">Used when no paired color is set with an image</p>
+                                                        <select
+                                                            value={pageBannerBgColor}
+                                                            onChange={(e) => setPageBannerBgColor(e.target.value)}
+                                                            className="w-full px-2 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-[10px] font-mono text-slate-700 uppercase focus:border-sky-400 focus:ring-2 focus:ring-sky-100 outline-none"
+                                                        >
+                                                            <option value="#1e293b">Slate (#1e293b)</option>
+                                                            <option value="#0f172a">Dark (#0f172a)</option>
+                                                            <option value="#18181b">Zinc (#18181b)</option>
+                                                            <option value="#1e1b4b">Indigo (#1e1b4b)</option>
+                                                            <option value="#172554">Blue (#172554)</option>
+                                                            <option value="#14532d">Green (#14532d)</option>
+                                                            <option value="#7f1d1d">Red (#7f1d1d)</option>
+                                                            <option value="#78350f">Amber (#78350f)</option>
+                                                        </select>
+                                                    </div>
+                                                </>
+                                            )}
+                                        </div>
                                     </div>
-                                    
-                                    {customPageBannerImage2 ? (
-                                        <>
-                                            {/* Thumbnail */}
-                                            <div className="w-full h-16 rounded-lg overflow-hidden bg-slate-100 relative">
-                                                <img src={customPageBannerImage2} alt="Layer 2" className="w-full h-full object-cover" />
-                                            </div>
-                                            {/* Scale */}
-                                            <div className="space-y-1">
-                                                <div className="flex justify-between items-center">
-                                                    <label className="text-[10px] font-bold text-slate-500">Scale</label>
-                                                    <span className="text-[10px] font-mono font-bold text-purple-600">{pageBannerImage2Scale}%</span>
-                                                </div>
-                                                <input type="range" min="50" max="200" step="5" value={pageBannerImage2Scale}
-                                                    onChange={(e) => setPageBannerImage2Scale(parseInt(e.target.value))}
-                                                    className="w-full h-1.5 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-purple-500" />
-                                            </div>
-                                            {/* X Position */}
-                                            <div className="space-y-1">
-                                                <div className="flex justify-between items-center">
-                                                    <label className="text-[10px] font-bold text-slate-500">X Position</label>
-                                                    <span className="text-[10px] font-mono font-bold text-purple-600">{pageBannerImage2XOffset}%</span>
-                                                </div>
-                                                <input type="range" min="0" max="100" step="1" value={pageBannerImage2XOffset}
-                                                    onChange={(e) => setPageBannerImage2XOffset(parseInt(e.target.value))}
-                                                    className="w-full h-1.5 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-purple-500" />
-                                            </div>
-                                            {/* Y Position */}
-                                            <div className="space-y-1">
-                                                <div className="flex justify-between items-center">
-                                                    <label className="text-[10px] font-bold text-slate-500">Y Position</label>
-                                                    <span className="text-[10px] font-mono font-bold text-purple-600">{pageBannerImage2YOffset}%</span>
-                                                </div>
-                                                <input type="range" min="0" max="100" step="1" value={pageBannerImage2YOffset}
-                                                    onChange={(e) => setPageBannerImage2YOffset(parseInt(e.target.value))}
-                                                    className="w-full h-1.5 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-purple-500" />
-                                            </div>
-                                            {/* Paired Background Color */}
-                                            <div className="space-y-1 pt-2 border-t border-slate-100">
-                                                <label className="text-[10px] font-bold text-slate-500">Paired Background Color</label>
-                                                <div className="flex items-center gap-2">
-                                                    <input 
-                                                        type="color" 
-                                                        value={pageBannerBgColor}
-                                                        onChange={(e) => setPageBannerBgColor(e.target.value)}
-                                                        className="w-8 h-8 rounded-lg cursor-pointer border-2 border-slate-200"
-                                                    />
-                                                    <input 
-                                                        type="text" 
-                                                        value={pageBannerBgColor}
-                                                        onChange={(e) => setPageBannerBgColor(e.target.value)}
-                                                        className="flex-1 px-2 py-1 bg-slate-50 border border-slate-200 rounded-lg text-[10px] font-mono text-slate-700 uppercase"
-                                                        placeholder="#000000"
-                                                    />
-                                                </div>
-                                                <p className="text-[9px] text-slate-400">This color will be saved with the image config</p>
-                                            </div>
-                                            
-                                            {/* Layer 1 Default Color Dropdown */}
-                                            <div className="space-y-1 pt-2 border-t border-slate-100">
-                                                <label className="text-[10px] font-bold text-slate-500">Layer 1 Default (Fallback)</label>
-                                                <p className="text-[9px] text-slate-400 mb-1">Used when no paired color is set with an image</p>
-                                                <select
-                                                    value={pageBannerBgColor}
-                                                    onChange={(e) => setPageBannerBgColor(e.target.value)}
-                                                    className="w-full px-2 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-[10px] font-mono text-slate-700 uppercase focus:border-sky-400 focus:ring-2 focus:ring-sky-100 outline-none"
-                                                >
-                                                    <option value="#1e293b">Slate (#1e293b)</option>
-                                                    <option value="#0f172a">Dark (#0f172a)</option>
-                                                    <option value="#18181b">Zinc (#18181b)</option>
-                                                    <option value="#1e1b4b">Indigo (#1e1b4b)</option>
-                                                    <option value="#172554">Blue (#172554)</option>
-                                                    <option value="#14532d">Green (#14532d)</option>
-                                                    <option value="#7f1d1d">Red (#7f1d1d)</option>
-                                                    <option value="#78350f">Amber (#78350f)</option>
-                                                </select>
-                                            </div>
-                                        </>
-                                    ) : (
-                                        <>
-                                            <label className="w-full py-4 bg-slate-50 border-2 border-dashed border-slate-200 rounded-lg text-[10px] font-bold uppercase text-slate-400 hover:bg-purple-50 hover:border-purple-300 hover:text-purple-500 transition-all flex items-center justify-center gap-2 cursor-pointer">
-                                                <Image size={12} />
-                                                Upload Layer 2
-                                                <input type="file" accept="image/*" onChange={handlePageBanner2Upload} className="hidden" />
-                                            </label>
-                                            
-                                            {/* Layer 1 Default Color Dropdown */}
-                                            <div className="space-y-1 pt-2 border-t border-slate-100">
-                                                <label className="text-[10px] font-bold text-slate-500">Layer 1 Default (Fallback)</label>
-                                                <p className="text-[9px] text-slate-400 mb-1">Used when no paired color is set with an image</p>
-                                                <select
-                                                    value={pageBannerBgColor}
-                                                    onChange={(e) => setPageBannerBgColor(e.target.value)}
-                                                    className="w-full px-2 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-[10px] font-mono text-slate-700 uppercase focus:border-sky-400 focus:ring-2 focus:ring-sky-100 outline-none"
-                                                >
-                                                    <option value="#1e293b">Slate (#1e293b)</option>
-                                                    <option value="#0f172a">Dark (#0f172a)</option>
-                                                    <option value="#18181b">Zinc (#18181b)</option>
-                                                    <option value="#1e1b4b">Indigo (#1e1b4b)</option>
-                                                    <option value="#172554">Blue (#172554)</option>
-                                                    <option value="#14532d">Green (#14532d)</option>
-                                                    <option value="#7f1d1d">Red (#7f1d1d)</option>
-                                                    <option value="#78350f">Amber (#78350f)</option>
-                                                </select>
-                                            </div>
-                                        </>
-                                    )}
+
+                                    <p className="text-[10px] text-slate-400 leading-relaxed mb-4">
+                                        Set the paired background color in Layer 2 settings, then save to library. Each saved image remembers its paired color.
+                                    </p>
                                 </div>
                             </div>
+                        )}
 
-                            <p className="text-[10px] text-slate-400 leading-relaxed mb-4">
-                                Set the paired background color in Layer 2 settings, then save to library. Each saved image remembers its paired color.
-                            </p>
-                        </ConfigSection>
-
-                        {/* Layer 2 Image Library - Separate Section */}
-                        <ConfigSection 
-                            title="Layer 2 Image Library" 
-                            icon={Folder}
-                            isExpanded={isLayer2LibraryExpanded}
-                            onToggle={() => setIsLayer2LibraryExpanded(!isLayer2LibraryExpanded)}
-                        >
+                        {/* Layer 2 Image Library Tab */}
+                        {activeTab === 'library' && (
+                            <div className="space-y-4 border-t border-sky-50 pt-3 bg-white/50 p-3 rounded-2xl">
+                                <h3 className="text-xs font-black uppercase text-slate-400 tracking-widest flex items-center gap-2">
+                                    <Image size={14} /> Layer 2 Image Library
+                                </h3>
+                                <div className="space-y-4 px-1">
                             <div className="space-y-3">
                                 <div className="flex items-center justify-between">
                                     <div className="flex items-center gap-2">
@@ -1430,10 +1471,12 @@ export default function PagePage({ onBack, onNavigateToOrb, onNavigateToYou, onN
                                     </div>
                                 ))}
                             </div>
-                        </ConfigSection>
+                                </div>
+                            </div>
+                        )}
 
-                        {/* Layer 2 Folders Grid - Scrollable Thumbnails */}
-                        {layer2Folders.length > 0 && (
+                        {/* Layer 2 Folders Grid Tab */}
+                        {activeTab === 'folders' && (
                             <div className="space-y-4">
                                 <div className="flex items-center justify-between">
                                     <h3 className="text-xs font-black uppercase text-slate-400 tracking-widest flex items-center gap-2">
@@ -1446,8 +1489,47 @@ export default function PagePage({ onBack, onNavigateToOrb, onNavigateToYou, onN
                                     </h3>
                                 </div>
                                 
-                                <div className="grid grid-cols-4 gap-4 max-h-[600px] overflow-y-auto pr-2">
-                                    {filteredLayer2Folders.map((folder) => {
+                                {layer2Folders.length === 0 ? (
+                                    <div className="text-center text-slate-400 py-12 bg-white/50 p-4 rounded-2xl">
+                                        <Folder size={48} className="mx-auto mb-4 opacity-50" />
+                                        <p className="text-sm font-medium">No folders created yet</p>
+                                        <p className="text-xs text-slate-500 mt-2">Switch to the Image Library tab to create your first folder</p>
+                                    </div>
+                                ) : (
+                                    <>
+                                
+                                {/* Horizontal Scrolling Folders Container */}
+                                <div 
+                                    ref={horizontalScrollRef}
+                                    className="horizontal-video-scroll" 
+                                    onWheel={(e) => {
+                                        // Handle wheel scrolling on the folders container
+                                        const container = horizontalScrollRef.current;
+                                        if (container && container.scrollWidth > container.clientWidth) {
+                                            e.preventDefault();
+                                            e.stopPropagation();
+                                            // Direct scrollLeft assignment for better performance
+                                            container.scrollLeft += e.deltaY;
+                                        }
+                                    }}
+                                    style={{ 
+                                        width: '100%',
+                                        overflowX: 'scroll', // Force scrollbar to always show
+                                        overflowY: 'visible', // Allow vertical overflow for buttons
+                                        scrollbarWidth: 'thin', // Show scrollbar on Firefox
+                                        scrollbarColor: 'rgba(148, 163, 184, 0.6) rgba(15, 23, 42, 0.3)', // Firefox scrollbar color
+                                        WebkitOverflowScrolling: 'touch', // Smooth scrolling on iOS
+                                        paddingTop: '12px', // Space for overflow elements at top (buttons at -top-2 need space)
+                                        paddingBottom: '8px', // Space for overflow elements at bottom
+                                    }}
+                                >
+                                    <div 
+                                        className="flex gap-4 animate-fade-in"
+                                        style={{ 
+                                            width: 'max-content'
+                                        }}
+                                    >
+                                        {filteredLayer2Folders.map((folder) => {
                                         const firstImage = folder.images && folder.images.length > 0 ? folder.images[0] : null;
                                         const isSelected = selectedLayer2FolderId === folder.id;
                                         const assignedFolders = folder.folderColors || [];
@@ -1456,7 +1538,11 @@ export default function PagePage({ onBack, onNavigateToOrb, onNavigateToYou, onN
                                             <div
                                                 key={folder.id}
                                                 className="relative group flex flex-col items-center"
-                                                style={{ zIndex: folderAssignmentOpenId === folder.id ? 100 : 'auto' }}
+                                                style={{ 
+                                                    zIndex: folderAssignmentOpenId === folder.id ? 100 : 'auto',
+                                                    width: '320px',
+                                                    flexShrink: 0
+                                                }}
                                                 onMouseEnter={() => setHoveredLayer2FolderId(folder.id)}
                                                 onMouseLeave={() => {
                                                     setHoveredLayer2FolderId(null);
@@ -1611,7 +1697,10 @@ export default function PagePage({ onBack, onNavigateToOrb, onNavigateToYou, onN
                                             </div>
                                         );
                                     })}
+                                    </div>
                                 </div>
+                                    </>
+                                )}
                             </div>
                         )}
                     </div>
