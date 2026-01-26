@@ -387,6 +387,16 @@ Users see a contextual banner (220px fixed height) at the top of scrollable cont
   - `isFollower`: Boolean for follower pin (arrow indicator)
 - `onPinnedClick(video)`: Callback when pinned thumbnail is clicked (receives selected video)
 - `avatar`: Optional ASCII art prop (fallback, `userAvatar` from configStore takes priority)
+- `showAscii`: Boolean (default: `true`) - Controls whether ASCII signature option appears in media carousel. Set to `false` to hide ASCII art option.
+
+**PageBanner Props for Orb Controls (OrbPage):**
+- `orbControls`: Object with compact orb configuration controls for banner display:
+  - `customOrbImage`: Current orb image (Base64 string or null)
+  - `isSpillEnabled`: Boolean indicating if spill is enabled
+  - `onImageUpload`: Callback for image file upload (receives FileReader event)
+  - `onToggleSpill`: Callback to toggle spill on/off (receives event)
+  - `onRemoveImage`: Callback to remove current orb image
+  - When provided, displays compact orb controls on left side of banner (image preview, spill toggle, remove button)
 
 **PageBanner Props for Playlist Navigator (Videos Page):**
 - `onNavigateNext`: Callback for up chevron (next playlist)

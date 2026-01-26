@@ -87,7 +87,7 @@ const selectImageFromFolder = (folder, pageKey, pageType, folderColor) => {
     return availableImages[0];
 };
 
-const PageBanner = ({ title, description, folderColor, onEdit, videoCount, countLabel = 'Video', creationYear, author, avatar, continueVideo, onContinue, pinnedVideos = [], onPinnedClick, children, childrenPosition = 'right', topRightContent, seamlessBottom = false, playlistBadges, onPlaylistBadgeLeftClick, onPlaylistBadgeRightClick, allPlaylists, filteredPlaylist, customDescription, onNavigateNext, onNavigatePrev, onReturn, showReturnButton, currentPlaylistId }) => {
+const PageBanner = ({ title, description, folderColor, onEdit, videoCount, countLabel = 'Video', creationYear, author, avatar, continueVideo, onContinue, pinnedVideos = [], onPinnedClick, children, childrenPosition = 'right', topRightContent, seamlessBottom = false, playlistBadges, onPlaylistBadgeLeftClick, onPlaylistBadgeRightClick, allPlaylists, filteredPlaylist, customDescription, onNavigateNext, onNavigatePrev, onReturn, showReturnButton, currentPlaylistId, showAscii = true, orbControls }) => {
     const { 
         pageBannerBgColor, setBannerHeight,
         customPageBannerImage2, pageBannerImage2Scale, pageBannerImage2XOffset, pageBannerImage2YOffset,
@@ -277,7 +277,7 @@ const PageBanner = ({ title, description, folderColor, onEdit, videoCount, count
     const hasContinue = !!continueVideo;
     const hasPinned = pinnedVideos && pinnedVideos.length > 0;
     const hasMultiplePins = pinnedVideos && pinnedVideos.length > 1;
-    const hasAscii = !!(userAvatar || avatar); // Use userAvatar from store or avatar prop
+    const hasAscii = showAscii && !!(userAvatar || avatar); // Use userAvatar from store or avatar prop, unless showAscii is false
     const displayAvatar = userAvatar || avatar; // The actual avatar to display
     
     // Count available options for dot navigation
@@ -460,6 +460,58 @@ const PageBanner = ({ title, description, folderColor, onEdit, videoCount, count
                             {description}
                         </p>
                     ))}
+
+                    {/* Orb Controls - Compact version for banner */}
+                    {orbControls && (
+                        <div className="mt-3 flex items-center gap-3">
+                            {/* Orb Image Preview/Upload */}
+                            <label className="relative w-16 h-16 rounded-full border-2 border-white/30 overflow-hidden flex items-center justify-center bg-black/20 backdrop-blur-sm cursor-pointer group hover:border-white/50 transition-all">
+                                {orbControls.customOrbImage ? (
+                                    <img src={orbControls.customOrbImage} alt="Orb" className="w-full h-full object-cover" />
+                                ) : (
+                                    <div className="text-white/40 text-[10px] text-center p-1">No Image</div>
+                                )}
+                                <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white transition-opacity">
+                                    <span className="text-[9px] font-bold">Change</span>
+                                </div>
+                                <input 
+                                    type="file" 
+                                    onChange={orbControls.onImageUpload} 
+                                    accept="image/*" 
+                                    className="hidden" 
+                                />
+                            </label>
+
+                            {/* Spill Toggle */}
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    e.preventDefault();
+                                    orbControls.onToggleSpill(e);
+                                }}
+                                className={`px-3 py-1.5 rounded-md text-[10px] font-bold uppercase tracking-wider transition-all border backdrop-blur-sm ${
+                                    orbControls.isSpillEnabled
+                                        ? 'bg-sky-500/90 border-sky-400 text-white shadow-md'
+                                        : 'bg-white/10 border-white/20 text-white/70 hover:border-white/30 hover:text-white'
+                                }`}
+                            >
+                                {orbControls.isSpillEnabled ? 'Spill On' : 'Spill Off'}
+                            </button>
+
+                            {/* Remove Image Button */}
+                            {orbControls.customOrbImage && (
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        orbControls.onRemoveImage();
+                                    }}
+                                    className="px-3 py-1.5 rounded-md text-[10px] font-bold uppercase tracking-wider text-rose-300 hover:text-rose-200 hover:bg-rose-500/20 transition-all border border-rose-400/30 backdrop-blur-sm"
+                                >
+                                    Remove
+                                </button>
+                            )}
+                        </div>
+                    )}
 
                     {/* Playlist Badges */}
                     {playlistBadges && playlistBadges.length > 0 && (

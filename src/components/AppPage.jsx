@@ -150,7 +150,6 @@ export default function AppPage({ onBack, currentThemeId, onThemeChange, onNavig
                                     );
                                 })}
                             </div>
-                        </div>
                     </div>
                 </div>
 

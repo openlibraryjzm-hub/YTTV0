@@ -329,6 +329,18 @@ The application uses **Zustand** (v5.0.9) for state management. Zustand is a lig
 - `orbSpill`: Object - Quadrant spill flags ({ tl, tr, bl, br })
 - `orbImageScale`: number - Orb image zoom level (0.5 - 3.0)
 - `orbImageXOffset`/`YOffset`: number - Orb image pan offsets
+- `orbFavorites`: Array - Saved orb preset configurations, each with:
+  - `id`: Unique identifier
+  - `name`: Preset name
+  - `customOrbImage`, `isSpillEnabled`, `orbSpill`, `orbImageScale`, `orbImageXOffset`, `orbImageYOffset`: Saved configuration
+  - `folderColors`: Array of folder color IDs assigned to this preset
+- `layer2Folders`: Array - Layer 2 image library folders, each with:
+  - `id`: Unique identifier
+  - `name`: Folder name
+  - `images`: Array of image objects with scale, position, bgColor, destinations
+  - `playlistIds`: Array of playlist IDs (empty = all playlists)
+  - `condition`: Selection mode ('random' or null for first)
+  - `folderColors`: Array of folder color IDs assigned to this folder
 - `visualizerGradient`: boolean - Toggle for distance-based visualizer transparency (default: true)
 - Legacy layout settings (deprecated/removed from UI but present in store structure)
 
@@ -341,6 +353,15 @@ The application uses **Zustand** (v5.0.9) for state management. Zustand is a lig
 - `setCustomBannerImage(dataUrl)` - Sets the app-wide top banner custom image
 - `setCustomPageBannerImage(dataUrl)` - Sets the page banner custom image (Videos Page/Folders)
 - `setVisualizerGradient(enabled)` - Toggles visualizer distance-based transparency fade
+- `addOrbFavorite(favorite)` - Adds new orb preset to array
+- `removeOrbFavorite(id)` - Removes orb preset by ID
+- `applyOrbFavorite(favorite)` - Applies preset configuration to current orb settings
+- `renameOrbFavorite(id, newName)` - Updates preset name
+- `updateOrbFavoriteFolders(id, folderColors)` - Updates folder color assignments for an orb preset
+- `addLayer2Folder(name)` - Creates new Layer 2 folder
+- `removeLayer2Folder(folderId)` - Deletes Layer 2 folder
+- `renameLayer2Folder(folderId, newName)` - Renames Layer 2 folder
+- `updateLayer2FolderFolders(folderId, folderColors)` - Updates folder color assignments for a Layer 2 folder
 
 **Persistence:**
 - Persisted to localStorage: `config-storage`

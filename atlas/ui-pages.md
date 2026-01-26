@@ -779,41 +779,56 @@ OrbPage is a dedicated page for orb configuration, accessed via the "Orb" button
 
 - **Page Structure**:
   - **Page Banner**: "Orb Configuration" title with description (no author/avatar to avoid ASCII art)
+    - **Compact Orb Controls**: Left side of banner shows orb image preview, spill toggle, and remove button in compact format
   - **Back Button**: "Back to Settings" button in banner's top-right corner
   - **Navigation Buttons**: Four buttons (Orb, You, Page, App) positioned at bottom of Page Banner
-  - **Sticky Toolbar**: Contains only the Colored Prism Bar (navigation buttons moved to banner)
+  - **Sticky Toolbar**: Contains Colored Prism Bar with clickable filtering
+    - **"All" Button**: Shows all presets (leftmost, dark background)
+    - **Color Bars**: Each of 16 folder colors is clickable to filter presets by assigned folder
+    - **Counts**: Shows number of presets assigned to each folder color
+    - **Active Filter**: Selected color shows white ring highlight
   - **Scrollable Content**: Orb configuration and presets below the banner
 
-- **Orb Configuration Section** (at top):
-  - **Custom Orb Image**: Upload button with preview thumbnail
-  - **Spill Toggle**: Master switch to enable/disable image overflow
-  - **Image Scale Slider**: 0.5x to 3.0x zoom control (visible when spill enabled)
-  - **Image Position Sliders**: X and Y offset controls (-100 to +100px) with reset buttons
-  - **Spill Areas Visualizer**: Interactive quadrant selector showing actual image with circular mask
+- **Orb Configuration Section** (collapsible, starts collapsed):
+  - **Collapse/Expand Toggle**: Button in section header to show/hide configuration
+  - **Custom Orb Image**: Upload button with preview thumbnail (when expanded)
+  - **Spill Toggle**: Master switch to enable/disable image overflow (also in banner)
+  - **Image Scale Slider**: 0.5x to 3.0x zoom control (max-width 50%, visible when spill enabled)
+    - Value displayed centered above slider
+  - **Image Position Sliders**: X and Y offset controls (-100 to +100px) with reset buttons (max-width 50%)
+    - Values and reset buttons displayed centered above each slider
+  - **Spill Areas Visualizer**: Interactive quadrant selector positioned to the right of sliders
+    - Shows actual image with circular mask
+    - Description/tip displayed underneath
   - **Save Configuration Button**: Saves current setup as a new preset
 
 - **Saved Presets Grid** (below configuration):
   - **Layout**: 4-column vertical grid (wraps to new rows as presets are added)
+  - **Filtering**: Grid filters based on selected folder color from prism bar
   - **Preset Thumbnails**: Circular orbs showing actual spill effects using SVG clipPath
     - Each preset displays with its saved spill configuration (image overflows in enabled quadrants)
     - Scale and position offsets are applied to match the actual orb appearance
     - Active preset shows sky-blue border and ring indicator (no overlay)
   - **Preset Name**: Displayed below each thumbnail
   - **Spill Badge**: Top-right badge on presets with spill enabled
-  - **Delete on Hover**: Red trash button appears when hovering over a preset
+  - **Folder Assignment**: Folder icon button (top-left on hover) opens color grid to assign presets to folder colors
+    - Checkmarks indicate assigned folders
+    - Assigned folder indicators shown as colored dots at bottom of thumbnail (up to 3, with +N for more)
+  - **Delete on Hover**: Red trash button appears when hovering over a preset (top-right)
   - **One-Click Apply**: Click any preset thumbnail to instantly apply its configuration
 
 **2: File Manifest**
 
 **UI/Components:**
 - `src/components/OrbPage.jsx`: Dedicated orb configuration page component
-- `src/components/PageBanner.jsx`: Page banner with back button
+- `src/components/PageBanner.jsx`: Page banner with back button and compact orb controls
 - `src/components/SettingsPage.jsx`: Parent component that conditionally renders OrbPage
 
 **State Management:**
-- `src/store/configStore.js`: Same orb state as Settings Page (shared)
+- `src/store/configStore.js`: Orb state and preset management
+  - `orbFavorites`: Array of saved preset objects, each with `folderColors` array
+  - `updateOrbFavoriteFolders(id, folderColors)`: Updates folder color assignments for a preset
   - All orb configuration state is shared between SettingsPage and OrbPage
-  - OrbPage reads from and writes to the same configStore
 
 **3: The Logic & State Chain**
 
@@ -834,6 +849,155 @@ OrbPage is a dedicated page for orb configuration, accessed via the "Orb" button
 - Save: User configures orb → Clicks "Save Current Configuration" → `addOrbFavorite()` adds to array
 - Apply: User clicks preset → `applyOrbFavorite()` restores all settings → PlayerController updates
 - Delete: User hovers preset → Clicks trash icon → `removeOrbFavorite()` removes from array
+- **Folder Assignment**: User hovers preset → Clicks folder icon → Selects folder colors → `updateOrbFavoriteFolders()` updates assignments
+- **Filtering**: User clicks prism bar color → Grid filters to show only presets assigned to that color
+
+---
+
+#### ### 4.1.8.2 YouPage
+
+**1: User-Perspective Description**
+
+YouPage is a dedicated page for profile and signature configuration, accessed via the "You" button in the Settings Page navigation. It appears as a full page below the Page Banner:
+
+- **Page Structure**:
+  - **Page Banner**: "Signature & Profile" title with description
+  - **Back Button**: "Back to Settings" button in banner's top-right corner
+  - **Navigation Buttons**: Four buttons (Orb, You, Page, App) positioned at bottom of Page Banner
+  - **Sticky Toolbar**: Contains Colored Prism Bar
+  - **Scrollable Content**: Profile configuration below the banner
+
+- **Profile Configuration Section** (collapsible, starts collapsed):
+  - **Collapse/Expand Toggle**: Button in section header to show/hide configuration
+  - **Left Side** (max-width 50%):
+    - **Name / Pseudonym**: Text input for user's display name
+    - **Default Signatures**: Grid of lenny face signatures (3 columns)
+      - Click any signature to apply it
+      - Selected signature highlighted with sky-blue border
+  - **Right Side**:
+    - **Custom ASCII Avatar Editor**: Multi-line textarea for custom ASCII art
+      - Supports multi-line ASCII art
+      - Help text below editor
+      - Resizable vertically
+
+- **Preview Section** (below configuration):
+  - Shows banner preview with name and signature
+  - Auto-detects layout (single-line vs multi-line)
+
+- **External Link Banner**:
+  - Link to EmojiCombos.com for finding more ASCII art
+
+**2: File Manifest**
+
+**UI/Components:**
+- `src/components/YouPage.jsx`: Dedicated profile and signature configuration page component
+- `src/components/PageBanner.jsx`: Page banner with back button
+
+**State Management:**
+- `src/store/configStore.js`:
+  - `userName`, `setUserName`: User's display name
+  - `userAvatar`, `setUserAvatar`: User's ASCII signature
+
+**3: The Logic & State Chain**
+
+**Configuration Flow:**
+1. User enters name → `setUserName()` updates store → Persisted to localStorage
+2. User selects default signature → `setUserAvatar()` updates store → Persisted to localStorage
+3. User types custom ASCII art → `setUserAvatar()` updates store → Persisted to localStorage
+4. Changes immediately reflected in preview and page banners
+
+---
+
+#### ### 4.1.8.3 PagePage
+
+**1: User-Perspective Description**
+
+PagePage is a dedicated page for Page Banner and Layer 2 image library configuration, accessed via the "Page" button in the Settings Page navigation. It appears as a full page below the Page Banner:
+
+- **Page Structure**:
+  - **Page Banner**: "Page Banner Configuration" title with description
+  - **Back Button**: "Back to Settings" button in banner's top-right corner
+  - **Navigation Buttons**: Four buttons (Orb, You, Page, App) positioned at bottom of Page Banner
+  - **Sticky Toolbar**: Contains Colored Prism Bar with clickable filtering
+    - **"All" Button**: Shows all folders (leftmost, dark background)
+    - **Color Bars**: Each of 16 folder colors is clickable to filter folders by assigned folder
+    - **Counts**: Shows number of folders assigned to each folder color
+    - **Active Filter**: Selected color shows white ring highlight
+  - **Scrollable Content**: Banner editor and Layer 2 library below the banner
+
+- **Page Banner Editor Section** (collapsible, starts collapsed):
+  - **Collapse/Expand Toggle**: Button in section header to show/hide configuration
+  - **Two-Column Layout**:
+    - **Layer 1**: Background color dropdown (fallback/default)
+    - **Layer 2**: Overlay image upload and configuration
+      - Image upload/thumbnail
+      - Scale slider (50-200%)
+      - X/Y position sliders (0-100%)
+      - Paired background color picker
+      - Remove button
+  - **Save to Library**: Button to save current Layer 2 image to selected folder
+
+- **Layer 2 Image Library Section** (collapsible, starts collapsed):
+  - **Collapse/Expand Toggle**: Button in section header to show/hide library
+  - **Folder Management**:
+    - Create new folders
+    - Rename folders (click name)
+    - Delete folders (hover to reveal)
+    - Set folder as theme (app-wide)
+    - Set selection mode (First/Random)
+    - Assign folders to playlists
+  - **Image Management** (per folder):
+    - Upload images to folders
+    - Apply images (click thumbnail)
+    - Delete images (hover to reveal)
+    - Assign destinations (pages/folder colors)
+    - Save current Layer 2 image to folder
+
+- **Layer 2 Folders Grid** (below config sections):
+  - **Layout**: 4-column scrollable grid (max-height 600px)
+  - **Filtering**: Grid filters based on selected folder color from prism bar
+  - **Thumbnails**: First image of each folder used as representative thumbnail
+    - Folder icon placeholder if folder has no images
+  - **Badges**:
+    - Image count (top-right)
+    - Theme badge (top-left) if folder is theme
+    - Random badge (bottom-left) if random selection enabled
+  - **Folder Assignment**: Folder icon button (top-left on hover) opens color grid to assign folders to folder colors
+    - Checkmarks indicate assigned folders
+    - Assigned folder indicators shown as colored dots at bottom of thumbnail (up to 3, with +N for more)
+  - **One-Click Apply**: Click thumbnail applies first image and selects folder
+
+**2: File Manifest**
+
+**UI/Components:**
+- `src/components/PagePage.jsx`: Dedicated Page Banner and Layer 2 configuration page component
+- `src/components/PageBanner.jsx`: Page banner with back button
+
+**State Management:**
+- `src/store/configStore.js`:
+  - `pageBannerBgColor`, `setPageBannerBgColor`: Layer 1 background color
+  - `customPageBannerImage2`, `setCustomPageBannerImage2`: Layer 2 overlay image
+  - `pageBannerImage2Scale`, `setPageBannerImage2Scale`: Layer 2 scale
+  - `pageBannerImage2XOffset`, `setPageBannerImage2XOffset`: Layer 2 X position
+  - `pageBannerImage2YOffset`, `setPageBannerImage2YOffset`: Layer 2 Y position
+  - `layer2Folders`: Array of folder objects, each with `folderColors` array
+  - `updateLayer2FolderFolders(id, folderColors)`: Updates folder color assignments for a Layer 2 folder
+  - All Layer 2 state persisted to localStorage
+
+**3: The Logic & State Chain**
+
+**Banner Configuration Flow:**
+1. User uploads Layer 2 image → `setCustomPageBannerImage2()` updates store
+2. User adjusts scale/position → Store updates → PageBanner reflects changes
+3. User sets paired background color → Saved with image when added to library
+4. User saves to folder → `addLayer2Image()` adds image with current config to selected folder
+
+**Folder Management Flow:**
+1. User creates folder → `addLayer2Folder()` adds to array
+2. User uploads image → `addLayer2Image()` adds to folder's images array
+3. User applies image → `applyLayer2Image()` sets Layer 2 and loads paired color
+4. **Folder Assignment**: User hovers folder → Clicks folder icon → Selects folder colors → `updateLayer2FolderFolders()` updates assignments
+5. **Filtering**: User clicks prism bar color → Grid filters to show only folders assigned to that color
 
 ---
 #### ### 4.1.9 Support Page

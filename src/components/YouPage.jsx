@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { User, Smile, ArrowLeft, ExternalLink } from 'lucide-react';
+import { User, Smile, ArrowLeft, ExternalLink, ChevronDown, ChevronUp } from 'lucide-react';
 import { useConfigStore } from '../store/configStore';
 import PageBanner from './PageBanner';
 import { FOLDER_COLORS } from '../utils/folderColors';
@@ -43,11 +43,31 @@ const AVATARS = [
     'custom'
 ];
 
-function ConfigSection({ title, icon: Icon, children }) {
+function ConfigSection({ title, icon: Icon, children, isExpanded, onToggle }) {
     return (
         <div className="space-y-4 border-t border-sky-50 pt-6 first:border-0 first:pt-0 bg-white/50 p-4 rounded-2xl">
-            <h3 className="text-xs font-black uppercase text-slate-400 tracking-widest flex items-center gap-2">{Icon && <Icon size={14} />} {title}</h3>
-            <div className="space-y-4 px-1">{children}</div>
+            <div className="flex items-center justify-between">
+                <h3 className="text-xs font-black uppercase text-slate-400 tracking-widest flex items-center gap-2">{Icon && <Icon size={14} />} {title}</h3>
+                {onToggle && (
+                    <button
+                        onClick={onToggle}
+                        className="px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-all border-2 bg-white border-slate-200 text-slate-600 hover:border-sky-300 hover:text-sky-600 flex items-center gap-1.5"
+                    >
+                        {isExpanded ? (
+                            <>
+                                <ChevronUp size={12} />
+                                Collapse
+                            </>
+                        ) : (
+                            <>
+                                <ChevronDown size={12} />
+                                Expand
+                            </>
+                        )}
+                    </button>
+                )}
+            </div>
+            {isExpanded && <div className="space-y-4 px-1">{children}</div>}
         </div>
     );
 }
@@ -63,6 +83,9 @@ export default function YouPage({ onBack, onNavigateToOrb, onNavigateToPage, onN
     // Sticky toolbar state
     const [isStuck, setIsStuck] = useState(false);
     const stickySentinelRef = useRef(null);
+
+    // Config section collapse state
+    const [isConfigExpanded, setIsConfigExpanded] = useState(false);
 
     // Local state for custom avatar
     const [customAvatar, setCustomAvatar] = useState('');
@@ -192,56 +215,68 @@ export default function YouPage({ onBack, onNavigateToOrb, onNavigateToPage, onN
                 {/* Content */}
                 <div className="p-6 text-slate-800 space-y-6">
                     <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
-                        <ConfigSection title="Pseudonym" icon={User}>
-                            <div className="space-y-2">
-                                <input
-                                    type="text"
-                                    value={userName}
-                                    onChange={(e) => setUserName(e.target.value)}
-                                    className="w-full p-3 bg-white border-2 border-slate-100 rounded-xl font-bold text-slate-700 outline-none focus:border-sky-400 focus:ring-4 focus:ring-sky-100 transition-all placeholder:text-slate-300"
-                                    placeholder="Enter your name..."
-                                />
-                            </div>
-                        </ConfigSection>
+                        {/* Profile Configuration Section */}
+                        <ConfigSection 
+                            title="Profile Configuration" 
+                            icon={User}
+                            isExpanded={isConfigExpanded}
+                            onToggle={() => setIsConfigExpanded(!isConfigExpanded)}
+                        >
+                            <div className="flex items-start gap-8">
+                                {/* Left side: Name/Pseudonym */}
+                                <div className="flex-1 space-y-4 max-w-[50%]">
+                                    <div className="space-y-2">
+                                        <label className="text-xs font-bold uppercase text-slate-400 ml-1">Name / Pseudonym</label>
+                                        <input
+                                            type="text"
+                                            value={userName}
+                                            onChange={(e) => setUserName(e.target.value)}
+                                            className="w-full p-3 bg-white border-2 border-slate-100 rounded-xl font-bold text-slate-700 outline-none focus:border-sky-400 focus:ring-4 focus:ring-sky-100 transition-all placeholder:text-slate-300"
+                                            placeholder="Enter your name..."
+                                        />
+                                    </div>
 
-                        <ConfigSection title="Signature" icon={Smile}>
-                            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                                {AVATARS.map((avatar, index) => {
-                                    const isCustom = avatar === 'custom';
-                                    const isSelected = isCustom ? !AVATARS.slice(0, -1).includes(userAvatar) : userAvatar === avatar.trim();
-                                    const multiline = isMultiLine(avatar);
+                                    {/* Default Lenny Face Signatures */}
+                                    <div className="space-y-2 border-t border-slate-100 pt-4">
+                                        <label className="text-xs font-bold uppercase text-slate-400 ml-1">Default Signatures</label>
+                                        <div className="grid grid-cols-3 gap-2">
+                                            {AVATARS.filter(a => a !== 'custom').map((avatar, index) => {
+                                                const isSelected = userAvatar === avatar.trim();
+                                                const multiline = isMultiLine(avatar);
 
-                                    return (
-                                        <button
-                                            key={index}
-                                            onClick={() => handleAvatarSelect(avatar)}
-                                            className={`p-4 rounded-xl text-sm font-medium transition-all border-2 flex items-center justify-center min-h-[64px] ${isSelected
-                                                ? 'border-sky-500 bg-sky-50 text-sky-700 shadow-md ring-2 ring-sky-200'
-                                                : 'border-slate-100 bg-white text-slate-500 hover:border-sky-200 hover:text-sky-600 hover:shadow-sm'
-                                                }`}
-                                        >
-                                            {isCustom ? (
-                                                <span className="italic opacity-50">Custom...</span>
-                                            ) : (
-                                                <span className={`font-mono text-xs ${multiline ? 'text-[4px] leading-none whitespace-pre text-left' : 'text-lg'}`}>{avatar.trim()}</span>
-                                            )}
-                                        </button>
-                                    );
-                                })}
-                            </div>
+                                                return (
+                                                    <button
+                                                        key={index}
+                                                        onClick={() => handleAvatarSelect(avatar)}
+                                                        className={`p-3 rounded-lg text-sm font-medium transition-all border-2 flex items-center justify-center min-h-[48px] ${isSelected
+                                                            ? 'border-sky-500 bg-sky-50 text-sky-700 shadow-md ring-2 ring-sky-200'
+                                                            : 'border-slate-100 bg-white text-slate-500 hover:border-sky-200 hover:text-sky-600 hover:shadow-sm'
+                                                            }`}
+                                                    >
+                                                        <span className={`font-mono text-xs ${multiline ? 'text-[4px] leading-none whitespace-pre text-left' : 'text-sm'}`}>{avatar.trim()}</span>
+                                                    </button>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+                                </div>
 
-                            {/* Custom Avatar Input - Shown if Custom is selected or user types in it */}
-                            <div className={`mt-4 space-y-2 transition-all duration-300 ${!AVATARS.slice(0, -1).map(a => a.trim()).includes(userAvatar) ? 'opacity-100 translate-y-0' : 'opacity-50 grayscale'}`}>
-                                <label className="text-xs font-bold uppercase text-slate-400 ml-1">Custom ASCII Avatar (Multi-line supported)</label>
-                                <textarea
-                                    value={AVATARS.slice(0, -1).map(a => a.trim()).includes(userAvatar) ? customAvatar : userAvatar}
-                                    onChange={(e) => {
-                                        setCustomAvatar(e.target.value);
-                                        setUserAvatar(e.target.value);
-                                    }}
-                                    className="w-full p-3 bg-white border-2 border-slate-100 rounded-xl font-mono text-slate-700 outline-none focus:border-sky-400 focus:ring-4 focus:ring-sky-100 transition-all min-h-[120px] text-xs leading-tight whitespace-pre"
-                                    placeholder="Paste your ASCII art here..."
-                                />
+                                {/* Right side: Custom ASCII Avatar Editor */}
+                                <div className="flex-1 space-y-2">
+                                    <label className="text-xs font-bold uppercase text-slate-400 ml-1">Custom ASCII Avatar (Multi-line supported)</label>
+                                    <textarea
+                                        value={AVATARS.slice(0, -1).map(a => a.trim()).includes(userAvatar) ? customAvatar : userAvatar}
+                                        onChange={(e) => {
+                                            setCustomAvatar(e.target.value);
+                                            setUserAvatar(e.target.value);
+                                        }}
+                                        className="w-full p-3 bg-white border-2 border-slate-100 rounded-xl font-mono text-slate-700 outline-none focus:border-sky-400 focus:ring-4 focus:ring-sky-100 transition-all min-h-[200px] text-xs leading-tight whitespace-pre resize-y"
+                                        placeholder="Paste your ASCII art here..."
+                                    />
+                                    <p className="text-[10px] text-slate-400 leading-relaxed">
+                                        Create or paste multi-line ASCII art. The signature will appear in page banners when enabled.
+                                    </p>
+                                </div>
                             </div>
                         </ConfigSection>
 

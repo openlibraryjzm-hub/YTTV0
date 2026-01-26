@@ -1,15 +1,35 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Layout, Plus, ArrowLeft, Trash2, Check, Image, Folder, ChevronDown, Shuffle, Star, MapPin } from 'lucide-react';
+import { Layout, Plus, ArrowLeft, Trash2, Check, Image, Folder, ChevronDown, ChevronUp, Shuffle, Star, MapPin } from 'lucide-react';
 import { useConfigStore } from '../store/configStore';
 import PageBanner from './PageBanner';
 import { FOLDER_COLORS } from '../utils/folderColors';
 import { getAllPlaylists } from '../api/playlistApi';
 
-function ConfigSection({ title, icon: Icon, children }) {
+function ConfigSection({ title, icon: Icon, children, isExpanded, onToggle }) {
     return (
         <div className="space-y-4 border-t border-sky-50 pt-6 first:border-0 first:pt-0 bg-white/50 p-4 rounded-2xl">
-            <h3 className="text-xs font-black uppercase text-slate-400 tracking-widest flex items-center gap-2">{Icon && <Icon size={14} />} {title}</h3>
-            <div className="space-y-4 px-1">{children}</div>
+            <div className="flex items-center justify-between">
+                <h3 className="text-xs font-black uppercase text-slate-400 tracking-widest flex items-center gap-2">{Icon && <Icon size={14} />} {title}</h3>
+                {onToggle && (
+                    <button
+                        onClick={onToggle}
+                        className="px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-all border-2 bg-white border-slate-200 text-slate-600 hover:border-sky-300 hover:text-sky-600 flex items-center gap-1.5"
+                    >
+                        {isExpanded ? (
+                            <>
+                                <ChevronUp size={12} />
+                                Collapse
+                            </>
+                        ) : (
+                            <>
+                                <ChevronDown size={12} />
+                                Expand
+                            </>
+                        )}
+                    </button>
+                )}
+            </div>
+            {isExpanded && <div className="space-y-4 px-1">{children}</div>}
         </div>
     );
 }
@@ -24,7 +44,8 @@ export default function PagePage({ onBack, onNavigateToOrb, onNavigateToYou, onN
         // Layer 2 Folders
         layer2Folders, addLayer2Image, removeLayer2Image, updateLayer2Image, applyLayer2Image,
         addLayer2Folder, removeLayer2Folder, renameLayer2Folder, selectedLayer2FolderId, setSelectedLayer2FolderId,
-        setLayer2FolderPlaylists, setLayer2FolderCondition, themeFolderId, setThemeFolder, clearThemeFolder
+        setLayer2FolderPlaylists, setLayer2FolderCondition, themeFolderId, setThemeFolder, clearThemeFolder,
+        updateLayer2FolderFolders
     } = useConfigStore();
 
     const scrollContainerRef = useRef(null);
@@ -32,6 +53,10 @@ export default function PagePage({ onBack, onNavigateToOrb, onNavigateToYou, onN
     // Sticky toolbar state
     const [isStuck, setIsStuck] = useState(false);
     const stickySentinelRef = useRef(null);
+
+    // Config section collapse state
+    const [isBannerConfigExpanded, setIsBannerConfigExpanded] = useState(false);
+    const [isLayer2LibraryExpanded, setIsLayer2LibraryExpanded] = useState(false);
 
     // Layer 2 Folder handlers
     const [hoveredLayer2ImageId, setHoveredLayer2ImageId] = useState(null);
@@ -42,6 +67,8 @@ export default function PagePage({ onBack, onNavigateToOrb, onNavigateToYou, onN
     const [expandedDestinationSelector, setExpandedDestinationSelector] = useState(null); // imageId
     const [allPlaylists, setAllPlaylists] = useState([]);
     const [expandedFolderPlaylistSelector, setExpandedFolderPlaylistSelector] = useState(null);
+    const [selectedFolderFilter, setSelectedFolderFilter] = useState(null); // null = show all
+    const [folderAssignmentOpenId, setFolderAssignmentOpenId] = useState(null); // ID of folder with open color selector
 
     // Fetch playlists for folder assignment dropdown
     useEffect(() => {
@@ -55,6 +82,17 @@ export default function PagePage({ onBack, onNavigateToOrb, onNavigateToYou, onN
         };
         fetchPlaylists();
     }, []);
+
+    // Close folder assignment menu when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (e) => {
+            if (folderAssignmentOpenId && !e.target.closest('.folder-assignment-menu')) {
+                setFolderAssignmentOpenId(null);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, [folderAssignmentOpenId]);
 
     const handlePageBanner2Upload = (e) => {
         const file = e.target.files[0];
@@ -102,8 +140,33 @@ export default function PagePage({ onBack, onNavigateToOrb, onNavigateToYou, onN
         return () => observer.disconnect();
     }, []);
 
-    // Mock folder counts for prism bar (will be wired up later)
+    // Calculate folder counts for prism bar
     const folderCounts = {};
+    FOLDER_COLORS.forEach(color => {
+        folderCounts[color.id] = layer2Folders.filter(folder => 
+            folder.folderColors && folder.folderColors.includes(color.id)
+        ).length;
+    });
+
+    // Filter folders based on selected folder color
+    const filteredLayer2Folders = selectedFolderFilter 
+        ? layer2Folders.filter(folder => 
+            folder.folderColors && folder.folderColors.includes(selectedFolderFilter)
+        )
+        : layer2Folders;
+
+    // Toggle folder assignment for a Layer 2 folder
+    const toggleFolderAssignment = (folderId, folderColorId) => {
+        const folder = layer2Folders.find(f => f.id === folderId);
+        if (!folder) return;
+        
+        const currentFolders = folder.folderColors || [];
+        const newFolders = currentFolders.includes(folderColorId)
+            ? currentFolders.filter(id => id !== folderColorId)
+            : [...currentFolders, folderColorId];
+        
+        updateLayer2FolderFolders(folderId, newFolders);
+    };
 
     return (
         <div className="w-full h-full flex flex-col">
@@ -174,17 +237,26 @@ export default function PagePage({ onBack, onNavigateToOrb, onNavigateToYou, onN
                     <div className={`px-4 flex items-center justify-between transition-all duration-300 relative z-10 ${isStuck ? 'h-[52px]' : 'py-0.5'}`}>
                         {/* Colored Prism Bar */}
                         <div className="flex-1 flex items-center shrink-0 h-6 mr-3 border-2 border-black rounded-lg overflow-hidden">
+                            <button
+                                onClick={() => setSelectedFolderFilter(null)}
+                                className={`h-full px-2 flex items-center justify-center transition-all border-r-2 border-black ${selectedFolderFilter === null ? 'opacity-100 ring-2 ring-white' : 'opacity-60 hover:opacity-100'}`}
+                                style={{ backgroundColor: '#1e293b' }}
+                                title="Show All"
+                            >
+                                <span className="text-[10px] font-bold text-white/90 drop-shadow-md">All</span>
+                            </button>
                             {FOLDER_COLORS.map((color, index) => {
-                                const isFirst = index === 0;
                                 const isLast = index === FOLDER_COLORS.length - 1;
                                 const count = folderCounts[color.id] || 0;
+                                const isSelected = selectedFolderFilter === color.id;
 
                                 return (
                                     <button
                                         key={color.id}
-                                        className={`h-full flex-1 flex items-center justify-center transition-all opacity-60 hover:opacity-100 ${isFirst ? 'rounded-l-md' : ''} ${isLast ? 'rounded-r-md' : ''}`}
+                                        onClick={() => setSelectedFolderFilter(isSelected ? null : color.id)}
+                                        className={`h-full flex-1 flex items-center justify-center transition-all ${isSelected ? 'opacity-100 ring-2 ring-white' : 'opacity-60 hover:opacity-100'} ${isLast ? 'rounded-r-md' : ''}`}
                                         style={{ backgroundColor: color.hex }}
-                                        title={color.name}
+                                        title={`${color.name} (${count} folders)`}
                                     >
                                         {count > 0 && (
                                             <span className="text-sm font-bold text-white/90 drop-shadow-md">
@@ -201,7 +273,13 @@ export default function PagePage({ onBack, onNavigateToOrb, onNavigateToYou, onN
                 {/* Content */}
                 <div className="px-6 pt-0 pb-6 text-slate-800 space-y-6">
                     <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
-                        <ConfigSection title="Page Banner" icon={Layout}>
+                        {/* Page Banner Editor/Upload - Collapsible */}
+                        <ConfigSection 
+                            title="Page Banner Editor" 
+                            icon={Layout}
+                            isExpanded={isBannerConfigExpanded}
+                            onToggle={() => setIsBannerConfigExpanded(!isBannerConfigExpanded)}
+                        >
                             {/* Two-column layer controls */}
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                                 {/* Layer 1 - Background Color (Default/Fallback) - Blank */}
@@ -340,9 +418,16 @@ export default function PagePage({ onBack, onNavigateToOrb, onNavigateToYou, onN
                             <p className="text-[10px] text-slate-400 leading-relaxed mb-4">
                                 Set the paired background color in Layer 2 settings, then save to library. Each saved image remembers its paired color.
                             </p>
+                        </ConfigSection>
 
-                            {/* Layer 2 Image Folders */}
-                            <div className="space-y-3 pt-4 border-t border-slate-100">
+                        {/* Layer 2 Image Library - Separate Section */}
+                        <ConfigSection 
+                            title="Layer 2 Image Library" 
+                            icon={Folder}
+                            isExpanded={isLayer2LibraryExpanded}
+                            onToggle={() => setIsLayer2LibraryExpanded(!isLayer2LibraryExpanded)}
+                        >
+                            <div className="space-y-3">
                                 <div className="flex items-center justify-between">
                                     <div className="flex items-center gap-2">
                                         <Folder size={14} className="text-purple-500" />
@@ -838,6 +923,189 @@ export default function PagePage({ onBack, onNavigateToOrb, onNavigateToYou, onN
                                 ))}
                             </div>
                         </ConfigSection>
+
+                        {/* Layer 2 Folders Grid - Scrollable Thumbnails */}
+                        {layer2Folders.length > 0 && (
+                            <div className="space-y-4">
+                                <div className="flex items-center justify-between">
+                                    <h3 className="text-xs font-black uppercase text-slate-400 tracking-widest flex items-center gap-2">
+                                        <Folder size={14} /> Layer 2 Folders
+                                        {selectedFolderFilter && (
+                                            <span className="text-[10px] font-normal normal-case text-slate-500">
+                                                ({filteredLayer2Folders.length} {filteredLayer2Folders.length === 1 ? 'folder' : 'folders'})
+                                            </span>
+                                        )}
+                                    </h3>
+                                </div>
+                                
+                                <div className="grid grid-cols-4 gap-4 max-h-[600px] overflow-y-auto pr-2">
+                                    {filteredLayer2Folders.map((folder) => {
+                                        const firstImage = folder.images && folder.images.length > 0 ? folder.images[0] : null;
+                                        const isSelected = selectedLayer2FolderId === folder.id;
+                                        const assignedFolders = folder.folderColors || [];
+                                        
+                                        return (
+                                            <div
+                                                key={folder.id}
+                                                className="relative group flex flex-col items-center"
+                                                style={{ zIndex: folderAssignmentOpenId === folder.id ? 100 : 'auto' }}
+                                                onMouseEnter={() => setHoveredLayer2FolderId(folder.id)}
+                                                onMouseLeave={() => {
+                                                    setHoveredLayer2FolderId(null);
+                                                    // Don't close if menu is open - let click outside handle it
+                                                    if (folderAssignmentOpenId !== folder.id) {
+                                                        setFolderAssignmentOpenId(null);
+                                                    }
+                                                }}
+                                            >
+                                                {/* Folder Thumbnail */}
+                                                <div className="relative w-full aspect-video mx-auto overflow-hidden rounded-lg border-4 transition-all duration-200 bg-slate-100">
+                                                    <button
+                                                        onClick={() => {
+                                                            if (firstImage) {
+                                                                applyLayer2Image(firstImage);
+                                                                if (firstImage.bgColor) {
+                                                                    setPageBannerBgColor(firstImage.bgColor);
+                                                                }
+                                                            }
+                                                            setSelectedLayer2FolderId(folder.id);
+                                                        }}
+                                                        className={`w-full h-full transition-all duration-200 relative overflow-hidden ${
+                                                            isSelected
+                                                                ? 'border-purple-500 ring-4 ring-purple-200 shadow-lg scale-105'
+                                                                : 'border-slate-200 hover:border-purple-300 hover:shadow-md'
+                                                        }`}
+                                                    >
+                                                        {firstImage ? (
+                                                            <img
+                                                                src={firstImage.image}
+                                                                alt={folder.name}
+                                                                className="w-full h-full object-cover"
+                                                            />
+                                                        ) : (
+                                                            <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-purple-100 to-purple-200">
+                                                                <Folder size={32} className="text-purple-400" />
+                                                            </div>
+                                                        )}
+                                                        
+                                                        {/* Glass Overlay */}
+                                                        <div className="absolute inset-0 bg-purple-200/10 pointer-events-none" />
+                                                        
+                                                        {/* Active Indicator */}
+                                                        {isSelected && (
+                                                            <div className="absolute inset-0 bg-purple-500/20 flex items-center justify-center pointer-events-none">
+                                                                <Check className="text-white drop-shadow-md" size={24} />
+                                                            </div>
+                                                        )}
+                                                    </button>
+                                                </div>
+
+                                                {/* Folder Name */}
+                                                <p className="mt-2 text-[10px] text-slate-500 text-center font-bold truncate w-full">
+                                                    {folder.name}
+                                                </p>
+
+                                                {/* Image Count Badge */}
+                                                <div className="absolute top-0 right-0 bg-purple-500 text-white text-[8px] font-bold px-1.5 py-0.5 rounded-full uppercase tracking-wider">
+                                                    {folder.images.length} {folder.images.length === 1 ? 'image' : 'images'}
+                                                </div>
+
+                                                {/* Theme Badge */}
+                                                {themeFolderId === folder.id && (
+                                                    <div className="absolute top-0 left-0 bg-amber-500 text-white text-[8px] font-bold px-1.5 py-0.5 rounded-full uppercase tracking-wider flex items-center gap-1">
+                                                        <Star size={8} className="fill-current" />
+                                                        Theme
+                                                    </div>
+                                                )}
+
+                                                {/* Random Badge */}
+                                                {folder.condition === 'random' && (
+                                                    <div className="absolute bottom-0 left-0 bg-amber-500 text-white text-[8px] font-bold px-1.5 py-0.5 rounded-full uppercase tracking-wider flex items-center gap-1">
+                                                        <Shuffle size={8} />
+                                                        Random
+                                                    </div>
+                                                )}
+
+                                                {/* Folder Assignment Button (on hover) */}
+                                                {hoveredLayer2FolderId === folder.id && (
+                                                    <div className="absolute -top-2 -left-2 flex flex-col gap-1 z-[100]">
+                                                        <button
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                setFolderAssignmentOpenId(folderAssignmentOpenId === folder.id ? null : folder.id);
+                                                            }}
+                                                            className={`w-6 h-6 rounded-full flex items-center justify-center shadow-md transition-all ${
+                                                                assignedFolders.length > 0
+                                                                    ? 'bg-purple-500 hover:bg-purple-600 text-white'
+                                                                    : 'bg-slate-400 hover:bg-slate-500 text-white'
+                                                            }`}
+                                                            title="Assign to folders"
+                                                        >
+                                                            <Folder size={12} />
+                                                        </button>
+                                                        
+                                                        {/* Folder Color Selector */}
+                                                        {folderAssignmentOpenId === folder.id && (
+                                                            <div className="folder-assignment-menu absolute top-7 left-0 bg-white border-2 border-slate-200 rounded-lg p-2 shadow-xl z-[100] min-w-[200px]">
+                                                                <div className="text-[10px] font-bold uppercase text-slate-400 mb-2">Assign to Folders</div>
+                                                                <div className="grid grid-cols-4 gap-1">
+                                                                    {FOLDER_COLORS.map((color) => {
+                                                                        const isAssigned = assignedFolders.includes(color.id);
+                                                                        return (
+                                                                            <button
+                                                                                key={color.id}
+                                                                                onClick={(e) => {
+                                                                                    e.stopPropagation();
+                                                                                    toggleFolderAssignment(folder.id, color.id);
+                                                                                }}
+                                                                                className={`w-8 h-8 rounded border-2 transition-all ${
+                                                                                    isAssigned
+                                                                                        ? 'border-black ring-2 ring-purple-300 scale-110'
+                                                                                        : 'border-slate-300 hover:border-slate-400'
+                                                                                }`}
+                                                                                style={{ backgroundColor: color.hex }}
+                                                                                title={color.name}
+                                                                            >
+                                                                                {isAssigned && (
+                                                                                    <Check size={12} className="text-white drop-shadow-md" />
+                                                                                )}
+                                                                            </button>
+                                                                        );
+                                                                    })}
+                                                                </div>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                )}
+
+                                                {/* Assigned Folder Indicators */}
+                                                {assignedFolders.length > 0 && (
+                                                    <div className="absolute bottom-0 left-0 right-0 flex items-center justify-center gap-1 pb-1">
+                                                        {assignedFolders.slice(0, 3).map((folderId) => {
+                                                            const color = FOLDER_COLORS.find(c => c.id === folderId);
+                                                            if (!color) return null;
+                                                            return (
+                                                                <div
+                                                                    key={folderId}
+                                                                    className="w-3 h-3 rounded-full border border-white/50 shadow-sm"
+                                                                    style={{ backgroundColor: color.hex }}
+                                                                    title={color.name}
+                                                                />
+                                                            );
+                                                        })}
+                                                        {assignedFolders.length > 3 && (
+                                                            <div className="w-3 h-3 rounded-full bg-slate-400 border border-white/50 shadow-sm flex items-center justify-center">
+                                                                <span className="text-[6px] font-bold text-white">+{assignedFolders.length - 3}</span>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>

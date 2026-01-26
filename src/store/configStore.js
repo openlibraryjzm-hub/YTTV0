@@ -121,6 +121,7 @@ export const useConfigStore = create(
                     orbImageScale: favorite.orbImageScale,
                     orbImageXOffset: favorite.orbImageXOffset ?? 0,
                     orbImageYOffset: favorite.orbImageYOffset ?? 0,
+                    folderColors: favorite.folderColors || [], // Array of folder color IDs
                 }]
             })),
             removeOrbFavorite: (id) => set((state) => ({
@@ -137,6 +138,11 @@ export const useConfigStore = create(
             renameOrbFavorite: (id, newName) => set((state) => ({
                 orbFavorites: state.orbFavorites.map(f => 
                     f.id === id ? { ...f, name: newName } : f
+                )
+            })),
+            updateOrbFavoriteFolders: (id, folderColors) => set((state) => ({
+                orbFavorites: state.orbFavorites.map(f => 
+                    f.id === id ? { ...f, folderColors: folderColors || [] } : f
                 )
             })),
 
@@ -217,7 +223,7 @@ export const useConfigStore = create(
             // isThemeFolder: true means this folder's images apply app-wide as the theme
             // condition: 'random' means randomly select from folder images on each page entry, null means use first image
             layer2Folders: [
-                { id: 'default', name: 'Default', images: [], playlistIds: [], isThemeFolder: false, condition: null }
+                { id: 'default', name: 'Default', images: [], playlistIds: [], isThemeFolder: false, condition: null, folderColors: [] }
             ],
             selectedLayer2FolderId: 'default',
             setSelectedLayer2FolderId: (val) => set({ selectedLayer2FolderId: val }),
@@ -252,7 +258,8 @@ export const useConfigStore = create(
                     images: [],
                     playlistIds: [], // Empty = show on all playlists
                     isThemeFolder: false,
-                    condition: null // null = first image, 'random' = random selection
+                    condition: null, // null = first image, 'random' = random selection
+                    folderColors: [] // Array of folder color IDs
                 }]
             })),
             removeLayer2Folder: (folderId) => set((state) => {
@@ -281,6 +288,12 @@ export const useConfigStore = create(
             setLayer2FolderCondition: (folderId, condition) => set((state) => ({
                 layer2Folders: state.layer2Folders.map(f =>
                     f.id === folderId ? { ...f, condition: condition || null } : f
+                )
+            })),
+            // Update folder color assignments
+            updateLayer2FolderFolders: (folderId, folderColors) => set((state) => ({
+                layer2Folders: state.layer2Folders.map(f =>
+                    f.id === folderId ? { ...f, folderColors: folderColors || [] } : f
                 )
             })),
             addLayer2Image: (folderId, image) => set((state) => ({
