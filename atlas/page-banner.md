@@ -47,10 +47,17 @@ Users see a contextual banner (220px fixed height) at the top of scrollable cont
     - **Year** (middle-right): Creation year
     - **Video Count** (bottom-right): Number of videos with label
     - Vertically aligned on right side of thumbnail
-  - **Media Carousel** (bottom-left): Shows continue watching, pinned videos, and/or ASCII signature
+  - **Title Navigation Buttons** (Videos Page): Horizontal buttons on either side of playlist title
+    - **Previous Button** (left): Navigates to previous playlist - white bg, black chevron left icon
+    - **Return Button** (middle, if provided): Returns to reset point playlist - white bg, grey icon (inactive) / black icon (active)
+    - **Next Button** (right): Navigates to next playlist - white bg, black chevron right icon
+    - **Size**: `w-6 h-6` compact buttons
+    - Preview mode navigation (doesn't affect player)
+  - **Media Carousel** (centered in Layer 1 area): Shows continue watching, pinned videos, and/or ASCII signature
     - **Continue Video**: Thumbnail of most recently watched video (click to resume)
     - **Pinned Videos**: Thumbnail of pinned video(s) in current playlist
     - **ASCII Signature**: User's ASCII art displayed in fixed container (from Settings → Signature)
+    - **Thumbnail Size**: `h-36 w-[240px]` (144px × 240px) - uniform size across all modes
     - **Pin Type Badge** (on pinned thumbnails): Top-left badge showing pin type:
       - **Normal Pin**: White pin icon
       - **Follower Pin**: White pin icon + → arrow
@@ -60,19 +67,16 @@ Users see a contextual banner (220px fixed height) at the top of scrollable cont
       - Clock icon for Continue watching
       - Pin icon for Pinned videos
       - Sparkles icon for ASCII Signature
+      - Width: `w-[240px]` to match thumbnail width
       - Offset `ml-[10px]` to align under thumbnail
-    - **Multi-Pin Bar**: When multiple pins exist (max 10 segments), a vertical segmented bar appears to the right of thumbnail
+    - **Multi-Pin Bar**: When multiple pins exist (max 10 segments), a vertical segmented bar appears absolutely positioned to the right of thumbnail
+      - **Position**: Absolutely positioned at `left: calc(50% + 120px + 4px)`, `bottom: 31px` (centered relative to thumbnail)
       - **Folder Colors**: Each segment colored by the pin's folder assignment
       - **Priority Crown**: Priority pin segment has crown-like clip-path and golden color (`#FFD700`)
       - **Selection Dot**: White dot indicator to the right of the bar (golden for priority pin)
-    - **Fixed Width**: Container positioned at `bottom-1 left-[1px]`
-  - **Playlist Navigator Stack** (Videos Page): Vertical stack to the right of thumbnail
-    - **Up Chevron** (top): Navigates to next playlist - white bg, black icon
-    - **Return Button** (middle): Returns to reset point playlist - white bg, grey icon (inactive) / black icon (active)
-    - **Down Chevron** (bottom): Navigates to previous playlist - white bg, black icon
-    - **Size**: `h-24 w-6` (matches thumbnail height)
-    - **Gap**: 2px from thumbnail (`gap-[2px]`)
-    - Preview mode navigation (doesn't affect player)
+      - **Size**: `h-36 w-3` (matches thumbnail height)
+      - Positioned outside flex container to maintain uniform thumbnail width
+    - **Positioning**: Centered horizontally within Layer 1 area (332px width) at `bottom-1`
 - **Background Options**:
   - **Color Gradients**: Vibrant gradients matching folder color (when viewing folders)
   - **Animated Patterns**: CSS-based patterns (Diagonal, Dots, Mesh, Solid) when no custom image
@@ -93,16 +97,7 @@ Users see a contextual banner (220px fixed height) at the top of scrollable cont
   - Both panels use `pointer-events-none` and `z-10` for proper layering
   - Creates visual effect of two separate banner sections
 - **Unified Banner System**: When custom image is set, the banner visually connects with the Sticky Toolbar below it using synchronized horizontal scroll animation (can be disabled via Settings)
-  - **Layer 2 Thumbnail Strip**: Vertical strip to the right of thumbnail showing Layer 2 images from folders
-    - **Position**: `left-[220px]`, fixed height of 196px (fits 4 thumbnails)
-    - **Scrollable**: Shows ALL images/folders with always-visible scrollbar on right side
-      - **Scrollbar**: Native scrollbar always visible for easy navigation
-      - **Item Height**: Fixed 45px per thumbnail for consistent scrolling
-    - **Mode Switcher Bar**: Horizontal bar below slots with Folder and Image icons
-      - **Folders Mode**: Shows folders with first image as thumbnail background, name overlay, image count
-      - **Images Mode**: Shows images from selected folder (click to apply as Layer 2)
-    - **Folder Selection**: Click folder → selects it AND switches to images view automatically
-    - **Active Indicator**: Purple border highlights currently active Layer 2 image
+  - Layer 2 images are managed via Settings → Appearance → Page Banner (no inline thumbnail strip)
 
 **2: File Manifest**
 
@@ -215,35 +210,32 @@ Users see a contextual banner (220px fixed height) at the top of scrollable cont
      - If `showInfo` is true → Shows description text and info overlays on thumbnail
      - If only one option exists → Shows that option, no navigation bar
      - If multiple options exist → Shows horizontal segmented bar with icons below content
-     - If multiple pins → Shows vertical segmented bar to the right of thumbnail (max 10)
+     - If multiple pins → Shows vertical segmented bar absolutely positioned to the right of thumbnail (max 10)
      - ASCII option always available if `userAvatar` is set
    - **Horizontal Segmented Bar** (option navigation):
-    - Fixed width (`w-[160px]`), height (`h-5`), offset `ml-[10px]`
+    - Fixed width (`w-[240px]`), height (`h-5`), offset `ml-[10px]` (matches thumbnail width)
      - Icons: Clock (continue), Pin (pinned), Sparkles (ASCII)
      - Active segment: solid white with black icon
      - Inactive segments: semi-transparent with white icon
      - Glassmorphic styling: `bg-black/20 backdrop-blur-sm border-white/20`
    - **Vertical Pin Bar** (multi-pin navigation):
-     - Fixed width (`w-3`), matches thumbnail height (`h-24`)
+     - Fixed width (`w-3`), matches thumbnail height (`h-36`)
      - **Max 10 segments** - capped to prevent overflow
+     - **Position**: Absolutely positioned to the right of thumbnail (`left: calc(50% + 120px + 4px)`, `bottom: 31px`)
      - **Folder-colored segments**: Each segment colored by pin's assigned folder (from `videoFolderAssignments`)
      - **Priority Crown**: First segment (if priority pin) has crown clip-path and golden `#FFD700` color
      - **Selection Indicator**: White dot to the right of bar (golden for priority pin)
      - Clicking a segment changes `activePinnedIndex` to show that pin
+     - Positioned outside flex container to maintain uniform thumbnail width
    - **Pin Type Badge** (on pinned thumbnails):
      - Position: Top-left of thumbnail (`top-1 left-1`)
      - Background: `bg-black/60 backdrop-blur-sm`
      - Displays icons based on pin type: pin icon, crown emoji (priority), arrow (follower)
-   - **Playlist Navigator Stack** (Videos Page only):
-     - Vertical stack to the right of thumbnail with `gap-[2px]`
-     - Up chevron → `onNavigateNext()`, Down chevron → `onNavigatePrev()`
-     - Return button → `onReturn()` (only active when `showReturnButton` is true)
-     - All buttons: white background, black icons (chevrons), grey/black icon (return)
    - User clicks thumbnail → Calls `onContinue` or `onPinnedClick(video)` → Starts playing
    - User clicks ASCII area → No action (display only)
    - User left-clicks info button → Toggles `showInfo` state
    - User right-clicks info button → Opens edit modal (if `onEdit` provided)
-   - **Positioning**: `bottom-1 left-[1px]`
+   - **Positioning**: Centered horizontally within Layer 1 area at `bottom-1` with `left: 166px, transform: translateX(-50%)`
 
 **Source of Truth:**
 - `configStore.pageBannerBgColor` - Layer 1 background color (hex string)
@@ -299,10 +291,10 @@ Users see a contextual banner (220px fixed height) at the top of scrollable cont
 
 **Content Layout:**
 - **Top-Aligned**: Content uses `items-start` for top-left alignment
-- **Title**: Compact (`text-lg md:text-xl`), no bottom margin (`mb-0`)
+- **Title**: Compact (`text-lg md:text-xl`), no bottom margin (`mb-0`), with navigation buttons on either side (Videos Page)
 - **Description**: Positioned to the right of thumbnail (`ml-[170px] mt-[7px]`), hidden until info button clicked
-- **Media Carousel**: Positioned at `bottom-1 left-[1px]` (below title)
-- **Playlist Navigator Stack**: Vertical bar (`h-24 w-6`) to the right of thumbnail with `gap-[2px]`
+- **Media Carousel**: Centered horizontally within Layer 1 area (332px width), positioned at `bottom-1` with `left: 166px, transform: translateX(-50%)`
+- **Thumbnail Dimensions**: Uniform `h-36 w-[240px]` (144px × 240px) across all carousel modes
 - **Info Button**: Positioned to the right of horizontal carousel buttons, handles both info toggle and edit (right-click)
 - **Edit Button**: Removed (functionality moved to info button right-click)
 
@@ -319,27 +311,14 @@ Users see a contextual banner (220px fixed height) at the top of scrollable cont
 - `hasMultipleOptions`: Boolean - more than one option exists (shows segmented bar navigation)
 - `hasAnyOption`: Boolean - at least one option exists (shows the carousel)
 
-**Layer 2 Thumbnail Strip State:**
-- `layer2ViewMode`: 'folders' | 'images' - current view mode (default: 'images')
-- `selectedFolder`: Folder object from `layer2Folders` matching `selectedLayer2FolderId`
-- `layer2Images`: Array of images from the selected folder
-- `filteredLayer2Folders`: Folders filtered by playlist assignment (only shows folders assigned to current playlist or "all")
-- `effectiveLayer2ImageId`: The ID of the currently selected image for this playlist (from override or default)
-- **Folders Mode**: Shows filtered folders with scroll support (45px height each), clicking selects folder and auto-switches to images mode
-- **Images Mode**: Shows ALL images from selected folder with scroll support (45px height each), clicking sets image as Layer 2 for current playlist
-- **Scroll Support**: Always-visible scrollbar on right side for easy navigation through all items
-- **Selection Behavior**: Clicking an image calls `handleSelectLayer2Image()` which stores the override for the current playlist
-- **Playlist Assignment**: Each folder can be assigned to specific playlists (configured in Settings → Appearance → Page Banner)
-  - Default: Empty `playlistIds` array means folder shows on ALL playlists
-  - Specific: Adding playlist IDs makes the folder exclusive to those playlists' Videos pages
+**Layer 2 Image Management:**
+- Layer 2 images are managed exclusively via Settings → Appearance → Page Banner
 - **Per-Playlist Layer 2 Selection**: Each playlist remembers its selected Layer 2 image reference
   - **Default**: First image from Default folder is shown for all playlists initially
-  - **Override**: Clicking an image in the thumbnail strip saves the image reference (imageId, folderId)
+  - **Override**: Image selection stored in `playlistLayer2Overrides` with reference IDs and fallback values
   - **Live Updates**: When viewing a playlist, the banner looks up current image values from the library (scale, position, bgColor)
   - **Paired Background Color**: Each library image stores its own background color (set via "Paired Background Color" in Settings)
-  - **Color Indicator**: Small colored dot on each image thumbnail shows its paired background color
   - **Persistence**: Selection stored in `playlistLayer2Overrides` with reference IDs and fallback values
-  - **Active Indicator**: Purple border highlights the currently selected image for the current playlist
 
 **Pinned Video Data (from VideosPage):**
 - `folder_color`: First folder color assigned to this video (for pin bar segment coloring)
@@ -366,24 +345,28 @@ Users see a contextual banner (220px fixed height) at the top of scrollable cont
 
 **Videos Page:**
 - Displays playlist name or folder name as title (compact `text-lg md:text-xl`)
+- **Title Navigation Buttons**: Horizontal buttons on either side of title for playlist navigation
+  - **Previous Button** (left): Navigates to previous playlist in preview mode
+  - **Return Button** (middle, if provided): Returns to reset point playlist (grey when at reset point, black when away)
+  - **Next Button** (right): Navigates to next playlist in preview mode
+  - **Styling**: All buttons have white background (`w-6 h-6`), black icons
+  - **Preview Mode**: Navigation uses `setPreviewPlaylist` so player continues unaffected
+  - **Reset Point Tracking**: Entering from PlaylistsPage or controller sets a "reset point"
+  - **State**: Uses `resetPointId` state and `isChevronNavRef` ref to track navigation source
 - Description shows to the right of thumbnail when info button is clicked
 - Video count, year, and author shown as overlays on thumbnail when info button is clicked
 - Right-click info button opens `EditPlaylistModal` for renaming and setting custom banner
 - Custom banners persist in `folder_metadata` table
 - **Thumbnail Carousel**: Shows continue watching, pinned videos, and/or ASCII signature
+  - **Uniform Size**: All thumbnails maintain `h-36 w-[240px]` (144px × 240px) regardless of mode
+  - **Centered**: Positioned horizontally centered within Layer 1 area (332px width)
 - **Info Display**: When info button clicked:
   - Description appears to the right of thumbnail (`ml-[170px]`)
   - Info overlays appear on thumbnail (author top-right, year middle-right, count bottom-right)
 - **Pin Type Badge**: When viewing pinned video, top-left badge shows pin type (normal/follower/priority/priority-follower)
 - **Multi-Pin Bar**: Vertical bar with folder-colored segments, priority crown, and selection dot
-- **Playlist Navigator Stack** (vertical, right of thumbnail):
-  - **Up Chevron**: Navigates to next playlist in preview mode
-  - **Return Button**: Returns to reset point playlist (grey when at reset point, black when away)
-  - **Down Chevron**: Navigates to previous playlist in preview mode
-  - **Styling**: All buttons have white background, black icons (chevrons use `strokeWidth={2.5}`)
-  - **Preview Mode**: Navigation uses `setPreviewPlaylist` so player continues unaffected
-  - **Reset Point Tracking**: Entering from PlaylistsPage or controller sets a "reset point"
-  - **State**: Uses `resetPointId` state and `isChevronNavRef` ref to track navigation source
+  - **Position**: Absolutely positioned to the right of thumbnail (outside flex container)
+  - **Alignment**: `bottom: 31px` to align with thumbnail area
 
 **Playlists Page:**
 - Title: "All", preset name, or "All - TabName"
