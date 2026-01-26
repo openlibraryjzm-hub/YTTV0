@@ -98,10 +98,10 @@ See **Section 2.1: Playlists** for complete logic flow. The UI-specific aspects:
 
 **1: User-Perspective Description**
 
-Users see a 3-column grid of video cards showing videos from the current playlist:
+Users see a horizontal scrolling layout with two rows of video cards showing videos from the current playlist:
 
 - **Page Banner**: 
-  - **Location**: Displayed at the very top of the scrollable content area.
+  - **Location**: Displayed at the very top and remains fixed in place (does not scroll).
   - **Comprehensive Documentation**: See `page-banner.md` for complete details on the Page Banner system, including Unified Banner System, Sticky Toolbar integration, customization options, and technical implementation.
   - **Quick Reference**: Shows playlist/folder title, metadata (video count, year, author), description, ASCII avatar, and thumbnail carousel. Supports custom images, animated patterns, and folder color gradients.
   - **Thumbnail Carousel** (top-right): Shows continue watching and/or pinned videos with dot navigation and multi-pin bar
@@ -147,8 +147,12 @@ Users see a 3-column grid of video cards showing videos from the current playlis
   - **Controls**: Sticky status toggled via video 3-dot menu ("Sticky Video" / "Unsticky Video").
   - **Persistence**: Scoped ID sets are persisted to localStorage (`sticky-storage`).
 
-- **Video Grid**: 3-column grid of video cards with optimized spacing for larger thumbnails (see `ui-cards.md` for video card details)
-  - **Grid Layout**: `grid-cols-3` with `gap-2` (8px) for increased thumbnail size
+- **Horizontal Scrolling Video Layout**: Two rows of video cards arranged horizontally with horizontal scrolling
+  - **Layout**: Two horizontal rows of video cards, each card fixed at 320px width
+  - **Scrolling**: Horizontal scroll container with visible scrollbar (thin style)
+  - **Wheel Scrolling**: Mouse wheel events are converted to horizontal scrolling for natural navigation
+  - **Positioning**: Scroll area positioned to touch the bottom edge of the sticky toolbar (negative margin to eliminate gap)
+  - **Vertical Scrolling Disabled**: Page does not scroll vertically - only horizontal scrolling is active
   - **Container Padding**: `px-4` (16px) for balanced spacing
 
 - **Folder Filtering**: When a folder is selected (via FolderSelector), only videos in that folder are shown
@@ -265,6 +269,15 @@ Users see a 3-column grid of video cards showing videos from the current playlis
       - **Watch Progress**: Sorts by progress (Unwatched/Partially Watched/Watched).
       - **Last Viewed**: Sorts by `last_updated` timestamp from `video_progress` table. Most recently viewed videos appear first. Videos that have never been viewed are placed at the end.
    - Grid re-renders with sorted videos
+
+3.5. **Horizontal Scrolling Flow:**
+   - Videos are distributed across two horizontal rows (even indices in row 1, odd indices in row 2)
+   - Horizontal scroll container uses `overflowX: 'scroll'` with visible scrollbar
+   - Mouse wheel events are intercepted and converted to horizontal scrolling via `useEffect` (line 229)
+   - When wheel event detected → `preventDefault()` stops vertical scroll → `scrollLeft` updated with `deltaY` value
+   - Page banner remains fixed at top (does not scroll)
+   - Scroll area positioned with negative margin to touch bottom of sticky toolbar
+   - Vertical scrolling is disabled on the page container (`overflow-y-hidden`)
 
 4. **Bulk Tag Mode Flow:**
    - User clicks "Bulk Tag Mode" → `setBulkTagMode(true)` (line 30)

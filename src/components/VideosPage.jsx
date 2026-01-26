@@ -55,9 +55,10 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
   const { setViewMode, inspectMode, viewMode } = useLayoutStore();
   const { currentPage: currentNavTab, setCurrentPage: setCurrentNavTab } = useNavigationStore();
   const scrollContainerRef = useRef(null);
+  const horizontalScrollRef = useRef(null);
 
   const scrollToTop = () => {
-    scrollContainerRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+    horizontalScrollRef.current?.scrollTo({ left: 0, behavior: 'smooth' });
   };
 
   const tabs = [
@@ -201,18 +202,20 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
   // Reset page when playlist, folder, or sort filters change
   useEffect(() => {
     resetPagination();
-    if (scrollContainerRef.current) {
-      scrollContainerRef.current.scrollTo(0, 0);
+    if (horizontalScrollRef.current) {
+      horizontalScrollRef.current.scrollTo({ left: 0, behavior: 'smooth' });
     }
   }, [activePlaylistId, selectedFolder, sortBy, sortDirection, includeUnwatched, showOnlyCompleted, resetPagination]);
 
-  // Scroll to top when page changes (unless preserveScroll is set from TopNav)
+  // Scroll to left when page changes (unless preserveScroll is set from TopNav)
   useEffect(() => {
     if (preserveScroll) {
       // Clear the flag but don't scroll
       clearPreserveScroll();
-    } else if (scrollContainerRef.current) {
-      scrollContainerRef.current.scrollTo(0, 0);
+    } else {
+      if (horizontalScrollRef.current) {
+        horizontalScrollRef.current.scrollTo({ left: 0, behavior: 'smooth' });
+      }
     }
   }, [currentPage, preserveScroll, clearPreserveScroll]);
 
@@ -222,6 +225,33 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
       setSelectedVideoIndex(currentVideoIndex);
     }
   }, [currentVideoIndex, activePlaylistItems]);
+
+  // Convert vertical wheel scrolling to horizontal scrolling (optimized)
+  useEffect(() => {
+    const container = horizontalScrollRef.current;
+    if (!container) return;
+
+    const handleWheel = (e) => {
+      // Check if there's horizontal scroll available
+      const hasHorizontalScroll = container.scrollWidth > container.clientWidth;
+      
+      if (hasHorizontalScroll) {
+        // Prevent default vertical scrolling
+        e.preventDefault();
+        e.stopPropagation();
+        
+        // Direct scrollLeft assignment for better performance
+        container.scrollLeft += e.deltaY;
+      }
+    };
+
+    // Add listener to container
+    container.addEventListener('wheel', handleWheel, { passive: false });
+
+    return () => {
+      container.removeEventListener('wheel', handleWheel);
+    };
+  }, []); // Attach once when component mounts
 
   const { isStickied, toggleSticky, stickiedVideos: allStickiedVideos } = useStickyStore();
 
@@ -1188,7 +1218,7 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
           />
         </div>
       ) : (
-        <div ref={scrollContainerRef} className="flex-1 overflow-y-auto bg-transparent relative">
+        <div className="flex-1 overflow-y-hidden bg-transparent relative">
           {/* Page Banner - Always visible for context */}
           {activePlaylistId && (
             <div className="px-4 pt-8">
@@ -1367,7 +1397,19 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
 
           </div >
 
-          <div className="px-4 pb-8">
+          <div 
+            className="px-4 pb-8"
+            onWheel={(e) => {
+              // Handle wheel scrolling on the entire video area
+              const container = horizontalScrollRef.current;
+              if (container && container.scrollWidth > container.clientWidth) {
+                e.preventDefault();
+                e.stopPropagation();
+                // Direct scrollLeft assignment for better performance
+                container.scrollLeft += e.deltaY;
+              }
+            }}
+          >
             {/* Edit Playlist/Folder Modal */}
             <EditPlaylistModal
               isOpen={showEditModal}
@@ -1433,56 +1475,132 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
                   </StickyVideoCarousel>
                 )}
 
-                {/* Regular Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-2 animate-fade-in">
-                  {regularVideos.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map((video, index) => {
-                    const originalIndex = activePlaylistItems.findIndex(v => v.id === video.id);
-                    // Check stickied status for this specific folder context
-                    const folderKey = selectedFolder === null ? 'root' : selectedFolder;
-                    const key = `${activePlaylistId}::${folderKey}`;
-                    const isContextStickied = (allStickiedVideos[key] || []).includes(video.id);
+                {/* Horizontal Scrolling Video Grid - 2 Rows */}
+                <div 
+                  ref={horizontalScrollRef}
+                  className="horizontal-video-scroll" 
+                  style={{ 
+                    width: '100%',
+                    overflowX: 'scroll', // Force scrollbar to always show
+                    overflowY: 'hidden',
+                    scrollbarWidth: 'thin', // Show scrollbar on Firefox
+                    scrollbarColor: 'rgba(148, 163, 184, 0.6) rgba(15, 23, 42, 0.3)', // Firefox scrollbar color
+                    WebkitOverflowScrolling: 'touch', // Smooth scrolling on iOS
+                    marginTop: '-32px' // Pull up to touch bottom of sticky bar (mb-8 = 32px)
+                  }}
+                >
+                  <div 
+                    className="flex flex-col gap-2 animate-fade-in"
+                    style={{ 
+                      width: 'max-content'
+                    }}
+                  >
+                    {/* Row 1 */}
+                    <div className="flex gap-2" style={{ width: 'max-content' }}>
+                      {regularVideos.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).filter((_, idx) => idx % 2 === 0).map((video, rowIndex) => {
+                        const index = (currentPage - 1) * itemsPerPage + rowIndex * 2;
+                        const originalIndex = activePlaylistItems.findIndex(v => v.id === video.id);
+                        const folderKey = selectedFolder === null ? 'root' : selectedFolder;
+                        const key = `${activePlaylistId}::${folderKey}`;
+                        const isContextStickied = (allStickiedVideos[key] || []).includes(video.id);
 
-                    return (
-                      <VideoCard
-                        key={video.id}
-                        video={video}
-                        index={index}
-                        originalIndex={originalIndex}
-                        isSelected={selectedVideoIndex === originalIndex}
-                        isCurrentlyPlaying={currentVideoIndex === originalIndex}
-                        videoFolders={videoFolderAssignments[video.id] || []}
-                        selectedFolder={selectedFolder}
-                        onVideoClick={() => handleVideoClick(video, index)}
-                        onStarClick={(e) => handleStarClick(e, video)}
-                        onStarColorLeftClick={handleStarColorLeftClick}
-                        onStarColorRightClick={handleStarColorRightClick}
-                        onMenuOptionClick={(option) => {
-                          if (option.action === 'toggleSticky') {
-                            handleToggleSticky(activePlaylistId, video.id);
-                          } else {
-                            handleMenuOptionClick(option, video);
-                          }
-                        }}
-                        onQuickAssign={handleStarClick}
-                        bulkTagMode={bulkTagMode}
-                        bulkTagSelections={bulkTagSelections[video.id] || new Set()}
-                        onBulkTagColorClick={(color) => handleBulkTagColorClick(video, color)}
-                        onPinClick={() => { }} // Handled internally in VideoCard via store
-                        isStickied={isContextStickied}
-                        playlistId={activePlaylistId}
-                        folderMetadata={allFolderMetadata}
-                        progress={(() => {
-                          const videoId = extractVideoId(video.video_url) || video.video_id;
-                          const data = videoProgress.get(video.id) || videoProgress.get(extractVideoId(video.video_url));
-                          return data ? (typeof data === 'number' ? data : data.percentage) : 0;
-                        })()}
-                        isWatched={(() => {
-                          const videoId = extractVideoId(video.video_url) || video.video_id;
-                          return watchedVideoIds.has(videoId);
-                        })()}
-                      />
-                    );
-                  })}
+                        return (
+                          <div key={video.id} style={{ width: '320px', flexShrink: 0 }}>
+                            <VideoCard
+                              video={video}
+                              index={index}
+                              originalIndex={originalIndex}
+                              isSelected={selectedVideoIndex === originalIndex}
+                              isCurrentlyPlaying={currentVideoIndex === originalIndex}
+                              videoFolders={videoFolderAssignments[video.id] || []}
+                              selectedFolder={selectedFolder}
+                              onVideoClick={() => handleVideoClick(video, index)}
+                              onStarClick={(e) => handleStarClick(e, video)}
+                              onStarColorLeftClick={handleStarColorLeftClick}
+                              onStarColorRightClick={handleStarColorRightClick}
+                              onMenuOptionClick={(option) => {
+                                if (option.action === 'toggleSticky') {
+                                  handleToggleSticky(activePlaylistId, video.id);
+                                } else {
+                                  handleMenuOptionClick(option, video);
+                                }
+                              }}
+                              onQuickAssign={handleStarClick}
+                              bulkTagMode={bulkTagMode}
+                              bulkTagSelections={bulkTagSelections[video.id] || new Set()}
+                              onBulkTagColorClick={(color) => handleBulkTagColorClick(video, color)}
+                              onPinClick={() => { }} // Handled internally in VideoCard via store
+                              isStickied={isContextStickied}
+                              playlistId={activePlaylistId}
+                              folderMetadata={allFolderMetadata}
+                              progress={(() => {
+                                const videoId = extractVideoId(video.video_url) || video.video_id;
+                                const data = videoProgress.get(video.id) || videoProgress.get(extractVideoId(video.video_url));
+                                return data ? (typeof data === 'number' ? data : data.percentage) : 0;
+                              })()}
+                              isWatched={(() => {
+                                const videoId = extractVideoId(video.video_url) || video.video_id;
+                                return watchedVideoIds.has(videoId);
+                              })()}
+                            />
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {/* Row 2 */}
+                    <div className="flex gap-2" style={{ width: 'max-content' }}>
+                      {regularVideos.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).filter((_, idx) => idx % 2 === 1).map((video, rowIndex) => {
+                        const index = (currentPage - 1) * itemsPerPage + rowIndex * 2 + 1;
+                        const originalIndex = activePlaylistItems.findIndex(v => v.id === video.id);
+                        const folderKey = selectedFolder === null ? 'root' : selectedFolder;
+                        const key = `${activePlaylistId}::${folderKey}`;
+                        const isContextStickied = (allStickiedVideos[key] || []).includes(video.id);
+
+                        return (
+                          <div key={video.id} style={{ width: '320px', flexShrink: 0 }}>
+                            <VideoCard
+                              video={video}
+                              index={index}
+                              originalIndex={originalIndex}
+                              isSelected={selectedVideoIndex === originalIndex}
+                              isCurrentlyPlaying={currentVideoIndex === originalIndex}
+                              videoFolders={videoFolderAssignments[video.id] || []}
+                              selectedFolder={selectedFolder}
+                              onVideoClick={() => handleVideoClick(video, index)}
+                              onStarClick={(e) => handleStarClick(e, video)}
+                              onStarColorLeftClick={handleStarColorLeftClick}
+                              onStarColorRightClick={handleStarColorRightClick}
+                              onMenuOptionClick={(option) => {
+                                if (option.action === 'toggleSticky') {
+                                  handleToggleSticky(activePlaylistId, video.id);
+                                } else {
+                                  handleMenuOptionClick(option, video);
+                                }
+                              }}
+                              onQuickAssign={handleStarClick}
+                              bulkTagMode={bulkTagMode}
+                              bulkTagSelections={bulkTagSelections[video.id] || new Set()}
+                              onBulkTagColorClick={(color) => handleBulkTagColorClick(video, color)}
+                              onPinClick={() => { }} // Handled internally in VideoCard via store
+                              isStickied={isContextStickied}
+                              playlistId={activePlaylistId}
+                              folderMetadata={allFolderMetadata}
+                              progress={(() => {
+                                const videoId = extractVideoId(video.video_url) || video.video_id;
+                                const data = videoProgress.get(video.id) || videoProgress.get(extractVideoId(video.video_url));
+                                return data ? (typeof data === 'number' ? data : data.percentage) : 0;
+                              })()}
+                              isWatched={(() => {
+                                const videoId = extractVideoId(video.video_url) || video.video_id;
+                                return watchedVideoIds.has(videoId);
+                              })()}
+                            />
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
                 </div>
               </>
             ) : (
