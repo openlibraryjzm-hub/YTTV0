@@ -659,63 +659,37 @@ Access videos that have been temporarily pinned during the current session.
 
 **1: User-Perspective Description**
 
-Users access the configuration area via the "Config" (Settings icon) button on the main Player Controller orb. The Settings Page provides a tabbed interface for application-wide customization with a **Sticky Toolbar** for quick navigation:
+Users access the configuration area via the "Config" (Settings icon) button on the main Player Controller orb. The Settings Page now serves as a navigation hub that defaults to showing the **OrbPage** (see Section 4.1.8.1). Configuration has been reorganized into four dedicated pages accessible via navigation buttons positioned at the bottom of each page's banner:
+
+- **Default Behavior**: When visiting SettingsPage, the OrbPage is displayed by default.
+
+- **Navigation Buttons** (positioned at bottom of Page Banner on all dedicated pages):
+  - **Orb**: Opens OrbPage for orb image and spill configuration (highlighted when active)
+  - **You**: Opens YouPage for pseudonym and ASCII signature configuration
+  - **Page**: Opens PagePage for Page Banner and Layer 2 image library configuration
+  - **App**: Opens AppPage for App Banner, Color Palette, and Player Borders configuration
+  - Buttons are positioned absolutely at the bottom of the Page Banner for consistent navigation across all pages
+  - Active page button is highlighted with sky-blue background
 
 - **Sticky Toolbar** (below Page Banner):
-  - **Navigation Buttons**: Four horizontally aligned buttons on the left:
-    - **Orb**: Opens dedicated Orb configuration page (highlighted when active)
-    - **You**: Placeholder for future functionality
-    - **Page**: Placeholder for future functionality
-    - **App**: Placeholder for future functionality
   - **Colored Prism Bar**: A unified horizontal bar displaying all 16 folder colors (matches Videos Page styling)
     - Each color segment is clickable (functionality to be wired up)
     - Shows video counts when available
     - Black border with rounded corners
   - **Sticky Behavior**: Toolbar sticks to top of viewport when scrolling, matching Videos Page behavior
   - **Visual States**: Transparent when resting, semi-transparent dark when stuck
+  - Navigation buttons have been moved from the sticky toolbar to the Page Banner
 
-- **Appearance Tab**:
-  - **Page Banner** (first section - positioned at top for live preview via actual banner above):
-    - **Two-Layer Image System**:
-      - **Layer 1 (Background)**: Upload button, thumbnail preview, remove button, and adjustment sliders
-      - **Layer 2 (Overlay)**: Upload button, thumbnail preview, remove button, and adjustment sliders
-      - Each layer has independent **Scale** (50-200%), **X Position** (0-100%), and **Y Position** (0-100%) sliders
-      - Recommended image size: 1920×220px
-      - Layer 2 best used with transparent PNGs for composite effects
-    - **Pattern Presets**: Toggles for CSS-based animated patterns (Diagonal, Dots, Mesh, Solid) - only visible when no custom images uploaded
-    - **Scroll Animation Toggle**: Enable/disable horizontal scrolling animation for Layer 1
-    - **Live Preview**: No separate preview panel - changes apply immediately to the actual Page Banner above the settings
-  - **Color Palette**:
-    - Allows selection of the global visual theme (e.g., Blue, Rose, Amber, etc.).
-    - Displays preview cards for each theme.
-    - Changes apply immediately to the entire application.
-  - **App Banner**:
-    - **Presets**: Quick toggles for mock presets (Default, Cosmic, etc.) - "Default" resets to standard.
-    - **Custom Upload**: Upload button for App Banner images (supports GIF for native animation).
-    - **Preview**: Live preview of the active banner image.
-  
-- **Visualizer Tab**:
-  - **Visualizer Style**: Selection grid for visualizer types (currently "Frequency Bars" is implemented).
-  - **Visualizer Effects**:
-    - **Distance-Based Transparency**: Toggle switch to enable a gradient fade on the visualizer bars. When enabled, bars are solid near the orb and fade to transparent as they extend outward.
-  - **Color Mode**: Selection for visualizer coloring (Theme Match, Rainbow, Custom).
-
-- **Signature Tab**:
-  - **Pseudonym**: Text input to set the username shown on banners.
-  - **Signature**:
-    - **Preset ASCII Art**: Grid of predefined ASCII avatars.
-    - **Custom ASCII**: Input field to paste custom multi-line ASCII art.
-  - **Preview**: Live preview of how the name and avatar will appear on the Page Banner.
-  - **External Resources**:
-    - **ASCII Art Banner**: A large, interactive banner linking to *EmojiCombos.com* for finding or creating ASCII art. Opens in the user's default browser.
-
-- **Orb Navigation**: Clicking the "Orb" button in the sticky toolbar opens a dedicated **OrbPage** (see below) instead of the Orb tab. The Orb tab functionality has been moved to this dedicated page for better organization.
+- **Legacy Settings Content**: The original tabbed interface (Appearance, Visualizer, Orb, Signature tabs) remains accessible but is now secondary to the dedicated pages. The legacy interface may be deprecated in future versions.
 
 **2: File Manifest**
 
 **UI/Components:**
-- `src/components/SettingsPage.jsx`: Main settings container and tabs with sticky toolbar.
-- `src/components/OrbPage.jsx`: Dedicated Orb configuration page (accessed via sticky toolbar).
+- `src/components/SettingsPage.jsx`: Main settings navigation hub that conditionally renders dedicated pages.
+- `src/components/OrbPage.jsx`: Dedicated Orb configuration page (default view).
+- `src/components/PagePage.jsx`: Dedicated Page Banner and Layer 2 configuration page.
+- `src/components/AppPage.jsx`: Dedicated App Banner, Color Palette, and Player Borders configuration page.
+- `src/components/YouPage.jsx`: Dedicated Signature & Profile configuration page.
 - `src/store/configStore.js`: Centralized state for all settings.
 
 **State Management:**
@@ -786,13 +760,15 @@ Users access the configuration area via the "Config" (Settings icon) button on t
    - User clicks name → Inline input appears → On blur/enter → `renameOrbFavorite(id, newName)` updates store.
    - User hovers and clicks trash icon → `removeOrbFavorite(id)` removes preset from array.
 
-**4: Sticky Toolbar Navigation**
+**4: Navigation System**
 
-- **Orb Button**: Toggles between Settings Page and OrbPage
-  - When on OrbPage, button is highlighted (sky blue background)
-  - Clicking returns to Settings Page
-- **You/Page/App Buttons**: Placeholder buttons for future functionality
-- **Colored Prism Bar**: Displays all 16 folder colors (functionality to be wired up)
+- **Page Navigation**: All dedicated pages (OrbPage, PagePage, AppPage, YouPage) have navigation buttons at the bottom of their Page Banner
+  - Navigation buttons allow direct transitions between pages without returning to legacy settings
+  - Active page button is highlighted with sky-blue background
+  - "Back to Settings" button navigates to OrbPage (the default page)
+- **Default Page**: SettingsPage defaults to showing OrbPage when first accessed
+- **Navigation Helper**: A `navigateToPage()` function ensures consistent state management when switching between pages
+- **Colored Prism Bar**: Displays all 16 folder colors in the sticky toolbar (functionality to be wired up)
 
 ---
 #### ### 4.1.8.1 OrbPage
@@ -802,9 +778,10 @@ Users access the configuration area via the "Config" (Settings icon) button on t
 OrbPage is a dedicated page for orb configuration, accessed via the "Orb" button in the Settings Page sticky toolbar. It appears as a full page below the Page Banner (not a modal), matching the structure of VideosPage:
 
 - **Page Structure**:
-  - **Page Banner**: "Orb Configuration" title with description, author, and avatar
+  - **Page Banner**: "Orb Configuration" title with description (no author/avatar to avoid ASCII art)
   - **Back Button**: "Back to Settings" button in banner's top-right corner
-  - **Sticky Toolbar**: Persists when navigating to OrbPage, with same 4 navigation buttons and colored prism bar
+  - **Navigation Buttons**: Four buttons (Orb, You, Page, App) positioned at bottom of Page Banner
+  - **Sticky Toolbar**: Contains only the Colored Prism Bar (navigation buttons moved to banner)
   - **Scrollable Content**: Orb configuration and presets below the banner
 
 - **Orb Configuration Section** (at top):
@@ -841,10 +818,11 @@ OrbPage is a dedicated page for orb configuration, accessed via the "Orb" button
 **3: The Logic & State Chain**
 
 **Navigation Flow:**
-1. User clicks "Orb" button in Settings Page sticky toolbar → `showOrbPage` state becomes `true`
-2. SettingsPage conditionally renders `<OrbPage />` instead of settings content
-3. OrbPage displays with its own Page Banner and sticky toolbar
-4. User clicks "Back to Settings" or "Orb" button again → Returns to Settings Page
+1. SettingsPage defaults to showing OrbPage when first accessed (`showOrbPage` state is `true` by default)
+2. User clicks navigation buttons at bottom of Page Banner → `navigateToPage()` function updates state
+3. SettingsPage conditionally renders the selected page component (OrbPage, PagePage, AppPage, or YouPage)
+4. All pages share the same sticky toolbar with Colored Prism Bar
+5. "Back to Settings" button navigates to OrbPage (the default page)
 
 **Preset Display:**
 1. Each preset uses unique SVG clipPath based on saved `orbSpill` configuration

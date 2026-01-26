@@ -82,8 +82,11 @@ yttv2/
 │   │   ├── StickyVideoCarousel.jsx     # Carousel/Grid for stickied videos
 │   │   ├── PageBanner.jsx              # Banner with metadata, media carousel (continue/pinned/ASCII), animated patterns
 │   │   ├── EditPlaylistModal.jsx       # Modal for editing playlist/folder metadata
-│   │   ├── SettingsPage.jsx            # Application configuration (Appearance, Visualizer, Orb, Profile) with sticky toolbar
+│   │   ├── SettingsPage.jsx            # Application configuration hub with navigation to dedicated pages (Orb, Page, App, You)
 │   │   ├── OrbPage.jsx                 # Dedicated Orb configuration page with presets grid
+│   │   ├── PagePage.jsx                # Dedicated Page Banner and Layer 2 configuration page
+│   │   ├── AppPage.jsx                 # Dedicated App Banner, Color Palette, and Player Borders configuration page
+│   │   ├── YouPage.jsx                 # Dedicated Signature & Profile configuration page
 │   │   ├── SupportPage.jsx             # Tabbed Support Hub (Code, Dev, Community, Resources)
 │   │   ├── LikesPage.jsx               # Liked videos with distribution graph and pagination
 │   │   ├── PieGraph.jsx                # Animated SVG pie chart for likes distribution
@@ -166,7 +169,7 @@ yttv2/
 | Feature | Primary Document | Related Documents |
 |---------|-----------------|-------------------|
 | **Player Controller** | `advanced-player-controller.md` | `navigation-routing.md`, `state-management.md` |
-| **Settings, Signature & Borders** | `ui-pages.md` (Section 4.1.8) | `state-management.md` (configStore) |
+| **Settings & Configuration** | `ui-pages.md` (Section 4.1.8) | `state-management.md` (configStore) |
 | **Orb Configuration** | `ui-pages.md` (Section 4.1.8.1) | `state-management.md` (configStore) |
 | **Support Hub** | `ui.md` | `navigation-routing.md`, `playlistStore.js` |
 | **Playlists & Tabs** | `playlist&tab.md` | `database-schema.md`, `api-bridge.md`, `state-management.md` |

@@ -13,7 +13,7 @@ function ConfigSection({ title, icon: Icon, children }) {
     );
 }
 
-export default function OrbPage({ onBack }) {
+export default function OrbPage({ onBack, onNavigateToYou, onNavigateToPage, onNavigateToApp }) {
     const {
         customOrbImage, setCustomOrbImage,
         isSpillEnabled, setIsSpillEnabled,
@@ -59,7 +59,6 @@ export default function OrbPage({ onBack }) {
 
 
     const scrollContainerRef = useRef(null);
-    const { userName, userAvatar } = useConfigStore();
 
     // Sticky toolbar state
     const [isStuck, setIsStuck] = useState(false);
@@ -88,14 +87,12 @@ export default function OrbPage({ onBack }) {
         <div className="w-full h-full flex flex-col">
             <div ref={scrollContainerRef} className="flex-1 overflow-y-auto bg-transparent relative">
                 {/* Page Banner */}
-                <div className="px-4 pt-8">
+                <div className="px-4 pt-8 relative">
                     <PageBanner
                         title="Orb Configuration"
                         description="Customize your central orb with images, spill effects, and presets"
                         color={null}
                         isEditable={false}
-                        author={userName}
-                        avatar={userAvatar}
                         topRightContent={
                             onBack ? (
                                 <button
@@ -108,6 +105,36 @@ export default function OrbPage({ onBack }) {
                             ) : null
                         }
                     />
+                    {/* Navigation Buttons - Positioned at bottom of banner */}
+                    <div className="absolute left-12 flex items-center gap-1.5 z-30" style={{ top: 'calc(2rem + 220px - 32px)' }}>
+                        <button
+                            className="px-2 py-0.5 rounded-md text-[10px] font-bold transition-all uppercase tracking-wider bg-sky-500 text-white shadow-md border border-white/20"
+                            title="Orb"
+                        >
+                            Orb
+                        </button>
+                        <button
+                            onClick={() => onNavigateToYou?.()}
+                            className="px-2 py-0.5 rounded-md text-[10px] font-bold transition-all uppercase tracking-wider bg-white/90 hover:bg-white text-slate-800 shadow-md border border-white/20 backdrop-blur-sm"
+                            title="You"
+                        >
+                            You
+                        </button>
+                        <button
+                            onClick={() => onNavigateToPage?.()}
+                            className="px-2 py-0.5 rounded-md text-[10px] font-bold transition-all uppercase tracking-wider bg-white/90 hover:bg-white text-slate-800 shadow-md border border-white/20 backdrop-blur-sm"
+                            title="Page"
+                        >
+                            Page
+                        </button>
+                        <button
+                            onClick={() => onNavigateToApp?.()}
+                            className="px-2 py-0.5 rounded-md text-[10px] font-bold transition-all uppercase tracking-wider bg-white/90 hover:bg-white text-slate-800 shadow-md border border-white/20 backdrop-blur-sm"
+                            title="App"
+                        >
+                            App
+                        </button>
+                    </div>
                 </div>
 
                 {/* Sticky Sentinel */}
@@ -123,38 +150,7 @@ export default function OrbPage({ onBack }) {
                     `}
                 >
                     <div className={`px-4 flex items-center justify-between transition-all duration-300 relative z-10 ${isStuck ? 'h-[52px]' : 'py-0.5'}`}>
-                        {/* Left Side: 4 Buttons + Colored Prism */}
-                        <div className="flex items-center gap-0 overflow-x-auto no-scrollbar mask-gradient-right flex-1 min-w-0 pr-0">
-                            {/* 4 Navigation Buttons */}
-                            <div className="flex items-center gap-1.5 shrink-0 pr-3">
-                                <button
-                                    onClick={onBack}
-                                    className="px-2 py-0.5 rounded-md text-[10px] font-bold transition-all uppercase tracking-wider bg-sky-500 text-white shadow-sm border border-white/5"
-                                    title="Orb"
-                                >
-                                    Orb
-                                </button>
-                                <button
-                                    className="px-2 py-0.5 rounded-md text-[10px] font-bold transition-all uppercase tracking-wider bg-slate-800/80 text-slate-400 hover:bg-slate-700 hover:text-slate-200 border border-white/5"
-                                    title="You"
-                                >
-                                    You
-                                </button>
-                                <button
-                                    className="px-2 py-0.5 rounded-md text-[10px] font-bold transition-all uppercase tracking-wider bg-slate-800/80 text-slate-400 hover:bg-slate-700 hover:text-slate-200 border border-white/5"
-                                    title="Page"
-                                >
-                                    Page
-                                </button>
-                                <button
-                                    className="px-2 py-0.5 rounded-md text-[10px] font-bold transition-all uppercase tracking-wider bg-slate-800/80 text-slate-400 hover:bg-slate-700 hover:text-slate-200 border border-white/5"
-                                    title="App"
-                                >
-                                    App
-                                </button>
-                            </div>
-
-                            {/* Colored Prism Bar */}
+                        {/* Colored Prism Bar */}
                             <div className="flex-1 flex items-center shrink-0 h-6 mr-3 border-2 border-black rounded-lg overflow-hidden">
                                 {FOLDER_COLORS.map((color, index) => {
                                     const isFirst = index === 0;

@@ -7,6 +7,9 @@ import { FOLDER_COLORS } from '../utils/folderColors';
 import PageBanner from './PageBanner';
 import { getAllPlaylists } from '../api/playlistApi';
 import OrbPage from './OrbPage';
+import PagePage from './PagePage';
+import AppPage from './AppPage';
+import YouPage from './YouPage';
 
 const AVATARS = [
     '( ͡° ͜ʖ ͡°)',
@@ -45,6 +48,15 @@ const AVATARS = [
 `,
     'custom'
 ];
+
+function ConfigSection({ title, icon: Icon, children }) {
+    return (
+        <div className="space-y-4 border-t border-sky-50 pt-6 first:border-0 first:pt-0 bg-white/50 p-4 rounded-2xl">
+            <h3 className="text-xs font-black uppercase text-slate-400 tracking-widest flex items-center gap-2">{Icon && <Icon size={14} />} {title}</h3>
+            <div className="space-y-4 px-1">{children}</div>
+        </div>
+    );
+}
 
 export default function SettingsPage({ currentThemeId, onThemeChange }) {
     const [activeTab, setActiveTab] = useState('theme');
@@ -88,8 +100,14 @@ export default function SettingsPage({ currentThemeId, onThemeChange }) {
     const stickySentinelRef = useRef(null);
     const scrollContainerRef = useRef(null);
 
-    // Orb page modal state
-    const [showOrbPage, setShowOrbPage] = useState(false);
+    // Orb page modal state - default to true so Orb page shows by default
+    const [showOrbPage, setShowOrbPage] = useState(true);
+    // Page page modal state
+    const [showPagePage, setShowPagePage] = useState(false);
+    // App page modal state
+    const [showAppPage, setShowAppPage] = useState(false);
+    // You page modal state
+    const [showYouPage, setShowYouPage] = useState(false);
 
     const promptText = 'maintain style as much as possible. dont change anything about original image. im looking for a "zoom out" so that I can [insert desired changes]. reference the single primary color markings which mark out how I want things expanded. remove single primary color markings from final image.';
 
@@ -255,9 +273,58 @@ export default function SettingsPage({ currentThemeId, onThemeChange }) {
     // Mock folder counts for prism bar (will be wired up later)
     const folderCounts = {};
 
+    // Navigation helper function
+    const navigateToPage = (targetPage) => {
+        setShowOrbPage(false);
+        setShowPagePage(false);
+        setShowAppPage(false);
+        setShowYouPage(false);
+        if (targetPage === 'orb') setShowOrbPage(true);
+        else if (targetPage === 'page') setShowPagePage(true);
+        else if (targetPage === 'app') setShowAppPage(true);
+        else if (targetPage === 'you') setShowYouPage(true);
+    };
+
     // If Orb page is active, render it instead of settings
     if (showOrbPage) {
-        return <OrbPage onBack={() => setShowOrbPage(false)} />;
+        return <OrbPage 
+            onBack={() => navigateToPage('orb')} 
+            onNavigateToYou={() => navigateToPage('you')}
+            onNavigateToPage={() => navigateToPage('page')}
+            onNavigateToApp={() => navigateToPage('app')}
+        />;
+    }
+
+    // If Page page is active, render it instead of settings
+    if (showPagePage) {
+        return <PagePage 
+            onBack={() => navigateToPage('orb')} 
+            onNavigateToOrb={() => navigateToPage('orb')}
+            onNavigateToYou={() => navigateToPage('you')}
+            onNavigateToApp={() => navigateToPage('app')}
+        />;
+    }
+
+    // If App page is active, render it instead of settings
+    if (showAppPage) {
+        return <AppPage 
+            onBack={() => navigateToPage('orb')} 
+            currentThemeId={currentThemeId} 
+            onThemeChange={onThemeChange}
+            onNavigateToOrb={() => navigateToPage('orb')}
+            onNavigateToYou={() => navigateToPage('you')}
+            onNavigateToPage={() => navigateToPage('page')}
+        />;
+    }
+
+    // If You page is active, render it instead of settings
+    if (showYouPage) {
+        return <YouPage 
+            onBack={() => navigateToPage('orb')} 
+            onNavigateToOrb={() => navigateToPage('orb')}
+            onNavigateToPage={() => navigateToPage('page')}
+            onNavigateToApp={() => navigateToPage('app')}
+        />;
     }
 
     return (
@@ -331,7 +398,7 @@ export default function SettingsPage({ currentThemeId, onThemeChange }) {
                             {/* 4 Navigation Buttons */}
                             <div className="flex items-center gap-1.5 shrink-0 pr-3">
                                 <button
-                                    onClick={() => setShowOrbPage(!showOrbPage)}
+                                    onClick={() => navigateToPage('orb')}
                                     className={`px-2 py-0.5 rounded-md text-[10px] font-bold transition-all uppercase tracking-wider border border-white/5 ${
                                         showOrbPage
                                             ? 'bg-sky-500 text-white shadow-sm'
@@ -342,19 +409,34 @@ export default function SettingsPage({ currentThemeId, onThemeChange }) {
                                     Orb
                                 </button>
                                 <button
-                                    className="px-2 py-0.5 rounded-md text-[10px] font-bold transition-all uppercase tracking-wider bg-slate-800/80 text-slate-400 hover:bg-slate-700 hover:text-slate-200 border border-white/5"
+                                    onClick={() => navigateToPage('you')}
+                                    className={`px-2 py-0.5 rounded-md text-[10px] font-bold transition-all uppercase tracking-wider border border-white/5 ${
+                                        showYouPage
+                                            ? 'bg-sky-500 text-white shadow-sm'
+                                            : 'bg-slate-800/80 text-slate-400 hover:bg-slate-700 hover:text-slate-200'
+                                    }`}
                                     title="You"
                                 >
                                     You
                                 </button>
                                 <button
-                                    className="px-2 py-0.5 rounded-md text-[10px] font-bold transition-all uppercase tracking-wider bg-slate-800/80 text-slate-400 hover:bg-slate-700 hover:text-slate-200 border border-white/5"
+                                    onClick={() => navigateToPage('page')}
+                                    className={`px-2 py-0.5 rounded-md text-[10px] font-bold transition-all uppercase tracking-wider border border-white/5 ${
+                                        showPagePage
+                                            ? 'bg-sky-500 text-white shadow-sm'
+                                            : 'bg-slate-800/80 text-slate-400 hover:bg-slate-700 hover:text-slate-200'
+                                    }`}
                                     title="Page"
                                 >
                                     Page
                                 </button>
                                 <button
-                                    className="px-2 py-0.5 rounded-md text-[10px] font-bold transition-all uppercase tracking-wider bg-slate-800/80 text-slate-400 hover:bg-slate-700 hover:text-slate-200 border border-white/5"
+                                    onClick={() => navigateToPage('app')}
+                                    className={`px-2 py-0.5 rounded-md text-[10px] font-bold transition-all uppercase tracking-wider border border-white/5 ${
+                                        showAppPage
+                                            ? 'bg-sky-500 text-white shadow-sm'
+                                            : 'bg-slate-800/80 text-slate-400 hover:bg-slate-700 hover:text-slate-200'
+                                    }`}
                                     title="App"
                                 >
                                     App
@@ -1779,14 +1861,6 @@ export default function SettingsPage({ currentThemeId, onThemeChange }) {
                 </div>
             </div>
         </div>
-    );
-}
-
-function ConfigSection({ title, icon: Icon, children }) {
-    return (
-        <div className="space-y-4 border-t border-sky-50 pt-6 first:border-0 first:pt-0 bg-white/50 p-4 rounded-2xl">
-            <h3 className="text-xs font-black uppercase text-slate-400 tracking-widest flex items-center gap-2">{Icon && <Icon size={14} />} {title}</h3>
-            <div className="space-y-4 px-1">{children}</div>
         </div>
     );
 }
