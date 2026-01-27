@@ -846,6 +846,43 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
     return counts;
   }, [videoFolderAssignments]);
 
+  // Get available folders (those with videos, plus "all" and "unsorted")
+  const availableFolders = useMemo(() => {
+    const folders = [];
+    // Always include "all" (null) and "unsorted"
+    folders.push({ id: null, name: 'All' });
+    folders.push({ id: 'unsorted', name: 'Unsorted' });
+    // Add folders with videos, in FOLDER_COLORS order
+    FOLDER_COLORS.forEach(color => {
+      if (folderCounts[color.id] > 0) {
+        folders.push({ id: color.id, name: color.name });
+      }
+    });
+    return folders;
+  }, [folderCounts]);
+
+  // Navigate to previous folder
+  const handleFolderNavigatePrev = () => {
+    const currentIndex = availableFolders.findIndex(f => f.id === selectedFolder);
+    if (currentIndex > 0) {
+      setSelectedFolder(availableFolders[currentIndex - 1].id);
+    } else {
+      // Wrap to last folder
+      setSelectedFolder(availableFolders[availableFolders.length - 1].id);
+    }
+  };
+
+  // Navigate to next folder
+  const handleFolderNavigateNext = () => {
+    const currentIndex = availableFolders.findIndex(f => f.id === selectedFolder);
+    if (currentIndex < availableFolders.length - 1) {
+      setSelectedFolder(availableFolders[currentIndex + 1].id);
+    } else {
+      // Wrap to first folder
+      setSelectedFolder(availableFolders[0].id);
+    }
+  };
+
   const handleUploadComplete = async () => {
     setShowUploader(false);
 
@@ -1249,6 +1286,10 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
                 onReturn={handleReturnToOriginal}
                 showReturnButton={showReturnButton}
                 currentPlaylistId={activePlaylistId}
+                onFolderNavigatePrev={handleFolderNavigatePrev}
+                onFolderNavigateNext={handleFolderNavigateNext}
+                selectedFolder={selectedFolder}
+                folderCounts={folderCounts}
               />
             </div>
           )}

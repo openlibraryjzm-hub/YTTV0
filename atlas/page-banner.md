@@ -34,10 +34,10 @@ Users see a contextual banner (220px fixed height) at the top of scrollable cont
     - **Limit**: 2 rows with expand button (>>>) to show all
   - **Pagination Badge**: Compact pagination controls (Likes page)
     - Format: `<< < 1/99 > >>` (First, Previous, Current/Total, Next, Last)
-  - **Title Navigation Buttons** (Videos Page): Horizontal buttons on either side of playlist title
-    - **Previous Button** (left): Navigates to previous playlist - white bg, black chevron left icon
-    - **Return Button** (middle, if provided): Returns to reset point playlist - white bg, grey icon (inactive) / black icon (active)
-    - **Next Button** (right): Navigates to next playlist - white bg, black chevron right icon
+  - **Playlist Preview Navigator** (Videos Page): Positioned above the playlist title
+    - **Previous Button** (left): Navigates to previous playlist - black chevron left icon
+    - **Return Button** (middle, when previewing): Returns to reset point playlist - black RotateCcw icon (only shown when previewing)
+    - **Next Button** (right): Navigates to next playlist - black chevron right icon
     - **Size**: `w-6 h-6` compact buttons
     - Preview mode navigation (doesn't affect player)
   - **Media Carousel** (centered in Layer 1 area): Shows continue watching, pinned videos, and/or ASCII signature
@@ -50,14 +50,7 @@ Users see a contextual banner (220px fixed height) at the top of scrollable cont
       - **Follower Pin**: White pin icon + → arrow
       - **Priority Pin**: 👑 crown + golden pin icon
       - **Priority Follower Pin**: 👑 crown + golden pin icon + → arrow
-    - **Arrow Navigation**: Left/right arrow buttons that appear on hover, overlaid on the thumbnail/ASCII area
-      - **Left Arrow**: Previous mode (cycles: continue → pinned → ASCII → continue)
-      - **Right Arrow**: Next mode (cycles forward through modes)
-      - **Visibility**: Only shown when hovering over thumbnail/ASCII area (`opacity-0 group-hover/thumb:opacity-100`)
-      - **Position**: Absolutely positioned on left and right edges of thumbnail/ASCII box
-      - **Size**: Full height (`h-36`) with `w-8` width strips
-      - **Styling**: Semi-transparent black background (`bg-black/60`) with backdrop blur
-      - **Only when multiple options exist**: Arrows only appear when there are multiple carousel options available
+    - **Navigation**: Controlled via navigation buttons below the thumbnail/ASCII section (see Navigation Buttons section)
     - **Multi-Pin Bar**: When multiple pins exist (max 10 segments), a vertical segmented bar appears absolutely positioned to the right of thumbnail
       - **Position**: Absolutely positioned at `left: calc(50% + 120px + 4px)`, `bottom: 31px` (centered relative to thumbnail)
       - **Folder Colors**: Each segment colored by the pin's folder assignment
@@ -65,7 +58,15 @@ Users see a contextual banner (220px fixed height) at the top of scrollable cont
       - **Selection Dot**: White dot indicator to the right of the bar (golden for priority pin)
       - **Size**: `h-36 w-3` (matches thumbnail height)
       - Positioned outside flex container to maintain uniform thumbnail width
-    - **Positioning**: Centered horizontally within banner area (332px width) at `bottom-1`
+    - **Positioning**: Centered horizontally within banner area (332px width) at `bottom-[39px]`
+  - **Navigation Buttons Below Thumbnail**: Three navigation button groups positioned at `bottom-[10px]`:
+    1. **Thumbnail/ASCII Navigator**: Cycles through continue/pinned/ASCII options
+       - Middle icon changes based on current option: Pin icon for pinned, Clock icon for continue, Star icon for ASCII
+    2. **Page Navigator**: Pagination controls (only shown on Videos page when multiple pages exist)
+       - Clickable page indicator (e.g., "1/99") that allows direct page navigation
+       - Previous/Next buttons for page navigation
+    3. **Colored Folder Navigator**: Cycles through folders in current playlist (All → Unsorted → folders with videos)
+       - Middle dot indicator
 - **Banner Structure**: The page banner is now a compact 332px-wide transparent component containing only the content (thumbnail/ASCII previews, buttons, title, etc.)
   - **Banner Width**: Fixed at 332px (previously the "Layer 1 overlap" area)
   - **No Background/Border**: Banner has no background color or border - completely transparent, showing only content
@@ -409,11 +410,11 @@ Users see a contextual banner (220px fixed height) at the top of scrollable cont
 
 **Videos Page:**
 - Displays playlist name or folder name as title (compact `text-lg md:text-xl`)
-- **Title Navigation Buttons**: Horizontal buttons on either side of title for playlist navigation
+- **Playlist Preview Navigator**: Positioned above the title for playlist navigation
   - **Previous Button** (left): Navigates to previous playlist in preview mode
-  - **Return Button** (middle, if provided): Returns to reset point playlist (grey when at reset point, black when away)
+  - **Return Button** (middle, when previewing): Returns to reset point playlist (only shown when previewing)
   - **Next Button** (right): Navigates to next playlist in preview mode
-  - **Styling**: All buttons have white background (`w-6 h-6`), black icons
+  - **Styling**: All buttons have black icons (`w-6 h-6`)
   - **Preview Mode**: Navigation uses `setPreviewPlaylist` so player continues unaffected
   - **Reset Point Tracking**: Entering from PlaylistsPage or controller sets a "reset point"
   - **State**: Uses `resetPointId` state and `isChevronNavRef` ref to track navigation source

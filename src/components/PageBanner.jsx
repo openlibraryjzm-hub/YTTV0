@@ -1,11 +1,13 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { FOLDER_COLORS } from '../utils/folderColors';
-import { Pen, Play, ChevronRight, ChevronLeft, RotateCcw, Clock, Pin, Sparkles, Info } from 'lucide-react';
+import { Pen, Play, ChevronRight, ChevronLeft, RotateCcw, Clock, Pin, Sparkles, Info, Star } from 'lucide-react';
 import { getThumbnailUrl } from '../utils/youtubeUtils';
 
 
 import UnifiedBannerBackground from './UnifiedBannerBackground';
 import { useConfigStore } from '../store/configStore';
+import { usePaginationStore } from '../store/paginationStore';
+import { useNavigationStore } from '../store/navigationStore';
 
 // Seeded random function for consistent random selection per page
 const seededRandom = (seed) => {
@@ -87,7 +89,26 @@ const selectImageFromFolder = (folder, pageKey, pageType, folderColor) => {
     return availableImages[0];
 };
 
-const PageBanner = ({ title, description, folderColor, onEdit, videoCount, countLabel = 'Video', creationYear, author, avatar, continueVideo, onContinue, pinnedVideos = [], onPinnedClick, children, childrenPosition = 'right', topRightContent, seamlessBottom = false, playlistBadges, onPlaylistBadgeLeftClick, onPlaylistBadgeRightClick, allPlaylists, filteredPlaylist, customDescription, onNavigateNext, onNavigatePrev, onReturn, showReturnButton, currentPlaylistId, showAscii = true, orbControls }) => {
+const PageBanner = ({ title, description, folderColor, onEdit, videoCount, countLabel = 'Video', creationYear, author, avatar, continueVideo, onContinue, pinnedVideos = [], onPinnedClick, children, childrenPosition = 'right', topRightContent, seamlessBottom = false, playlistBadges, onPlaylistBadgeLeftClick, onPlaylistBadgeRightClick, allPlaylists, filteredPlaylist, customDescription, onNavigateNext, onNavigatePrev, onReturn, showReturnButton, currentPlaylistId, showAscii = true, orbControls, onFolderNavigatePrev, onFolderNavigateNext, selectedFolder, folderCounts }) => {
+    // Pagination store for page navigator
+    const {
+        currentPage: paginationPage,
+        totalPages,
+        setCurrentPagePreserveScroll: setPaginationPage,
+        nextPagePreserve: nextPage,
+        prevPagePreserve: prevPage,
+        nextQuarterPreserve: nextQuarter,
+        prevQuarterPreserve: prevQuarter,
+        firstPagePreserve: firstPage,
+        lastPagePreserve: lastPage,
+    } = usePaginationStore();
+    
+    const { currentPage: currentNavPage } = useNavigationStore();
+    
+    // Local state for page editing
+    const [isEditingPageLocal, setIsEditingPageLocal] = useState(false);
+    const [pageInputValueLocal, setPageInputValueLocal] = useState('');
+    const pageInputRef = useRef(null);
     const { 
         pageBannerBgColor, setBannerHeight,
         customPageBannerImage2, pageBannerImage2Scale, pageBannerImage2XOffset, pageBannerImage2YOffset,
@@ -423,59 +444,51 @@ const PageBanner = ({ title, description, folderColor, onEdit, videoCount, count
                 {/* Content Container - Allow overflow for dropdowns */}
                 <div className="relative z-10 flex items-start h-full gap-8 w-full px-8 pt-4">
                 <div className="flex flex-col justify-start min-w-0">
-                    <div className="flex items-center gap-2">
-                        {/* Previous Playlist Button - Left side */}
-                        {(onNavigatePrev || onNavigateNext) && (
-                            <>
+                    {/* Playlist Preview Navigator - Above title */}
+                    {(onNavigatePrev || onNavigateNext) && (
+                        <div className="flex items-center gap-2 mb-2">
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    if (onNavigatePrev) onNavigatePrev();
+                                }}
+                                className="flex items-center justify-center w-6 h-6 rounded text-black/80 hover:text-black transition-colors"
+                                title="Previous playlist"
+                            >
+                                <ChevronLeft size={16} strokeWidth={2.5} />
+                            </button>
+                            {/* Middle button - refresh when previewing, dot otherwise */}
+                            {showReturnButton && onReturn ? (
                                 <button
                                     onClick={(e) => {
                                         e.stopPropagation();
-                                        if (onNavigatePrev) onNavigatePrev();
+                                        if (onReturn) onReturn();
                                     }}
-                                    className="flex items-center justify-center w-6 h-6 rounded-md bg-white hover:bg-white/80 text-black transition-all flex-shrink-0"
-                                    title="Previous Playlist"
+                                    className="flex items-center justify-center w-6 h-6 rounded text-black/80 hover:text-black transition-colors"
+                                    title="Return to original playlist"
                                 >
-                                    <ChevronLeft size={16} strokeWidth={2.5} />
+                                    <RotateCcw size={14} strokeWidth={2.5} />
                                 </button>
-                                
-                                {/* Return Button - Middle */}
-                                {onReturn && (
-                                    <button
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            if (onReturn) onReturn();
-                                        }}
-                                        className={`flex items-center justify-center w-6 h-6 rounded-md transition-all flex-shrink-0 ${
-                                            showReturnButton 
-                                                ? 'bg-white hover:bg-white/80 text-black' 
-                                                : 'bg-white/50 text-gray-400 cursor-default'
-                                        }`}
-                                        title={showReturnButton ? "Return to original playlist" : "At original playlist"}
-                                        disabled={!showReturnButton}
-                                    >
-                                        <RotateCcw size={12} />
-                                    </button>
-                                )}
-                            </>
-                        )}
-                        
-                        <h1 className="text-lg md:text-xl font-black text-white mb-0 tracking-tight drop-shadow-md truncate flex-1" style={{ textShadow: '-1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0 2px 4px rgba(0,0,0,0.8)' }}>
-                            {title}
-                        </h1>
-                        
-                        {/* Next Playlist Button - Right side */}
-                        {(onNavigatePrev || onNavigateNext) && (
+                            ) : (
+                                <div className="w-1.5 h-1.5 rounded-full bg-black/60"></div>
+                            )}
                             <button
                                 onClick={(e) => {
                                     e.stopPropagation();
                                     if (onNavigateNext) onNavigateNext();
                                 }}
-                                className="flex items-center justify-center w-6 h-6 rounded-md bg-white hover:bg-white/80 text-black transition-all flex-shrink-0"
-                                title="Next Playlist"
+                                className="flex items-center justify-center w-6 h-6 rounded text-black/80 hover:text-black transition-colors"
+                                title="Next playlist"
                             >
                                 <ChevronRight size={16} strokeWidth={2.5} />
                             </button>
-                        )}
+                        </div>
+                    )}
+                    
+                    <div className="flex items-center gap-2">
+                        <h1 className="text-lg md:text-xl font-black text-white mb-0 tracking-tight drop-shadow-md truncate flex-1" style={{ textShadow: '-1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0 2px 4px rgba(0,0,0,0.8)' }}>
+                            {title}
+                        </h1>
                     </div>
 
                     {showInfo && (customDescription ? (
@@ -687,48 +700,19 @@ const PageBanner = ({ title, description, folderColor, onEdit, videoCount, count
 
             {/* Thumbnail/ASCII Section - Continue/Pinned/ASCII with arrow navigation */}
             {hasAnyOption && (
-                <div className="absolute bottom-1 flex items-end z-20" style={{ left: '166px', transform: 'translateX(-50%)' }}>
+                <div className="absolute bottom-[39px] flex items-end z-20" style={{ left: '166px', transform: 'translateX(-50%)' }}>
                     {/* Fixed-width container for content */}
                     <div className="flex flex-col items-center relative">
                         {/* Content row with optional pin bar and preview stack */}
                         <div className="flex items-stretch gap-[2px] relative">
                             {/* Clickable content area */}
                             <div
-                                className={`flex flex-col items-center gap-2 group/thumb flex-shrink-0 relative ${activeCallback && !showInfo ? 'cursor-pointer' : ''}`}
+                                className={`flex flex-col items-center gap-2 flex-shrink-0 relative ${activeCallback && !showInfo ? 'cursor-pointer' : ''}`}
                                 onClick={(e) => {
                                     e.stopPropagation();
                                     if (!showInfo && activeCallback) activeCallback();
                                 }}
                             >
-                                {/* Left Arrow Button - overlaid on left side, shows on hover */}
-                                {hasMultipleOptions && (
-                                    <button
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            const prevIndex = activeThumbnail > 0 ? activeThumbnail - 1 : availableOptions.length - 1;
-                                            setActiveThumbnail(prevIndex);
-                                        }}
-                                        className="absolute left-0 top-0 bottom-0 w-8 flex items-center justify-center bg-black/60 hover:bg-black/80 backdrop-blur-sm opacity-0 group-hover/thumb:opacity-100 transition-opacity z-10 rounded-l-lg"
-                                        title="Previous mode"
-                                    >
-                                        <ChevronLeft size={20} className="text-white" strokeWidth={2.5} />
-                                    </button>
-                                )}
-                                
-                                {/* Right Arrow Button - overlaid on right side, shows on hover */}
-                                {hasMultipleOptions && (
-                                    <button
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            const nextIndex = activeThumbnail < availableOptions.length - 1 ? activeThumbnail + 1 : 0;
-                                            setActiveThumbnail(nextIndex);
-                                        }}
-                                        className="absolute right-0 top-0 bottom-0 w-8 flex items-center justify-center bg-black/60 hover:bg-black/80 backdrop-blur-sm opacity-0 group-hover/thumb:opacity-100 transition-opacity z-10 rounded-r-lg"
-                                        title="Next mode"
-                                    >
-                                        <ChevronRight size={20} className="text-white" strokeWidth={2.5} />
-                                    </button>
-                                )}
                                 {/* Show thumbnail with info overlays when info button is clicked */}
                                 {showInfo && activeVideo ? (
                                     <div className="relative h-36 w-[240px] rounded-lg overflow-hidden shadow-lg border-2 border-white/20">
@@ -785,7 +769,7 @@ const PageBanner = ({ title, description, folderColor, onEdit, videoCount, count
                                         )}
                                     </div>
                                 ) : activeVideo && (
-                                    <div className="relative h-36 w-[240px] rounded-lg overflow-hidden shadow-lg border-2 border-white/20 group-hover/thumb:border-white transition-all transform group-hover/thumb:scale-105">
+                                    <div className="relative h-36 w-[240px] rounded-lg overflow-hidden shadow-lg border-2 border-white/20">
                                         <img
                                             src={getThumbnailUrl(activeVideo.video_id, 'medium')}
                                             alt={activeVideo.title}
@@ -817,9 +801,6 @@ const PageBanner = ({ title, description, folderColor, onEdit, videoCount, count
                                                 )}
                                             </div>
                                         )}
-                                        <div className="absolute inset-0 bg-black/30 flex items-center justify-center opacity-0 group-hover/thumb:opacity-100 transition-opacity">
-                                            <Play className="text-white fill-white" size={36} />
-                                        </div>
                                     </div>
                                 )}
                             </div>
@@ -828,7 +809,7 @@ const PageBanner = ({ title, description, folderColor, onEdit, videoCount, count
                         {/* Vertical pin bar with selection dot - only show when viewing pinned and multiple pins exist (max 10 segments) */}
                         {/* Positioned absolutely to the right of thumbnail to maintain uniform thumbnail width */}
                         {currentOption === 'pinned' && hasMultiplePins && (
-                            <div className="absolute flex flex-row items-stretch gap-[2px]" style={{ left: hasMultipleOptions ? 'calc(50% + 120px + 16px)' : 'calc(50% + 120px + 4px)', bottom: '31px' }}>
+                            <div className="absolute flex flex-row items-stretch gap-[2px]" style={{ left: hasMultipleOptions ? 'calc(50% + 120px + 16px)' : 'calc(50% + 120px + 4px)', bottom: '66px' }}>
                                 <div className="flex flex-col w-3 h-36 rounded-md overflow-hidden border border-white/20 bg-black/20 backdrop-blur-sm">
                                     {pinnedVideos.slice(0, 10).map((pin, index) => {
                                         // Get folder color for this pinned video
@@ -884,6 +865,154 @@ const PageBanner = ({ title, description, folderColor, onEdit, videoCount, count
                     </div>
                 </div>
             )}
+
+            {/* Navigation Buttons - Below thumbnail/ASCII section */}
+            <div className="absolute bottom-[10px] flex items-center justify-center gap-6 z-20" style={{ left: '166px', transform: 'translateX(-50%)' }}>
+                {/* 1. Thumbnail/ASCII Navigator */}
+                {hasAnyOption && (
+                    <div className="flex items-center gap-2">
+                        <button
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                if (hasMultipleOptions) {
+                                    const prevIndex = activeThumbnail > 0 ? activeThumbnail - 1 : availableOptions.length - 1;
+                                    setActiveThumbnail(prevIndex);
+                                }
+                            }}
+                            disabled={!hasMultipleOptions}
+                            className="flex items-center justify-center w-6 h-6 rounded text-black/80 hover:text-black transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                            title="Previous thumbnail/ASCII"
+                        >
+                            <ChevronLeft size={16} strokeWidth={2.5} />
+                        </button>
+                        {/* Middle icon - changes based on current option */}
+                        {currentOption === 'pinned' ? (
+                            <Pin size={14} className="text-black/80" strokeWidth={2.5} fill="currentColor" />
+                        ) : currentOption === 'continue' ? (
+                            <Clock size={14} className="text-black/80" strokeWidth={2.5} />
+                        ) : currentOption === 'ascii' ? (
+                            <Star size={14} className="text-black/80" strokeWidth={2.5} fill="currentColor" />
+                        ) : (
+                            <div className="w-1.5 h-1.5 rounded-full bg-black/60"></div>
+                        )}
+                        <button
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                if (hasMultipleOptions) {
+                                    const nextIndex = activeThumbnail < availableOptions.length - 1 ? activeThumbnail + 1 : 0;
+                                    setActiveThumbnail(nextIndex);
+                                }
+                            }}
+                            disabled={!hasMultipleOptions}
+                            className="flex items-center justify-center w-6 h-6 rounded text-black/80 hover:text-black transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                            title="Next thumbnail/ASCII"
+                        >
+                            <ChevronRight size={16} strokeWidth={2.5} />
+                        </button>
+                    </div>
+                )}
+
+                {/* 2. Page Navigator (from TopNavigation) - Only show on videos page when multiple pages */}
+                {currentNavPage === 'videos' && totalPages > 1 && (
+                    <div className="flex items-center gap-2">
+                        <button
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                prevPage();
+                            }}
+                            disabled={paginationPage === 1}
+                            className="flex items-center justify-center w-6 h-6 rounded text-black/80 hover:text-black transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                            title="Previous page"
+                        >
+                            <ChevronLeft size={16} strokeWidth={2.5} />
+                        </button>
+                        {/* Page indicator - clickable */}
+                        {isEditingPageLocal ? (
+                            <input
+                                ref={pageInputRef}
+                                type="text"
+                                value={pageInputValueLocal}
+                                onChange={(e) => {
+                                    const val = e.target.value.replace(/[^0-9]/g, '');
+                                    setPageInputValueLocal(val);
+                                }}
+                                onBlur={() => {
+                                    const page = parseInt(pageInputValueLocal);
+                                    if (page >= 1 && page <= totalPages) {
+                                        setPaginationPage(page);
+                                    }
+                                    setIsEditingPageLocal(false);
+                                }}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                        const page = parseInt(pageInputValueLocal);
+                                        if (page >= 1 && page <= totalPages) {
+                                            setPaginationPage(page);
+                                        }
+                                        setIsEditingPageLocal(false);
+                                    } else if (e.key === 'Escape') {
+                                        setIsEditingPageLocal(false);
+                                    }
+                                }}
+                                className="w-10 h-6 px-1 bg-white border-2 border-sky-500 rounded text-center text-sky-600 font-bold text-xs focus:outline-none"
+                                autoFocus
+                                onClick={(e) => e.stopPropagation()}
+                            />
+                        ) : (
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    setPageInputValueLocal(String(paginationPage));
+                                    setIsEditingPageLocal(true);
+                                    setTimeout(() => pageInputRef.current?.select(), 0);
+                                }}
+                                className="px-1.5 h-6 bg-white border-2 border-slate-300 text-slate-700 rounded-full hover:border-sky-400 hover:text-sky-600 transition-all text-xs font-bold"
+                                title="Click to jump to page"
+                            >
+                                {paginationPage}/{totalPages}
+                            </button>
+                        )}
+                        <button
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                nextPage();
+                            }}
+                            disabled={paginationPage >= totalPages}
+                            className="flex items-center justify-center w-6 h-6 rounded text-black/80 hover:text-black transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                            title="Next page"
+                        >
+                            <ChevronRight size={16} strokeWidth={2.5} />
+                        </button>
+                    </div>
+                )}
+
+                {/* 3. Colored Folder Navigator */}
+                {onFolderNavigatePrev && onFolderNavigateNext && selectedFolder !== undefined && folderCounts && (
+                    <div className="flex items-center gap-2">
+                        <button
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                if (onFolderNavigatePrev) onFolderNavigatePrev();
+                            }}
+                            className="flex items-center justify-center w-6 h-6 rounded text-black/80 hover:text-black transition-colors"
+                            title="Previous folder"
+                        >
+                            <ChevronLeft size={16} strokeWidth={2.5} />
+                        </button>
+                        <div className="w-1.5 h-1.5 rounded-full bg-black/60"></div>
+                        <button
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                if (onFolderNavigateNext) onFolderNavigateNext();
+                            }}
+                            className="flex items-center justify-center w-6 h-6 rounded text-black/80 hover:text-black transition-colors"
+                            title="Next folder"
+                        >
+                            <ChevronRight size={16} strokeWidth={2.5} />
+                        </button>
+                    </div>
+                )}
+            </div>
             
             </div>
             {/* End of Banner Container */}

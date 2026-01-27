@@ -142,14 +142,10 @@ Users see a horizontal scrolling layout with two rows of video cards showing vid
 
 - **Pagination Controls**: For performance, videos are paginated (50 videos per page). Controls appear in two locations:
   - **Bottom of Grid**: Full pagination with `< [page] of [total] >` format
-  - **Top Navigation Bar**: Compact pagination appears in the right-side actions area when on Videos page with multiple pages
-  - **Button Interactions** (same for both locations):
-    - **Single Click**: Navigate one page (prev/next)
-    - **Double Click**: Quarter jump (25% increments for large page counts, or 1 page for ≤4 pages)
-    - **Long Press (600ms)**: Jump to first/last page
-  - **Page Input**: Click the page number to type a specific page directly
+  - **Page Banner Navigation Buttons**: Compact pagination appears below the thumbnail/ASCII section when on Videos page with multiple pages
+    - **Previous/Next Buttons**: Navigate one page forward/backward
+    - **Page Indicator**: Clickable page number (e.g., "1/99") that allows direct page navigation via text input
   - **State Management**: Uses `paginationStore.js` for shared state between both locations
-  - **Note**: Preserve-scroll feature for TopNav navigation is non-functional (see README.md Known Issues)
 
 - **Sticky Video Carousel**: 
   - **Purpose**: Displays important videos at the very top of the page.

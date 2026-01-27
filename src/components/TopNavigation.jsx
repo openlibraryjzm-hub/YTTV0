@@ -1,8 +1,7 @@
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import { useNavigationStore } from '../store/navigationStore';
 import { useLayoutStore } from '../store/layoutStore';
 import { usePlaylistStore } from '../store/playlistStore';
-import { usePaginationStore } from '../store/paginationStore';
 import { ChevronLeft, Heart, Pin, Settings, Clock, Cat } from 'lucide-react';
 import { THEMES } from '../utils/themes';
 
@@ -10,24 +9,8 @@ const TopNavigation = () => {
     const { currentPage: currentNavPage, setCurrentPage: setCurrentNavPage, history, goBack } = useNavigationStore();
     const { viewMode, setViewMode, inspectMode } = useLayoutStore();
     const { previewPlaylistId, clearPreview } = usePlaylistStore();
-    const {
-        currentPage: paginationPage,
-        totalPages,
-        setCurrentPagePreserveScroll: setPaginationPage, // Use preserve scroll version
-        nextPagePreserve: nextPage,
-        prevPagePreserve: prevPage,
-        nextQuarterPreserve: nextQuarter,
-        prevQuarterPreserve: prevQuarter,
-        firstPagePreserve: firstPage,
-        lastPagePreserve: lastPage,
-    } = usePaginationStore();
-    
-    // Local state for page editing (separate from VideosPage to avoid interference)
-    const [isEditingPageLocal, setIsEditingPageLocal] = useState(false);
-    const [pageInputValueLocal, setPageInputValueLocal] = useState('');
     
     const [currentThemeId] = useState('blue'); // Defaulting to blue theme for consistency, could be lifted to store if fully dynamic theming is required here
-    const pageInputRef = useRef(null);
 
     const theme = THEMES[currentThemeId];
 
@@ -52,52 +35,6 @@ const TopNavigation = () => {
             setViewMode('half');
         }
     };
-    
-    // Combined handler: single click, double click, and long press for pagination
-    const LONG_CLICK_MS = 600;
-    const DOUBLE_CLICK_MS = 300;
-    let longClickTimer = null;
-    let singleClickTimer = null;
-    let didLongClick = false;
-    let lastClickTime = 0;
-    
-    const createCombinedHandlers = (singleAction, doubleAction, longAction) => ({
-        onMouseDown: () => {
-            didLongClick = false;
-            longClickTimer = setTimeout(() => {
-                didLongClick = true;
-                clearTimeout(singleClickTimer);
-                longAction();
-            }, LONG_CLICK_MS);
-        },
-        onMouseUp: () => {
-            clearTimeout(longClickTimer);
-            if (didLongClick) return;
-            
-            const now = Date.now();
-            const timeSinceLastClick = now - lastClickTime;
-            
-            if (timeSinceLastClick < DOUBLE_CLICK_MS) {
-                // Double click detected
-                clearTimeout(singleClickTimer);
-                lastClickTime = 0;
-                doubleAction();
-            } else {
-                // Potential single click - wait to see if double click comes
-                lastClickTime = now;
-                singleClickTimer = setTimeout(() => {
-                    singleAction();
-                    lastClickTime = 0;
-                }, DOUBLE_CLICK_MS);
-            }
-        },
-        onMouseLeave: () => {
-            clearTimeout(longClickTimer);
-        },
-    });
-    
-    const prevHandlers = createCombinedHandlers(prevPage, prevQuarter, firstPage);
-    const nextHandlers = createCombinedHandlers(nextPage, nextQuarter, lastPage);
 
     return (
         <div className={`w-full flex-col gap-2 rounded-xl backdrop-blur-md shadow-lg border p-2 mb-2 transition-all duration-300 ${theme.menuBg} ${theme.menuBorder}`}>
@@ -127,76 +64,6 @@ const TopNavigation = () => {
 
                 {/* Right side actions */}
                 <div className="flex items-center gap-2 pl-2 border-l border-sky-300/30">
-                    {/* Compact Pagination - Only show on videos page when there are multiple pages */}
-                    {currentNavPage === 'videos' && totalPages > 1 && (
-                        <div className="flex items-center gap-0.5">
-                            {/* Previous: click=prev, double-click=quarter, hold=first */}
-                            <button
-                                {...prevHandlers}
-                                disabled={paginationPage === 1}
-                                className="w-6 h-6 flex items-center justify-center bg-white border-2 border-slate-300 text-slate-600 rounded-full hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all text-xs font-bold select-none"
-                                title="Click: prev | Double: quarter | Hold: first"
-                            >
-                                &lt;
-                            </button>
-                            
-                            {/* Page Indicator - Clickable (uses local state to avoid affecting VideosPage) */}
-                            {isEditingPageLocal ? (
-                                <input
-                                    ref={pageInputRef}
-                                    type="text"
-                                    value={pageInputValueLocal}
-                                    onChange={(e) => {
-                                        const val = e.target.value.replace(/[^0-9]/g, '');
-                                        setPageInputValueLocal(val);
-                                    }}
-                                    onBlur={() => {
-                                        const page = parseInt(pageInputValueLocal);
-                                        if (page >= 1 && page <= totalPages) {
-                                            setPaginationPage(page);
-                                        }
-                                        setIsEditingPageLocal(false);
-                                    }}
-                                    onKeyDown={(e) => {
-                                        if (e.key === 'Enter') {
-                                            const page = parseInt(pageInputValueLocal);
-                                            if (page >= 1 && page <= totalPages) {
-                                                setPaginationPage(page);
-                                            }
-                                            setIsEditingPageLocal(false);
-                                        } else if (e.key === 'Escape') {
-                                            setIsEditingPageLocal(false);
-                                        }
-                                    }}
-                                    className="w-10 h-6 px-1 bg-white border-2 border-sky-500 rounded text-center text-sky-600 font-bold text-xs focus:outline-none"
-                                    autoFocus
-                                />
-                            ) : (
-                                <button
-                                    onClick={() => {
-                                        setPageInputValueLocal(String(paginationPage));
-                                        setIsEditingPageLocal(true);
-                                        setTimeout(() => pageInputRef.current?.select(), 0);
-                                    }}
-                                    className="px-1.5 h-6 bg-white border-2 border-slate-300 text-slate-700 rounded-full hover:border-sky-400 hover:text-sky-600 transition-all text-xs font-bold"
-                                    title="Click to jump to page"
-                                >
-                                    {paginationPage}/{totalPages}
-                                </button>
-                            )}
-                            
-                            {/* Next: click=next, double-click=quarter, hold=last */}
-                            <button
-                                {...nextHandlers}
-                                disabled={paginationPage >= totalPages}
-                                className="w-6 h-6 flex items-center justify-center bg-white border-2 border-slate-300 text-slate-600 rounded-full hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all text-xs font-bold select-none"
-                                title="Click: next | Double: quarter | Hold: last"
-                            >
-                                &gt;
-                            </button>
-                        </div>
-                    )}
-
                     {/* Back Button */}
                     {(history.length > 0 || previewPlaylistId) && (
                         <button
