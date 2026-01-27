@@ -16,6 +16,7 @@ export default function PagePage({ onBack, onNavigateToOrb, onNavigateToYou, onN
         layer2Folders, addLayer2Image, removeLayer2Image, updateLayer2Image, applyLayer2Image,
         addLayer2Folder, removeLayer2Folder, renameLayer2Folder, selectedLayer2FolderId, setSelectedLayer2FolderId,
         setLayer2FolderPlaylists, setLayer2FolderCondition, themeFolderId, setThemeFolder, clearThemeFolder,
+        themeGroupLeaderId, themeGroupLeaderFolderId, setThemeGroupLeader, clearThemeGroupLeader,
         updateLayer2FolderFolders, assignLayer2ToGroup
     } = useConfigStore();
 
@@ -30,6 +31,10 @@ export default function PagePage({ onBack, onNavigateToOrb, onNavigateToYou, onN
     const [activeTab, setActiveTab] = useState('banner'); // 'banner', 'library', 'folders', or 'groups'
     const [selectedGroupLeaderId, setSelectedGroupLeaderId] = useState(null); // ID of selected group leader image
     const [selectedGroupLeaderFolderId, setSelectedGroupLeaderFolderId] = useState(null); // Folder ID of selected group leader
+    const [showGroupLeadersOnly, setShowGroupLeadersOnly] = useState(false); // Toggle to show only group leaders with members
+    const [selectedBannerGroupLeaderId, setSelectedBannerGroupLeaderId] = useState(null); // ID of selected group leader for banner tab
+    const [selectedBannerGroupLeaderFolderId, setSelectedBannerGroupLeaderFolderId] = useState(null); // Folder ID of selected group leader for banner tab
+    const [expandedBannerGroupLeaderSelector, setExpandedBannerGroupLeaderSelector] = useState(false); // Dropdown state for group leader selector
 
     // Layer 2 Folder handlers
     const [hoveredLayer2ImageId, setHoveredLayer2ImageId] = useState(null);
@@ -73,6 +78,25 @@ export default function PagePage({ onBack, onNavigateToOrb, onNavigateToYou, onN
         document.addEventListener('mousedown', handleClickOutside);
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, [folderAssignmentOpenId]);
+
+    // Close banner group leader selector when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (e) => {
+            if (expandedBannerGroupLeaderSelector && !e.target.closest('[data-banner-group-leader-selector]')) {
+                setExpandedBannerGroupLeaderSelector(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, [expandedBannerGroupLeaderSelector]);
+
+    // Initialize selected group leader from theme state
+    useEffect(() => {
+        if (themeGroupLeaderId && themeGroupLeaderFolderId) {
+            setSelectedBannerGroupLeaderId(themeGroupLeaderId);
+            setSelectedBannerGroupLeaderFolderId(themeGroupLeaderFolderId);
+        }
+    }, [themeGroupLeaderId, themeGroupLeaderFolderId]);
 
     // Convert vertical wheel scrolling to horizontal scrolling (optimized)
     useEffect(() => {
@@ -341,511 +365,219 @@ export default function PagePage({ onBack, onNavigateToOrb, onNavigateToYou, onN
                                 <div className="space-y-4 px-1">
                                     {/* Two-column layer controls */}
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                                        {/* Layer 1 - Active Theme Folder */}
-                                        <div className="space-y-3 p-4 rounded-xl border-2 border-amber-200 bg-amber-50/30">
-                                            <div className="flex items-center justify-between">
-                                        <label className="text-xs font-bold uppercase text-slate-400 flex items-center gap-2">
-                                            <Star size={12} className="text-amber-500 fill-amber-500" />
-                                            Active Theme Folder
-                                        </label>
-                                        {themeFolderId && (
-                                            <button
-                                                onClick={() => clearThemeFolder()}
-                                                className="text-[9px] font-bold text-red-400 hover:text-red-500 transition-colors"
-                                            >
-                                                Clear Theme
-                                            </button>
-                                        )}
-                                            </div>
-                                            
-                                            {themeFolderId ? (() => {
-                                        const themeFolder = layer2Folders.find(f => f.id === themeFolderId);
-                                        if (!themeFolder) return null;
-                                        
-                                        const assignedFolders = themeFolder.folderColors || [];
-                                        
-                                        return (
-                                            <div className="space-y-3">
-                                                {/* Folder Name & Badges */}
-                                                <div className="flex items-center justify-between">
-                                                    <div className="flex items-center gap-2 flex-wrap">
-                                                        {isEditingThemeName ? (
-                                                            <input
-                                                                type="text"
-                                                                value={editingThemeFolderName}
-                                                                onChange={(e) => setEditingThemeFolderName(e.target.value)}
-                                                                onBlur={() => {
-                                                                    if (editingThemeFolderName.trim()) {
-                                                                        renameLayer2Folder(themeFolder.id, editingThemeFolderName.trim());
-                                                                    }
-                                                                    setIsEditingThemeName(false);
-                                                                }}
-                                                                onKeyDown={(e) => {
-                                                                    if (e.key === 'Enter') {
-                                                                        if (editingThemeFolderName.trim()) {
-                                                                            renameLayer2Folder(themeFolder.id, editingThemeFolderName.trim());
-                                                                        }
-                                                                        setIsEditingThemeName(false);
-                                                                    }
-                                                                }}
-                                                                autoFocus
-                                                                className="text-xs font-bold text-amber-700 bg-white border border-amber-400 rounded px-2 py-0.5 outline-none w-32"
-                                                            />
-                                                        ) : (
-                                                            <button
-                                                                onClick={() => {
-                                                                    setIsEditingThemeName(true);
-                                                                    setEditingThemeFolderName(themeFolder.name);
-                                                                }}
-                                                                className="text-xs font-bold text-amber-700 hover:text-amber-900 transition-colors"
-                                                                title="Click to rename"
-                                                            >
-                                                                {themeFolder.name}
-                                                            </button>
-                                                        )}
-                                                        <span className="text-[8px] font-bold bg-amber-500 text-white px-1.5 py-0.5 rounded-full uppercase flex items-center gap-1">
-                                                            <Star size={8} className="fill-current" />
-                                                            Theme
-                                                        </span>
-                                                        {themeFolder.condition === 'random' && (
-                                                            <span className="text-[8px] font-bold bg-amber-500 text-white px-1.5 py-0.5 rounded-full uppercase flex items-center gap-1">
-                                                                <Shuffle size={8} />
-                                                                Random
-                                                            </span>
-                                                        )}
-                                                    </div>
-                                                    <div className="flex items-center gap-2">
-                                                        <span className="text-[10px] text-slate-500">{themeFolder.images.length} images</span>
-                                                        {/* Condition Selector */}
-                                                        {themeFolder.images.length > 0 && (
-                                                            <div className="relative">
-                                                                <button
-                                                                    onClick={() => setExpandedThemeConditionSelector(!expandedThemeConditionSelector)}
-                                                                    className={`px-2 py-1 rounded-lg text-[9px] font-bold uppercase transition-all flex items-center gap-1 ${
-                                                                        themeFolder.condition === 'random'
-                                                                            ? 'bg-amber-500 hover:bg-amber-600 text-white'
-                                                                            : 'bg-slate-200 hover:bg-slate-300 text-slate-700'
-                                                                    }`}
-                                                                >
-                                                                    <Shuffle size={9} className={themeFolder.condition === 'random' ? 'fill-current' : ''} />
-                                                                    {themeFolder.condition === 'random' ? 'Random' : 'First'}
-                                                                </button>
-                                                                {expandedThemeConditionSelector && (
-                                                                    <div className="absolute top-full right-0 mt-1 bg-white border border-slate-200 rounded-lg shadow-lg z-20 min-w-[160px]">
-                                                                        <div className="px-2 py-1 text-[9px] font-bold uppercase text-slate-400 border-b border-slate-100">
-                                                                            Selection Mode
-                                                                        </div>
-                                                                        <button
-                                                                            onClick={() => {
-                                                                                setLayer2FolderCondition(themeFolder.id, null);
-                                                                                setExpandedThemeConditionSelector(false);
-                                                                            }}
-                                                                            className={`w-full px-3 py-1.5 text-left text-[10px] font-medium transition-all flex items-center gap-2 ${
-                                                                                !themeFolder.condition || themeFolder.condition === null
-                                                                                    ? 'bg-amber-50 text-amber-700'
-                                                                                    : 'hover:bg-slate-50 text-slate-600'
-                                                                            }`}
-                                                                        >
-                                                                            {(!themeFolder.condition || themeFolder.condition === null) && <Check size={10} />}
-                                                                            <span className={(!themeFolder.condition || themeFolder.condition === null) ? '' : 'ml-[18px]'}>
-                                                                                First (Default)
-                                                                            </span>
-                                                                        </button>
-                                                                        <button
-                                                                            onClick={() => {
-                                                                                setLayer2FolderCondition(themeFolder.id, 'random');
-                                                                                setExpandedThemeConditionSelector(false);
-                                                                            }}
-                                                                            className={`w-full px-3 py-1.5 text-left text-[10px] font-medium transition-all flex items-center gap-2 ${
-                                                                                themeFolder.condition === 'random'
-                                                                                    ? 'bg-amber-50 text-amber-700'
-                                                                                    : 'hover:bg-slate-50 text-slate-600'
-                                                                            }`}
-                                                                        >
-                                                                            {themeFolder.condition === 'random' && <Check size={10} />}
-                                                                            <span className={themeFolder.condition === 'random' ? '' : 'ml-[18px]'}>
-                                                                                <Shuffle size={10} className="inline mr-1" />
-                                                                                Random
-                                                                            </span>
-                                                                        </button>
-                                                                        <div className="px-2 py-1 text-[8px] text-slate-400 border-t border-slate-100">
-                                                                            Random selects different image on each page entry
-                                                                        </div>
-                                                                    </div>
-                                                                )}
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                                
-                                                {/* Playlist Assignment Selector */}
-                                                <div className="relative">
-                                                    <button
-                                                        onClick={() => setExpandedThemePlaylistSelector(!expandedThemePlaylistSelector)}
-                                                        className="flex items-center gap-2 px-2 py-1.5 bg-slate-100 hover:bg-slate-200 rounded-lg text-[10px] font-medium text-slate-600 transition-all w-full justify-between"
-                                                    >
-                                                        <span>
-                                                            {(!themeFolder.playlistIds || themeFolder.playlistIds.length === 0) 
-                                                                ? '📍 Shows on: All Playlists' 
-                                                                : `📍 Shows on: ${themeFolder.playlistIds.length} playlist${themeFolder.playlistIds.length > 1 ? 's' : ''}`
-                                                            }
-                                                        </span>
-                                                        <ChevronDown 
-                                                            size={12} 
-                                                            className={`transition-transform ${expandedThemePlaylistSelector ? 'rotate-180' : ''}`}
-                                                        />
-                                                    </button>
-                                                    
-                                                    {expandedThemePlaylistSelector && (
-                                                        <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded-lg shadow-lg z-20 max-h-48 overflow-y-auto">
-                                                            <button
-                                                                onClick={() => {
-                                                                    setLayer2FolderPlaylists(themeFolder.id, []);
-                                                                }}
-                                                                className={`w-full px-3 py-2 text-left text-[10px] font-medium transition-all flex items-center gap-2 ${
-                                                                    (!themeFolder.playlistIds || themeFolder.playlistIds.length === 0)
-                                                                        ? 'bg-amber-100 text-amber-700'
-                                                                        : 'hover:bg-slate-50 text-slate-600'
-                                                                }`}
-                                                            >
-                                                                {(!themeFolder.playlistIds || themeFolder.playlistIds.length === 0) && <Check size={10} />}
-                                                                <span className={(!themeFolder.playlistIds || themeFolder.playlistIds.length === 0) ? '' : 'ml-[18px]'}>
-                                                                    All Playlists (Default)
-                                                                </span>
-                                                            </button>
-                                                            
-                                                            <div className="border-t border-slate-100 my-1" />
-                                                            <div className="px-2 py-1 text-[9px] font-bold uppercase text-slate-400">
-                                                                Select specific playlists:
-                                                            </div>
-                                                            
-                                                            {allPlaylists.map((playlist) => {
-                                                                const isSelected = themeFolder.playlistIds?.includes(playlist.id);
-                                                                return (
+                                        {/* Layer 1 - Group Leader Selector */}
+                                        <div className="space-y-3 p-4 rounded-xl border-2 border-purple-200 bg-purple-50/30">
+                                            {(() => {
+                                                // Collect all images from all folders
+                                                const allImages = [];
+                                                layer2Folders.forEach(folder => {
+                                                    if (folder.images && folder.images.length > 0) {
+                                                        folder.images.forEach(img => {
+                                                            allImages.push({
+                                                                ...img,
+                                                                folderId: folder.id,
+                                                                folderName: folder.name
+                                                            });
+                                                        });
+                                                    }
+                                                });
+
+                                                // Filter to only group leaders with at least 1 member
+                                                const groupLeaders = allImages.filter(img => 
+                                                    img.groupMembers && img.groupMembers.length >= 1
+                                                );
+
+                                                // Find the selected group leader (use theme if set, otherwise use local selection)
+                                                const activeGroupLeaderId = themeGroupLeaderId || selectedBannerGroupLeaderId;
+                                                const activeGroupLeaderFolderId = themeGroupLeaderFolderId || selectedBannerGroupLeaderFolderId;
+                                                const selectedGroupLeader = activeGroupLeaderId && activeGroupLeaderFolderId
+                                                    ? allImages.find(img => 
+                                                        img.id === activeGroupLeaderId && img.folderId === activeGroupLeaderFolderId
+                                                    )
+                                                    : null;
+
+                                                // Get group members for the selected leader
+                                                const groupLeaderKey = selectedGroupLeader ? `${selectedGroupLeader.folderId}:${selectedGroupLeader.id}` : null;
+                                                const groupMembers = selectedGroupLeader?.groupMembers || [];
+
+                                                return (
+                                                    <div className="space-y-3">
+                                                        <div className="flex items-center justify-between">
+                                                            <label className="text-xs font-bold uppercase text-slate-400 flex items-center gap-2">
+                                                                <Folder size={12} className="text-purple-500" />
+                                                                {selectedGroupLeader ? 'Theme Group Leader' : 'Group Leader'}
+                                                            </label>
+                                                            {selectedGroupLeader && (
+                                                                <div className="flex items-center gap-2">
+                                                                    {themeGroupLeaderId && (
+                                                                        <span className="text-[8px] font-bold bg-purple-500 text-white px-1.5 py-0.5 rounded-full uppercase flex items-center gap-1">
+                                                                            <Star size={8} className="fill-current" />
+                                                                            Theme
+                                                                        </span>
+                                                                    )}
                                                                     <button
-                                                                        key={playlist.id}
                                                                         onClick={() => {
-                                                                            const currentIds = themeFolder.playlistIds || [];
-                                                                            const newIds = isSelected
-                                                                                ? currentIds.filter(id => id !== playlist.id)
-                                                                                : [...currentIds, playlist.id];
-                                                                            setLayer2FolderPlaylists(themeFolder.id, newIds);
+                                                                            clearThemeGroupLeader();
+                                                                            setSelectedBannerGroupLeaderId(null);
+                                                                            setSelectedBannerGroupLeaderFolderId(null);
                                                                         }}
-                                                                        className={`w-full px-3 py-1.5 text-left text-[10px] font-medium transition-all flex items-center gap-2 ${
-                                                                            isSelected
-                                                                                ? 'bg-amber-50 text-amber-700'
-                                                                                : 'hover:bg-slate-50 text-slate-600'
-                                                                        }`}
+                                                                        className="text-[9px] font-bold text-red-400 hover:text-red-500 transition-colors"
                                                                     >
-                                                                        <div className={`w-3.5 h-3.5 rounded border-2 flex items-center justify-center ${
-                                                                            isSelected ? 'bg-amber-500 border-amber-500' : 'border-slate-300'
-                                                                        }`}>
-                                                                            {isSelected && <Check size={8} className="text-white" />}
-                                                                        </div>
-                                                                        <span className="truncate">{playlist.name}</span>
+                                                                        Clear
                                                                     </button>
-                                                                );
-                                                            })}
-                                                            
-                                                            {allPlaylists.length === 0 && (
-                                                                <div className="px-3 py-2 text-[10px] text-slate-400 italic">
-                                                                    No playlists found
                                                                 </div>
                                                             )}
                                                         </div>
-                                                    )}
-                                                </div>
-                                                
-                                                {/* Folder Color Assignment */}
-                                                <div className="relative">
-                                                    <button
-                                                        onClick={() => setFolderAssignmentOpenId(folderAssignmentOpenId === themeFolder.id ? null : themeFolder.id)}
-                                                        className="flex items-center gap-2 px-2 py-1.5 bg-slate-100 hover:bg-slate-200 rounded-lg text-[10px] font-medium text-slate-600 transition-all w-full justify-between"
-                                                    >
-                                                        <span>
-                                                            {assignedFolders.length === 0 
-                                                                ? '🎨 Assigned to: No Folders' 
-                                                                : `🎨 Assigned to: ${assignedFolders.length} folder${assignedFolders.length > 1 ? 's' : ''}`
-                                                            }
-                                                        </span>
-                                                        <ChevronDown 
-                                                            size={12} 
-                                                            className={`transition-transform ${folderAssignmentOpenId === themeFolder.id ? 'rotate-180' : ''}`}
-                                                        />
-                                                    </button>
-                                                    
-                                                    {folderAssignmentOpenId === themeFolder.id && (
-                                                        <div className="absolute top-full left-0 right-0 mt-1 bg-white border-2 border-slate-200 rounded-lg p-2 shadow-xl z-20">
-                                                            <div className="text-[10px] font-bold uppercase text-slate-400 mb-2">Assign to Folders</div>
-                                                            <div className="grid grid-cols-4 gap-1">
-                                                                {FOLDER_COLORS.map((color) => {
-                                                                    const isAssigned = assignedFolders.includes(color.id);
-                                                                    return (
-                                                                        <button
-                                                                            key={color.id}
-                                                                            onClick={(e) => {
-                                                                                e.stopPropagation();
-                                                                                toggleFolderAssignment(themeFolder.id, color.id);
-                                                                            }}
-                                                                            className={`w-8 h-8 rounded border-2 transition-all ${
-                                                                                isAssigned
-                                                                                    ? 'border-black ring-2 ring-amber-300 scale-110'
-                                                                                    : 'border-slate-300 hover:border-slate-400'
-                                                                            }`}
-                                                                            style={{ backgroundColor: color.hex }}
-                                                                            title={color.name}
-                                                                        >
-                                                                            {isAssigned && (
-                                                                                <Check size={12} className="text-white drop-shadow-md" />
-                                                                            )}
-                                                                        </button>
-                                                                    );
-                                                                })}
-                                                            </div>
-                                                        </div>
-                                                    )}
-                                                </div>
-                                                
-                                                {/* Images Grid */}
-                                                {themeFolder.images.length > 0 ? (
-                                                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                                                        {themeFolder.images.map((img) => (
-                                                            <div
-                                                                key={img.id}
-                                                                className="relative group"
-                                                                onMouseEnter={() => setHoveredThemeImageId(img.id)}
-                                                                onMouseLeave={() => setHoveredThemeImageId(null)}
+
+                                                        {/* Group Leader Selector */}
+                                                        <div className="relative" data-banner-group-leader-selector>
+                                                            <button
+                                                                onClick={() => setExpandedBannerGroupLeaderSelector(!expandedBannerGroupLeaderSelector)}
+                                                                className="flex items-center gap-2 px-2 py-1.5 bg-white hover:bg-slate-50 border-2 border-purple-200 rounded-lg text-[10px] font-medium text-slate-700 transition-all w-full justify-between"
                                                             >
-                                                                <button
-                                                                    onClick={() => {
-                                                                        applyLayer2Image(img);
-                                                                        if (img.bgColor) {
-                                                                            setPageBannerBgColor(img.bgColor);
-                                                                        }
-                                                                        setSelectedLayer2FolderId(themeFolder.id);
-                                                                    }}
-                                                                    className={`w-full aspect-video rounded-lg border-2 overflow-hidden transition-all duration-200 ${
-                                                                        customPageBannerImage2 === img.image
-                                                                            ? 'border-amber-500 ring-2 ring-amber-200 shadow-lg'
-                                                                            : 'border-slate-200 hover:border-amber-300 hover:shadow-md'
-                                                                    }`}
-                                                                    title={`Paired color: ${img.bgColor || 'none'}`}
-                                                                >
-                                                                    <img
-                                                                        src={img.image}
-                                                                        alt="Layer 2"
-                                                                        className="w-full h-full object-cover"
-                                                                    />
-                                                                    {/* Paired color indicator */}
-                                                                    <div 
-                                                                        className="absolute bottom-1 right-1 w-4 h-4 rounded-full border-2 border-white shadow-md"
-                                                                        style={{ backgroundColor: img.bgColor || '#94a3b8' }}
-                                                                        title={`Paired: ${img.bgColor || 'none'}`}
-                                                                    />
-                                                                    {/* Destination Badge */}
-                                                                    {img.destinations && (img.destinations.pages?.length > 0 || img.destinations.folderColors?.length > 0) && (
-                                                                        <div className="absolute top-1 right-1 bg-blue-500 text-white rounded-full p-0.5 shadow-md" title="Has destination assignments">
-                                                                            <MapPin size={10} />
+                                                                <span className="truncate">
+                                                                    {selectedGroupLeader 
+                                                                        ? `${selectedGroupLeader.folderName} (${groupMembers.length} ${groupMembers.length === 1 ? 'member' : 'members'})`
+                                                                        : 'Select Group Leader...'
+                                                                    }
+                                                                </span>
+                                                                <ChevronDown 
+                                                                    size={12} 
+                                                                    className={`transition-transform ${expandedBannerGroupLeaderSelector ? 'rotate-180' : ''}`}
+                                                                />
+                                                            </button>
+                                                            
+                                                            {expandedBannerGroupLeaderSelector && (
+                                                                <div className="absolute top-full left-0 right-0 mt-1 bg-white border-2 border-purple-200 rounded-lg shadow-lg z-20 max-h-64 overflow-y-auto">
+                                                                    {groupLeaders.length === 0 ? (
+                                                                        <div className="px-3 py-4 text-[10px] text-slate-400 text-center">
+                                                                            No group leaders found. Create groups in the Groups tab.
                                                                         </div>
-                                                                    )}
-                                                                    {/* Active Indicator */}
-                                                                    {customPageBannerImage2 === img.image && (
-                                                                        <div className="absolute inset-0 bg-amber-500/20 flex items-center justify-center">
-                                                                            <Check className="text-white drop-shadow-md" size={16} />
-                                                                        </div>
-                                                                    )}
-                                                                </button>
-                                                                
-                                                                {/* Destination Assignment Button */}
-                                                                <button
-                                                                    onClick={(e) => {
-                                                                        e.stopPropagation();
-                                                                        setExpandedThemeDestinationSelector(
-                                                                            expandedThemeDestinationSelector === img.id ? null : img.id
-                                                                        );
-                                                                    }}
-                                                                    className={`absolute top-1 left-1 w-5 h-5 rounded-full flex items-center justify-center shadow-md transition-all z-10 ${
-                                                                        img.destinations && (img.destinations.pages?.length > 0 || img.destinations.folderColors?.length > 0)
-                                                                            ? 'bg-blue-500 hover:bg-blue-600 text-white'
-                                                                            : 'bg-slate-700/80 hover:bg-slate-600 text-white'
-                                                                    }`}
-                                                                    title="Assign destinations (pages/folders)"
-                                                                >
-                                                                    <MapPin size={10} />
-                                                                </button>
-                                                                
-                                                                {/* Destination Assignment Dropdown */}
-                                                                {expandedThemeDestinationSelector === img.id && (
-                                                                    <div className="absolute top-6 left-0 bg-white border border-slate-200 rounded-lg shadow-lg z-20 min-w-[280px] max-w-[320px] max-h-[400px] overflow-y-auto">
-                                                                        <div className="px-2 py-1 text-[9px] font-bold uppercase text-slate-400 border-b border-slate-100 sticky top-0 bg-white">
-                                                                            Assign Destinations
-                                                                        </div>
-                                                                        
-                                                                        {/* Pages Section */}
-                                                                        <div className="px-2 py-1">
-                                                                            <div className="text-[9px] font-bold uppercase text-slate-500 mb-1">Pages</div>
-                                                                            <div className="text-[8px] text-slate-400 mb-2">Select pages where this image appears</div>
-                                                                            {['videos', 'playlists', 'likes', 'history', 'pins'].map((page) => {
-                                                                                const isSelected = img.destinations?.pages?.includes(page);
-                                                                                return (
-                                                                                    <button
-                                                                                        key={page}
-                                                                                        onClick={(e) => {
-                                                                                            e.stopPropagation();
-                                                                                            const currentPages = img.destinations?.pages || [];
-                                                                                            const newPages = isSelected
-                                                                                                ? currentPages.filter(p => p !== page)
-                                                                                                : [...currentPages, page];
-                                                                                            const newDestinations = {
-                                                                                                ...(img.destinations || {}),
-                                                                                                pages: newPages.length > 0 ? newPages : undefined
-                                                                                            };
-                                                                                            updateLayer2Image(themeFolder.id, img.id, { 
-                                                                                                destinations: newPages.length > 0 || newDestinations.folderColors?.length > 0 ? newDestinations : null
-                                                                                            });
-                                                                                        }}
-                                                                                        className={`w-full px-2 py-1.5 text-left text-[10px] font-medium transition-all flex items-center gap-2 rounded ${
-                                                                                            isSelected
-                                                                                                ? 'bg-blue-50 text-blue-700'
-                                                                                                : 'hover:bg-slate-50 text-slate-600'
-                                                                                        }`}
-                                                                                    >
-                                                                                        <div className={`w-3.5 h-3.5 rounded border-2 flex items-center justify-center ${
-                                                                                            isSelected ? 'bg-blue-500 border-blue-500' : 'border-slate-300'
-                                                                                        }`}>
-                                                                                            {isSelected && <Check size={8} className="text-white" />}
-                                                                                        </div>
-                                                                                        <span className="capitalize">{page}</span>
-                                                                                    </button>
-                                                                                );
-                                                                            })}
-                                                                        </div>
-                                                                        
-                                                                        <div className="border-t border-slate-100 my-1" />
-                                                                        
-                                                                        {/* Folder Colors Section */}
-                                                                        <div className="px-2 py-1">
-                                                                            <div className="text-[9px] font-bold uppercase text-slate-500 mb-1">Colored Folders</div>
-                                                                            <div className="text-[8px] text-slate-400 mb-2">Select folder colors where this image appears</div>
-                                                                            <div className="grid grid-cols-4 gap-1">
-                                                                                {FOLDER_COLORS.map((color) => {
-                                                                                    const isSelected = img.destinations?.folderColors?.includes(color.id);
-                                                                                    return (
-                                                                                        <button
-                                                                                            key={color.id}
-                                                                                            onClick={(e) => {
-                                                                                                e.stopPropagation();
-                                                                                                const currentColors = img.destinations?.folderColors || [];
-                                                                                                const newColors = isSelected
-                                                                                                    ? currentColors.filter(c => c !== color.id)
-                                                                                                    : [...currentColors, color.id];
-                                                                                                const newDestinations = {
-                                                                                                    ...(img.destinations || {}),
-                                                                                                    folderColors: newColors.length > 0 ? newColors : undefined
-                                                                                                };
-                                                                                                updateLayer2Image(themeFolder.id, img.id, { 
-                                                                                                    destinations: newColors.length > 0 || newDestinations.pages?.length > 0 ? newDestinations : null
-                                                                                                });
-                                                                                            }}
-                                                                                            className={`w-full aspect-square rounded border-2 transition-all ${
-                                                                                                isSelected
-                                                                                                    ? 'border-white ring-2 ring-blue-500 ring-offset-1'
-                                                                                                    : 'border-slate-300 hover:border-slate-400'
-                                                                                            }`}
-                                                                                            style={{ backgroundColor: color.hex }}
-                                                                                            title={color.name}
-                                                                                        >
-                                                                                            {isSelected && (
-                                                                                                <div className="w-full h-full flex items-center justify-center">
-                                                                                                    <Check size={10} className="text-white drop-shadow-md" />
-                                                                                                </div>
+                                                                    ) : (
+                                                                        groupLeaders.map((leader) => {
+                                                                            const memberCount = leader.groupMembers?.length || 0;
+                                                                            const isTheme = themeGroupLeaderId === leader.id && themeGroupLeaderFolderId === leader.folderId;
+                                                                            const isSelected = (selectedBannerGroupLeaderId === leader.id && 
+                                                                                              selectedBannerGroupLeaderFolderId === leader.folderId) || isTheme;
+                                                                            return (
+                                                                                <button
+                                                                                    key={`${leader.folderId}-${leader.id}`}
+                                                                                    onClick={() => {
+                                                                                        // Set as theme group leader
+                                                                                        setThemeGroupLeader(leader.id, leader.folderId);
+                                                                                        setSelectedBannerGroupLeaderId(leader.id);
+                                                                                        setSelectedBannerGroupLeaderFolderId(leader.folderId);
+                                                                                        setExpandedBannerGroupLeaderSelector(false);
+                                                                                    }}
+                                                                                    className={`w-full px-3 py-2 text-left text-[10px] font-medium transition-all flex items-center gap-2 border-b border-slate-100 last:border-b-0 ${
+                                                                                        isSelected
+                                                                                            ? 'bg-purple-50 text-purple-700'
+                                                                                            : 'hover:bg-slate-50 text-slate-600'
+                                                                                    }`}
+                                                                                >
+                                                                                    <div className="w-12 h-8 rounded border-2 border-slate-200 overflow-hidden flex-shrink-0">
+                                                                                        <img 
+                                                                                            src={leader.image} 
+                                                                                            alt="" 
+                                                                                            className="w-full h-full object-cover"
+                                                                                        />
+                                                                                    </div>
+                                                                                    <div className="flex-1 min-w-0">
+                                                                                        <div className="font-bold truncate flex items-center gap-1">
+                                                                                            {leader.folderName}
+                                                                                            {isTheme && (
+                                                                                                <Star size={10} className="text-purple-500 fill-purple-500" />
                                                                                             )}
-                                                                                        </button>
-                                                                                    );
-                                                                                })}
-                                                                            </div>
-                                                                        </div>
+                                                                                        </div>
+                                                                                        <div className="text-[9px] text-slate-500">{memberCount} {memberCount === 1 ? 'member' : 'members'}</div>
+                                                                                    </div>
+                                                                                    {isSelected && (
+                                                                                        <Check size={12} className="text-purple-600 flex-shrink-0" />
+                                                                                    )}
+                                                                                </button>
+                                                                            );
+                                                                        })
+                                                                    )}
+                                                                </div>
+                                                            )}
+                                                        </div>
+
+                                                        {/* Group Members Grid */}
+                                                        {selectedGroupLeader && groupMembers.length > 0 ? (
+                                                            <>
+                                                                <div className="text-[10px] font-bold text-slate-500 uppercase">
+                                                                    Group Members ({groupMembers.length})
+                                                                </div>
+                                                                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 max-h-[400px] overflow-y-auto">
+                                                                    {groupMembers.map((memberKey) => {
+                                                                        // Parse member key: "folderId:imageId"
+                                                                        const [memberFolderId, memberImageId] = memberKey.split(':');
+                                                                        const memberFolder = layer2Folders.find(f => f.id === memberFolderId);
+                                                                        const memberImage = memberFolder?.images?.find(img => img.id === memberImageId);
                                                                         
-                                                                        {/* Clear All Button */}
-                                                                        <div className="border-t border-slate-100 px-2 py-2">
-                                                                            <button
-                                                                                onClick={(e) => {
-                                                                                    e.stopPropagation();
-                                                                                    updateLayer2Image(themeFolder.id, img.id, { destinations: null });
-                                                                                    setExpandedThemeDestinationSelector(null);
-                                                                                }}
-                                                                                className="w-full px-2 py-1.5 text-[10px] font-medium text-red-600 hover:bg-red-50 rounded transition-all"
+                                                                        if (!memberImage) return null;
+
+                                                                        const isActive = customPageBannerImage2 === memberImage.image;
+                                                                        
+                                                                        return (
+                                                                            <div
+                                                                                key={memberKey}
+                                                                                className="relative group"
+                                                                                onMouseEnter={() => setHoveredLayer2ImageId(memberImage.id)}
+                                                                                onMouseLeave={() => setHoveredLayer2ImageId(null)}
                                                                             >
-                                                                                Clear All Destinations
-                                                                            </button>
-                                                                            <div className="text-[8px] text-slate-400 mt-1">
-                                                                                No destinations = appears everywhere
+                                                                                <button
+                                                                                    onClick={() => {
+                                                                                        applyLayer2Image(memberImage);
+                                                                                        if (memberImage.bgColor) {
+                                                                                            setPageBannerBgColor(memberImage.bgColor);
+                                                                                        }
+                                                                                    }}
+                                                                                    className={`w-full aspect-video rounded-lg border-2 overflow-hidden transition-all duration-200 ${
+                                                                                        isActive
+                                                                                            ? 'border-purple-500 ring-2 ring-purple-200 shadow-lg'
+                                                                                            : 'border-slate-200 hover:border-purple-300 hover:shadow-md'
+                                                                                    }`}
+                                                                                    title={`Paired color: ${memberImage.bgColor || 'none'}`}
+                                                                                >
+                                                                                    <img
+                                                                                        src={memberImage.image}
+                                                                                        alt="Layer 2"
+                                                                                        className="w-full h-full object-cover"
+                                                                                    />
+                                                                                    {/* Paired color indicator */}
+                                                                                    {memberImage.bgColor && (
+                                                                                        <div 
+                                                                                            className="absolute bottom-1 right-1 w-4 h-4 rounded-full border-2 border-white shadow-md"
+                                                                                            style={{ backgroundColor: memberImage.bgColor }}
+                                                                                            title={`Paired: ${memberImage.bgColor}`}
+                                                                                        />
+                                                                                    )}
+                                                                                    {/* Active Indicator */}
+                                                                                    {isActive && (
+                                                                                        <div className="absolute inset-0 bg-purple-500/20 flex items-center justify-center">
+                                                                                            <Check className="text-white drop-shadow-md" size={16} />
+                                                                                        </div>
+                                                                                    )}
+                                                                                </button>
                                                                             </div>
-                                                                        </div>
-                                                                    </div>
-                                                                )}
-                                                                
-                                                                {/* Delete Button */}
-                                                                {hoveredThemeImageId === img.id && (
-                                                                    <button
-                                                                        onClick={(e) => {
-                                                                            e.stopPropagation();
-                                                                            removeLayer2Image(themeFolder.id, img.id);
-                                                                        }}
-                                                                        className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center shadow-md transition-all z-10"
-                                                                    >
-                                                                        <Trash2 size={10} />
-                                                                    </button>
-                                                                )}
+                                                                        );
+                                                                    })}
+                                                                </div>
+                                                            </>
+                                                        ) : selectedGroupLeader ? (
+                                                            <div className="py-4 text-center border-2 border-dashed border-purple-200 rounded-lg bg-white/50">
+                                                                <p className="text-[10px] text-slate-400">No members in this group</p>
                                                             </div>
-                                                        ))}
+                                                        ) : (
+                                                            <div className="py-4 text-center border-2 border-dashed border-purple-200 rounded-lg bg-white/50">
+                                                                <p className="text-[10px] text-slate-400">Select a group leader to view members</p>
+                                                            </div>
+                                                        )}
                                                     </div>
-                                                ) : (
-                                                    <div className="py-4 text-center border-2 border-dashed border-amber-200 rounded-lg bg-white/50">
-                                                        <p className="text-[10px] text-slate-400">No images saved yet</p>
-                                                    </div>
-                                                )}
-                                                
-                                                {/* Add Image Button */}
-                                                <label className="w-full py-2 bg-white border-2 border-dashed border-amber-200 rounded-lg text-[10px] font-bold uppercase text-amber-400 hover:bg-amber-50 hover:border-amber-400 hover:text-amber-600 transition-all flex items-center justify-center gap-2 cursor-pointer">
-                                                    <Plus size={12} />
-                                                    Add Image to Theme Folder
-                                                    <input
-                                                        type="file"
-                                                        accept="image/*"
-                                                        onChange={(e) => handleLayer2FolderImageUpload(e, themeFolder.id)}
-                                                        className="hidden"
-                                                    />
-                                                </label>
-                                                
-                                                {/* Save Button */}
-                                                {customPageBannerImage2 && (
-                                                    <button
-                                                        onClick={() => addLayer2Image(themeFolder.id, {
-                                                            image: customPageBannerImage2,
-                                                            scale: pageBannerImage2Scale,
-                                                            xOffset: pageBannerImage2XOffset,
-                                                            yOffset: pageBannerImage2YOffset,
-                                                            bgColor: pageBannerBgColor
-                                                        })}
-                                                        className="w-full py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-[10px] font-bold uppercase transition-all flex items-center justify-center gap-2"
-                                                    >
-                                                        <Plus size={12} />
-                                                        Save to Theme Folder
-                                                    </button>
-                                                )}
-                                            </div>
-                                        );
-                                    })() : (
-                                        <div className="space-y-2 py-4 text-center">
-                                            <Star size={24} className="text-slate-300 mx-auto mb-2" />
-                                            <p className="text-[10px] text-slate-400">No theme folder set</p>
-                                            <p className="text-[9px] text-slate-300 leading-relaxed">
-                                                Set a folder as theme in the Layer 2 Image Library section below
-                                            </p>
+                                                );
+                                            })()}
                                         </div>
-                                    )}
-                                            </div>
 
                                         {/* Layer 2 - Overlay */}
                                         <div className="space-y-3 p-4 rounded-xl border-2 border-slate-100 bg-white">
@@ -1500,6 +1232,18 @@ export default function PagePage({ onBack, onNavigateToOrb, onNavigateToYou, onN
                                             </span>
                                         )}
                                     </h3>
+                                    <button
+                                        onClick={() => setShowGroupLeadersOnly(!showGroupLeadersOnly)}
+                                        className={`px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase transition-all flex items-center gap-1.5 ${
+                                            showGroupLeadersOnly
+                                                ? 'bg-purple-500 hover:bg-purple-600 text-white'
+                                                : 'bg-slate-200 hover:bg-slate-300 text-slate-700'
+                                        }`}
+                                        title={showGroupLeadersOnly ? 'Show all images' : 'Show only group leaders with members'}
+                                    >
+                                        <Folder size={12} />
+                                        {showGroupLeadersOnly ? 'Group Leaders Only' : 'All Images'}
+                                    </button>
                                 </div>
                                 
                                 {(() => {
@@ -1517,7 +1261,12 @@ export default function PagePage({ onBack, onNavigateToOrb, onNavigateToYou, onN
                                         }
                                     });
 
-                                    if (allImages.length === 0) {
+                                    // Filter to only show group leaders with members if toggle is on
+                                    const filteredImages = showGroupLeadersOnly
+                                        ? allImages.filter(img => img.groupMembers && img.groupMembers.length >= 1)
+                                        : allImages;
+
+                                    if (filteredImages.length === 0) {
                                         return (
                                             <div className="text-center text-slate-400 py-12 bg-white/50 p-4 rounded-2xl">
                                                 <Folder size={48} className="mx-auto mb-4 opacity-50" />
@@ -1564,7 +1313,7 @@ export default function PagePage({ onBack, onNavigateToOrb, onNavigateToYou, onN
                                                     width: 'max-content'
                                                 }}
                                             >
-                                                {allImages.map((img) => {
+                                                {filteredImages.map((img) => {
                                                     const isActive = customPageBannerImage2 === img.image;
                                                     const isFromSelectedFolder = selectedLayer2FolderId === img.folderId;
                                                     

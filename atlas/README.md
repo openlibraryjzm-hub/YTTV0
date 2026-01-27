@@ -135,7 +135,11 @@ yttv2/
 │   ├── importexport.md
 │   ├── ui.md                     # UI documentation index
 │   ├── ui-layout.md              # Layout & Side Menu
-│   ├── ui-pages.md               # Page components
+│   ├── ui-pages.md               # Page components (main pages)
+│   ├── orb-page.md               # OrbPage configuration documentation
+│   ├── you-page.md               # YouPage configuration documentation
+│   ├── page-page.md              # PagePage configuration documentation
+│   ├── app-page.md               # AppPage configuration documentation
 │   ├── ui-cards.md               # Card components
 │   ├── ui-modals.md              # Modal components
 │   ├── history.md
@@ -170,7 +174,10 @@ yttv2/
 |---------|-----------------|-------------------|
 | **Player Controller** | `advanced-player-controller.md` | `navigation-routing.md`, `state-management.md` |
 | **Settings & Configuration** | `ui-pages.md` (Section 4.1.8) | `state-management.md` (configStore) |
-| **Orb Configuration** | `ui-pages.md` (Section 4.1.8.1) | `state-management.md` (configStore) |
+| **Orb Configuration** | `orb-page.md` | `state-management.md` (configStore) |
+| **Profile & Signature** | `you-page.md` | `state-management.md` (configStore) |
+| **Page Banner & Layer 2** | `page-page.md` | `state-management.md` (configStore), `page-banner.md` |
+| **App Banner & Borders** | `app-page.md` | `state-management.md` (configStore), `app-banner.md` |
 | **Support Hub** | `ui.md` | `navigation-routing.md`, `playlistStore.js` |
 | **Playlists & Tabs** | `playlist&tab.md` | `database-schema.md`, `api-bridge.md`, `state-management.md` |
 | **Import/Export** | `importexport.md` | `api-bridge.md`, `database-schema.md` |

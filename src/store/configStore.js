@@ -267,7 +267,7 @@ export const useConfigStore = create(
             ],
             selectedLayer2FolderId: 'default',
             setSelectedLayer2FolderId: (val) => set({ selectedLayer2FolderId: val }),
-            // Theme folder ID - the folder that applies app-wide
+            // Theme folder ID - the folder that applies app-wide (legacy, being replaced by group leader theme)
             themeFolderId: null,
             setThemeFolder: (folderId) => set((state) => {
                 // Clear theme flag from all folders, then set it on the selected folder
@@ -277,7 +277,10 @@ export const useConfigStore = create(
                 }));
                 return {
                     layer2Folders: updatedFolders,
-                    themeFolderId: folderId || null
+                    themeFolderId: folderId || null,
+                    // Clear group leader theme when setting folder theme
+                    themeGroupLeaderId: null,
+                    themeGroupLeaderFolderId: null
                 };
             }),
             clearThemeFolder: () => set((state) => {
@@ -288,9 +291,31 @@ export const useConfigStore = create(
                 }));
                 return {
                     layer2Folders: updatedFolders,
-                    themeFolderId: null
+                    themeFolderId: null,
+                    // Also clear group leader theme
+                    themeGroupLeaderId: null,
+                    themeGroupLeaderFolderId: null
                 };
             }),
+            // Theme group leader - replaces legacy folder theme system
+            themeGroupLeaderId: null,
+            themeGroupLeaderFolderId: null,
+            setThemeGroupLeader: (imageId, folderId) => set((state) => {
+                return {
+                    themeGroupLeaderId: imageId || null,
+                    themeGroupLeaderFolderId: folderId || null,
+                    // Clear legacy folder theme when setting group leader theme
+                    themeFolderId: null,
+                    layer2Folders: state.layer2Folders.map(f => ({
+                        ...f,
+                        isThemeFolder: false
+                    }))
+                };
+            }),
+            clearThemeGroupLeader: () => set((state) => ({
+                themeGroupLeaderId: null,
+                themeGroupLeaderFolderId: null
+            })),
             addLayer2Folder: (name) => set((state) => ({
                 layer2Folders: [...state.layer2Folders, {
                     id: Date.now().toString(),

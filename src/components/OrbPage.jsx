@@ -25,6 +25,7 @@ export default function OrbPage({ onBack, onNavigateToYou, onNavigateToPage, onN
     const [selectedFolderFilter, setSelectedFolderFilter] = useState(null); // null = show all
     const [folderAssignmentOpenId, setFolderAssignmentOpenId] = useState(null); // ID of preset with open folder selector
     const [selectedGroupLeaderId, setSelectedGroupLeaderId] = useState(null); // ID of selected group leader preset
+    const [showGroupLeadersOnly, setShowGroupLeadersOnly] = useState(false); // Toggle to show only group leaders with members
 
 
     const handleOrbImageUpload = (e) => {
@@ -127,12 +128,19 @@ export default function OrbPage({ onBack, onNavigateToYou, onNavigateToPage, onN
         ).length;
     });
 
-    // Filter presets based on selected folder
-    const filteredFavorites = selectedFolderFilter 
+    // Filter presets based on selected folder and group leader toggle
+    const filteredFavorites = (selectedFolderFilter 
         ? orbFavorites.filter(fav => 
             fav.folderColors && fav.folderColors.includes(selectedFolderFilter)
         )
-        : orbFavorites;
+        : orbFavorites
+    ).filter(fav => {
+        // If toggle is on, only show group leaders with at least 1 member
+        if (showGroupLeadersOnly) {
+            return fav.groupMembers && fav.groupMembers.length >= 1;
+        }
+        return true;
+    });
 
     // Toggle folder assignment for a preset
     const toggleFolderAssignment = (favoriteId, folderColorId) => {
@@ -531,6 +539,18 @@ export default function OrbPage({ onBack, onNavigateToYou, onNavigateToPage, onN
                                             </span>
                                         )}
                                     </h3>
+                                    <button
+                                        onClick={() => setShowGroupLeadersOnly(!showGroupLeadersOnly)}
+                                        className={`px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase transition-all flex items-center gap-1.5 ${
+                                            showGroupLeadersOnly
+                                                ? 'bg-purple-500 hover:bg-purple-600 text-white'
+                                                : 'bg-slate-200 hover:bg-slate-300 text-slate-700'
+                                        }`}
+                                        title={showGroupLeadersOnly ? 'Show all presets' : 'Show only group leaders with members'}
+                                    >
+                                        <Folder size={12} />
+                                        {showGroupLeadersOnly ? 'Group Leaders Only' : 'All Presets'}
+                                    </button>
                                 </div>
                                 
                                 {orbFavorites.length === 0 ? (
@@ -749,6 +769,14 @@ export default function OrbPage({ onBack, onNavigateToYou, onNavigateToPage, onN
                                 </h3>
                                 <div className="space-y-2 px-1">
                                     {(() => {
+                                        if (orbFavorites.length === 0) {
+                                            return (
+                                                <div className="py-8 text-center border-2 border-dashed border-slate-200 rounded-lg">
+                                                    <p className="text-[10px] text-slate-400">No orb presets saved yet</p>
+                                                </div>
+                                            );
+                                        }
+
                                         // Find the selected group leader preset
                                         const groupLeader = selectedGroupLeaderId 
                                             ? orbFavorites.find(fav => fav.id === selectedGroupLeaderId)
@@ -756,6 +784,8 @@ export default function OrbPage({ onBack, onNavigateToYou, onNavigateToPage, onN
                                         
                                         // Get group members for the selected leader
                                         const groupMembers = groupLeader?.groupMembers || [];
+                                        
+                                        // Count how many presets are assigned to this group
                                         const assignedCount = groupMembers.length;
 
                                         return (
@@ -775,82 +805,83 @@ export default function OrbPage({ onBack, onNavigateToYou, onNavigateToPage, onN
                                                             </p>
                                                         </div>
                                                     )}
-                                                    {orbFavorites.length > 0 ? (
-                                                        <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 gap-2 max-h-[600px] overflow-y-auto pr-2">
-                                                            {orbFavorites.map((favorite) => {
-                                                                const isGroupLeader = selectedGroupLeaderId === favorite.id;
-                                                                const isActive = favorite.customOrbImage === customOrbImage;
-                                                                
-                                                                return (
-                                                                    <div
-                                                                        key={favorite.id}
-                                                                        className="relative group"
-                                                                        onMouseEnter={() => setHoveredFavoriteId(favorite.id)}
+                                                    <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 gap-2 max-h-[600px] overflow-y-auto pr-2">
+                                                        {orbFavorites.map((favorite) => {
+                                                            const isGroupLeader = selectedGroupLeaderId === favorite.id;
+                                                            const isActive = favorite.customOrbImage === customOrbImage;
+                                                            
+                                                            return (
+                                                                <div
+                                                                    key={`left-${favorite.id}`}
+                                                                    className="relative group"
+                                                                    onMouseEnter={() => setHoveredFavoriteId(favorite.id)}
+                                                                >
+                                                                    <button
+                                                                        onClick={() => {
+                                                                            setSelectedGroupLeaderId(favorite.id);
+                                                                            applyOrbFavorite(favorite);
+                                                                        }}
+                                                                        className={`w-full aspect-square rounded-full border-2 transition-all duration-200 relative overflow-hidden bg-sky-50 ${
+                                                                            isGroupLeader
+                                                                                ? 'border-sky-500 ring-2 ring-sky-200 shadow-md'
+                                                                                : isActive
+                                                                                ? 'border-sky-400 ring-1 ring-sky-100'
+                                                                                : 'border-slate-200 hover:border-sky-300 hover:shadow-sm'
+                                                                        }`}
+                                                                        style={{ width: '64px', height: '64px' }}
                                                                     >
-                                                                        <button
-                                                                            onClick={() => {
-                                                                                applyOrbFavorite(favorite);
-                                                                                setSelectedGroupLeaderId(favorite.id);
+                                                                        {/* Image with spill effect - reuses clipPath from presets tab */}
+                                                                        <div 
+                                                                            className="absolute inset-0 pointer-events-none transition-all duration-500 flex items-center justify-center" 
+                                                                            style={{ 
+                                                                                clipPath: favorite.isSpillEnabled && favorite.orbSpill ? `url(#orbClipPath-${favorite.id})` : 'circle(50% at 50% 50%)',
+                                                                                overflow: 'visible'
                                                                             }}
-                                                                            className={`w-full aspect-square rounded-full border-2 transition-all duration-200 relative overflow-visible bg-sky-50 ${
-                                                                                isGroupLeader
-                                                                                    ? 'border-sky-500 ring-2 ring-sky-200 shadow-md'
-                                                                                    : isActive
-                                                                                    ? 'border-sky-400 ring-1 ring-sky-100'
-                                                                                    : 'border-slate-200 hover:border-sky-300 hover:shadow-sm'
-                                                                            }`}
-                                                                            style={{ width: '64px', height: '64px' }}
                                                                         >
-                                                                            {/* Image with spill effect - reuses clipPath from presets tab */}
-                                                                            <div 
-                                                                                className="absolute inset-0 pointer-events-none transition-all duration-500 flex items-center justify-center" 
-                                                                                style={{ 
-                                                                                    clipPath: favorite.isSpillEnabled && favorite.orbSpill ? `url(#orbClipPath-${favorite.id})` : 'circle(50% at 50% 50%)',
-                                                                                    overflow: 'visible'
+                                                                            <img
+                                                                                src={favorite.customOrbImage}
+                                                                                alt={favorite.name}
+                                                                                className="max-w-none transition-all duration-500"
+                                                                                style={{
+                                                                                    width: favorite.isSpillEnabled ? `calc(100% * ${favorite.orbImageScale || 1})` : '100%',
+                                                                                    height: favorite.isSpillEnabled ? `calc(100% * ${favorite.orbImageScale || 1})` : '100%',
+                                                                                    transform: favorite.isSpillEnabled ? `translate(${(favorite.orbImageXOffset || 0) * 0.2}px, ${(favorite.orbImageYOffset || 0) * 0.2}px)` : 'none',
+                                                                                    objectFit: favorite.isSpillEnabled ? 'contain' : 'cover'
                                                                                 }}
-                                                                            >
-                                                                                <img
-                                                                                    src={favorite.customOrbImage}
-                                                                                    alt={favorite.name}
-                                                                                    className="max-w-none transition-all duration-500"
-                                                                                    style={{
-                                                                                        width: favorite.isSpillEnabled ? `calc(100% * ${favorite.orbImageScale || 1})` : '100%',
-                                                                                        height: favorite.isSpillEnabled ? `calc(100% * ${favorite.orbImageScale || 1})` : '100%',
-                                                                                        transform: favorite.isSpillEnabled ? `translate(${(favorite.orbImageXOffset || 0) * 0.2}px, ${(favorite.orbImageYOffset || 0) * 0.2}px)` : 'none',
-                                                                                        objectFit: favorite.isSpillEnabled ? 'contain' : 'cover'
-                                                                                    }}
-                                                                                />
-                                                                            </div>
-                                                                            
-                                                                            {/* Glass Overlay */}
-                                                                            <div className="absolute inset-0 z-10 overflow-hidden rounded-full pointer-events-none">
-                                                                                <div className="absolute inset-0 bg-sky-200/10" />
-                                                                            </div>
-
-                                                                            {/* Group Leader Badge */}
-                                                                            {isGroupLeader && (
-                                                                                <div className="absolute -top-1 -left-1 bg-sky-500 text-white text-[8px] font-bold px-1 py-0.5 rounded-full uppercase z-20">
-                                                                                    Leader
-                                                                                </div>
-                                                                            )}
-                                                                        </button>
+                                                                            />
+                                                                        </div>
                                                                         
-                                                                        {/* Tooltip on hover */}
-                                                                        {hoveredFavoriteId === favorite.id && (
-                                                                            <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-1 bg-slate-800 text-white text-[9px] px-2 py-1 rounded shadow-lg z-50 whitespace-nowrap">
-                                                                                {favorite.name}
-                                                                                {isGroupLeader && ' (Group Leader)'}
+                                                                        {/* Glass Overlay */}
+                                                                        <div className="absolute inset-0 z-10 overflow-hidden rounded-full pointer-events-none">
+                                                                            <div className="absolute inset-0 bg-sky-200/10" />
+                                                                        </div>
+
+                                                                        {/* Group Leader Badge */}
+                                                                        {isGroupLeader && (
+                                                                            <div className="absolute top-0 left-0 bg-sky-500 text-white text-[8px] font-bold px-1 py-0.5 rounded-br rounded-tl uppercase z-20">
+                                                                                Leader
                                                                             </div>
                                                                         )}
-                                                                    </div>
-                                                                );
-                                                            })}
-                                                        </div>
-                                                    ) : (
-                                                        <div className="py-8 text-center border-2 border-dashed border-slate-200 rounded-lg">
-                                                            <p className="text-[10px] text-slate-400">No orb presets saved yet</p>
-                                                        </div>
-                                                    )}
+
+                                                                        {/* Active Indicator */}
+                                                                        {isActive && !isGroupLeader && (
+                                                                            <div className="absolute inset-0 bg-sky-500/20 flex items-center justify-center pointer-events-none z-20 rounded-full">
+                                                                                <Check className="text-white drop-shadow-md" size={12} />
+                                                                            </div>
+                                                                        )}
+                                                                    </button>
+                                                                    
+                                                                    {/* Tooltip on hover */}
+                                                                    {hoveredFavoriteId === favorite.id && (
+                                                                        <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-1 bg-slate-800 text-white text-[9px] px-2 py-1 rounded shadow-lg z-50 whitespace-nowrap">
+                                                                            {favorite.name}
+                                                                            {isGroupLeader && ' (Group Leader)'}
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                            );
+                                                        })}
+                                                    </div>
                                                 </div>
 
                                                 {/* Right side: All orb presets - click to assign to group leader */}
@@ -858,101 +889,102 @@ export default function OrbPage({ onBack, onNavigateToYou, onNavigateToPage, onN
                                                     <label className="text-xs font-bold uppercase text-slate-400">
                                                         {groupLeader ? 'Assign Presets to Group' : 'Select Group Leader'}
                                                     </label>
-                                                    {orbFavorites.length > 0 ? (
-                                                        <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 gap-2 max-h-[600px] overflow-y-auto pr-2">
-                                                            {orbFavorites.map((favorite) => {
-                                                                const isGroupLeader = selectedGroupLeaderId === favorite.id;
-                                                                const isAssignedToGroup = groupLeader && groupMembers.includes(favorite.id);
-                                                                const isActive = favorite.customOrbImage === customOrbImage;
-                                                                
-                                                                return (
-                                                                    <div
-                                                                        key={favorite.id}
-                                                                        className="relative group"
-                                                                        onMouseEnter={() => setHoveredFavoriteId(favorite.id)}
-                                                                    >
-                                                                        <button
-                                                                            onClick={() => {
-                                                                                if (groupLeader) {
-                                                                                    // Assign/unassign to group (don't assign the leader to itself)
-                                                                                    if (!isGroupLeader) {
-                                                                                        assignOrbToGroup(favorite.id, groupLeader.id);
-                                                                                    }
-                                                                                } else {
-                                                                                    // Set as group leader
-                                                                                    applyOrbFavorite(favorite);
-                                                                                    setSelectedGroupLeaderId(favorite.id);
+                                                    <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 gap-2 max-h-[600px] overflow-y-auto pr-2">
+                                                        {orbFavorites.map((favorite) => {
+                                                            const isGroupLeader = selectedGroupLeaderId === favorite.id;
+                                                            const isAssignedToGroup = groupLeader && groupMembers.includes(favorite.id);
+                                                            const isActive = favorite.customOrbImage === customOrbImage;
+                                                            
+                                                            return (
+                                                                <div
+                                                                    key={`right-${favorite.id}`}
+                                                                    className="relative group"
+                                                                    onMouseEnter={() => setHoveredFavoriteId(favorite.id)}
+                                                                >
+                                                                    <button
+                                                                        onClick={() => {
+                                                                            if (groupLeader) {
+                                                                                // Assign/unassign to group (don't assign the leader to itself)
+                                                                                if (!(favorite.id === groupLeader.id)) {
+                                                                                    assignOrbToGroup(favorite.id, groupLeader.id);
                                                                                 }
+                                                                            } else {
+                                                                                // Set as group leader
+                                                                                setSelectedGroupLeaderId(favorite.id);
+                                                                                applyOrbFavorite(favorite);
+                                                                            }
+                                                                        }}
+                                                                        className={`w-full aspect-square rounded-full border-2 transition-all duration-200 relative overflow-hidden bg-sky-50 ${
+                                                                            isGroupLeader
+                                                                                ? 'border-sky-500 ring-2 ring-sky-200 shadow-md'
+                                                                                : isAssignedToGroup
+                                                                                ? 'border-purple-500 ring-2 ring-purple-200 shadow-md'
+                                                                                : isActive
+                                                                                ? 'border-sky-400 ring-1 ring-sky-100'
+                                                                                : 'border-slate-200 hover:border-sky-300 hover:shadow-sm'
+                                                                        }`}
+                                                                        style={{ width: '64px', height: '64px' }}
+                                                                    >
+                                                                        {/* Image with spill effect - reuses clipPath from presets tab */}
+                                                                        <div 
+                                                                            className="absolute inset-0 pointer-events-none transition-all duration-500 flex items-center justify-center" 
+                                                                            style={{ 
+                                                                                clipPath: favorite.isSpillEnabled && favorite.orbSpill ? `url(#orbClipPath-${favorite.id})` : 'circle(50% at 50% 50%)',
+                                                                                overflow: 'visible'
                                                                             }}
-                                                                            className={`w-full aspect-square rounded-full border-2 transition-all duration-200 relative overflow-visible bg-sky-50 ${
-                                                                                isGroupLeader
-                                                                                    ? 'border-sky-500 ring-2 ring-sky-200 shadow-md'
-                                                                                    : isAssignedToGroup
-                                                                                    ? 'border-purple-500 ring-2 ring-purple-200 shadow-md'
-                                                                                    : isActive
-                                                                                    ? 'border-sky-400 ring-1 ring-sky-100'
-                                                                                    : 'border-slate-200 hover:border-sky-300 hover:shadow-sm'
-                                                                            }`}
-                                                                            style={{ width: '64px', height: '64px' }}
                                                                         >
-                                                                            {/* Image with spill effect - reuses clipPath from presets tab */}
-                                                                            <div 
-                                                                                className="absolute inset-0 pointer-events-none transition-all duration-500 flex items-center justify-center" 
-                                                                                style={{ 
-                                                                                    clipPath: favorite.isSpillEnabled && favorite.orbSpill ? `url(#orbClipPath-${favorite.id})` : 'circle(50% at 50% 50%)',
-                                                                                    overflow: 'visible'
+                                                                            <img
+                                                                                src={favorite.customOrbImage}
+                                                                                alt={favorite.name}
+                                                                                className="max-w-none transition-all duration-500"
+                                                                                style={{
+                                                                                    width: favorite.isSpillEnabled ? `calc(100% * ${favorite.orbImageScale || 1})` : '100%',
+                                                                                    height: favorite.isSpillEnabled ? `calc(100% * ${favorite.orbImageScale || 1})` : '100%',
+                                                                                    transform: favorite.isSpillEnabled ? `translate(${(favorite.orbImageXOffset || 0) * 0.2}px, ${(favorite.orbImageYOffset || 0) * 0.2}px)` : 'none',
+                                                                                    objectFit: favorite.isSpillEnabled ? 'contain' : 'cover'
                                                                                 }}
-                                                                            >
-                                                                                <img
-                                                                                    src={favorite.customOrbImage}
-                                                                                    alt={favorite.name}
-                                                                                    className="max-w-none transition-all duration-500"
-                                                                                    style={{
-                                                                                        width: favorite.isSpillEnabled ? `calc(100% * ${favorite.orbImageScale || 1})` : '100%',
-                                                                                        height: favorite.isSpillEnabled ? `calc(100% * ${favorite.orbImageScale || 1})` : '100%',
-                                                                                        transform: favorite.isSpillEnabled ? `translate(${(favorite.orbImageXOffset || 0) * 0.2}px, ${(favorite.orbImageYOffset || 0) * 0.2}px)` : 'none',
-                                                                                        objectFit: favorite.isSpillEnabled ? 'contain' : 'cover'
-                                                                                    }}
-                                                                                />
-                                                                            </div>
-                                                                            
-                                                                            {/* Glass Overlay */}
-                                                                            <div className="absolute inset-0 z-10 overflow-hidden rounded-full pointer-events-none">
-                                                                                <div className="absolute inset-0 bg-sky-200/10" />
-                                                                            </div>
-
-                                                                            {/* Group Leader Badge */}
-                                                                            {isGroupLeader && (
-                                                                                <div className="absolute -top-1 -left-1 bg-sky-500 text-white text-[8px] font-bold px-1 py-0.5 rounded-full uppercase z-20">
-                                                                                    Leader
-                                                                                </div>
-                                                                            )}
-                                                                            
-                                                                            {/* Assigned Badge */}
-                                                                            {isAssignedToGroup && !isGroupLeader && (
-                                                                                <div className="absolute -top-1 -right-1 bg-purple-500 text-white text-[8px] font-bold px-1 py-0.5 rounded-full uppercase z-20">
-                                                                                    ✓
-                                                                                </div>
-                                                                            )}
-                                                                        </button>
+                                                                            />
+                                                                        </div>
                                                                         
-                                                                        {/* Tooltip on hover */}
-                                                                        {hoveredFavoriteId === favorite.id && (
-                                                                            <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-1 bg-slate-800 text-white text-[9px] px-2 py-1 rounded shadow-lg z-50 whitespace-nowrap">
-                                                                                {favorite.name}
-                                                                                {isGroupLeader && ' (Group Leader)'}
-                                                                                {isAssignedToGroup && !isGroupLeader && ' (Assigned)'}
+                                                                        {/* Glass Overlay */}
+                                                                        <div className="absolute inset-0 z-10 overflow-hidden rounded-full pointer-events-none">
+                                                                            <div className="absolute inset-0 bg-sky-200/10" />
+                                                                        </div>
+
+                                                                        {/* Group Leader Badge */}
+                                                                        {isGroupLeader && (
+                                                                            <div className="absolute top-0 left-0 bg-sky-500 text-white text-[8px] font-bold px-1 py-0.5 rounded-br rounded-tl uppercase z-20">
+                                                                                Leader
                                                                             </div>
                                                                         )}
-                                                                    </div>
-                                                                );
-                                                            })}
-                                                        </div>
-                                                    ) : (
-                                                        <div className="py-8 text-center border-2 border-dashed border-slate-200 rounded-lg">
-                                                            <p className="text-[10px] text-slate-400">No orb presets saved yet</p>
-                                                        </div>
-                                                    )}
+                                                                        
+                                                                        {/* Assigned Badge */}
+                                                                        {isAssignedToGroup && !isGroupLeader && (
+                                                                            <div className="absolute top-0 right-0 bg-purple-500 text-white text-[8px] font-bold px-1 py-0.5 rounded-bl rounded-tr uppercase z-20">
+                                                                                ✓
+                                                                            </div>
+                                                                        )}
+
+                                                                        {/* Active Indicator */}
+                                                                        {isActive && !isGroupLeader && !isAssignedToGroup && (
+                                                                            <div className="absolute inset-0 bg-sky-500/20 flex items-center justify-center pointer-events-none z-20 rounded-full">
+                                                                                <Check className="text-white drop-shadow-md" size={12} />
+                                                                            </div>
+                                                                        )}
+                                                                    </button>
+                                                                    
+                                                                    {/* Tooltip on hover */}
+                                                                    {hoveredFavoriteId === favorite.id && (
+                                                                        <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-1 bg-slate-800 text-white text-[9px] px-2 py-1 rounded shadow-lg z-50 whitespace-nowrap">
+                                                                            {favorite.name}
+                                                                            {isGroupLeader && ' (Group Leader)'}
+                                                                            {isAssignedToGroup && !isGroupLeader && ' (Assigned)'}
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                            );
+                                                        })}
+                                                    </div>
                                                 </div>
                                             </div>
                                         );
