@@ -68,8 +68,8 @@ export default function AppPage({ onBack, currentThemeId, onThemeChange, onNavig
                     <PageBanner
                         title="App Configuration"
                         description="Customize app banner, color palette, and player borders"
-                        color={null}
-                        isEditable={false}
+                        folderColor={null}
+                        seamlessBottom={true}
                         topRightContent={
                             onBack ? (
                                 <button

@@ -672,8 +672,7 @@ const PlaylistsPage = ({ onVideoSelect }) => {
                   <PageBanner
                     title={bannerTitle}
                     description={null}
-                    color={null}
-                    isEditable={false}
+                    folderColor={null}
                     seamlessBottom={true}
                     videoCount={playlistCount}
                     countLabel="Playlist"

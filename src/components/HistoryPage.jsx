@@ -336,13 +336,13 @@ const HistoryPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
           <PageBanner
             title="History"
             description={`No videos from "${filteredPlaylist}" in watch history.`}
-            color={null}
-            isEditable={false}
+            folderColor={null}
             playlistBadges={uniquePlaylists}
             onPlaylistBadgeLeftClick={handlePlaylistBadgeLeftClick}
             onPlaylistBadgeRightClick={handlePlaylistBadgeRightClick}
             allPlaylists={allPlaylists}
             filteredPlaylist={filteredPlaylist}
+            seamlessBottom={true}
           />
         </div>
       </div>
@@ -355,13 +355,13 @@ const HistoryPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
         <PageBanner
           title="History"
           description={filteredPlaylist ? `Videos from "${filteredPlaylist}"` : "Your recently watched videos."}
-          color={null}
-          isEditable={false}
+          folderColor={null}
           playlistBadges={uniquePlaylists}
           onPlaylistBadgeLeftClick={handlePlaylistBadgeLeftClick}
           onPlaylistBadgeRightClick={handlePlaylistBadgeRightClick}
           allPlaylists={allPlaylists}
           filteredPlaylist={filteredPlaylist}
+          seamlessBottom={true}
         />
         <div className="flex flex-col space-y-3 max-w-5xl mx-auto">
           {filteredHistory.map((item) => {

@@ -127,8 +127,8 @@ export default function YouPage({ onBack, onNavigateToOrb, onNavigateToPage, onN
                     <PageBanner
                         title="Signature & Profile"
                         description="Customize your pseudonym and ASCII signature"
-                        color={null}
-                        isEditable={false}
+                        folderColor={null}
+                        seamlessBottom={true}
                         topRightContent={
                             onBack ? (
                                 <button

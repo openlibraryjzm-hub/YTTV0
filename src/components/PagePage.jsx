@@ -219,8 +219,8 @@ export default function PagePage({ onBack, onNavigateToOrb, onNavigateToYou, onN
                     <PageBanner
                         title="Page Banner Configuration"
                         description="Customize page banners with two-layer system and groups"
-                        color={null}
-                        isEditable={false}
+                        folderColor={null}
+                        seamlessBottom={true}
                         topRightContent={
                             onBack ? (
                                 <button

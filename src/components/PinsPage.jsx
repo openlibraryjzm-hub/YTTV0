@@ -119,8 +119,8 @@ const PinsPage = ({ onVideoSelect }) => {
                 <PageBanner
                     title="Pinned Videos"
                     description={null}
-                    color={null}
-                    isEditable={false}
+                    folderColor={null}
+                    seamlessBottom={true}
                     topRightContent={priorityVideos.length > 0 ? (
                         <div
                             className="relative group cursor-pointer w-64 aspect-video rounded-xl overflow-hidden shadow-2xl border-2 border-transparent hover:border-white/50 transition-all"

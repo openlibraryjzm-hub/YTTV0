@@ -15,7 +15,7 @@ The Page Banner is a contextual banner component displayed at the top of content
 
 Users see a contextual banner (220px fixed height) at the top of scrollable content areas on various pages:
 
-- **Location**: Appears on Videos Page, Playlists Page, Likes Page, Pins Page, and Colored Folder views
+- **Location**: Appears on all pages: Videos Page, Playlists Page, Likes Page, Pins Page, History Page, PagePage, OrbPage, YouPage, AppPage, and Colored Folder views
 - **Dynamic Content**: Displays contextual information based on current view:
   - **Videos Page**: Shows playlist name, folder name (e.g., "Red Folder"), custom folder name, or "Unsorted Videos"
   - **Playlists Page**: Shows "All", preset name (e.g., "Gaming"), or tab name (e.g., "All - Favorites")
@@ -24,10 +24,9 @@ Users see a contextual banner (220px fixed height) at the top of scrollable cont
   - **Pins Page**: Shows "Pinned Videos"
 - **Visual Elements**:
   - **Title**: Compact, bold text (`text-lg md:text-xl`) with dark text shadow for readability, no bottom margin (`mb-0`) - sized to fit snugly above thumbnail
-  - **Description**: Hidden by default, shown when info button is clicked
+  - **Description**: Displayed when provided (not hidden by default)
     - **Position**: To the right of thumbnail area (`ml-[170px] mt-[7px]`)
     - **Lines**: Up to 6 lines (`line-clamp-6`) for long descriptions
-    - **Visibility**: Controlled by `showInfo` state (toggle via info button)
   - **Playlist Badges**: Interactive badges showing playlists (History/Likes pages)
     - **Styling**: text-white/80, font-medium, text-sm md:text-base
     - **Left Click**: Filters page content to that playlist
@@ -35,18 +34,6 @@ Users see a contextual banner (220px fixed height) at the top of scrollable cont
     - **Limit**: 2 rows with expand button (>>>) to show all
   - **Pagination Badge**: Compact pagination controls (Likes page)
     - Format: `<< < 1/99 > >>` (First, Previous, Current/Total, Next, Last)
-  - **Info Button**: Small circular button with dual functionality, positioned to the right of carousel buttons
-    - **Styling**: White background (`bg-white`), black icon (`text-black`)
-    - **Size**: 20px (`w-5 h-5`) with Info icon (12px)
-    - **Position**: Right of horizontal carousel buttons (or standalone when no carousel)
-    - **Left Click**: Toggles info display (description + info overlays on thumbnail)
-    - **Right Click**: Opens edit modal (replaces removed edit button)
-  - **Info Overlays** (on thumbnail when info button active):
-    - Overlays appear on top of the thumbnail with tight backdrops (`bg-black/70 backdrop-blur-sm`)
-    - **Author** (top-right): User's pseudonym
-    - **Year** (middle-right): Creation year
-    - **Video Count** (bottom-right): Number of videos with label
-    - Vertically aligned on right side of thumbnail
   - **Title Navigation Buttons** (Videos Page): Horizontal buttons on either side of playlist title
     - **Previous Button** (left): Navigates to previous playlist - white bg, black chevron left icon
     - **Return Button** (middle, if provided): Returns to reset point playlist - white bg, grey icon (inactive) / black icon (active)
@@ -63,12 +50,14 @@ Users see a contextual banner (220px fixed height) at the top of scrollable cont
       - **Follower Pin**: White pin icon + → arrow
       - **Priority Pin**: 👑 crown + golden pin icon
       - **Priority Follower Pin**: 👑 crown + golden pin icon + → arrow
-    - **Segmented Bar Navigation**: Horizontal bar with icons below content to toggle views:
-      - Clock icon for Continue watching
-      - Pin icon for Pinned videos
-      - Sparkles icon for ASCII Signature
-      - Width: `w-[240px]` to match thumbnail width
-      - Offset `ml-[10px]` to align under thumbnail
+    - **Arrow Navigation**: Left/right arrow buttons that appear on hover, overlaid on the thumbnail/ASCII area
+      - **Left Arrow**: Previous mode (cycles: continue → pinned → ASCII → continue)
+      - **Right Arrow**: Next mode (cycles forward through modes)
+      - **Visibility**: Only shown when hovering over thumbnail/ASCII area (`opacity-0 group-hover/thumb:opacity-100`)
+      - **Position**: Absolutely positioned on left and right edges of thumbnail/ASCII box
+      - **Size**: Full height (`h-36`) with `w-8` width strips
+      - **Styling**: Semi-transparent black background (`bg-black/60`) with backdrop blur
+      - **Only when multiple options exist**: Arrows only appear when there are multiple carousel options available
     - **Multi-Pin Bar**: When multiple pins exist (max 10 segments), a vertical segmented bar appears absolutely positioned to the right of thumbnail
       - **Position**: Absolutely positioned at `left: calc(50% + 120px + 4px)`, `bottom: 31px` (centered relative to thumbnail)
       - **Folder Colors**: Each segment colored by the pin's folder assignment
@@ -76,26 +65,23 @@ Users see a contextual banner (220px fixed height) at the top of scrollable cont
       - **Selection Dot**: White dot indicator to the right of the bar (golden for priority pin)
       - **Size**: `h-36 w-3` (matches thumbnail height)
       - Positioned outside flex container to maintain uniform thumbnail width
-    - **Positioning**: Centered horizontally within Layer 1 area (332px width) at `bottom-1`
+    - **Positioning**: Centered horizontally within banner area (332px width) at `bottom-1`
+- **Banner Structure**: The page banner is now a compact 332px-wide transparent component containing only the content (thumbnail/ASCII previews, buttons, title, etc.)
+  - **Banner Width**: Fixed at 332px (previously the "Layer 1 overlap" area)
+  - **No Background/Border**: Banner has no background color or border - completely transparent, showing only content
+  - **Content Only**: Contains title, navigation buttons, thumbnail/ASCII carousel, and other controls
 - **Background Options**:
   - **Color Gradients**: Vibrant gradients matching folder color (when viewing folders)
   - **Animated Patterns**: CSS-based patterns (Diagonal, Dots, Mesh, Solid) when no custom image
-  - **Two-Layer System**: Background color + overlay image via Settings → Appearance → Page Banner:
-    - **Layer 1 (Background Color)**: Solid color that fills the banner background
-    - **Layer 2 (Overlay)**: Image rendered on top (use transparent PNGs for composite effects)
-    - Layer 2 has independent Scale, X Position, and Y Position controls
-- **Banner Panel Borders**: Two prominent border sections that divide the banner into distinct panels
-  - **Left Panel**: Covers from left edge to the thumbnail scroller border (332px width)
-    - Straight edges (no rounded corners)
-    - Bold black border (`4px solid rgba(0,0,0,0.8)`)
-    - Inner shadow + outer shadow for depth (`inset 0 0 30px rgba(0,0,0,0.2), 0 0 15px rgba(0,0,0,0.5)`)
-    - **Layer 1 only**: Background color always visible (Layer 2 does NOT cover this area)
-  - **Right Panel**: Covers from left panel end (332px) to right edge
-    - Straight edges (no rounded corners)
-    - Same bold black border and shadow styling
-    - **Layer 2 here**: Overlay image only renders in this panel area
-  - Both panels use `pointer-events-none` and `z-10` for proper layering
-  - Creates visual effect of two separate banner sections
+- **Layer 2 Image**: Positioned to the right of the banner, extending to fill remaining width
+  - **Position**: Sits to the right of the 332px banner, no Layer 1 background behind it
+  - **Width**: `calc(100% - 332px)` - fills remaining space to the right
+  - **Height**: Matches banner height (220px or dynamic based on content)
+  - **Border**: Fixed border around entire Layer 2 container (`4px solid rgba(0,0,0,0.8)`) with shadow effects
+  - **Overflow**: `overflow-hidden` clips scaled images at top/bottom borders
+  - **Independent Rendering**: Layer 2 is rendered separately without Layer 1 background
+  - **Scale, X Position, Y Position**: Independent controls via Settings → Appearance → Page Banner
+  - **Transparent Background**: Layer 2 renders on transparent background (no Layer 1 color behind it)
 - **Unified Banner System**: When custom image is set, the banner visually connects with the Sticky Toolbar below it using synchronized horizontal scroll animation (can be disabled via Settings)
   - Layer 2 images are managed via Settings → Appearance → Page Banner (no inline thumbnail strip)
 - **Theme Folder System**: Folders can be set as app-wide page banner themes that apply to all pages
@@ -113,6 +99,10 @@ Users see a contextual banner (220px fixed height) at the top of scrollable cont
 - `src/components/LikesPage.jsx`: Uses PageBanner with playlist badges and pagination badge
 - `src/components/HistoryPage.jsx`: Uses PageBanner with playlist badges
 - `src/components/PinsPage.jsx`: Uses PageBanner for pinned videos header
+- `src/components/PagePage.jsx`: Uses PageBanner for Page Banner configuration page
+- `src/components/OrbPage.jsx`: Uses PageBanner for Orb configuration page
+- `src/components/YouPage.jsx`: Uses PageBanner for Signature & Profile configuration page
+- `src/components/AppPage.jsx`: Uses PageBanner for App configuration page
 - `src/components/EditPlaylistModal.jsx`: Allows uploading custom page banner images
 
 **State Management:**
@@ -228,31 +218,29 @@ Users see a contextual banner (220px fixed height) at the top of scrollable cont
    - Sticky Toolbar uses this height for seamless visual connection
    - When custom image is set, both banner and toolbar use `UnifiedBannerBackground` with synchronized animation
 
-5. **Media Carousel Flow (Continue/Pinned/ASCII/Info):**
+5. **Media Carousel Flow (Continue/Pinned/ASCII):**
    - Component receives `continueVideo` and `pinnedVideos` props, gets `userAvatar` from configStore
    - **Continue Video**: Most recently watched video in current playlist (from `videoProgress`)
    - **Pinned Videos**: All pinned videos that exist in current playlist (from `pinStore`)
      - Enriched with `folder_color`, `isPriority`, `isFollower` flags from VideosPage
      - Sorted with priority pin always first
    - **ASCII Signature**: User's ASCII art from Settings → Signature (from `configStore.userAvatar`)
-   - **Info Display**: Shows description and info overlays on thumbnail when info button is clicked
    - **State Management**:
-     - `showInfo`: Boolean - toggles info display (description + thumbnail overlays)
      - `activeThumbnail`: Index into `availableOptions` array (0, 1, or 2)
      - `availableOptions`: Dynamic array of available options ('continue', 'pinned', 'ascii')
      - `activePinnedIndex`: Which pin is currently displayed (when multiple)
    - **Display Logic**:
-     - If `showInfo` is true → Shows description text and info overlays on thumbnail
-     - If only one option exists → Shows that option, no navigation bar
-     - If multiple options exist → Shows horizontal segmented bar with icons below content
+     - If only one option exists → Shows that option, no navigation arrows
+     - If multiple options exist → Shows left/right arrow buttons on hover
      - If multiple pins → Shows vertical segmented bar absolutely positioned to the right of thumbnail (max 10)
      - ASCII option always available if `userAvatar` is set
-   - **Horizontal Segmented Bar** (option navigation):
-    - Fixed width (`w-[240px]`), height (`h-5`), offset `ml-[10px]` (matches thumbnail width)
-     - Icons: Clock (continue), Pin (pinned), Sparkles (ASCII)
-     - Active segment: solid white with black icon
-     - Inactive segments: semi-transparent with white icon
-     - Glassmorphic styling: `bg-black/20 backdrop-blur-sm border-white/20`
+   - **Arrow Navigation** (option navigation):
+     - Left/right arrow buttons overlaid on thumbnail/ASCII area
+     - Only visible on hover (`opacity-0 group-hover/thumb:opacity-100`)
+     - Left arrow: Previous mode (cycles backward)
+     - Right arrow: Next mode (cycles forward)
+     - Full height strips (`h-36 w-8`) positioned absolutely on left/right edges
+     - Semi-transparent black background with backdrop blur
    - **Vertical Pin Bar** (multi-pin navigation):
      - Fixed width (`w-3`), matches thumbnail height (`h-36`)
      - **Max 10 segments** - capped to prevent overflow
@@ -297,14 +285,17 @@ Users see a contextual banner (220px fixed height) at the top of scrollable cont
 **4: Technical Implementation Details**
 
 **Two-Layer Banner System:**
-- **Layer 1 (Background Color)**:
+- **Layer 1 (Banner Background Color)**:
   - Simple solid color background from `pageBannerBgColor`
+  - Fills the 332px-wide banner area only
   - Configurable via color picker with preset options in Settings
-- **Layer 2 (Overlay)**:
+- **Layer 2 (Standalone Image)**:
   - Uses `UnifiedBannerBackground` component for image rendering
-  - Ideal for transparent PNGs to create composite effects over the background color
+  - Positioned to the right of the banner, extending to fill remaining width
+  - **No Layer 1 background**: Renders on transparent background (no background color behind it)
   - Per-playlist image selection with fallback to Default folder
   - Configurable scale (50-200%) and position (X: 0-100%, Y: 0-100%)
+  - Height matches banner height dynamically
 
 **Gradient Generation:**
 - Folder colors mapped via `FOLDER_COLORS` utility
@@ -325,16 +316,17 @@ Users see a contextual banner (220px fixed height) at the top of scrollable cont
 - Prevents layout jitter during content changes
 
 **Content Layout:**
+- **Banner Width**: Fixed at 332px (contains all banner content)
+- **Transparent Background**: No background color or border - banner is completely transparent
 - **Top-Aligned**: Content uses `items-start` for top-left alignment
 - **Title**: Compact (`text-lg md:text-xl`), no bottom margin (`mb-0`), with navigation buttons on either side (Videos Page)
-- **Description**: Positioned to the right of thumbnail (`ml-[170px] mt-[7px]`), hidden until info button clicked
-- **Media Carousel**: Centered horizontally within Layer 1 area (332px width), positioned at `bottom-1` with `left: 166px, transform: translateX(-50%)`
+- **Description**: Positioned to the right of thumbnail (`ml-[170px] mt-[7px]`), displayed when provided
+- **Media Carousel**: Centered horizontally within banner (332px width), positioned at `bottom-1` with `left: 166px, transform: translateX(-50%)`
 - **Thumbnail Dimensions**: Uniform `h-36 w-[240px]` (144px × 240px) across all carousel modes
-- **Info Button**: Positioned to the right of horizontal carousel buttons, handles both info toggle and edit (right-click)
-- **Edit Button**: Removed (functionality moved to info button right-click)
+- **Arrow Navigation**: Left/right arrows overlaid on thumbnail/ASCII, visible on hover only
+- **Layer 2 Position**: Renders to the right of the banner, filling remaining width (`calc(100% - 332px)`) with border and overflow clipping
 
 **Media Carousel Component State:**
-- `showInfo`: Boolean - toggles info display (description + info overlays on thumbnail)
 - `activeThumbnail`: Index into `availableOptions` array (0, 1, or 2)
 - `availableOptions`: Array of available option types ('continue', 'pinned', 'ascii')
 - `currentOption`: The currently selected option type
@@ -343,7 +335,7 @@ Users see a contextual banner (220px fixed height) at the top of scrollable cont
 - `hasPinned`: Boolean - at least one pinned video exists
 - `hasMultiplePins`: Boolean - more than one pinned video exists
 - `hasAscii`: Boolean - ASCII signature is available (from `userAvatar` or `avatar` prop)
-- `hasMultipleOptions`: Boolean - more than one option exists (shows segmented bar navigation)
+- `hasMultipleOptions`: Boolean - more than one option exists (shows arrow navigation on hover)
 - `hasAnyOption`: Boolean - at least one option exists (shows the carousel)
 
 **Layer 2 Image Management:**
@@ -425,16 +417,11 @@ Users see a contextual banner (220px fixed height) at the top of scrollable cont
   - **Preview Mode**: Navigation uses `setPreviewPlaylist` so player continues unaffected
   - **Reset Point Tracking**: Entering from PlaylistsPage or controller sets a "reset point"
   - **State**: Uses `resetPointId` state and `isChevronNavRef` ref to track navigation source
-- Description shows to the right of thumbnail when info button is clicked
-- Video count, year, and author shown as overlays on thumbnail when info button is clicked
-- Right-click info button opens `EditPlaylistModal` for renaming and setting custom banner
-- Custom banners persist in `folder_metadata` table
+- Description shows to the right of thumbnail when provided
 - **Thumbnail Carousel**: Shows continue watching, pinned videos, and/or ASCII signature
   - **Uniform Size**: All thumbnails maintain `h-36 w-[240px]` (144px × 240px) regardless of mode
-  - **Centered**: Positioned horizontally centered within Layer 1 area (332px width)
-- **Info Display**: When info button clicked:
-  - Description appears to the right of thumbnail (`ml-[170px]`)
-  - Info overlays appear on thumbnail (author top-right, year middle-right, count bottom-right)
+  - **Centered**: Positioned horizontally centered within banner (332px width)
+  - **Arrow Navigation**: Left/right arrows appear on hover to cycle through modes (continue/pinned/ASCII)
 - **Pin Type Badge**: When viewing pinned video, top-left badge shows pin type (normal/follower/priority/priority-follower)
 - **Multi-Pin Bar**: Vertical bar with folder-colored segments, priority crown, and selection dot
   - **Position**: Absolutely positioned to the right of thumbnail (outside flex container)
@@ -469,7 +456,7 @@ Users see a contextual banner (220px fixed height) at the top of scrollable cont
 **6: Customization Options**
 
 **Via EditPlaylistModal:**
-- **Location**: Right-click on info button (bottom-left corner) on Videos Page banner
+- **Location**: Available through playlist context menu or other entry points
 - **Features**:
   - Rename playlist/folder
   - Update description

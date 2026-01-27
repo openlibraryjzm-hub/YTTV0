@@ -199,13 +199,13 @@ const LikesPage = ({ onVideoSelect }) => {
                 <PageBanner
                     title="Liked Videos"
                     description={null}
-                    color={null}
-                    isEditable={false}
+                    folderColor={null}
                     playlistBadges={uniquePlaylists}
                     onPlaylistBadgeLeftClick={handlePlaylistBadgeLeftClick}
                     onPlaylistBadgeRightClick={handlePlaylistBadgeRightClick}
                     allPlaylists={allPlaylists}
                     filteredPlaylist={filteredPlaylist}
+                    seamlessBottom={true}
                     customDescription={
                         totalPages > 1 ? (
                             <div className="flex items-center gap-1 px-3 py-1.5 rounded-md border transition-all"

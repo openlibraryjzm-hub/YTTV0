@@ -163,9 +163,9 @@ export default function OrbPage({ onBack, onNavigateToYou, onNavigateToPage, onN
                     <PageBanner
                         title="Orb Configuration"
                         description="Customize your central orb with images, spill effects, and presets"
-                        color={null}
-                        isEditable={false}
+                        folderColor={null}
                         showAscii={false}
+                        seamlessBottom={true}
                         orbControls={{
                             customOrbImage,
                             isSpillEnabled,

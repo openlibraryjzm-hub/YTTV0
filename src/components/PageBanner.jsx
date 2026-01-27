@@ -290,6 +290,7 @@ const PageBanner = ({ title, description, folderColor, onEdit, videoCount, count
     const [displayImage, setDisplayImage] = useState(null);
     const [displayImageConfig, setDisplayImageConfig] = useState(null);
     
+    
     // Handle smooth image transitions with fade effect
     useEffect(() => {
         const currentImageId = effectiveLayer2?.imageId || effectiveLayer2?.image;
@@ -409,70 +410,18 @@ const PageBanner = ({ title, description, folderColor, onEdit, videoCount, count
         : 'h-[220px]';
 
     return (
-        <div ref={bannerRef} className={`w-full relative animate-fade-in group mx-auto ${bannerHeightClass} ${seamlessBottom ? 'mb-0' : 'mb-8'}`}>
+        <div className={`w-full flex items-start gap-0 ${seamlessBottom ? 'mb-0' : 'mb-8'}`}>
+            {/* Banner Container - Shrunk to 332px (content only, no background/border) */}
+            <div ref={bannerRef} className={`w-[332px] relative animate-fade-in group ${bannerHeightClass}`}>
+                {/* Top Right Content */}
+                {topRightContent && (
+                    <div className="absolute top-4 right-4 z-30">
+                        {topRightContent}
+                    </div>
+                )}
 
-            {/* Background Layer - Solid color (Layer 1) */}
-            <div
-                className="absolute inset-0 overflow-hidden shadow-lg"
-                style={{
-                    backgroundColor: effectiveBgColor,
-                    boxShadow: seamlessBottom ? 'none' : `0 10px 25px -5px ${effectiveBgColor}50`
-                }}
-            >
-                {/* Abstract Background Shapes */}
-                <div className="absolute top-0 right-0 w-96 h-96 bg-white/10 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none transform group-hover:scale-110 transition-transform duration-1000 ease-in-out" />
-                <div className="absolute bottom-0 left-0 w-64 h-64 bg-black/10 rounded-full blur-2xl -ml-16 -mb-16 pointer-events-none" />
-            </div>
-            
-            {/* Layer 2 Overlay - only covers right panel area (starts at border line) */}
-            {effectiveLayer2Image && (
-                <div 
-                    className="absolute top-0 bottom-0 right-0 overflow-hidden transition-opacity duration-[400ms] ease-in-out"
-                    style={{ 
-                        left: '332px',
-                        opacity: imageOpacity
-                    }}
-                >
-                    <UnifiedBannerBackground
-                        image={null}
-                        image2={effectiveLayer2Image}
-                        image2Scale={effectiveLayer2Scale}
-                        image2XOffset={effectiveLayer2XOffset}
-                        image2YOffset={effectiveLayer2YOffset}
-                    />
-                </div>
-            )}
-            
-            {/* Left Panel Border - covers from left to 2px past thumbnail scroller */}
-            <div 
-                className="absolute top-0 bottom-0 left-0 pointer-events-none z-10"
-                style={{ 
-                    width: '332px',
-                    border: '4px solid rgba(0,0,0,0.8)',
-                    boxShadow: 'inset 0 0 30px rgba(0,0,0,0.2), 0 0 15px rgba(0,0,0,0.5)'
-                }}
-            />
-            
-            {/* Right Panel Border - covers from left panel end to right edge */}
-            <div 
-                className="absolute top-0 bottom-0 right-0 pointer-events-none z-10"
-                style={{ 
-                    left: '332px',
-                    border: '4px solid rgba(0,0,0,0.8)',
-                    boxShadow: 'inset 0 0 30px rgba(0,0,0,0.2), 0 0 15px rgba(0,0,0,0.5)'
-                }}
-            />
-
-            {/* Top Right Content */}
-            {topRightContent && (
-                <div className="absolute top-4 right-4 z-30">
-                    {topRightContent}
-                </div>
-            )}
-
-
-            {/* Content Container - Allow overflow for dropdowns */}
-            <div className="relative z-10 flex items-start h-full gap-8 w-full px-8 pt-4">
+                {/* Content Container - Allow overflow for dropdowns */}
+                <div className="relative z-10 flex items-start h-full gap-8 w-full px-8 pt-4">
                 <div className="flex flex-col justify-start min-w-0">
                     <div className="flex items-center gap-2">
                         {/* Previous Playlist Button - Left side */}
@@ -736,21 +685,50 @@ const PageBanner = ({ title, description, folderColor, onEdit, videoCount, count
                 )}
             </div>
 
-            {/* Thumbnail/ASCII Section - Continue/Pinned/ASCII with dot navigation */}
+            {/* Thumbnail/ASCII Section - Continue/Pinned/ASCII with arrow navigation */}
             {hasAnyOption && (
                 <div className="absolute bottom-1 flex items-end z-20" style={{ left: '166px', transform: 'translateX(-50%)' }}>
                     {/* Fixed-width container for content */}
-                    <div className="flex flex-col items-center">
+                    <div className="flex flex-col items-center relative">
                         {/* Content row with optional pin bar and preview stack */}
-                        <div className="flex items-stretch gap-[2px]">
+                        <div className="flex items-stretch gap-[2px] relative">
                             {/* Clickable content area */}
                             <div
-                                className={`flex flex-col items-center gap-2 group/thumb flex-shrink-0 ${activeCallback && !showInfo ? 'cursor-pointer' : ''}`}
+                                className={`flex flex-col items-center gap-2 group/thumb flex-shrink-0 relative ${activeCallback && !showInfo ? 'cursor-pointer' : ''}`}
                                 onClick={(e) => {
                                     e.stopPropagation();
                                     if (!showInfo && activeCallback) activeCallback();
                                 }}
                             >
+                                {/* Left Arrow Button - overlaid on left side, shows on hover */}
+                                {hasMultipleOptions && (
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            const prevIndex = activeThumbnail > 0 ? activeThumbnail - 1 : availableOptions.length - 1;
+                                            setActiveThumbnail(prevIndex);
+                                        }}
+                                        className="absolute left-0 top-0 bottom-0 w-8 flex items-center justify-center bg-black/60 hover:bg-black/80 backdrop-blur-sm opacity-0 group-hover/thumb:opacity-100 transition-opacity z-10 rounded-l-lg"
+                                        title="Previous mode"
+                                    >
+                                        <ChevronLeft size={20} className="text-white" strokeWidth={2.5} />
+                                    </button>
+                                )}
+                                
+                                {/* Right Arrow Button - overlaid on right side, shows on hover */}
+                                {hasMultipleOptions && (
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            const nextIndex = activeThumbnail < availableOptions.length - 1 ? activeThumbnail + 1 : 0;
+                                            setActiveThumbnail(nextIndex);
+                                        }}
+                                        className="absolute right-0 top-0 bottom-0 w-8 flex items-center justify-center bg-black/60 hover:bg-black/80 backdrop-blur-sm opacity-0 group-hover/thumb:opacity-100 transition-opacity z-10 rounded-r-lg"
+                                        title="Next mode"
+                                    >
+                                        <ChevronRight size={20} className="text-white" strokeWidth={2.5} />
+                                    </button>
+                                )}
                                 {/* Show thumbnail with info overlays when info button is clicked */}
                                 {showInfo && activeVideo ? (
                                     <div className="relative h-36 w-[240px] rounded-lg overflow-hidden shadow-lg border-2 border-white/20">
@@ -850,7 +828,7 @@ const PageBanner = ({ title, description, folderColor, onEdit, videoCount, count
                         {/* Vertical pin bar with selection dot - only show when viewing pinned and multiple pins exist (max 10 segments) */}
                         {/* Positioned absolutely to the right of thumbnail to maintain uniform thumbnail width */}
                         {currentOption === 'pinned' && hasMultiplePins && (
-                            <div className="absolute flex flex-row items-stretch gap-[2px]" style={{ left: 'calc(50% + 120px + 4px)', bottom: '31px' }}>
+                            <div className="absolute flex flex-row items-stretch gap-[2px]" style={{ left: hasMultipleOptions ? 'calc(50% + 120px + 16px)' : 'calc(50% + 120px + 4px)', bottom: '31px' }}>
                                 <div className="flex flex-col w-3 h-36 rounded-md overflow-hidden border border-white/20 bg-black/20 backdrop-blur-sm">
                                     {pinnedVideos.slice(0, 10).map((pin, index) => {
                                         // Get folder color for this pinned video
@@ -903,107 +881,31 @@ const PageBanner = ({ title, description, folderColor, onEdit, videoCount, count
                                 </div>
                             </div>
                         )}
-                        
-                        {/* Horizontal segmented bar with info button - show when multiple options exist */}
-                        {hasMultipleOptions && (
-                            <div className="flex flex-row items-center gap-1 mt-1 ml-[10px]">
-                                <div className="flex flex-row h-5 w-[240px] rounded-md overflow-hidden border border-white/20 bg-black/20 backdrop-blur-sm">
-                                    {availableOptions.map((option, index) => (
-                                        <button
-                                            key={option}
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                setActiveThumbnail(index);
-                                            }}
-                                            className={`flex-1 flex items-center justify-center transition-all ${
-                                                activeThumbnail === index
-                                                    ? 'bg-white text-black'
-                                                    : 'bg-white/30 text-white/70 hover:bg-white/50 hover:text-white'
-                                            }`}
-                                            style={{
-                                                borderRight: index < availableOptions.length - 1 ? '1px solid rgba(0,0,0,0.3)' : 'none'
-                                            }}
-                                            title={option === 'continue' ? 'Continue watching' : option === 'pinned' ? 'Pinned videos' : 'Signature'}
-                                        >
-                                            {option === 'continue' && <Clock size={12} />}
-                                            {option === 'pinned' && <Pin size={12} />}
-                                            {option === 'ascii' && <Sparkles size={12} />}
-                                        </button>
-                                    ))}
-                                </div>
-                                {/* Info Button - right of carousel buttons */}
-                                <button
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        setShowInfo(!showInfo);
-                                    }}
-                                    onContextMenu={(e) => {
-                                        e.stopPropagation();
-                                        e.preventDefault();
-                                        if (onEdit) onEdit();
-                                    }}
-                                    className={`w-5 h-5 rounded-full flex items-center justify-center transition-all ${
-                                        showInfo 
-                                            ? 'bg-white text-black' 
-                                            : 'bg-white text-black hover:bg-white/80'
-                                    }`}
-                                    title={showInfo ? "Hide info | Right-click to edit" : "Show info | Right-click to edit"}
-                                >
-                                    <Info size={12} strokeWidth={2} />
-                                </button>
-                            </div>
-                        )}
-                        
-                        {/* Info Button - show alone when no carousel options */}
-                        {!hasMultipleOptions && (
-                            <div className="mt-1 ml-[10px]">
-                                <button
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        setShowInfo(!showInfo);
-                                    }}
-                                    onContextMenu={(e) => {
-                                        e.stopPropagation();
-                                        e.preventDefault();
-                                        if (onEdit) onEdit();
-                                    }}
-                                    className={`w-5 h-5 rounded-full flex items-center justify-center transition-all ${
-                                        showInfo 
-                                            ? 'bg-white text-black' 
-                                            : 'bg-white text-black hover:bg-white/80'
-                                    }`}
-                                    title={showInfo ? "Hide info | Right-click to edit" : "Show info | Right-click to edit"}
-                                >
-                                    <Info size={12} strokeWidth={2} />
-                                </button>
-                            </div>
-                        )}
                     </div>
                 </div>
             )}
             
-            {/* Fallback Info Button - when no thumbnail/carousel options exist */}
-            {!hasAnyOption && (
-                <div className="absolute bottom-1 z-20" style={{ left: '166px', transform: 'translateX(-50%)' }}>
-                    <button
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            setShowInfo(!showInfo);
-                        }}
-                        onContextMenu={(e) => {
-                            e.stopPropagation();
-                            e.preventDefault();
-                            if (onEdit) onEdit();
-                        }}
-                        className={`w-5 h-5 rounded-full flex items-center justify-center transition-all ${
-                            showInfo 
-                                ? 'bg-white text-black' 
-                                : 'bg-white text-black hover:bg-white/80'
-                        }`}
-                        title={showInfo ? "Hide info | Right-click to edit" : "Show info | Right-click to edit"}
-                    >
-                        <Info size={12} strokeWidth={2} />
-                    </button>
+            </div>
+            {/* End of Banner Container */}
+
+            {/* Layer 2 - Positioned to the right of banner, no Layer 1 background */}
+            {effectiveLayer2Image && (
+                <div 
+                    className={`relative overflow-hidden transition-opacity duration-[400ms] ease-in-out ${bannerHeightClass} pointer-events-none`}
+                    style={{ 
+                        width: `calc(100% - 332px)`,
+                        opacity: imageOpacity,
+                        border: '4px solid rgba(0,0,0,0.8)',
+                        boxShadow: 'inset 0 0 30px rgba(0,0,0,0.2), 0 0 15px rgba(0,0,0,0.5)'
+                    }}
+                >
+                    <UnifiedBannerBackground
+                        image={null}
+                        image2={effectiveLayer2Image}
+                        image2Scale={effectiveLayer2Scale}
+                        image2XOffset={effectiveLayer2XOffset}
+                        image2YOffset={effectiveLayer2YOffset}
+                    />
                 </div>
             )}
         </div>
