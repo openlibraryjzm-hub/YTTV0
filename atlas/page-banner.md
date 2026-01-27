@@ -191,10 +191,19 @@ Users see a contextual banner (220px fixed height) at the top of scrollable cont
 2. **Background Rendering Flow:**
    - Component uses `pageBannerBgColor` from `configStore` as solid background color (Layer 1)
    - **Layer 2 (Overlay)** - Priority order:
-     1. **Theme Folder**: If a folder is set as theme, selects image from that folder (app-wide)
-     2. **Playlist Override**: Per-playlist override takes precedence over theme for that specific playlist
-     3. **Default Folder**: Falls back to image from Default folder
-     - **Image Selection Logic**: Within each folder, images are selected based on folder condition and image destinations:
+     1. **Settings Page Preview** (no currentPlaylistId): Uses global `customPageBannerImage2` with global scale/offset (highest priority for preview)
+     2. **Theme Group Leader**: If a group leader is set as theme, selects image from that group (app-wide) - NEW
+     3. **Theme Folder**: If a folder is set as theme, selects image from that folder (app-wide) - Legacy
+     4. **Playlist Override**: Per-playlist override takes precedence over theme for that specific playlist
+     5. **Default Folder**: Falls back to image from Default folder
+     - **Theme Group Leader Selection Logic**: When theme group leader is set, selects from group leader + all group members
+       - **Destination Filtering**: Images are first filtered by their destination assignments
+         - Images with `destinations.pages` only appear on those page types
+         - Images with `destinations.folderColors` only appear when viewing those colored folders
+         - Images with no destinations appear everywhere
+       - **Random Selection**: Randomly selects from filtered available images (leader + members) based on pageKey for consistency
+       - **Fallback**: If no images match destinations, uses all images in group (ignores destination filtering for theme)
+     - **Image Selection Logic** (Theme Folder/Legacy): Within each folder, images are selected based on folder condition and image destinations:
        - **Destination Filtering**: Images are first filtered by their destination assignments
          - Images with `destinations.pages` only appear on those page types
          - Images with `destinations.folderColors` only appear when viewing those colored folders
@@ -204,7 +213,7 @@ Users see a contextual banner (220px fixed height) at the top of scrollable cont
        - **Page Entry Detection**: Random selection triggers on every page entry (colored folder click, playlist navigation, page change)
        - **True Random**: Each page entry gets a fresh random selection (not based on page key)
      - If `effectiveLayer2Image` exists, renders via `UnifiedBannerBackground` component
-     - Layer 2 applies its scale (auto height%) and position (X%, Y%) settings
+     - Layer 2 applies its scale (auto height%) and position (X%, Y%) settings from saved image config
    - Shadow color derived from `pageBannerBgColor`
 
 3. **Per-Playlist Layer 2 Selection Flow:**

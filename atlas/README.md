@@ -250,8 +250,8 @@ yttv2/
 
 #### `page-banner.md`
 **Covers**: Contextual page banners on Videos, Playlists, Likes, Pins pages with metadata and customization
-**Key Topics**: Unified Banner System, PageBanner component, Media Carousel (continue/pinned/ASCII), Sticky Toolbar integration, custom folder banners, animated patterns, **theme folder system**, **folder conditions (random/first)**, **image destination assignments (pages/folder colors)**, **smooth fade transitions**
-**Cross-References**: See `ui-pages.md` for page components, `ui-layout.md` for layout system
+**Key Topics**: Unified Banner System, PageBanner component, Media Carousel (continue/pinned/ASCII), Sticky Toolbar integration, custom folder banners, animated patterns, **theme group leader system** (replaces legacy folder theme), **folder conditions (random/first)**, **image destination assignments (pages/folder colors)**, **smooth fade transitions**
+**Cross-References**: See `ui-pages.md` for page components, `ui-layout.md` for layout system, `page-page.md` for configuration
 
 #### `debug.md`
 **Covers**: Debug bounds, inspect mode, layout debugging, ruler overlay (non-functional)

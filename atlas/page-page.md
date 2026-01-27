@@ -20,9 +20,8 @@ PagePage is a dedicated page for Page Banner and Layer 2 image library configura
     - **Color Bars**: Each of 16 folder colors is clickable to filter folders by assigned folder
     - **Counts**: Shows number of folders assigned to each folder color
     - **Active Filter**: Selected color shows white ring highlight
-  - **Tab Navigation**: Four tabs below the sticky toolbar
+  - **Tab Navigation**: Three tabs below the sticky toolbar
     - **Page Banner Tab**: Banner editor and Layer 2 configuration
-    - **Image Library Tab**: Folder and image management
     - **Folders Tab**: Horizontal scrolling carousel of all Layer 2 images
     - **Groups Tab**: Two-column layout for group management (left: select group leader, right: assign images to group)
   - **Scrollable Content**: Tab content below the banner
@@ -30,42 +29,43 @@ PagePage is a dedicated page for Page Banner and Layer 2 image library configura
 - **Page Banner Tab**:
   - **Two-Column Layout**:
     - **Layer 1 - Group Leader Selector** (Left Column):
-      - **Header**: "Group Leader" / "Theme Group Leader" with "Clear" button
+      - **Header**: "Group Leader" / "Theme Group Leader" / "All Images" with "Clear" button
       - **Theme Badge**: Purple "Theme" badge appears when a group leader is set as theme
-      - **Group Leader Dropdown**: Selector to choose from group leaders with at least 1 member
-        - Shows thumbnail, folder name, and member count for each group leader
-        - Star icon appears next to group leaders that are set as theme
-        - Selecting a group leader sets it as the theme (replaces legacy folder theme system)
-      - **Group Members Grid**: Displays all members of the selected group leader in a 2-3-4 column grid
-        - Click any member image to apply it as Layer 2 (loads paired background color)
+      - **Group Leader Dropdown**: Selector with two modes:
+        - **"All Images" Option**: First option in dropdown - shows all images from all folders regardless of groups
+          - Selecting "All Images" displays all images in the grid below
+          - Image uploader below dropdown adds images to default folder
+        - **Group Leader Options**: List of group leaders with at least 1 member
+          - Shows thumbnail, folder name, and member count for each group leader
+          - Star icon appears next to group leaders that are set as theme
+          - Selecting a group leader sets it as the theme (replaces legacy folder theme system)
+      - **Image Uploader**: Always visible below dropdown
+        - Uploads images to the folder of the selected group leader (or default folder if "All Images" is selected)
+      - **Images Grid**: Displays images based on selection mode
+        - **All Images Mode**: Shows all images from all folders in a 2-3-4 column grid
+          - Each image shows folder name badge
+          - Click any image to apply it as Layer 2 (loads paired background color)
+        - **Group Leader Mode**: Shows group leader + all members in a 2-3-4 column grid
+          - Group leader appears first with sky-blue border and "Leader" badge
+          - Members appear after leader
+          - Click any image (leader or member) to apply it as Layer 2 (loads paired background color)
         - Active indicator overlay when image is currently applied
         - Paired color indicators shown on thumbnails
       - **Empty States**: 
-        - "Select a group leader to view members" when no leader selected
+        - "Select a group leader to view images" when no selection
+        - "No images found. Upload images to get started." when in All Images mode with no images
         - "No members in this group" when leader has no members
     - **Layer 2 - Overlay** (Right Column):
       - Image upload/thumbnail
-      - Scale slider (50-200%)
-      - X/Y position sliders (0-100%)
+      - Scale slider (50-200%) - updates preview live
+      - X/Y position sliders (0-100%) - updates preview live
       - Paired background color picker
       - Remove button
       - Layer 1 default color dropdown
+      - **Save Adjustments Button**: Appears when editing an image from the library
+        - Saves current scale, position, and background color to the selected image
+        - Saved adjustments apply across all page banners in the app
 
-- **Layer 2 Image Library Tab**:
-  - **Collapse/Expand Toggle**: Button in section header to show/hide library
-  - **Folder Management**:
-    - Create new folders
-    - Rename folders (click name)
-    - Delete folders (hover to reveal)
-    - Set folder as theme (app-wide) - Legacy feature, being replaced by group leader theme
-    - Set selection mode (First/Random)
-    - Assign folders to playlists
-  - **Image Management** (per folder):
-    - Upload images to folders
-    - Apply images (click thumbnail)
-    - Delete images (hover to reveal)
-    - Assign destinations (pages/folder colors)
-    - Save current Layer 2 image to folder
 
 - **Folders Tab**:
   - **Layout**: Horizontal scrolling carousel (same format as previous folder thumbnails)
@@ -133,12 +133,18 @@ PagePage is a dedicated page for Page Banner and Layer 2 image library configura
 4. User saves to folder → `addLayer2Image()` adds image with current config to selected folder
 
 **Theme Group Leader Management Flow (Left Column - Replaces Legacy Folder Theme):**
-1. User selects group leader from dropdown → `setThemeGroupLeader()` sets as theme → Group members displayed in grid
+1. User selects "All Images" or group leader from dropdown → If group leader, `setThemeGroupLeader()` sets as theme
 2. Theme persists across sessions → Stored in `themeGroupLeaderId` and `themeGroupLeaderFolderId`
-3. User clicks member image → `applyLayer2Image()` applies image and loads paired background color
-4. Theme badge appears when group leader is set as theme
-5. Clear button clears both theme and local selection
-6. Legacy folder theme system is replaced by group leader theme system
+3. Images grid displays based on selection:
+   - **All Images Mode**: Shows all images from all folders
+   - **Group Leader Mode**: Shows group leader (first, with "Leader" badge) + all members
+4. User clicks any image → `applyLayer2Image()` applies image and loads paired background color → Image appears in PageBanner preview above
+5. User adjusts sliders → Live preview updates in PageBanner
+6. User clicks "Save Adjustments" → `updateLayer2Image()` saves scale/position/bgColor to image → Applies across all page banners
+7. Theme badge appears when group leader is set as theme
+8. Clear button clears both theme and local selection (including "All Images" mode)
+9. Legacy folder theme system is replaced by group leader theme system
+10. **Image Upload**: User uploads image via uploader below dropdown → Added to selected group leader's folder (or default if "All Images" selected)
 
 **Folder Management Flow:**
 1. User creates folder → `addLayer2Folder()` adds to array
@@ -163,8 +169,11 @@ PagePage is a dedicated page for Page Banner and Layer 2 image library configura
 - All state persisted to `localStorage` via Zustand persist middleware
 
 **State Dependencies:**
-- When `themeGroupLeaderId` changes → Group leader selector updates → Members grid displays
-- When group leader selected → Members grid updates → Theme badge appears
+- When `themeGroupLeaderId` changes → Group leader selector updates → Images grid displays (group leader mode)
+- When "All Images" selected → Images grid shows all images from all folders
+- When group leader selected → Images grid shows leader + members → Theme badge appears
+- When image applied → Layer 2 updates → PageBanner preview reflects changes immediately
+- When sliders adjusted → PageBanner preview updates live
+- When adjustments saved → Image in library updated → Changes apply across all page banners
 - When folder filter changes → Folders tab carousel filters images
 - When group leaders toggle enabled → Folders tab shows only group leaders with members
-- When image applied → Layer 2 updates → PageBanner reflects changes immediately

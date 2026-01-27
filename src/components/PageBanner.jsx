@@ -94,7 +94,9 @@ const PageBanner = ({ title, description, folderColor, onEdit, videoCount, count
         userAvatar,
         layer2Folders,
         playlistLayer2Overrides,
-        themeFolderId
+        themeFolderId,
+        themeGroupLeaderId,
+        themeGroupLeaderFolderId
     } = useConfigStore();
     
     // Create a page key that changes when entering a new page or folder
@@ -108,12 +110,13 @@ const PageBanner = ({ title, description, folderColor, onEdit, videoCount, count
     
     // Per-Playlist Layer 2 Image Selection
     // Priority order:
-    // 1. Settings page (no currentPlaylistId): Uses global customPageBannerImage2 with global scale/offset
-    // 2. Theme folder: App-wide theme folder (applies to all pages)
-    // 3. Playlist override: Per-playlist override (takes precedence over theme for that playlist)
-    // 4. Default folder: First image from Default folder as fallback
+    // 1. Settings page (no currentPlaylistId): Uses global customPageBannerImage2 with global scale/offset (highest priority for preview)
+    // 2. Theme Group Leader: App-wide theme group leader (applies to all pages) - NEW
+    // 3. Theme folder: App-wide theme folder (applies to all pages) - Legacy
+    // 4. Playlist override: Per-playlist override (takes precedence over theme for that playlist)
+    // 5. Default folder: First image from Default folder as fallback
     const getEffectiveLayer2Image = () => {
-        // Settings page case: No playlist context, use global values for live preview
+        // Settings page case: No playlist context, use global values for live preview (highest priority for preview)
         if (!currentPlaylistId) {
             if (customPageBannerImage2) {
                 return {
@@ -128,7 +131,82 @@ const PageBanner = ({ title, description, folderColor, onEdit, videoCount, count
             return null;
         }
         
-        // Check for theme folder first (app-wide theme)
+        // Check for theme group leader (app-wide theme) - NEW
+        if (themeGroupLeaderId && themeGroupLeaderFolderId) {
+            // Find the group leader image
+            const groupLeaderFolder = layer2Folders?.find(f => f.id === themeGroupLeaderFolderId);
+            const groupLeaderImage = groupLeaderFolder?.images?.find(img => img.id === themeGroupLeaderId);
+            
+            if (groupLeaderImage) {
+                // Build array of all images in the group (leader + members)
+                const groupImages = [];
+                
+                // Include the group leader itself if it matches destination
+                if (imageMatchesDestination(groupLeaderImage, pageType, folderColor)) {
+                    groupImages.push(groupLeaderImage);
+                }
+                
+                // Add all group member images that match destination
+                if (groupLeaderImage.groupMembers && groupLeaderImage.groupMembers.length > 0) {
+                    groupLeaderImage.groupMembers.forEach((memberKey) => {
+                        // Parse member key: "folderId:imageId"
+                        const [memberFolderId, memberImageId] = memberKey.split(':');
+                        const memberFolder = layer2Folders?.find(f => f.id === memberFolderId);
+                        const memberImage = memberFolder?.images?.find(img => img.id === memberImageId);
+                        if (memberImage) {
+                            // Check if image matches destination
+                            if (imageMatchesDestination(memberImage, pageType, folderColor)) {
+                                groupImages.push(memberImage);
+                            }
+                        }
+                    });
+                }
+                
+                // If no images match destination, use all images in the group (ignore destination filtering for theme)
+                if (groupImages.length === 0) {
+                    // Include the group leader itself
+                    groupImages.push(groupLeaderImage);
+                    
+                    // Add all group member images
+                    if (groupLeaderImage.groupMembers && groupLeaderImage.groupMembers.length > 0) {
+                        groupLeaderImage.groupMembers.forEach((memberKey) => {
+                            // Parse member key: "folderId:imageId"
+                            const [memberFolderId, memberImageId] = memberKey.split(':');
+                            const memberFolder = layer2Folders?.find(f => f.id === memberFolderId);
+                            const memberImage = memberFolder?.images?.find(img => img.id === memberImageId);
+                            if (memberImage) {
+                                groupImages.push(memberImage);
+                            }
+                        });
+                    }
+                }
+                
+                if (groupImages.length > 0) {
+                    // Select from group images (randomly based on pageKey for consistency)
+                    const seed = pageKey || `${Date.now()}-${Math.random()}`;
+                    const randomValue = seededRandom(seed);
+                    const randomIndex = Math.floor(randomValue * groupImages.length);
+                    const selectedImage = groupImages[randomIndex];
+                    
+                    // Find the folder for the selected image
+                    const selectedImageFolder = layer2Folders?.find(f => 
+                        f.images?.some(img => img.id === selectedImage.id)
+                    );
+                    
+                    return {
+                        image: selectedImage.image,
+                        scale: selectedImage.scale,
+                        xOffset: selectedImage.xOffset,
+                        yOffset: selectedImage.yOffset,
+                        imageId: selectedImage.id,
+                        folderId: selectedImageFolder?.id || null,
+                        bgColor: selectedImage.bgColor
+                    };
+                }
+            }
+        }
+        
+        // Check for theme folder (app-wide theme) - Legacy
         if (themeFolderId) {
             const themeFolder = layer2Folders?.find(f => f.id === themeFolderId && f.isThemeFolder);
             if (themeFolder && themeFolder.images?.length > 0) {
@@ -204,7 +282,7 @@ const PageBanner = ({ title, description, folderColor, onEdit, videoCount, count
     };
     
     // Memoize effective layer 2 image - pageKey ensures consistent random selection per page
-    const effectiveLayer2 = React.useMemo(() => getEffectiveLayer2Image(), [pageKey, pageType, folderColor, themeFolderId, currentPlaylistId, layer2Folders, playlistLayer2Overrides, customPageBannerImage2, pageBannerImage2Scale, pageBannerImage2XOffset, pageBannerImage2YOffset]);
+    const effectiveLayer2 = React.useMemo(() => getEffectiveLayer2Image(), [pageKey, pageType, folderColor, themeFolderId, themeGroupLeaderId, themeGroupLeaderFolderId, currentPlaylistId, layer2Folders, playlistLayer2Overrides, customPageBannerImage2, pageBannerImage2Scale, pageBannerImage2XOffset, pageBannerImage2YOffset]);
     
     // Track image changes for smooth transitions
     const prevImageIdRef = useRef(null);
