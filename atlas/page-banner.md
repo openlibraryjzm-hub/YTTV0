@@ -18,7 +18,7 @@ Users see a contextual banner (220px fixed height) at the top of scrollable cont
 - **Location**: Appears on all pages: Videos Page, Playlists Page, Likes Page, Pins Page, History Page, PagePage, OrbPage, YouPage, AppPage, and Colored Folder views
 - **Dynamic Content**: Displays contextual information based on current view:
   - **Videos Page**: Shows playlist name, folder name (e.g., "Red Folder"), custom folder name, or "Unsorted Videos"
-  - **Playlists Page**: Shows "All", preset name (e.g., "Gaming"), or tab name (e.g., "All - Favorites")
+  - **Playlists Page**: Shows active tab preset name (e.g. "Gaming") or tab name
   - **Likes Page**: Shows "Liked Videos" with playlist badges and pagination badge
   - **History Page**: Shows "History" with playlist badges
   - **Pins Page**: Shows "Pinned Videos"
@@ -43,7 +43,8 @@ Users see a contextual banner (220px fixed height) at the top of scrollable cont
   - **Media Carousel** (centered in Layer 1 area): Shows continue watching, pinned videos, and/or ASCII signature
     - **Continue Video**: Thumbnail of most recently watched video (click to resume)
     - **Pinned Videos**: Thumbnail of pinned video(s) in current playlist
-    - **ASCII Signature**: User's ASCII art displayed in fixed container (from Settings → Signature)
+    - **ASCII Signature**: User's ASCII art (from Settings → Signature)
+    - **Tab Presets List** (Playlists Page): Interactive list of tab presets replacing the carousel
     - **Thumbnail Size**: `h-[180px] w-[320px]` (180px × 320px) - matches video card width for visual consistency
     - **Pin Type Badge** (on pinned thumbnails): Top-left badge showing pin type:
       - **Normal Pin**: White pin icon
@@ -53,7 +54,7 @@ Users see a contextual banner (220px fixed height) at the top of scrollable cont
     - **Hover Navigation**:
       - **Header Navigation Strips**: Hover over header to reveal left/right gradient strips for playlist preview navigation
       - **Thumbnail Navigation Strips**: Hover over thumbnail to reveal left/right gradient strips for pin navigation (when viewing pins with multiple pins)
-      - **Bottom Labels**: Hover over thumbnail to reveal "Recent", "Pins", "Ascii" labels at bottom center for switching between media carousel options
+      - **Bottom Labels**: Hover over thumbnail to reveal "Recent", "Pins", and "Presets" (Playlists page) labels
     - **Horizontal Pin Bar**: When multiple pins exist (max 10 segments), a horizontal segmented bar appears at the top of the thumbnail
       - **Position**: Absolutely positioned at top of thumbnail (`top: 0px`), overlapping the thumbnail edge
       - **Width**: `w-[320px]` (matches thumbnail width)
@@ -88,6 +89,7 @@ Users see a contextual banner (220px fixed height) at the top of scrollable cont
   - **Scale, X Position, Y Position**: Independent controls via Settings → Appearance → Page Banner
   - **Transparent Background**: Layer 2 renders on transparent background (no Layer 1 color behind it)
   - **Navigation Overlay**: All navigation buttons overlaid on top of Layer 2 image with glassmorphic styling
+    - **Hover Controls**: Search button and Settings button appear on hover
 - **Unified Banner System**: When custom image is set, the banner visually connects with the Sticky Toolbar below it using synchronized horizontal scroll animation (can be disabled via Settings)
   - Layer 2 images are managed via Settings → Appearance → Page Banner (no inline thumbnail strip)
 - **Theme Folder System**: Folders can be set as app-wide page banner themes that apply to all pages
@@ -267,6 +269,7 @@ Users see a contextual banner (220px fixed height) at the top of scrollable cont
    - **Positioning**: Centered horizontally within Layer 1 area at `bottom-1` with `left: 166px, transform: translateX(-50%)`
 
 **Source of Truth:**
+- `tabPresetStore` - Tab presets and active state (Playlists Page)
 - `configStore.pageBannerBgColor` - Layer 1 background color (hex string)
 - `configStore.customPageBannerImage2` - Layer 2 overlay image (for Settings page preview)
 - `configStore.pageBannerImage2Scale/XOffset/YOffset` - Layer 2 positioning (for Settings page preview)
@@ -287,6 +290,7 @@ Users see a contextual banner (220px fixed height) at the top of scrollable cont
 - When `playlistBadges` changes → Badge list updates → Badges re-render
 - When `filteredPlaylist` changes → Badge highlighting updates → Filtered badge appears brighter
 - When `customDescription` provided → Description text replaced with custom content (e.g., pagination badge)
+- When `activePresetId` changes → Tab Presets selection updates
 
 **4: Technical Implementation Details**
 
@@ -434,7 +438,8 @@ Users see a contextual banner (220px fixed height) at the top of scrollable cont
   - **Alignment**: `bottom: 31px` to align with thumbnail area
 
 **Playlists Page:**
-- Title: "All", preset name, or "All - TabName"
+- **Title**: Active preset name (e.g., "Gaming") or tab name
+- **Tab Presets List**: Replaces Media Carousel with scrollable list of tab presets (click to activate)
 - Shows total playlist count and total video count
 - No edit button (playlist-level editing handled elsewhere)
 

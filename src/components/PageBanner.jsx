@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { FOLDER_COLORS } from '../utils/folderColors';
-import { Pen, Play, ChevronRight, ChevronLeft, RotateCcw, Clock, Pin, Sparkles, Info, Star } from 'lucide-react';
+import { Pen, Play, ChevronRight, ChevronLeft, RotateCcw, Clock, Pin, Sparkles, Info, Star, Search, Settings, Layers } from 'lucide-react';
 import { getThumbnailUrl } from '../utils/youtubeUtils';
 
 
@@ -8,6 +8,7 @@ import UnifiedBannerBackground from './UnifiedBannerBackground';
 import { useConfigStore } from '../store/configStore';
 import { usePaginationStore } from '../store/paginationStore';
 import { useNavigationStore } from '../store/navigationStore';
+import { useTabPresetStore } from '../store/tabPresetStore';
 
 // Seeded random function for consistent random selection per page
 const seededRandom = (seed) => {
@@ -109,6 +110,12 @@ const PageBanner = ({ title, description, folderColor, onEdit, videoCount, count
     const [isEditingPageLocal, setIsEditingPageLocal] = useState(false);
     const [pageInputValueLocal, setPageInputValueLocal] = useState('');
     const pageInputRef = useRef(null);
+
+    // Banner view mode: 'avatar' (ASCII art) or 'tabs' (tab presets)
+    const [bannerViewMode, setBannerViewMode] = useState(() => {
+        const saved = localStorage.getItem('playlistsBanner_viewMode');
+        return saved || 'avatar';
+    });
     const {
         pageBannerBgColor, setBannerHeight,
         customPageBannerImage2, pageBannerImage2Scale, pageBannerImage2XOffset, pageBannerImage2YOffset,
@@ -119,6 +126,9 @@ const PageBanner = ({ title, description, folderColor, onEdit, videoCount, count
         themeGroupLeaderId,
         themeGroupLeaderFolderId
     } = useConfigStore();
+
+    const { presets, activePresetId, setActivePreset } = useTabPresetStore();
+    const activePreset = presets.find(p => p.id === activePresetId) || presets[0];
 
     // Create a page key that changes when entering a new page or folder
     // This ensures random selection is consistent for the same page but different for different pages
@@ -422,6 +432,11 @@ const PageBanner = ({ title, description, folderColor, onEdit, videoCount, count
         };
     }, [setBannerHeight]);
 
+    // Persist banner view mode to localStorage
+    React.useEffect(() => {
+        localStorage.setItem('playlistsBanner_viewMode', bannerViewMode);
+    }, [bannerViewMode]);
+
     // Simple approach: show all badges, but limit height with CSS when collapsed
     const hasMoreBadges = playlistBadges && playlistBadges.length > 0;
 
@@ -658,8 +673,10 @@ const PageBanner = ({ title, description, folderColor, onEdit, videoCount, count
                         <div className="absolute top-0 left-1/2 -translate-x-1/2 group/header" style={{ marginTop: '-1px' }}>
                             <div className="bg-black/40 backdrop-blur-md rounded-lg px-4 py-2 border border-white/20 w-[320px] relative">
                                 <h2 className="text-base font-black text-white tracking-tight drop-shadow-md whitespace-nowrap text-center" style={{ textShadow: '-1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0 2px 4px rgba(0,0,0,0.8)' }}>
-                                    {title}
+                                    {currentNavPage === 'playlists' && currentOption === 'ascii' ? (activePreset?.name || 'All') : title}
                                 </h2>
+
+
 
                                 {/* Left navigation strip - Previous Playlist */}
                                 {onNavigatePrev && (
@@ -747,8 +764,38 @@ const PageBanner = ({ title, description, folderColor, onEdit, videoCount, count
                                             )}
                                         </div>
                                     ) : currentOption === 'ascii' ? (
-                                        <div className="h-[180px] w-[320px] flex items-center justify-center rounded-lg bg-black/30 backdrop-blur-sm border-2 border-white/20 overflow-hidden">
-                                            {displayAvatar && displayAvatar.includes('\n') ? (
+                                        <div className="h-[180px] w-[320px] flex items-center justify-center rounded-lg border-2 border-white/20 overflow-hidden">
+                                            {/* Always show Tab Presets on Playlists page, ASCII on other pages */}
+                                            {currentNavPage === 'playlists' ? (
+                                                <div className="w-full h-full flex flex-col p-3 gap-2 overflow-y-auto">
+                                                    {presets && presets.length > 0 ? (
+                                                        presets.map((preset) => (
+                                                            <div
+                                                                key={preset.id}
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    setActivePreset(preset.id);
+                                                                }}
+                                                                className={`px-3 py-2 rounded-md border transition-all flex-shrink-0 cursor-pointer ${preset.id === activePresetId
+                                                                    ? 'bg-sky-500/30 border-sky-400/50 text-white'
+                                                                    : 'bg-black/20 border-white/10 text-white/70 hover:bg-black/40 hover:border-white/30'
+                                                                    }`}
+                                                            >
+                                                                <div className="text-sm font-semibold truncate" style={{ textShadow: '-1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000' }}>
+                                                                    {preset.name}
+                                                                </div>
+                                                                <div className="text-xs text-white/50 mt-0.5" style={{ textShadow: '-1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000' }}>
+                                                                    {preset.tabIds?.length || 0} {preset.tabIds?.length === 1 ? 'tab' : 'tabs'}
+                                                                </div>
+                                                            </div>
+                                                        ))
+                                                    ) : (
+                                                        <div className="text-sm text-white/50 text-center py-4" style={{ textShadow: '-1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000' }}>
+                                                            No presets available
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            ) : displayAvatar && displayAvatar.includes('\n') ? (
                                                 <pre className="font-mono text-[5px] leading-none whitespace-pre text-white/90 drop-shadow-md select-none max-w-full max-h-full" style={{ textShadow: '-0.5px -0.5px 0 #000, 0.5px -0.5px 0 #000, -0.5px 0.5px 0 #000, 0.5px 0.5px 0 #000, 0 1px 2px rgba(0,0,0,1)' }}>
                                                     {displayAvatar}
                                                 </pre>
@@ -825,31 +872,33 @@ const PageBanner = ({ title, description, folderColor, onEdit, videoCount, count
                                     )}
 
                                     {/* Bottom hover menu for media carousel labels */}
-                                    <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex items-center gap-2 z-40 pointer-events-auto opacity-0 group-hover/preview:opacity-100 transition-opacity duration-300">
-                                        {availableOptions.map((option, index) => {
-                                            const isActive = activeThumbnail === index;
-                                            const label = option === 'continue' ? 'Recent' : option === 'pinned' ? 'Pins' : 'Ascii';
+                                    {hasMultipleOptions && (
+                                        <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex items-center gap-2 z-40 pointer-events-auto opacity-0 group-hover/preview:opacity-100 transition-opacity duration-300">
+                                            {availableOptions.map((option, index) => {
+                                                const isActive = activeThumbnail === index;
+                                                const label = option === 'continue' ? 'Recent' : option === 'pinned' ? 'Pins' : (currentNavPage === 'playlists' ? 'Presets' : 'Ascii');
 
-                                            return (
-                                                <button
-                                                    key={option}
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        setActiveThumbnail(index);
-                                                    }}
-                                                    className={`px-2.5 py-1 rounded-md border text-xs font-bold transition-all whitespace-nowrap ${isActive
-                                                        ? 'bg-white/30 border-white/50 text-white backdrop-blur-md'
-                                                        : 'bg-black/50 border-white/20 text-white/70 hover:text-white hover:bg-black/70 backdrop-blur-md'
-                                                        }`}
-                                                    style={{
-                                                        textShadow: '-1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0 2px 4px rgba(0,0,0,0.8)'
-                                                    }}
-                                                >
-                                                    {label}
-                                                </button>
-                                            );
-                                        })}
-                                    </div>
+                                                return (
+                                                    <button
+                                                        key={option}
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            setActiveThumbnail(index);
+                                                        }}
+                                                        className={`px-2.5 py-1 rounded-md border text-xs font-bold transition-all whitespace-nowrap ${isActive
+                                                            ? 'bg-white/30 border-white/50 text-white backdrop-blur-md'
+                                                            : 'bg-black/50 border-white/20 text-white/70 hover:text-white hover:bg-black/70 backdrop-blur-md'
+                                                            }`}
+                                                        style={{
+                                                            textShadow: '-1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0 2px 4px rgba(0,0,0,0.8)'
+                                                        }}
+                                                    >
+                                                        {label}
+                                                    </button>
+                                                );
+                                            })}
+                                        </div>
+                                    )}
                                 </div>
                             </div>
 
@@ -920,7 +969,7 @@ const PageBanner = ({ title, description, folderColor, onEdit, videoCount, count
             {/* Layer 2 - Positioned to the right of banner, no Layer 1 background */}
             {effectiveLayer2Image && (
                 <div
-                    className={`relative overflow-hidden transition-opacity duration-[400ms] ease-in-out ${bannerHeightClass} -mt-[25px]`}
+                    className={`group relative overflow-hidden transition-opacity duration-[400ms] ease-in-out ${bannerHeightClass} -mt-[25px]`}
                     style={{
                         width: `calc(100% - 332px)`,
                         opacity: imageOpacity,
@@ -936,6 +985,32 @@ const PageBanner = ({ title, description, folderColor, onEdit, videoCount, count
                         image2YOffset={effectiveLayer2YOffset}
                     />
 
+                    {/* Search Bar - Top Center - Only visible on hover */}
+                    <div className="absolute top-4 left-1/2 -translate-x-1/2 z-30 pointer-events-auto w-96 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                        <div className="flex items-center gap-2 bg-black/40 backdrop-blur-md rounded-lg px-4 py-2 border border-white/20">
+                            <Search size={18} className="text-white/60" />
+                            <input
+                                type="text"
+                                placeholder="Search videos..."
+                                className="flex-1 bg-transparent text-white placeholder-white/40 text-sm focus:outline-none"
+                                style={{ textShadow: '-1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000' }}
+                            />
+                        </div>
+                    </div>
+
+                    {/* Settings Cog - Bottom Right - Only visible on hover */}
+                    <div className="absolute bottom-4 right-4 z-30 pointer-events-auto opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                        <button
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                // TODO: Add settings functionality
+                            }}
+                            className="flex items-center justify-center w-10 h-10 rounded-lg bg-black/40 backdrop-blur-md border border-white/20 text-white/80 hover:text-white hover:bg-black/60 transition-all"
+                            title="Settings"
+                        >
+                            <Settings size={20} />
+                        </button>
+                    </div>
 
                     {/* Bottom Left Navigation - Page Navigator + Colored Folder Navigator */}
                     <div className="absolute bottom-4 left-4 z-30 pointer-events-auto flex items-center gap-4">
