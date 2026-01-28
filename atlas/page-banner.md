@@ -23,6 +23,12 @@ Users see a contextual banner (220px fixed height) at the top of scrollable cont
   - **History Page**: Shows "History" with playlist badges
   - **Pins Page**: Shows "Pinned Videos"
 - **Visual Elements**:
+  - **Header Above Thumbnail** (centered at top of thumbnail section):
+    - **Position**: Absolutely positioned at top of thumbnail container, 1px above page banner top edge
+    - **Width**: 320px (matches thumbnail width)
+    - **Styling**: Glassmorphic backdrop (`bg-black/40 backdrop-blur-md`) with white border
+    - **Content**: Displays current playlist name or colored folder name
+    - **Text**: Bold, centered, white text with dark shadow for readability
   - **Title**: Compact, bold text (`text-lg md:text-xl`) with dark text shadow for readability, no bottom margin (`mb-0`) - sized to fit snugly above thumbnail
   - **Description**: Displayed when provided (not hidden by default)
     - **Position**: To the right of thumbnail area (`ml-[170px] mt-[7px]`)
@@ -34,39 +40,41 @@ Users see a contextual banner (220px fixed height) at the top of scrollable cont
     - **Limit**: 2 rows with expand button (>>>) to show all
   - **Pagination Badge**: Compact pagination controls (Likes page)
     - Format: `<< < 1/99 > >>` (First, Previous, Current/Total, Next, Last)
-  - **Playlist Preview Navigator** (Videos Page): Positioned above the playlist title
-    - **Previous Button** (left): Navigates to previous playlist - black chevron left icon
-    - **Return Button** (middle, when previewing): Returns to reset point playlist - black RotateCcw icon (only shown when previewing)
-    - **Next Button** (right): Navigates to next playlist - black chevron right icon
-    - **Size**: `w-6 h-6` compact buttons
-    - Preview mode navigation (doesn't affect player)
   - **Media Carousel** (centered in Layer 1 area): Shows continue watching, pinned videos, and/or ASCII signature
     - **Continue Video**: Thumbnail of most recently watched video (click to resume)
     - **Pinned Videos**: Thumbnail of pinned video(s) in current playlist
     - **ASCII Signature**: User's ASCII art displayed in fixed container (from Settings → Signature)
-    - **Thumbnail Size**: `h-36 w-[240px]` (144px × 240px) - uniform size across all modes
+    - **Thumbnail Size**: `h-[180px] w-[320px]` (180px × 320px) - matches video card width for visual consistency
     - **Pin Type Badge** (on pinned thumbnails): Top-left badge showing pin type:
       - **Normal Pin**: White pin icon
       - **Follower Pin**: White pin icon + → arrow
       - **Priority Pin**: 👑 crown + golden pin icon
       - **Priority Follower Pin**: 👑 crown + golden pin icon + → arrow
-    - **Navigation**: Controlled via navigation buttons below the thumbnail/ASCII section (see Navigation Buttons section)
+    - **Navigation**: Controlled via navigation buttons overlaid on page banner image (see Navigation Buttons section)
     - **Multi-Pin Bar**: When multiple pins exist (max 10 segments), a vertical segmented bar appears absolutely positioned to the right of thumbnail
-      - **Position**: Absolutely positioned at `left: calc(50% + 120px + 4px)`, `bottom: 31px` (centered relative to thumbnail)
+      - **Position**: Absolutely positioned at `left: calc(50% + 160px + 4px)`, `bottom: 66px` (centered relative to thumbnail)
       - **Folder Colors**: Each segment colored by the pin's folder assignment
       - **Priority Crown**: Priority pin segment has crown-like clip-path and golden color (`#FFD700`)
       - **Selection Dot**: White dot indicator to the right of the bar (golden for priority pin)
-      - **Size**: `h-36 w-3` (matches thumbnail height)
+      - **Size**: `h-[180px] w-3` (matches thumbnail height)
       - Positioned outside flex container to maintain uniform thumbnail width
-    - **Positioning**: Centered horizontally within banner area (332px width) at `bottom-[39px]`
-  - **Navigation Buttons Below Thumbnail**: Three navigation button groups positioned at `bottom-[10px]`:
-    1. **Thumbnail/ASCII Navigator**: Cycles through continue/pinned/ASCII options
-       - Middle icon changes based on current option: Pin icon for pinned, Clock icon for continue, Star icon for ASCII
-    2. **Page Navigator**: Pagination controls (only shown on Videos page when multiple pages exist)
-       - Clickable page indicator (e.g., "1/99") that allows direct page navigation
-       - Previous/Next buttons for page navigation
-    3. **Colored Folder Navigator**: Cycles through folders in current playlist (All → Unsorted → folders with videos)
-       - Middle dot indicator
+    - **Positioning**: Centered horizontally within banner area (332px width) at `bottom-[25px]` (25px up from bottom)
+  - **Navigation Buttons on Page Banner Image**: All navigation controls overlaid on Layer 2 image with glassmorphic styling
+    - **Top-Right Corner** (`top-4 right-4`): Three button groups in horizontal row
+      1. **Playlist Preview Navigator**: Navigates between playlists (Videos Page)
+         - **Previous Button** (left): Navigates to previous playlist - white chevron left icon
+         - **Return Button** (middle, when previewing): Returns to reset point playlist - white RotateCcw icon (only shown when previewing)
+         - **Next Button** (right): Navigates to next playlist - white chevron right icon
+      2. **Thumbnail/ASCII Navigator**: Cycles through continue/pinned/ASCII options
+         - Middle icon changes based on current option: Pin icon for pinned, Clock icon for continue, Star icon for ASCII
+      3. **Colored Folder Navigator**: Cycles through folders in current playlist (All → Unsorted → folders with videos)
+         - Middle dot indicator
+    - **Bottom-Left Corner** (`bottom-4 left-4`): Page Navigator
+      - **Page Navigator**: Pagination controls (only shown on Videos page when multiple pages exist)
+        - Clickable page indicator (e.g., "1/99") that allows direct page navigation
+        - Previous/Next buttons for page navigation
+    - **Styling**: All button groups use glassmorphic backdrop (`bg-black/40 backdrop-blur-md`) with white text and borders
+    - **Size**: `w-6 h-6` compact buttons with `px-3 py-2` container padding
 - **Banner Structure**: The page banner is now a compact 332px-wide transparent component containing only the content (thumbnail/ASCII previews, buttons, title, etc.)
   - **Banner Width**: Fixed at 332px (previously the "Layer 1 overlap" area)
   - **No Background/Border**: Banner has no background color or border - completely transparent, showing only content
@@ -75,7 +83,7 @@ Users see a contextual banner (220px fixed height) at the top of scrollable cont
   - **Color Gradients**: Vibrant gradients matching folder color (when viewing folders)
   - **Animated Patterns**: CSS-based patterns (Diagonal, Dots, Mesh, Solid) when no custom image
 - **Layer 2 Image**: Positioned to the right of the banner, extending to fill remaining width
-  - **Position**: Sits to the right of the 332px banner, no Layer 1 background behind it
+  - **Position**: Sits to the right of the 332px banner, no Layer 1 background behind it, positioned 25px up from natural position (`-mt-[25px]`)
   - **Width**: `calc(100% - 332px)` - fills remaining space to the right
   - **Height**: Matches banner height (220px or dynamic based on content)
   - **Border**: Fixed border around entire Layer 2 container (`4px solid rgba(0,0,0,0.8)`) with shadow effects
@@ -83,6 +91,7 @@ Users see a contextual banner (220px fixed height) at the top of scrollable cont
   - **Independent Rendering**: Layer 2 is rendered separately without Layer 1 background
   - **Scale, X Position, Y Position**: Independent controls via Settings → Appearance → Page Banner
   - **Transparent Background**: Layer 2 renders on transparent background (no Layer 1 color behind it)
+  - **Navigation Overlay**: All navigation buttons overlaid on top of Layer 2 image with glassmorphic styling
 - **Unified Banner System**: When custom image is set, the banner visually connects with the Sticky Toolbar below it using synchronized horizontal scroll animation (can be disabled via Settings)
   - Layer 2 images are managed via Settings → Appearance → Page Banner (no inline thumbnail strip)
 - **Theme Folder System**: Folders can be set as app-wide page banner themes that apply to all pages

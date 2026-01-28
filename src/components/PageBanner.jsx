@@ -40,14 +40,14 @@ const getPageType = (title) => {
 const imageMatchesDestination = (image, pageType, folderColor) => {
     // If image has no destinations, it's available everywhere
     if (!image.destinations) return true;
-    
+
     const { pages, folderColors } = image.destinations;
-    
+
     // Check page match
     if (pages && pages.length > 0) {
         if (!pages.includes(pageType)) return false;
     }
-    
+
     // Check folder color match
     if (folderColor) {
         if (folderColors && folderColors.length > 0) {
@@ -57,7 +57,7 @@ const imageMatchesDestination = (image, pageType, folderColor) => {
         // No folder color - if image requires specific folder colors, exclude it
         if (folderColors && folderColors.length > 0) return false;
     }
-    
+
     return true;
 };
 
@@ -66,17 +66,17 @@ const selectImageFromFolder = (folder, pageKey, pageType, folderColor) => {
     if (!folder || !folder.images || folder.images.length === 0) {
         return null;
     }
-    
+
     // Filter images by destinations first
-    const availableImages = folder.images.filter(img => 
+    const availableImages = folder.images.filter(img =>
         imageMatchesDestination(img, pageType, folderColor)
     );
-    
+
     if (availableImages.length === 0) {
         // No images match destinations, return null
         return null;
     }
-    
+
     // If folder has random condition, use seeded random based on pageKey for consistency
     if (folder.condition === 'random') {
         const seed = pageKey || `${Date.now()}-${Math.random()}`;
@@ -84,7 +84,7 @@ const selectImageFromFolder = (folder, pageKey, pageType, folderColor) => {
         const randomIndex = Math.floor(randomValue * availableImages.length);
         return availableImages[randomIndex];
     }
-    
+
     // Default: use first available image
     return availableImages[0];
 };
@@ -102,14 +102,14 @@ const PageBanner = ({ title, description, folderColor, onEdit, videoCount, count
         firstPagePreserve: firstPage,
         lastPagePreserve: lastPage,
     } = usePaginationStore();
-    
+
     const { currentPage: currentNavPage } = useNavigationStore();
-    
+
     // Local state for page editing
     const [isEditingPageLocal, setIsEditingPageLocal] = useState(false);
     const [pageInputValueLocal, setPageInputValueLocal] = useState('');
     const pageInputRef = useRef(null);
-    const { 
+    const {
         pageBannerBgColor, setBannerHeight,
         customPageBannerImage2, pageBannerImage2Scale, pageBannerImage2XOffset, pageBannerImage2YOffset,
         userAvatar,
@@ -119,16 +119,16 @@ const PageBanner = ({ title, description, folderColor, onEdit, videoCount, count
         themeGroupLeaderId,
         themeGroupLeaderFolderId
     } = useConfigStore();
-    
+
     // Create a page key that changes when entering a new page or folder
     // This ensures random selection is consistent for the same page but different for different pages
     const pageKey = React.useMemo(() => {
         return `${currentPlaylistId || 'no-playlist'}-${folderColor || 'no-folder'}-${title || 'no-title'}`;
     }, [currentPlaylistId, folderColor, title]);
-    
+
     // Determine current page type for destination matching
     const pageType = React.useMemo(() => getPageType(title), [title]);
-    
+
     // Per-Playlist Layer 2 Image Selection
     // Priority order:
     // 1. Settings page (no currentPlaylistId): Uses global customPageBannerImage2 with global scale/offset (highest priority for preview)
@@ -151,22 +151,22 @@ const PageBanner = ({ title, description, folderColor, onEdit, videoCount, count
             }
             return null;
         }
-        
+
         // Check for theme group leader (app-wide theme) - NEW
         if (themeGroupLeaderId && themeGroupLeaderFolderId) {
             // Find the group leader image
             const groupLeaderFolder = layer2Folders?.find(f => f.id === themeGroupLeaderFolderId);
             const groupLeaderImage = groupLeaderFolder?.images?.find(img => img.id === themeGroupLeaderId);
-            
+
             if (groupLeaderImage) {
                 // Build array of all images in the group (leader + members)
                 const groupImages = [];
-                
+
                 // Include the group leader itself if it matches destination
                 if (imageMatchesDestination(groupLeaderImage, pageType, folderColor)) {
                     groupImages.push(groupLeaderImage);
                 }
-                
+
                 // Add all group member images that match destination
                 if (groupLeaderImage.groupMembers && groupLeaderImage.groupMembers.length > 0) {
                     groupLeaderImage.groupMembers.forEach((memberKey) => {
@@ -182,12 +182,12 @@ const PageBanner = ({ title, description, folderColor, onEdit, videoCount, count
                         }
                     });
                 }
-                
+
                 // If no images match destination, use all images in the group (ignore destination filtering for theme)
                 if (groupImages.length === 0) {
                     // Include the group leader itself
                     groupImages.push(groupLeaderImage);
-                    
+
                     // Add all group member images
                     if (groupLeaderImage.groupMembers && groupLeaderImage.groupMembers.length > 0) {
                         groupLeaderImage.groupMembers.forEach((memberKey) => {
@@ -201,19 +201,19 @@ const PageBanner = ({ title, description, folderColor, onEdit, videoCount, count
                         });
                     }
                 }
-                
+
                 if (groupImages.length > 0) {
                     // Select from group images (randomly based on pageKey for consistency)
                     const seed = pageKey || `${Date.now()}-${Math.random()}`;
                     const randomValue = seededRandom(seed);
                     const randomIndex = Math.floor(randomValue * groupImages.length);
                     const selectedImage = groupImages[randomIndex];
-                    
+
                     // Find the folder for the selected image
-                    const selectedImageFolder = layer2Folders?.find(f => 
+                    const selectedImageFolder = layer2Folders?.find(f =>
                         f.images?.some(img => img.id === selectedImage.id)
                     );
-                    
+
                     return {
                         image: selectedImage.image,
                         scale: selectedImage.scale,
@@ -226,7 +226,7 @@ const PageBanner = ({ title, description, folderColor, onEdit, videoCount, count
                 }
             }
         }
-        
+
         // Check for theme folder (app-wide theme) - Legacy
         if (themeFolderId) {
             const themeFolder = layer2Folders?.find(f => f.id === themeFolderId && f.isThemeFolder);
@@ -247,14 +247,14 @@ const PageBanner = ({ title, description, folderColor, onEdit, videoCount, count
                 }
             }
         }
-        
+
         // Videos page case: Check for playlist-specific override (takes precedence over theme)
         if (playlistLayer2Overrides[currentPlaylistId]) {
             const override = playlistLayer2Overrides[currentPlaylistId];
             // Look up the CURRENT image from the library to get latest values
             const folder = layer2Folders?.find(f => f.id === override.folderId);
             const libraryImage = folder?.images?.find(img => img.id === override.imageId);
-            
+
             if (libraryImage) {
                 // Use latest values from library (live updates from Settings)
                 return {
@@ -278,7 +278,7 @@ const PageBanner = ({ title, description, folderColor, onEdit, videoCount, count
                 bgColor: override.bgColor
             };
         }
-        
+
         // No override - use Default folder as fallback
         const defaultFolder = layer2Folders?.find(f => f.id === 'default');
         if (defaultFolder && defaultFolder.images?.length > 0) {
@@ -297,25 +297,25 @@ const PageBanner = ({ title, description, folderColor, onEdit, videoCount, count
                 };
             }
         }
-        
+
         // No default images available
         return null;
     };
-    
+
     // Memoize effective layer 2 image - pageKey ensures consistent random selection per page
     const effectiveLayer2 = React.useMemo(() => getEffectiveLayer2Image(), [pageKey, pageType, folderColor, themeFolderId, themeGroupLeaderId, themeGroupLeaderFolderId, currentPlaylistId, layer2Folders, playlistLayer2Overrides, customPageBannerImage2, pageBannerImage2Scale, pageBannerImage2XOffset, pageBannerImage2YOffset]);
-    
+
     // Track image changes for smooth transitions
     const prevImageIdRef = useRef(null);
     const [imageOpacity, setImageOpacity] = useState(1);
     const [displayImage, setDisplayImage] = useState(null);
     const [displayImageConfig, setDisplayImageConfig] = useState(null);
-    
-    
+
+
     // Handle smooth image transitions with fade effect
     useEffect(() => {
         const currentImageId = effectiveLayer2?.imageId || effectiveLayer2?.image;
-        
+
         if (currentImageId !== prevImageIdRef.current) {
             // Image is changing - fade out old, then fade in new
             if (prevImageIdRef.current !== null && displayImage) {
@@ -333,7 +333,7 @@ const PageBanner = ({ title, description, folderColor, onEdit, videoCount, count
                     });
                     prevImageIdRef.current = currentImageId;
                 }, 250); // Slightly more than half transition for smoother switch
-                
+
                 return () => clearTimeout(fadeTimer);
             } else {
                 // First image or no previous image - set immediately with fade in
@@ -353,7 +353,7 @@ const PageBanner = ({ title, description, folderColor, onEdit, videoCount, count
             setDisplayImageConfig(effectiveLayer2);
         }
     }, [effectiveLayer2, displayImage]);
-    
+
     // Use displayed image with smooth opacity transition
     const effectiveLayer2Image = displayImage;
     const effectiveLayer2Scale = displayImageConfig?.scale ?? 100;
@@ -364,22 +364,22 @@ const PageBanner = ({ title, description, folderColor, onEdit, videoCount, count
     const effectiveBgColor = displayImageConfig?.bgColor || effectiveLayer2?.bgColor || pageBannerBgColor;
     const [badgesExpanded, setBadgesExpanded] = useState(false);
     const badgesContainerRef = useRef(null);
-    
+
     // Info display state - shows author/year/count in thumbnail area
     const [showInfo, setShowInfo] = useState(false);
-    
+
     // Thumbnail carousel state (0 = continue, 1 = pinned, 2 = ascii)
     const [activeThumbnail, setActiveThumbnail] = useState(0);
     // Track which pinned video is selected (when viewing pinned)
     const [activePinnedIndex, setActivePinnedIndex] = useState(0);
-    
+
     // Determine which options are available
     const hasContinue = !!continueVideo;
     const hasPinned = pinnedVideos && pinnedVideos.length > 0;
     const hasMultiplePins = pinnedVideos && pinnedVideos.length > 1;
     const hasAscii = showAscii && !!(userAvatar || avatar); // Use userAvatar from store or avatar prop, unless showAscii is false
     const displayAvatar = userAvatar || avatar; // The actual avatar to display
-    
+
     // Count available options for dot navigation
     const availableOptions = [];
     if (hasContinue) availableOptions.push('continue');
@@ -387,14 +387,14 @@ const PageBanner = ({ title, description, folderColor, onEdit, videoCount, count
     if (hasAscii) availableOptions.push('ascii');
     const hasMultipleOptions = availableOptions.length > 1;
     const hasAnyOption = availableOptions.length > 0;
-    
+
     // Get the active pinned video
     const activePinnedVideo = hasPinned ? pinnedVideos[activePinnedIndex] || pinnedVideos[0] : null;
-    
+
     // Map activeThumbnail index to actual option type
     const getOptionAtIndex = (index) => availableOptions[index] || null;
     const currentOption = getOptionAtIndex(activeThumbnail);
-    
+
     // Get the active video based on selection (null for ascii)
     const activeVideo = currentOption === 'continue' ? continueVideo : currentOption === 'pinned' ? activePinnedVideo : null;
     const activeLabel = currentOption === 'continue' ? 'CONTINUE?' : currentOption === 'pinned' ? 'PINNED' : 'SIGNATURE';
@@ -426,8 +426,8 @@ const PageBanner = ({ title, description, folderColor, onEdit, videoCount, count
     const hasMoreBadges = playlistBadges && playlistBadges.length > 0;
 
     // Dynamic banner height based on expansion
-    const bannerHeightClass = badgesExpanded && playlistBadges && playlistBadges.length > 0 
-        ? 'min-h-[220px]' 
+    const bannerHeightClass = badgesExpanded && playlistBadges && playlistBadges.length > 0
+        ? 'min-h-[220px]'
         : 'h-[220px]';
 
     return (
@@ -443,585 +443,400 @@ const PageBanner = ({ title, description, folderColor, onEdit, videoCount, count
 
                 {/* Content Container - Allow overflow for dropdowns */}
                 <div className="relative z-10 flex items-start h-full gap-8 w-full px-8 pt-4">
-                <div className="flex flex-col justify-start min-w-0">
-                    {/* Playlist Preview Navigator - Above title */}
-                    {(onNavigatePrev || onNavigateNext) && (
-                        <div className="flex items-center gap-2 mb-2">
-                            <button
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    if (onNavigatePrev) onNavigatePrev();
-                                }}
-                                className="flex items-center justify-center w-6 h-6 rounded text-black/80 hover:text-black transition-colors"
-                                title="Previous playlist"
-                            >
-                                <ChevronLeft size={16} strokeWidth={2.5} />
-                            </button>
-                            {/* Middle button - refresh when previewing, dot otherwise */}
-                            {showReturnButton && onReturn ? (
+                    <div className="flex flex-col justify-start min-w-0">
+
+                        {showInfo && (customDescription ? (
+                            <div className="mt-[7px] ml-[170px] max-h-[100px] overflow-y-auto">
+                                {customDescription}
+                            </div>
+                        ) : description && (
+                            <p className="text-sm md:text-base text-white/90 font-medium max-w-4xl leading-relaxed drop-shadow-sm opacity-90 line-clamp-6 mt-[7px] ml-[170px]" style={{ textShadow: '-1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0 2px 4px rgba(0,0,0,0.8)' }}>
+                                {description}
+                            </p>
+                        ))}
+
+                        {/* Orb Controls - Compact version for banner */}
+                        {orbControls && (
+                            <div className="mt-3 flex items-center gap-3">
+                                {/* Orb Image Preview/Upload */}
+                                <label className="relative w-16 h-16 rounded-full border-2 border-white/30 overflow-hidden flex items-center justify-center bg-black/20 backdrop-blur-sm cursor-pointer group hover:border-white/50 transition-all">
+                                    {orbControls.customOrbImage ? (
+                                        <img src={orbControls.customOrbImage} alt="Orb" className="w-full h-full object-cover" />
+                                    ) : (
+                                        <div className="text-white/40 text-[10px] text-center p-1">No Image</div>
+                                    )}
+                                    <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white transition-opacity">
+                                        <span className="text-[9px] font-bold">Change</span>
+                                    </div>
+                                    <input
+                                        type="file"
+                                        onChange={orbControls.onImageUpload}
+                                        accept="image/*"
+                                        className="hidden"
+                                    />
+                                </label>
+
+                                {/* Spill Toggle */}
                                 <button
                                     onClick={(e) => {
                                         e.stopPropagation();
-                                        if (onReturn) onReturn();
+                                        e.preventDefault();
+                                        orbControls.onToggleSpill(e);
                                     }}
-                                    className="flex items-center justify-center w-6 h-6 rounded text-black/80 hover:text-black transition-colors"
-                                    title="Return to original playlist"
-                                >
-                                    <RotateCcw size={14} strokeWidth={2.5} />
-                                </button>
-                            ) : (
-                                <div className="w-1.5 h-1.5 rounded-full bg-black/60"></div>
-                            )}
-                            <button
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    if (onNavigateNext) onNavigateNext();
-                                }}
-                                className="flex items-center justify-center w-6 h-6 rounded text-black/80 hover:text-black transition-colors"
-                                title="Next playlist"
-                            >
-                                <ChevronRight size={16} strokeWidth={2.5} />
-                            </button>
-                        </div>
-                    )}
-                    
-                    <div className="flex items-center gap-2">
-                        <h1 className="text-lg md:text-xl font-black text-white mb-0 tracking-tight drop-shadow-md truncate flex-1" style={{ textShadow: '-1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0 2px 4px rgba(0,0,0,0.8)' }}>
-                            {title}
-                        </h1>
-                    </div>
-
-                    {showInfo && (customDescription ? (
-                        <div className="mt-[7px] ml-[170px] max-h-[100px] overflow-y-auto">
-                            {customDescription}
-                        </div>
-                    ) : description && (
-                        <p className="text-sm md:text-base text-white/90 font-medium max-w-4xl leading-relaxed drop-shadow-sm opacity-90 line-clamp-6 mt-[7px] ml-[170px]" style={{ textShadow: '-1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0 2px 4px rgba(0,0,0,0.8)' }}>
-                            {description}
-                        </p>
-                    ))}
-
-                    {/* Orb Controls - Compact version for banner */}
-                    {orbControls && (
-                        <div className="mt-3 flex items-center gap-3">
-                            {/* Orb Image Preview/Upload */}
-                            <label className="relative w-16 h-16 rounded-full border-2 border-white/30 overflow-hidden flex items-center justify-center bg-black/20 backdrop-blur-sm cursor-pointer group hover:border-white/50 transition-all">
-                                {orbControls.customOrbImage ? (
-                                    <img src={orbControls.customOrbImage} alt="Orb" className="w-full h-full object-cover" />
-                                ) : (
-                                    <div className="text-white/40 text-[10px] text-center p-1">No Image</div>
-                                )}
-                                <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white transition-opacity">
-                                    <span className="text-[9px] font-bold">Change</span>
-                                </div>
-                                <input 
-                                    type="file" 
-                                    onChange={orbControls.onImageUpload} 
-                                    accept="image/*" 
-                                    className="hidden" 
-                                />
-                            </label>
-
-                            {/* Spill Toggle */}
-                            <button
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    e.preventDefault();
-                                    orbControls.onToggleSpill(e);
-                                }}
-                                className={`px-3 py-1.5 rounded-md text-[10px] font-bold uppercase tracking-wider transition-all border backdrop-blur-sm ${
-                                    orbControls.isSpillEnabled
+                                    className={`px-3 py-1.5 rounded-md text-[10px] font-bold uppercase tracking-wider transition-all border backdrop-blur-sm ${orbControls.isSpillEnabled
                                         ? 'bg-sky-500/90 border-sky-400 text-white shadow-md'
                                         : 'bg-white/10 border-white/20 text-white/70 hover:border-white/30 hover:text-white'
-                                }`}
-                            >
-                                {orbControls.isSpillEnabled ? 'Spill On' : 'Spill Off'}
-                            </button>
-
-                            {/* Remove Image Button */}
-                            {orbControls.customOrbImage && (
-                                <button
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        orbControls.onRemoveImage();
-                                    }}
-                                    className="px-3 py-1.5 rounded-md text-[10px] font-bold uppercase tracking-wider text-rose-300 hover:text-rose-200 hover:bg-rose-500/20 transition-all border border-rose-400/30 backdrop-blur-sm"
+                                        }`}
                                 >
-                                    Remove
+                                    {orbControls.isSpillEnabled ? 'Spill On' : 'Spill Off'}
                                 </button>
-                            )}
-                        </div>
-                    )}
 
-                    {/* Playlist Badges */}
-                    {playlistBadges && playlistBadges.length > 0 && (
-                        <div 
-                            ref={badgesContainerRef}
-                            className={`flex flex-wrap items-center gap-2 mt-3 relative ${!badgesExpanded ? 'max-h-[72px] overflow-hidden' : ''}`}
-                        >
-                            {playlistBadges.map((playlistName, idx) => {
-                                // Check if this playlist is currently filtered
-                                const isFiltered = filteredPlaylist === playlistName;
-                                
-                                // Default sky color for badges, brighter when filtered
-                                const badgeBg = isFiltered 
-                                    ? 'rgba(14, 165, 233, 0.25)' // sky-500/25 when filtered
-                                    : 'rgba(14, 165, 233, 0.1)'; // sky-500/10
-                                const badgeBorder = isFiltered
-                                    ? 'rgba(14, 165, 233, 0.6)' // sky-500/60 when filtered
-                                    : 'rgba(14, 165, 233, 0.3)'; // sky-500/30
-                                const badgeTextColor = '#38bdf8'; // sky-400
-                                const badgeHoverBg = 'rgba(14, 165, 233, 0.2)'; // sky-500/20
-                                const badgeHoverBorder = 'rgba(14, 165, 233, 0.5)'; // sky-500/50
-
-                                return (
+                                {/* Remove Image Button */}
+                                {orbControls.customOrbImage && (
                                     <button
-                                        key={idx}
                                         onClick={(e) => {
                                             e.stopPropagation();
-                                            if (onPlaylistBadgeLeftClick) {
-                                                onPlaylistBadgeLeftClick(e, playlistName);
-                                            }
+                                            orbControls.onRemoveImage();
                                         }}
-                                        onContextMenu={(e) => {
+                                        className="px-3 py-1.5 rounded-md text-[10px] font-bold uppercase tracking-wider text-rose-300 hover:text-rose-200 hover:bg-rose-500/20 transition-all border border-rose-400/30 backdrop-blur-sm"
+                                    >
+                                        Remove
+                                    </button>
+                                )}
+                            </div>
+                        )}
+
+                        {/* Playlist Badges */}
+                        {playlistBadges && playlistBadges.length > 0 && (
+                            <div
+                                ref={badgesContainerRef}
+                                className={`flex flex-wrap items-center gap-2 mt-3 relative ${!badgesExpanded ? 'max-h-[72px] overflow-hidden' : ''}`}
+                            >
+                                {playlistBadges.map((playlistName, idx) => {
+                                    // Check if this playlist is currently filtered
+                                    const isFiltered = filteredPlaylist === playlistName;
+
+                                    // Default sky color for badges, brighter when filtered
+                                    const badgeBg = isFiltered
+                                        ? 'rgba(14, 165, 233, 0.25)' // sky-500/25 when filtered
+                                        : 'rgba(14, 165, 233, 0.1)'; // sky-500/10
+                                    const badgeBorder = isFiltered
+                                        ? 'rgba(14, 165, 233, 0.6)' // sky-500/60 when filtered
+                                        : 'rgba(14, 165, 233, 0.3)'; // sky-500/30
+                                    const badgeTextColor = '#38bdf8'; // sky-400
+                                    const badgeHoverBg = 'rgba(14, 165, 233, 0.2)'; // sky-500/20
+                                    const badgeHoverBorder = 'rgba(14, 165, 233, 0.5)'; // sky-500/50
+
+                                    return (
+                                        <button
+                                            key={idx}
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                if (onPlaylistBadgeLeftClick) {
+                                                    onPlaylistBadgeLeftClick(e, playlistName);
+                                                }
+                                            }}
+                                            onContextMenu={(e) => {
+                                                e.stopPropagation();
+                                                e.preventDefault();
+                                                if (onPlaylistBadgeRightClick) {
+                                                    onPlaylistBadgeRightClick(e, playlistName);
+                                                }
+                                            }}
+                                            className="flex items-center gap-0.5 px-2 py-1 rounded-md border font-medium transition-all cursor-pointer"
+                                            style={{
+                                                backgroundColor: badgeBg,
+                                                borderColor: badgeBorder,
+                                            }}
+                                            onMouseEnter={(e) => {
+                                                e.currentTarget.style.backgroundColor = badgeHoverBg;
+                                                e.currentTarget.style.borderColor = badgeHoverBorder;
+                                                e.currentTarget.style.boxShadow = '0 0 0 2px rgba(255, 255, 255, 0.3)';
+                                            }}
+                                            onMouseLeave={(e) => {
+                                                e.currentTarget.style.backgroundColor = badgeBg;
+                                                e.currentTarget.style.borderColor = badgeBorder;
+                                                e.currentTarget.style.boxShadow = 'none';
+                                            }}
+                                            title={`Left click to filter | Right click to navigate: ${playlistName}`}
+                                        >
+                                            <span className="line-clamp-1 text-sm md:text-base font-medium text-white/80" style={{ textShadow: '-1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0 2px 4px rgba(0,0,0,0.9)' }}>
+                                                {playlistName}
+                                            </span>
+                                        </button>
+                                    );
+                                })}
+
+                                {/* Expand Button - Appears at end of second row when collapsed */}
+                                {hasMoreBadges && !badgesExpanded && (
+                                    <button
+                                        onClick={(e) => {
                                             e.stopPropagation();
-                                            e.preventDefault();
-                                            if (onPlaylistBadgeRightClick) {
-                                                onPlaylistBadgeRightClick(e, playlistName);
-                                            }
+                                            setBadgesExpanded(true);
                                         }}
-                                        className="flex items-center gap-0.5 px-2 py-1 rounded-md border font-medium transition-all cursor-pointer"
+                                        className="absolute bottom-0 right-0 flex items-center gap-1 px-2 py-1 rounded-md border font-medium transition-all cursor-pointer z-10"
                                         style={{
-                                            backgroundColor: badgeBg,
-                                            borderColor: badgeBorder,
+                                            backgroundColor: 'rgba(14, 165, 233, 0.1)',
+                                            borderColor: 'rgba(14, 165, 233, 0.3)',
+                                            color: '#38bdf8',
                                         }}
                                         onMouseEnter={(e) => {
-                                            e.currentTarget.style.backgroundColor = badgeHoverBg;
-                                            e.currentTarget.style.borderColor = badgeHoverBorder;
+                                            e.currentTarget.style.backgroundColor = 'rgba(14, 165, 233, 0.2)';
+                                            e.currentTarget.style.borderColor = 'rgba(14, 165, 233, 0.5)';
                                             e.currentTarget.style.boxShadow = '0 0 0 2px rgba(255, 255, 255, 0.3)';
                                         }}
                                         onMouseLeave={(e) => {
-                                            e.currentTarget.style.backgroundColor = badgeBg;
-                                            e.currentTarget.style.borderColor = badgeBorder;
+                                            e.currentTarget.style.backgroundColor = 'rgba(14, 165, 233, 0.1)';
+                                            e.currentTarget.style.borderColor = 'rgba(14, 165, 233, 0.3)';
                                             e.currentTarget.style.boxShadow = 'none';
                                         }}
-                                        title={`Left click to filter | Right click to navigate: ${playlistName}`}
+                                        title={`Show all ${playlistBadges.length} playlists`}
                                     >
-                                        <span className="line-clamp-1 text-sm md:text-base font-medium text-white/80" style={{ textShadow: '-1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0 2px 4px rgba(0,0,0,0.9)' }}>
-                                            {playlistName}
+                                        <span className="text-sm" style={{ textShadow: '-1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0 1px 2px rgba(0,0,0,0.8)' }}>
+                                            &gt;&gt;&gt;
                                         </span>
                                     </button>
-                                );
-                            })}
-                            
-                            {/* Expand Button - Appears at end of second row when collapsed */}
-                            {hasMoreBadges && !badgesExpanded && (
-                                <button
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        setBadgesExpanded(true);
-                                    }}
-                                    className="absolute bottom-0 right-0 flex items-center gap-1 px-2 py-1 rounded-md border font-medium transition-all cursor-pointer z-10"
-                                    style={{
-                                        backgroundColor: 'rgba(14, 165, 233, 0.1)',
-                                        borderColor: 'rgba(14, 165, 233, 0.3)',
-                                        color: '#38bdf8',
-                                    }}
-                                    onMouseEnter={(e) => {
-                                        e.currentTarget.style.backgroundColor = 'rgba(14, 165, 233, 0.2)';
-                                        e.currentTarget.style.borderColor = 'rgba(14, 165, 233, 0.5)';
-                                        e.currentTarget.style.boxShadow = '0 0 0 2px rgba(255, 255, 255, 0.3)';
-                                    }}
-                                    onMouseLeave={(e) => {
-                                        e.currentTarget.style.backgroundColor = 'rgba(14, 165, 233, 0.1)';
-                                        e.currentTarget.style.borderColor = 'rgba(14, 165, 233, 0.3)';
-                                        e.currentTarget.style.boxShadow = 'none';
-                                    }}
-                                    title={`Show all ${playlistBadges.length} playlists`}
-                                >
-                                    <span className="text-sm" style={{ textShadow: '-1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0 1px 2px rgba(0,0,0,0.8)' }}>
-                                        &gt;&gt;&gt;
-                                    </span>
-                                </button>
-                            )}
-                            {/* Collapse Button - Shows when expanded */}
-                            {hasMoreBadges && badgesExpanded && (
-                                <button
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        setBadgesExpanded(false);
-                                    }}
-                                    className="flex items-center gap-1 px-2 py-1 rounded-md border font-medium transition-all cursor-pointer"
-                                    style={{
-                                        backgroundColor: 'rgba(14, 165, 233, 0.1)',
-                                        borderColor: 'rgba(14, 165, 233, 0.3)',
-                                        color: '#38bdf8',
-                                    }}
-                                    onMouseEnter={(e) => {
-                                        e.currentTarget.style.backgroundColor = 'rgba(14, 165, 233, 0.2)';
-                                        e.currentTarget.style.borderColor = 'rgba(14, 165, 233, 0.5)';
-                                        e.currentTarget.style.boxShadow = '0 0 0 2px rgba(255, 255, 255, 0.3)';
-                                    }}
-                                    onMouseLeave={(e) => {
-                                        e.currentTarget.style.backgroundColor = 'rgba(14, 165, 233, 0.1)';
-                                        e.currentTarget.style.borderColor = 'rgba(14, 165, 233, 0.3)';
-                                        e.currentTarget.style.boxShadow = 'none';
-                                    }}
-                                    title="Show less"
-                                >
-                                    <span className="text-sm" style={{ textShadow: '-1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0 1px 2px rgba(0,0,0,0.8)' }}>
-                                        Show less
-                                    </span>
-                                    <ChevronRight 
-                                        size={14} 
-                                        className="rotate-90 transition-transform"
-                                        style={{ textShadow: '-1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0 1px 2px rgba(0,0,0,0.8)' }}
-                                    />
-                                </button>
-                            )}
-                        </div>
-                    )}
+                                )}
+                                {/* Collapse Button - Shows when expanded */}
+                                {hasMoreBadges && badgesExpanded && (
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            setBadgesExpanded(false);
+                                        }}
+                                        className="flex items-center gap-1 px-2 py-1 rounded-md border font-medium transition-all cursor-pointer"
+                                        style={{
+                                            backgroundColor: 'rgba(14, 165, 233, 0.1)',
+                                            borderColor: 'rgba(14, 165, 233, 0.3)',
+                                            color: '#38bdf8',
+                                        }}
+                                        onMouseEnter={(e) => {
+                                            e.currentTarget.style.backgroundColor = 'rgba(14, 165, 233, 0.2)';
+                                            e.currentTarget.style.borderColor = 'rgba(14, 165, 233, 0.5)';
+                                            e.currentTarget.style.boxShadow = '0 0 0 2px rgba(255, 255, 255, 0.3)';
+                                        }}
+                                        onMouseLeave={(e) => {
+                                            e.currentTarget.style.backgroundColor = 'rgba(14, 165, 233, 0.1)';
+                                            e.currentTarget.style.borderColor = 'rgba(14, 165, 233, 0.3)';
+                                            e.currentTarget.style.boxShadow = 'none';
+                                        }}
+                                        title="Show less"
+                                    >
+                                        <span className="text-sm" style={{ textShadow: '-1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0 1px 2px rgba(0,0,0,0.8)' }}>
+                                            Show less
+                                        </span>
+                                        <ChevronRight
+                                            size={14}
+                                            className="rotate-90 transition-transform"
+                                            style={{ textShadow: '-1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0 1px 2px rgba(0,0,0,0.8)' }}
+                                        />
+                                    </button>
+                                )}
+                            </div>
+                        )}
 
-                    {/* Bottom Content (e.g. Tabs) */}
-                    {children && childrenPosition === 'bottom' && (
-                        <div className="mt-4">
+                        {/* Bottom Content (e.g. Tabs) */}
+                        {children && childrenPosition === 'bottom' && (
+                            <div className="mt-4">
+                                {children}
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Right Content */}
+                    {children && childrenPosition === 'right' && (
+                        <div className="ml-auto pl-8">
                             {children}
                         </div>
                     )}
                 </div>
 
-                {/* Right Content */}
-                {children && childrenPosition === 'right' && (
-                    <div className="ml-auto pl-8">
-                        {children}
-                    </div>
-                )}
-            </div>
-
-            {/* Thumbnail/ASCII Section - Continue/Pinned/ASCII with arrow navigation */}
-            {hasAnyOption && (
-                <div className="absolute bottom-[39px] flex items-end z-20" style={{ left: '166px', transform: 'translateX(-50%)' }}>
-                    {/* Fixed-width container for content */}
-                    <div className="flex flex-col items-center relative">
-                        {/* Content row with optional pin bar and preview stack */}
-                        <div className="flex items-stretch gap-[2px] relative">
-                            {/* Clickable content area */}
-                            <div
-                                className={`flex flex-col items-center gap-2 flex-shrink-0 relative ${activeCallback && !showInfo ? 'cursor-pointer' : ''}`}
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    if (!showInfo && activeCallback) activeCallback();
-                                }}
-                            >
-                                {/* Show thumbnail with info overlays when info button is clicked */}
-                                {showInfo && activeVideo ? (
-                                    <div className="relative h-36 w-[240px] rounded-lg overflow-hidden shadow-lg border-2 border-white/20">
-                                        <img
-                                            src={getThumbnailUrl(activeVideo.video_id, 'medium')}
-                                            alt={activeVideo.title}
-                                            className="w-full h-full object-cover"
-                                        />
-                                        {/* Info overlays - vertically aligned on right side */}
-                                        {author && (
-                                            <span className="absolute top-1 right-1 px-1.5 py-0.5 bg-black/70 backdrop-blur-sm rounded text-white font-semibold text-xs truncate max-w-[90%]" style={{ textShadow: '-1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000' }}>
-                                                {author}
-                                            </span>
-                                        )}
-                                        {creationYear && (
-                                            <span className="absolute top-1/2 right-1 -translate-y-1/2 px-1.5 py-0.5 bg-black/70 backdrop-blur-sm rounded text-white/90 font-medium text-xs">
-                                                {creationYear}
-                                            </span>
-                                        )}
-                                        {videoCount !== undefined && (
-                                            <span className="absolute bottom-1 right-1 px-1.5 py-0.5 bg-black/70 backdrop-blur-sm rounded text-white/90 font-medium text-xs">
-                                                {videoCount} {videoCount === 1 ? countLabel : `${countLabel}s`}
-                                            </span>
-                                        )}
-                                    </div>
-                                ) : showInfo && !activeVideo ? (
-                                    <div className="h-36 w-[240px] flex flex-col items-center justify-center gap-1 rounded-lg bg-black/50 backdrop-blur-sm border-2 border-white/20 overflow-hidden px-2">
-                                        {author && (
-                                            <span className="px-1.5 py-0.5 bg-black/70 backdrop-blur-sm rounded text-white font-semibold text-sm truncate max-w-full" style={{ textShadow: '-1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000' }}>
-                                                {author}
-                                            </span>
-                                        )}
-                                        {creationYear && (
-                                            <span className="px-1.5 py-0.5 bg-black/70 backdrop-blur-sm rounded text-white/90 font-medium text-xs">
-                                                {creationYear}
-                                            </span>
-                                        )}
-                                        {videoCount !== undefined && (
-                                            <span className="px-1.5 py-0.5 bg-black/70 backdrop-blur-sm rounded text-white/90 font-medium text-xs">
-                                                {videoCount} {videoCount === 1 ? countLabel : `${countLabel}s`}
-                                            </span>
-                                        )}
-                                    </div>
-                                ) : currentOption === 'ascii' ? (
-                                    <div className="h-36 w-[240px] flex items-center justify-center rounded-lg bg-black/30 backdrop-blur-sm border-2 border-white/20 overflow-hidden">
-                                        {displayAvatar && displayAvatar.includes('\n') ? (
-                                            <pre className="font-mono text-[5px] leading-none whitespace-pre text-white/90 drop-shadow-md select-none max-w-full max-h-full" style={{ textShadow: '-0.5px -0.5px 0 #000, 0.5px -0.5px 0 #000, -0.5px 0.5px 0 #000, 0.5px 0.5px 0 #000, 0 1px 2px rgba(0,0,0,1)' }}>
-                                                {displayAvatar}
-                                            </pre>
-                                        ) : (
-                                            <div className="font-mono text-xl font-bold text-white/90 drop-shadow-md whitespace-nowrap max-w-full truncate px-2" style={{ textShadow: '-2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 2px 2px 0 #000, 0 4px 8px rgba(0,0,0,0.8)' }}>
-                                                {displayAvatar}
-                                            </div>
-                                        )}
-                                    </div>
-                                ) : activeVideo && (
-                                    <div className="relative h-36 w-[240px] rounded-lg overflow-hidden shadow-lg border-2 border-white/20">
-                                        <img
-                                            src={getThumbnailUrl(activeVideo.video_id, 'medium')}
-                                            alt={activeVideo.title}
-                                            className="w-full h-full object-cover"
-                                        />
-                                        {/* Pin type icon - only show when viewing pinned video */}
-                                        {currentOption === 'pinned' && activePinnedVideo && (
-                                            <div 
-                                                className="absolute top-1 left-1 flex items-center gap-0.5 px-1 py-0.5 rounded bg-black/60 backdrop-blur-sm"
-                                                title={
-                                                    activePinnedVideo.isPriority && activePinnedVideo.isFollower ? 'Priority Follower Pin' :
-                                                    activePinnedVideo.isPriority ? 'Priority Pin' :
-                                                    activePinnedVideo.isFollower ? 'Follower Pin' : 'Pin'
-                                                }
-                                            >
-                                                {/* Crown for priority */}
-                                                {activePinnedVideo.isPriority && (
-                                                    <span className="text-[10px]" style={{ color: '#FFD700' }}>👑</span>
-                                                )}
-                                                {/* Pin icon */}
-                                                <Pin 
-                                                    size={12} 
-                                                    className={activePinnedVideo.isPriority ? 'text-yellow-400' : 'text-white'}
-                                                    fill={activePinnedVideo.isPriority ? '#FFD700' : 'white'}
-                                                />
-                                                {/* Arrow for follower */}
-                                                {activePinnedVideo.isFollower && (
-                                                    <span className="text-[10px] text-sky-400">→</span>
-                                                )}
-                                            </div>
-                                        )}
-                                    </div>
-                                )}
+                {/* Thumbnail/ASCII Section with Header - Continue/Pinned/ASCII with arrow navigation */}
+                {hasAnyOption && (
+                    <div className="absolute bottom-[25px] flex flex-col items-center z-20" style={{ left: '166px', transform: 'translateX(-50%)', height: '100%', justifyContent: 'flex-end' }}>
+                        {/* Header - Playlist/Folder Name - Top aligned with banner */}
+                        <div className="absolute top-0 left-1/2 -translate-x-1/2" style={{ marginTop: '-1px' }}>
+                            <div className="bg-black/40 backdrop-blur-md rounded-lg px-4 py-2 border border-white/20 w-[320px]">
+                                <h2 className="text-base font-black text-white tracking-tight drop-shadow-md whitespace-nowrap text-center" style={{ textShadow: '-1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0 2px 4px rgba(0,0,0,0.8)' }}>
+                                    {title}
+                                </h2>
                             </div>
                         </div>
-                        
-                        {/* Vertical pin bar with selection dot - only show when viewing pinned and multiple pins exist (max 10 segments) */}
-                        {/* Positioned absolutely to the right of thumbnail to maintain uniform thumbnail width */}
-                        {currentOption === 'pinned' && hasMultiplePins && (
-                            <div className="absolute flex flex-row items-stretch gap-[2px]" style={{ left: hasMultipleOptions ? 'calc(50% + 120px + 16px)' : 'calc(50% + 120px + 4px)', bottom: '66px' }}>
-                                <div className="flex flex-col w-3 h-36 rounded-md overflow-hidden border border-white/20 bg-black/20 backdrop-blur-sm">
-                                    {pinnedVideos.slice(0, 10).map((pin, index) => {
-                                        // Get folder color for this pinned video
-                                        const pinFolderColor = pin.folder_color || pin.folderColor;
-                                        const folderColorConfig = pinFolderColor ? FOLDER_COLORS.find(c => c.id === pinFolderColor) : null;
-                                        const isPriority = pin.isPriority;
-                                        // Priority pins get golden color, otherwise use folder color
-                                        const segmentColor = isPriority ? '#FFD700' : (folderColorConfig?.hex || null);
-                                        
-                                        return (
-                                            <button
-                                                key={pin.id || index}
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    setActivePinnedIndex(index);
-                                                }}
-                                                className={`flex-1 transition-all hover:opacity-100 ${
-                                                    !segmentColor ? 'bg-white/50 hover:bg-white/70' : ''
-                                                }`}
-                                                style={{
-                                                    borderBottom: index < Math.min(pinnedVideos.length, 10) - 1 ? '1px solid rgba(0,0,0,0.3)' : 'none',
-                                                    ...(segmentColor ? {
-                                                        backgroundColor: segmentColor,
-                                                        opacity: isPriority ? 1 : 0.85
-                                                    } : {}),
-                                                    // Crown-like clip-path for priority pin (top segment with pointy top edge)
-                                                    ...(isPriority && index === 0 ? {
-                                                        clipPath: 'polygon(0% 30%, 25% 0%, 50% 20%, 75% 0%, 100% 30%, 100% 100%, 0% 100%)',
-                                                        marginTop: '-2px',
-                                                        paddingTop: '2px'
-                                                    } : {})
-                                                }}
-                                                title={isPriority ? `👑 ${pin.title || 'Priority Pin'}` : (pin.title || `Pin ${index + 1}`)}
+
+                        {/* Fixed-width container for content - now 320px to match video cards */}
+                        <div className="flex flex-col items-center relative">
+                            {/* Content row with optional pin bar and preview stack */}
+                            <div className="flex items-stretch gap-[2px] relative">
+                                {/* Clickable content area */}
+                                <div
+                                    className={`flex flex-col items-center gap-2 flex-shrink-0 relative ${activeCallback && !showInfo ? 'cursor-pointer' : ''}`}
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        if (!showInfo && activeCallback) activeCallback();
+                                    }}
+                                >
+                                    {/* Show thumbnail with info overlays when info button is clicked */}
+                                    {showInfo && activeVideo ? (
+                                        <div className="relative h-[180px] w-[320px] rounded-lg overflow-hidden shadow-lg border-2 border-white/20">
+                                            <img
+                                                src={getThumbnailUrl(activeVideo.video_id, 'medium')}
+                                                alt={activeVideo.title}
+                                                className="w-full h-full object-cover"
                                             />
-                                        );
-                                    })}
-                                </div>
-                                {/* Selection indicator dot */}
-                                <div className="relative h-36 w-2 flex flex-col">
-                                    {pinnedVideos.slice(0, 10).map((pin, index) => (
-                                        <div key={index} className="flex-1 flex items-center justify-center">
-                                            {activePinnedIndex === index && (
-                                                <div 
-                                                    className="w-1.5 h-1.5 rounded-full shadow-md" 
-                                                    style={{ backgroundColor: pin.isPriority ? '#FFD700' : 'white' }}
-                                                />
+                                            {/* Info overlays - vertically aligned on right side */}
+                                            {author && (
+                                                <span className="absolute top-1 right-1 px-1.5 py-0.5 bg-black/70 backdrop-blur-sm rounded text-white font-semibold text-xs truncate max-w-[90%]" style={{ textShadow: '-1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000' }}>
+                                                    {author}
+                                                </span>
+                                            )}
+                                            {creationYear && (
+                                                <span className="absolute top-1/2 right-1 -translate-y-1/2 px-1.5 py-0.5 bg-black/70 backdrop-blur-sm rounded text-white/90 font-medium text-xs">
+                                                    {creationYear}
+                                                </span>
+                                            )}
+                                            {videoCount !== undefined && (
+                                                <span className="absolute bottom-1 right-1 px-1.5 py-0.5 bg-black/70 backdrop-blur-sm rounded text-white/90 font-medium text-xs">
+                                                    {videoCount} {videoCount === 1 ? countLabel : `${countLabel}s`}
+                                                </span>
                                             )}
                                         </div>
-                                    ))}
+                                    ) : showInfo && !activeVideo ? (
+                                        <div className="h-[180px] w-[320px] flex flex-col items-center justify-center gap-1 rounded-lg bg-black/50 backdrop-blur-sm border-2 border-white/20 overflow-hidden px-2">
+                                            {author && (
+                                                <span className="px-1.5 py-0.5 bg-black/70 backdrop-blur-sm rounded text-white font-semibold text-sm truncate max-w-full" style={{ textShadow: '-1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000' }}>
+                                                    {author}
+                                                </span>
+                                            )}
+                                            {creationYear && (
+                                                <span className="px-1.5 py-0.5 bg-black/70 backdrop-blur-sm rounded text-white/90 font-medium text-xs">
+                                                    {creationYear}
+                                                </span>
+                                            )}
+                                            {videoCount !== undefined && (
+                                                <span className="px-1.5 py-0.5 bg-black/70 backdrop-blur-sm rounded text-white/90 font-medium text-xs">
+                                                    {videoCount} {videoCount === 1 ? countLabel : `${countLabel}s`}
+                                                </span>
+                                            )}
+                                        </div>
+                                    ) : currentOption === 'ascii' ? (
+                                        <div className="h-[180px] w-[320px] flex items-center justify-center rounded-lg bg-black/30 backdrop-blur-sm border-2 border-white/20 overflow-hidden">
+                                            {displayAvatar && displayAvatar.includes('\n') ? (
+                                                <pre className="font-mono text-[5px] leading-none whitespace-pre text-white/90 drop-shadow-md select-none max-w-full max-h-full" style={{ textShadow: '-0.5px -0.5px 0 #000, 0.5px -0.5px 0 #000, -0.5px 0.5px 0 #000, 0.5px 0.5px 0 #000, 0 1px 2px rgba(0,0,0,1)' }}>
+                                                    {displayAvatar}
+                                                </pre>
+                                            ) : (
+                                                <div className="font-mono text-xl font-bold text-white/90 drop-shadow-md whitespace-nowrap max-w-full truncate px-2" style={{ textShadow: '-2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 2px 2px 0 #000, 0 4px 8px rgba(0,0,0,0.8)' }}>
+                                                    {displayAvatar}
+                                                </div>
+                                            )}
+                                        </div>
+                                    ) : activeVideo && (
+                                        <div className="relative h-[180px] w-[320px] rounded-lg overflow-hidden shadow-lg border-2 border-white/20">
+                                            <img
+                                                src={getThumbnailUrl(activeVideo.video_id, 'medium')}
+                                                alt={activeVideo.title}
+                                                className="w-full h-full object-cover"
+                                            />
+                                            {/* Pin type icon - only show when viewing pinned video */}
+                                            {currentOption === 'pinned' && activePinnedVideo && (
+                                                <div
+                                                    className="absolute top-1 left-1 flex items-center gap-0.5 px-1 py-0.5 rounded bg-black/60 backdrop-blur-sm"
+                                                    title={
+                                                        activePinnedVideo.isPriority && activePinnedVideo.isFollower ? 'Priority Follower Pin' :
+                                                            activePinnedVideo.isPriority ? 'Priority Pin' :
+                                                                activePinnedVideo.isFollower ? 'Follower Pin' : 'Pin'
+                                                    }
+                                                >
+                                                    {/* Crown for priority */}
+                                                    {activePinnedVideo.isPriority && (
+                                                        <span className="text-[10px]" style={{ color: '#FFD700' }}>👑</span>
+                                                    )}
+                                                    {/* Pin icon */}
+                                                    <Pin
+                                                        size={12}
+                                                        className={activePinnedVideo.isPriority ? 'text-yellow-400' : 'text-white'}
+                                                        fill={activePinnedVideo.isPriority ? '#FFD700' : 'white'}
+                                                    />
+                                                    {/* Arrow for follower */}
+                                                    {activePinnedVideo.isFollower && (
+                                                        <span className="text-[10px] text-sky-400">→</span>
+                                                    )}
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
                                 </div>
                             </div>
-                        )}
-                    </div>
-                </div>
-            )}
 
-            {/* Navigation Buttons - Below thumbnail/ASCII section */}
-            <div className="absolute bottom-[10px] flex items-center justify-center gap-6 z-20" style={{ left: '166px', transform: 'translateX(-50%)' }}>
-                {/* 1. Thumbnail/ASCII Navigator */}
-                {hasAnyOption && (
-                    <div className="flex items-center gap-2">
-                        <button
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                if (hasMultipleOptions) {
-                                    const prevIndex = activeThumbnail > 0 ? activeThumbnail - 1 : availableOptions.length - 1;
-                                    setActiveThumbnail(prevIndex);
-                                }
-                            }}
-                            disabled={!hasMultipleOptions}
-                            className="flex items-center justify-center w-6 h-6 rounded text-black/80 hover:text-black transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-                            title="Previous thumbnail/ASCII"
-                        >
-                            <ChevronLeft size={16} strokeWidth={2.5} />
-                        </button>
-                        {/* Middle icon - changes based on current option */}
-                        {currentOption === 'pinned' ? (
-                            <Pin size={14} className="text-black/80" strokeWidth={2.5} fill="currentColor" />
-                        ) : currentOption === 'continue' ? (
-                            <Clock size={14} className="text-black/80" strokeWidth={2.5} />
-                        ) : currentOption === 'ascii' ? (
-                            <Star size={14} className="text-black/80" strokeWidth={2.5} fill="currentColor" />
-                        ) : (
-                            <div className="w-1.5 h-1.5 rounded-full bg-black/60"></div>
-                        )}
-                        <button
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                if (hasMultipleOptions) {
-                                    const nextIndex = activeThumbnail < availableOptions.length - 1 ? activeThumbnail + 1 : 0;
-                                    setActiveThumbnail(nextIndex);
-                                }
-                            }}
-                            disabled={!hasMultipleOptions}
-                            className="flex items-center justify-center w-6 h-6 rounded text-black/80 hover:text-black transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-                            title="Next thumbnail/ASCII"
-                        >
-                            <ChevronRight size={16} strokeWidth={2.5} />
-                        </button>
+                            {/* Vertical pin bar with selection dot - only show when viewing pinned and multiple pins exist (max 10 segments) */}
+                            {/* Positioned absolutely to the right of thumbnail to maintain uniform thumbnail width */}
+                            {currentOption === 'pinned' && hasMultiplePins && (
+                                <div className="absolute flex flex-row items-stretch gap-[2px]" style={{ left: hasMultipleOptions ? 'calc(50% + 160px + 16px)' : 'calc(50% + 160px + 4px)', bottom: '66px' }}>
+                                    <div className="flex flex-col w-3 h-[180px] rounded-md overflow-hidden border border-white/20 bg-black/20 backdrop-blur-sm">
+                                        {pinnedVideos.slice(0, 10).map((pin, index) => {
+                                            // Get folder color for this pinned video
+                                            const pinFolderColor = pin.folder_color || pin.folderColor;
+                                            const folderColorConfig = pinFolderColor ? FOLDER_COLORS.find(c => c.id === pinFolderColor) : null;
+                                            const isPriority = pin.isPriority;
+                                            // Priority pins get golden color, otherwise use folder color
+                                            const segmentColor = isPriority ? '#FFD700' : (folderColorConfig?.hex || null);
+
+                                            return (
+                                                <button
+                                                    key={pin.id || index}
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setActivePinnedIndex(index);
+                                                    }}
+                                                    className={`flex-1 transition-all hover:opacity-100 ${!segmentColor ? 'bg-white/50 hover:bg-white/70' : ''
+                                                        }`}
+                                                    style={{
+                                                        borderBottom: index < Math.min(pinnedVideos.length, 10) - 1 ? '1px solid rgba(0,0,0,0.3)' : 'none',
+                                                        ...(segmentColor ? {
+                                                            backgroundColor: segmentColor,
+                                                            opacity: isPriority ? 1 : 0.85
+                                                        } : {}),
+                                                        // Crown-like clip-path for priority pin (top segment with pointy top edge)
+                                                        ...(isPriority && index === 0 ? {
+                                                            clipPath: 'polygon(0% 30%, 25% 0%, 50% 20%, 75% 0%, 100% 30%, 100% 100%, 0% 100%)',
+                                                            marginTop: '-2px',
+                                                            paddingTop: '2px'
+                                                        } : {})
+                                                    }}
+                                                    title={isPriority ? `👑 ${pin.title || 'Priority Pin'}` : (pin.title || `Pin ${index + 1}`)}
+                                                />
+                                            );
+                                        })}
+                                    </div>
+                                    {/* Selection indicator dot */}
+                                    <div className="relative h-[180px] w-2 flex flex-col">
+                                        {pinnedVideos.slice(0, 10).map((pin, index) => (
+                                            <div key={index} className="flex-1 flex items-center justify-center">
+                                                {activePinnedIndex === index && (
+                                                    <div
+                                                        className="w-1.5 h-1.5 rounded-full shadow-md"
+                                                        style={{ backgroundColor: pin.isPriority ? '#FFD700' : 'white' }}
+                                                    />
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
                     </div>
                 )}
 
-                {/* 2. Page Navigator (from TopNavigation) - Only show on videos page when multiple pages */}
-                {currentNavPage === 'videos' && totalPages > 1 && (
-                    <div className="flex items-center gap-2">
-                        <button
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                prevPage();
-                            }}
-                            disabled={paginationPage === 1}
-                            className="flex items-center justify-center w-6 h-6 rounded text-black/80 hover:text-black transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-                            title="Previous page"
-                        >
-                            <ChevronLeft size={16} strokeWidth={2.5} />
-                        </button>
-                        {/* Page indicator - clickable */}
-                        {isEditingPageLocal ? (
-                            <input
-                                ref={pageInputRef}
-                                type="text"
-                                value={pageInputValueLocal}
-                                onChange={(e) => {
-                                    const val = e.target.value.replace(/[^0-9]/g, '');
-                                    setPageInputValueLocal(val);
-                                }}
-                                onBlur={() => {
-                                    const page = parseInt(pageInputValueLocal);
-                                    if (page >= 1 && page <= totalPages) {
-                                        setPaginationPage(page);
-                                    }
-                                    setIsEditingPageLocal(false);
-                                }}
-                                onKeyDown={(e) => {
-                                    if (e.key === 'Enter') {
-                                        const page = parseInt(pageInputValueLocal);
-                                        if (page >= 1 && page <= totalPages) {
-                                            setPaginationPage(page);
-                                        }
-                                        setIsEditingPageLocal(false);
-                                    } else if (e.key === 'Escape') {
-                                        setIsEditingPageLocal(false);
-                                    }
-                                }}
-                                className="w-10 h-6 px-1 bg-white border-2 border-sky-500 rounded text-center text-sky-600 font-bold text-xs focus:outline-none"
-                                autoFocus
-                                onClick={(e) => e.stopPropagation()}
-                            />
-                        ) : (
-                            <button
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    setPageInputValueLocal(String(paginationPage));
-                                    setIsEditingPageLocal(true);
-                                    setTimeout(() => pageInputRef.current?.select(), 0);
-                                }}
-                                className="px-1.5 h-6 bg-white border-2 border-slate-300 text-slate-700 rounded-full hover:border-sky-400 hover:text-sky-600 transition-all text-xs font-bold"
-                                title="Click to jump to page"
-                            >
-                                {paginationPage}/{totalPages}
-                            </button>
-                        )}
-                        <button
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                nextPage();
-                            }}
-                            disabled={paginationPage >= totalPages}
-                            className="flex items-center justify-center w-6 h-6 rounded text-black/80 hover:text-black transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-                            title="Next page"
-                        >
-                            <ChevronRight size={16} strokeWidth={2.5} />
-                        </button>
-                    </div>
-                )}
 
-                {/* 3. Colored Folder Navigator */}
-                {onFolderNavigatePrev && onFolderNavigateNext && selectedFolder !== undefined && folderCounts && (
-                    <div className="flex items-center gap-2">
-                        <button
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                if (onFolderNavigatePrev) onFolderNavigatePrev();
-                            }}
-                            className="flex items-center justify-center w-6 h-6 rounded text-black/80 hover:text-black transition-colors"
-                            title="Previous folder"
-                        >
-                            <ChevronLeft size={16} strokeWidth={2.5} />
-                        </button>
-                        <div className="w-1.5 h-1.5 rounded-full bg-black/60"></div>
-                        <button
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                if (onFolderNavigateNext) onFolderNavigateNext();
-                            }}
-                            className="flex items-center justify-center w-6 h-6 rounded text-black/80 hover:text-black transition-colors"
-                            title="Next folder"
-                        >
-                            <ChevronRight size={16} strokeWidth={2.5} />
-                        </button>
-                    </div>
-                )}
-            </div>
-            
+
             </div>
             {/* End of Banner Container */}
 
             {/* Layer 2 - Positioned to the right of banner, no Layer 1 background */}
             {effectiveLayer2Image && (
-                <div 
-                    className={`relative overflow-hidden transition-opacity duration-[400ms] ease-in-out ${bannerHeightClass} pointer-events-none`}
-                    style={{ 
+                <div
+                    className={`relative overflow-hidden transition-opacity duration-[400ms] ease-in-out ${bannerHeightClass} -mt-[25px]`}
+                    style={{
                         width: `calc(100% - 332px)`,
                         opacity: imageOpacity,
                         border: '4px solid rgba(0,0,0,0.8)',
@@ -1035,6 +850,197 @@ const PageBanner = ({ title, description, folderColor, onEdit, videoCount, count
                         image2XOffset={effectiveLayer2XOffset}
                         image2YOffset={effectiveLayer2YOffset}
                     />
+
+                    {/* Navigation Buttons - Overlaid on top of Layer 2 image */}
+                    <div className="absolute top-4 right-4 flex items-center gap-4 z-30 pointer-events-auto">
+                        {/* Playlist Preview Navigator */}
+                        {(onNavigatePrev || onNavigateNext) && (
+                            <div className="flex items-center gap-2 bg-black/40 backdrop-blur-md rounded-lg px-3 py-2 border border-white/20">
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        if (onNavigatePrev) onNavigatePrev();
+                                    }}
+                                    className="flex items-center justify-center w-6 h-6 rounded text-white/80 hover:text-white transition-colors"
+                                    title="Previous playlist"
+                                >
+                                    <ChevronLeft size={16} strokeWidth={2.5} />
+                                </button>
+                                {/* Middle button - refresh when previewing, dot otherwise */}
+                                {showReturnButton && onReturn ? (
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            if (onReturn) onReturn();
+                                        }}
+                                        className="flex items-center justify-center w-6 h-6 rounded text-white/80 hover:text-white transition-colors"
+                                        title="Return to original playlist"
+                                    >
+                                        <RotateCcw size={14} strokeWidth={2.5} />
+                                    </button>
+                                ) : (
+                                    <div className="w-1.5 h-1.5 rounded-full bg-white/60"></div>
+                                )}
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        if (onNavigateNext) onNavigateNext();
+                                    }}
+                                    className="flex items-center justify-center w-6 h-6 rounded text-white/80 hover:text-white transition-colors"
+                                    title="Next playlist"
+                                >
+                                    <ChevronRight size={16} strokeWidth={2.5} />
+                                </button>
+                            </div>
+                        )}
+
+                        {/* 1. Thumbnail/ASCII Navigator */}
+                        {hasAnyOption && (
+                            <div className="flex items-center gap-2 bg-black/40 backdrop-blur-md rounded-lg px-3 py-2 border border-white/20">
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        if (hasMultipleOptions) {
+                                            const prevIndex = activeThumbnail > 0 ? activeThumbnail - 1 : availableOptions.length - 1;
+                                            setActiveThumbnail(prevIndex);
+                                        }
+                                    }}
+                                    disabled={!hasMultipleOptions}
+                                    className="flex items-center justify-center w-6 h-6 rounded text-white/80 hover:text-white transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                                    title="Previous thumbnail/ASCII"
+                                >
+                                    <ChevronLeft size={16} strokeWidth={2.5} />
+                                </button>
+                                {/* Middle icon - changes based on current option */}
+                                {currentOption === 'pinned' ? (
+                                    <Pin size={14} className="text-white/80" strokeWidth={2.5} fill="currentColor" />
+                                ) : currentOption === 'continue' ? (
+                                    <Clock size={14} className="text-white/80" strokeWidth={2.5} />
+                                ) : currentOption === 'ascii' ? (
+                                    <Star size={14} className="text-white/80" strokeWidth={2.5} fill="currentColor" />
+                                ) : (
+                                    <div className="w-1.5 h-1.5 rounded-full bg-white/60"></div>
+                                )}
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        if (hasMultipleOptions) {
+                                            const nextIndex = activeThumbnail < availableOptions.length - 1 ? activeThumbnail + 1 : 0;
+                                            setActiveThumbnail(nextIndex);
+                                        }
+                                    }}
+                                    disabled={!hasMultipleOptions}
+                                    className="flex items-center justify-center w-6 h-6 rounded text-white/80 hover:text-white transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                                    title="Next thumbnail/ASCII"
+                                >
+                                    <ChevronRight size={16} strokeWidth={2.5} />
+                                </button>
+                            </div>
+                        )}
+
+                        {/* 3. Colored Folder Navigator */}
+                        {onFolderNavigatePrev && onFolderNavigateNext && selectedFolder !== undefined && folderCounts && (
+                            <div className="flex items-center gap-2 bg-black/40 backdrop-blur-md rounded-lg px-3 py-2 border border-white/20">
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        if (onFolderNavigatePrev) onFolderNavigatePrev();
+                                    }}
+                                    className="flex items-center justify-center w-6 h-6 rounded text-white/80 hover:text-white transition-colors"
+                                    title="Previous folder"
+                                >
+                                    <ChevronLeft size={16} strokeWidth={2.5} />
+                                </button>
+                                <div className="w-1.5 h-1.5 rounded-full bg-white/60"></div>
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        if (onFolderNavigateNext) onFolderNavigateNext();
+                                    }}
+                                    className="flex items-center justify-center w-6 h-6 rounded text-white/80 hover:text-white transition-colors"
+                                    title="Next folder"
+                                >
+                                    <ChevronRight size={16} strokeWidth={2.5} />
+                                </button>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Page Navigator - Bottom Left Corner */}
+                    {currentNavPage === 'videos' && totalPages > 1 && (
+                        <div className="absolute bottom-4 left-4 z-30 pointer-events-auto">
+                            <div className="flex items-center gap-2 bg-black/40 backdrop-blur-md rounded-lg px-3 py-2 border border-white/20">
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        prevPage();
+                                    }}
+                                    disabled={paginationPage === 1}
+                                    className="flex items-center justify-center w-6 h-6 rounded text-white/80 hover:text-white transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                                    title="Previous page"
+                                >
+                                    <ChevronLeft size={16} strokeWidth={2.5} />
+                                </button>
+                                {/* Page indicator - clickable */}
+                                {isEditingPageLocal ? (
+                                    <input
+                                        ref={pageInputRef}
+                                        type="text"
+                                        value={pageInputValueLocal}
+                                        onChange={(e) => {
+                                            const val = e.target.value.replace(/[^0-9]/g, '');
+                                            setPageInputValueLocal(val);
+                                        }}
+                                        onBlur={() => {
+                                            const page = parseInt(pageInputValueLocal);
+                                            if (page >= 1 && page <= totalPages) {
+                                                setPaginationPage(page);
+                                            }
+                                            setIsEditingPageLocal(false);
+                                        }}
+                                        onKeyDown={(e) => {
+                                            if (e.key === 'Enter') {
+                                                const page = parseInt(pageInputValueLocal);
+                                                if (page >= 1 && page <= totalPages) {
+                                                    setPaginationPage(page);
+                                                }
+                                                setIsEditingPageLocal(false);
+                                            } else if (e.key === 'Escape') {
+                                                setIsEditingPageLocal(false);
+                                            }
+                                        }}
+                                        className="w-10 h-6 px-1 bg-white border-2 border-sky-500 rounded text-center text-sky-600 font-bold text-xs focus:outline-none"
+                                        autoFocus
+                                        onClick={(e) => e.stopPropagation()}
+                                    />
+                                ) : (
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            setPageInputValueLocal(String(paginationPage));
+                                            setIsEditingPageLocal(true);
+                                            setTimeout(() => pageInputRef.current?.select(), 0);
+                                        }}
+                                        className="px-1.5 h-6 bg-white border-2 border-slate-300 text-slate-700 rounded-full hover:border-sky-400 hover:text-sky-600 transition-all text-xs font-bold"
+                                        title="Click to jump to page"
+                                    >
+                                        {paginationPage}/{totalPages}
+                                    </button>
+                                )}
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        nextPage();
+                                    }}
+                                    disabled={paginationPage >= totalPages}
+                                    className="flex items-center justify-center w-6 h-6 rounded text-white/80 hover:text-white transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                                    title="Next page"
+                                >
+                                    <ChevronRight size={16} strokeWidth={2.5} />
+                                </button>
+                            </div>
+                        </div>
+                    )}
                 </div>
             )}
         </div>
