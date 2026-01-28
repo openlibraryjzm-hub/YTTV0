@@ -80,6 +80,7 @@ yttv2/
 │   │   ├── PlaylistFolderSelector.jsx  # Universal playlist/folder selector
 │   │   ├── PlaylistSelectionModal.jsx  # Modal for selecting playlist (Move/Copy actions)
 │   │   ├── StickyVideoCarousel.jsx     # Carousel/Grid for stickied videos
+│   │   ├── InfiniteScrollWrapper.jsx   # Infinite/Looping horizontal scroll wrapper
 │   │   ├── PageBanner.jsx              # Banner with metadata, media carousel (continue/pinned/ASCII), animated patterns
 │   │   ├── EditPlaylistModal.jsx       # Modal for editing playlist/folder metadata
 │   │   ├── SettingsPage.jsx            # Application configuration hub with navigation to dedicated pages (Orb, Page, App, You)

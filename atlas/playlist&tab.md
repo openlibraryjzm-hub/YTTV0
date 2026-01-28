@@ -15,7 +15,7 @@ The Playlist & Tab Management system provides comprehensive organization of play
 
 **1: User-Perspective Description**
 
-Users see a 3-column grid of playlist cards in the Playlists page:
+Users see a horizontal, **infinite-scrolling carousel** of playlist cards in the Playlists page:
 
 - **Playlist Cards**: Each card displays:
   - **Thumbnail**: 16:9 aspect ratio image showing the first video's thumbnail from the playlist
@@ -44,11 +44,16 @@ Users see a 3-column grid of playlist cards in the Playlists page:
     - **Folder Toggle**: Toggles display of colored folders in the grid.
     - **Add Playlist**: Opens the Playlist Uploader modal in "Add" mode.
 
+- **Scroll Position Indicator**: Located at the bottom right/center (implied), an "Up Arrow" button prompts the user to scroll to the top (start of the list).
+  - Next to this arrow, the name of the **currently centered playlist** is displayed dynamically as the user scrolls.
+
+
 
 **2: File Manifest**
 
 **UI/Components:**
 - `src/components/PlaylistsPage.jsx`: Main playlist grid page component
+- `src/components/InfiniteScrollWrapper.jsx`: Handle infinite/looping scroll logic
 - `src/components/CardMenu.jsx`: 3-dot menu component with submenu support
 - `src/components/CardThumbnail.jsx`: Thumbnail display component
 - `src/components/TabBar.jsx`: Tab navigation bar component
