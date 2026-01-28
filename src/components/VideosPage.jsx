@@ -124,11 +124,11 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
   // Playlist navigation handlers (for banner chevrons)
   const handleNavigatePlaylist = async (direction) => {
     if (!allPlaylists || allPlaylists.length === 0) return;
-    
+
     // Find current index in allPlaylists
     const currentIndex = allPlaylists.findIndex(p => p.id === activePlaylistId);
     if (currentIndex === -1) return;
-    
+
     // Calculate new index with wrapping
     let newIndex;
     if (direction === 'next') {
@@ -136,19 +136,19 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
     } else {
       newIndex = (currentIndex - 1 + allPlaylists.length) % allPlaylists.length;
     }
-    
+
     const targetPlaylist = allPlaylists[newIndex];
     if (!targetPlaylist) return;
-    
+
     try {
       // Mark as chevron navigation (so useEffect doesn't update reset point)
       isChevronNavRef.current = true;
-      
+
       // Fetch playlist items
       const items = await getPlaylistItems(targetPlaylist.id);
       // Set as preview (doesn't affect player or controller menus)
       setPreviewPlaylist(items, targetPlaylist.id, null, targetPlaylist.name);
-      
+
       // Reset flag after the state update propagates
       setTimeout(() => { isChevronNavRef.current = false; }, 0);
     } catch (error) {
@@ -160,16 +160,16 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
   // Return to reset point playlist
   const handleReturnToOriginal = async () => {
     if (!resetPointId) return;
-    
+
     try {
       // Mark as internal navigation (don't update reset point)
       isChevronNavRef.current = true;
-      
+
       // Fetch the reset point playlist items
       const items = await getPlaylistItems(resetPointId);
       const playlist = allPlaylists.find(p => p.id === resetPointId);
       setPreviewPlaylist(items, resetPointId, null, playlist?.name);
-      
+
       // Reset flag after state update
       setTimeout(() => { isChevronNavRef.current = false; }, 0);
     } catch (error) {
@@ -234,12 +234,12 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
     const handleWheel = (e) => {
       // Check if there's horizontal scroll available
       const hasHorizontalScroll = container.scrollWidth > container.clientWidth;
-      
+
       if (hasHorizontalScroll) {
         // Prevent default vertical scrolling
         e.preventDefault();
         e.stopPropagation();
-        
+
         // Direct scrollLeft assignment for better performance
         container.scrollLeft += e.deltaY;
       }
@@ -1215,7 +1215,7 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
           isFollower
         };
       });
-    
+
     // Sort so priority pin is always first
     return pinsInPlaylist.sort((a, b) => {
       if (a.isPriority && !b.isPriority) return -1;
@@ -1299,14 +1299,15 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
 
           {/* Sticky Toolbar */}
           <div
-            className={`sticky top-0 z-40 transition-all duration-500 cubic-bezier(0.4, 0, 0.2, 1) overflow-hidden -mt-16
+            className={`sticky top-0 z-40 transition-all duration-500 cubic-bezier(0.4, 0, 0.2, 1) overflow-hidden
             ${isStuck
                 ? 'backdrop-blur-xl border-y shadow-2xl mx-0 rounded-none mb-6 pt-2 pb-2 bg-slate-900/70'
                 : 'backdrop-blur-[2px] border-b border-x border-t border-white/10 shadow-xl mx-8 rounded-b-2xl mb-8 mt-0 pt-1 pb-0 bg-transparent'
               }
             `}
             style={{
-              backgroundColor: isStuck ? undefined : 'transparent' // Fully transparent resting state
+              backgroundColor: isStuck ? undefined : 'transparent', // Fully transparent resting state
+              marginTop: '-19px' // 45px lower than original -64px
             }}
           >
 
@@ -1438,7 +1439,7 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
 
           </div >
 
-          <div 
+          <div
             className="px-4 pb-8"
             onWheel={(e) => {
               // Handle wheel scrolling on the entire video area
@@ -1517,10 +1518,10 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
                 )}
 
                 {/* Horizontal Scrolling Video Grid - 2 Rows */}
-                <div 
+                <div
                   ref={horizontalScrollRef}
-                  className="horizontal-video-scroll" 
-                  style={{ 
+                  className="horizontal-video-scroll"
+                  style={{
                     width: '100%',
                     overflowX: 'scroll', // Force scrollbar to always show
                     overflowY: 'hidden',
@@ -1530,9 +1531,9 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
                     marginTop: '-32px' // Pull up to touch bottom of sticky bar (mb-8 = 32px)
                   }}
                 >
-                  <div 
+                  <div
                     className="flex flex-col gap-2 animate-fade-in"
-                    style={{ 
+                    style={{
                       width: 'max-content'
                     }}
                   >
@@ -1655,31 +1656,31 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
               // Calculate quarter jump targets
               // For small page counts (<=4), double-click acts as normal prev/next
               const useQuarterJumps = totalPages > 4;
-              
+
               // Quarter marks: 25%, 50%, 75%, 100% of total pages
-              const quarterMarks = useQuarterJumps 
+              const quarterMarks = useQuarterJumps
                 ? [
-                    Math.max(1, Math.round(totalPages * 0.25)),
-                    Math.max(1, Math.round(totalPages * 0.5)),
-                    Math.max(1, Math.round(totalPages * 0.75)),
-                    totalPages
-                  ]
+                  Math.max(1, Math.round(totalPages * 0.25)),
+                  Math.max(1, Math.round(totalPages * 0.5)),
+                  Math.max(1, Math.round(totalPages * 0.75)),
+                  totalPages
+                ]
                 : [];
-              
+
               // Find next quarter mark (for double-click >)
               const getNextQuarter = () => {
                 if (!useQuarterJumps) return Math.min(currentPage + 1, totalPages);
                 const next = quarterMarks.find(q => q > currentPage);
                 return next || totalPages;
               };
-              
+
               // Find previous quarter mark (for double-click <)
               const getPrevQuarter = () => {
                 if (!useQuarterJumps) return Math.max(currentPage - 1, 1);
                 const prev = [...quarterMarks].reverse().find(q => q < currentPage);
                 return prev || 1;
               };
-              
+
               // Combined handler: single click, double click, and long press
               const LONG_CLICK_MS = 600;
               const DOUBLE_CLICK_MS = 300;
@@ -1687,7 +1688,7 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
               let singleClickTimer = null;
               let didLongClick = false;
               let lastClickTime = 0;
-              
+
               const createCombinedHandlers = (singleAction, doubleAction, longAction) => ({
                 onMouseDown: () => {
                   didLongClick = false;
@@ -1700,10 +1701,10 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
                 onMouseUp: () => {
                   clearTimeout(longClickTimer);
                   if (didLongClick) return;
-                  
+
                   const now = Date.now();
                   const timeSinceLastClick = now - lastClickTime;
-                  
+
                   if (timeSinceLastClick < DOUBLE_CLICK_MS) {
                     // Double click detected
                     clearTimeout(singleClickTimer);
@@ -1735,10 +1736,10 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
                     e.preventDefault();
                     return;
                   }
-                  
+
                   const now = Date.now();
                   const timeSinceLastClick = now - lastClickTime;
-                  
+
                   if (timeSinceLastClick < DOUBLE_CLICK_MS) {
                     clearTimeout(singleClickTimer);
                     lastClickTime = 0;
@@ -1753,7 +1754,7 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
                   e.preventDefault();
                 },
               });
-              
+
               // Handler sets for prev/next buttons
               const prevHandlers = createCombinedHandlers(
                 () => setCurrentPage(Math.max(currentPage - 1, 1)),
@@ -1765,7 +1766,7 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
                 () => setCurrentPage(getNextQuarter()),
                 () => setCurrentPage(totalPages)
               );
-              
+
               return (
                 <div className="flex justify-center items-center gap-3 mt-8 mb-4">
                   {/* Previous: click=prev, double-click=quarter back, hold=first */}

@@ -131,6 +131,7 @@ Users see a horizontal scrolling layout with two rows of video cards showing vid
 - **Sticky Toolbar**: Sits below the Page Banner and sticks to the top of the viewport when scrolling.
   - **Compact Layout**: Features a streamlined single-row design to maximize vertical screen real estate.
   - **Unified Background**: Inherits the **Custom Page Banner Image** (if set) and continues the same horizontal scroll animation, maintaining visual alignment with the top banner.
+  - **Positioning**: Uses inline style `marginTop: '-19px'` for precise vertical positioning, providing increased spacing from the page banner (45px more than the original -64px baseline)
   - **Videos Page Layout**:
     - **Left**: All/Unsorted buttons + Colored Folder Prism (16-color horizontal bar).
     - **Right**: Sort Dropdown (Default/Date/Progress/Last Viewed) + Save/Cancel buttons (when in bulk tag mode) + Bulk Tag Mode toggle + Add Button.
@@ -165,9 +166,10 @@ Users see a horizontal scrolling layout with two rows of video cards showing vid
   - **Layout**: Two horizontal rows of video cards, each card fixed at 320px width
   - **Scrolling**: Horizontal scroll container with visible scrollbar (thin style)
   - **Wheel Scrolling**: Mouse wheel events are converted to horizontal scrolling for natural navigation
-  - **Positioning**: Scroll area positioned to touch the bottom edge of the sticky toolbar (negative margin to eliminate gap)
+  - **Positioning**: Scroll area positioned with negative margin to reduce gap with sticky toolbar
   - **Vertical Scrolling Disabled**: Page does not scroll vertically - only horizontal scrolling is active
   - **Container Padding**: `px-4` (16px) for balanced spacing
+
 
 - **Folder Filtering**: When a folder is selected (via FolderSelector), only videos in that folder are shown
 
