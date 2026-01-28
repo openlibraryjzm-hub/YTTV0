@@ -50,29 +50,25 @@ Users see a contextual banner (220px fixed height) at the top of scrollable cont
       - **Follower Pin**: White pin icon + → arrow
       - **Priority Pin**: 👑 crown + golden pin icon
       - **Priority Follower Pin**: 👑 crown + golden pin icon + → arrow
-    - **Navigation**: Controlled via navigation buttons overlaid on page banner image (see Navigation Buttons section)
-    - **Multi-Pin Bar**: When multiple pins exist (max 10 segments), a vertical segmented bar appears absolutely positioned to the right of thumbnail
-      - **Position**: Absolutely positioned at `left: calc(50% + 160px + 4px)`, `bottom: 66px` (centered relative to thumbnail)
+    - **Hover Navigation**:
+      - **Header Navigation Strips**: Hover over header to reveal left/right gradient strips for playlist preview navigation
+      - **Thumbnail Navigation Strips**: Hover over thumbnail to reveal left/right gradient strips for pin navigation (when viewing pins with multiple pins)
+      - **Bottom Labels**: Hover over thumbnail to reveal "Recent", "Pins", "Ascii" labels at bottom center for switching between media carousel options
+    - **Horizontal Pin Bar**: When multiple pins exist (max 10 segments), a horizontal segmented bar appears at the top of the thumbnail
+      - **Position**: Absolutely positioned at top of thumbnail (`top: 0px`), overlapping the thumbnail edge
+      - **Width**: `w-[320px]` (matches thumbnail width)
       - **Folder Colors**: Each segment colored by the pin's folder assignment
       - **Priority Crown**: Priority pin segment has crown-like clip-path and golden color (`#FFD700`)
-      - **Selection Dot**: White dot indicator to the right of the bar (golden for priority pin)
-      - **Size**: `h-[180px] w-3` (matches thumbnail height)
-      - Positioned outside flex container to maintain uniform thumbnail width
+      - **Selection Dot**: Horizontal white dot indicator below the bar (golden for priority pin)
+      - **Height**: `h-3` (12px tall)
     - **Positioning**: Centered horizontally within banner area (332px width) at `bottom-[25px]` (25px up from bottom)
-  - **Navigation Buttons on Page Banner Image**: All navigation controls overlaid on Layer 2 image with glassmorphic styling
-    - **Top-Right Corner** (`top-4 right-4`): Three button groups in horizontal row
-      1. **Playlist Preview Navigator**: Navigates between playlists (Videos Page)
-         - **Previous Button** (left): Navigates to previous playlist - white chevron left icon
-         - **Return Button** (middle, when previewing): Returns to reset point playlist - white RotateCcw icon (only shown when previewing)
-         - **Next Button** (right): Navigates to next playlist - white chevron right icon
-      2. **Thumbnail/ASCII Navigator**: Cycles through continue/pinned/ASCII options
-         - Middle icon changes based on current option: Pin icon for pinned, Clock icon for continue, Star icon for ASCII
-      3. **Colored Folder Navigator**: Cycles through folders in current playlist (All → Unsorted → folders with videos)
-         - Middle dot indicator
-    - **Bottom-Left Corner** (`bottom-4 left-4`): Page Navigator
-      - **Page Navigator**: Pagination controls (only shown on Videos page when multiple pages exist)
-        - Clickable page indicator (e.g., "1/99") that allows direct page navigation
-        - Previous/Next buttons for page navigation
+  - **Navigation Controls on Page Banner**: Streamlined navigation with hover-based interactions
+    - **Bottom-Left Corner** (`bottom-4 left-4`): Two navigation groups in horizontal row
+      1. **Colored Folder Navigator** (leftmost): Cycles through folders in current playlist (All → Unsorted → folders with videos)
+         - Left/Right chevron buttons with center dot indicator
+      2. **Page Navigator** (to the right): Pagination controls (only shown on Videos page when multiple pages exist)
+         - Clickable page indicator (e.g., "1/99") that allows direct page navigation
+         - Previous/Next buttons for page navigation
     - **Styling**: All button groups use glassmorphic backdrop (`bg-black/40 backdrop-blur-md`) with white text and borders
     - **Size**: `w-6 h-6` compact buttons with `px-3 py-2` container padding
 - **Banner Structure**: The page banner is now a compact 332px-wide transparent component containing only the content (thumbnail/ASCII previews, buttons, title, etc.)

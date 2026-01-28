@@ -653,13 +653,41 @@ const PageBanner = ({ title, description, folderColor, onEdit, videoCount, count
 
                 {/* Thumbnail/ASCII Section with Header - Continue/Pinned/ASCII with arrow navigation */}
                 {hasAnyOption && (
-                    <div className="absolute bottom-[25px] flex flex-col items-center z-20" style={{ left: '166px', transform: 'translateX(-50%)', height: '100%', justifyContent: 'flex-end' }}>
+                    <div className="absolute bottom-[25px] flex flex-col items-center z-20 group" style={{ left: '166px', transform: 'translateX(-50%)', height: '100%', justifyContent: 'flex-end' }}>
                         {/* Header - Playlist/Folder Name - Top aligned with banner */}
-                        <div className="absolute top-0 left-1/2 -translate-x-1/2" style={{ marginTop: '-1px' }}>
-                            <div className="bg-black/40 backdrop-blur-md rounded-lg px-4 py-2 border border-white/20 w-[320px]">
+                        <div className="absolute top-0 left-1/2 -translate-x-1/2 group/header" style={{ marginTop: '-1px' }}>
+                            <div className="bg-black/40 backdrop-blur-md rounded-lg px-4 py-2 border border-white/20 w-[320px] relative">
                                 <h2 className="text-base font-black text-white tracking-tight drop-shadow-md whitespace-nowrap text-center" style={{ textShadow: '-1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0 2px 4px rgba(0,0,0,0.8)' }}>
                                     {title}
                                 </h2>
+
+                                {/* Left navigation strip - Previous Playlist */}
+                                {onNavigatePrev && (
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            onNavigatePrev();
+                                        }}
+                                        className="absolute left-0 top-0 bottom-0 w-12 bg-gradient-to-r from-black/60 to-transparent opacity-0 group-hover/header:opacity-100 hover:from-black/80 transition-all flex items-center justify-center rounded-l-lg"
+                                        title="Previous playlist"
+                                    >
+                                        <ChevronLeft size={20} className="text-white" strokeWidth={2.5} />
+                                    </button>
+                                )}
+
+                                {/* Right navigation strip - Next Playlist */}
+                                {onNavigateNext && (
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            onNavigateNext();
+                                        }}
+                                        className="absolute right-0 top-0 bottom-0 w-12 bg-gradient-to-l from-black/60 to-transparent opacity-0 group-hover/header:opacity-100 hover:from-black/80 transition-all flex items-center justify-center rounded-r-lg"
+                                        title="Next playlist"
+                                    >
+                                        <ChevronRight size={20} className="text-white" strokeWidth={2.5} />
+                                    </button>
+                                )}
                             </div>
                         </div>
 
@@ -669,7 +697,7 @@ const PageBanner = ({ title, description, folderColor, onEdit, videoCount, count
                             <div className="flex items-stretch gap-[2px] relative">
                                 {/* Clickable content area */}
                                 <div
-                                    className={`flex flex-col items-center gap-2 flex-shrink-0 relative ${activeCallback && !showInfo ? 'cursor-pointer' : ''}`}
+                                    className={`flex flex-col items-center gap-2 flex-shrink-0 relative group/preview ${activeCallback && !showInfo ? 'cursor-pointer' : ''}`}
                                     onClick={(e) => {
                                         e.stopPropagation();
                                         if (!showInfo && activeCallback) activeCallback();
@@ -765,14 +793,71 @@ const PageBanner = ({ title, description, folderColor, onEdit, videoCount, count
                                             )}
                                         </div>
                                     )}
+
+                                    {/* Left navigation strip - Previous Pin */}
+                                    {currentOption === 'pinned' && hasMultiplePins && (
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                const newIndex = activePinnedIndex > 0 ? activePinnedIndex - 1 : pinnedVideos.length - 1;
+                                                setActivePinnedIndex(newIndex);
+                                            }}
+                                            className="absolute left-0 top-0 bottom-0 w-12 bg-gradient-to-r from-black/60 to-transparent opacity-0 group-hover/preview:opacity-100 hover:from-black/80 transition-all flex items-center justify-center rounded-l-lg"
+                                            title="Previous pin"
+                                        >
+                                            <ChevronLeft size={20} className="text-white" strokeWidth={2.5} />
+                                        </button>
+                                    )}
+
+                                    {/* Right navigation strip - Next Pin */}
+                                    {currentOption === 'pinned' && hasMultiplePins && (
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                const newIndex = activePinnedIndex < pinnedVideos.length - 1 ? activePinnedIndex + 1 : 0;
+                                                setActivePinnedIndex(newIndex);
+                                            }}
+                                            className="absolute right-0 top-0 bottom-0 w-12 bg-gradient-to-l from-black/60 to-transparent opacity-0 group-hover/preview:opacity-100 hover:from-black/80 transition-all flex items-center justify-center rounded-r-lg"
+                                            title="Next pin"
+                                        >
+                                            <ChevronRight size={20} className="text-white" strokeWidth={2.5} />
+                                        </button>
+                                    )}
+
+                                    {/* Bottom hover menu for media carousel labels */}
+                                    <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex items-center gap-2 z-40 pointer-events-auto opacity-0 group-hover/preview:opacity-100 transition-opacity duration-300">
+                                        {availableOptions.map((option, index) => {
+                                            const isActive = activeThumbnail === index;
+                                            const label = option === 'continue' ? 'Recent' : option === 'pinned' ? 'Pins' : 'Ascii';
+
+                                            return (
+                                                <button
+                                                    key={option}
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setActiveThumbnail(index);
+                                                    }}
+                                                    className={`px-2.5 py-1 rounded-md border text-xs font-bold transition-all whitespace-nowrap ${isActive
+                                                        ? 'bg-white/30 border-white/50 text-white backdrop-blur-md'
+                                                        : 'bg-black/50 border-white/20 text-white/70 hover:text-white hover:bg-black/70 backdrop-blur-md'
+                                                        }`}
+                                                    style={{
+                                                        textShadow: '-1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0 2px 4px rgba(0,0,0,0.8)'
+                                                    }}
+                                                >
+                                                    {label}
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
                                 </div>
                             </div>
 
-                            {/* Vertical pin bar with selection dot - only show when viewing pinned and multiple pins exist (max 10 segments) */}
-                            {/* Positioned absolutely to the right of thumbnail to maintain uniform thumbnail width */}
+                            {/* Horizontal pin bar with selection dot - only show when viewing pinned and multiple pins exist (max 10 segments) */}
+                            {/* Positioned absolutely at the top of thumbnail */}
                             {currentOption === 'pinned' && hasMultiplePins && (
-                                <div className="absolute flex flex-row items-stretch gap-[2px]" style={{ left: hasMultipleOptions ? 'calc(50% + 160px + 16px)' : 'calc(50% + 160px + 4px)', bottom: '66px' }}>
-                                    <div className="flex flex-col w-3 h-[180px] rounded-md overflow-hidden border border-white/20 bg-black/20 backdrop-blur-sm">
+                                <div className="absolute flex flex-col items-stretch gap-[2px]" style={{ left: '50%', transform: 'translateX(-50%)', top: '0px' }}>
+                                    <div className="flex flex-row w-[320px] h-3 rounded-md overflow-hidden border border-white/20 bg-black/20 backdrop-blur-sm">
                                         {pinnedVideos.slice(0, 10).map((pin, index) => {
                                             // Get folder color for this pinned video
                                             const pinFolderColor = pin.folder_color || pin.folderColor;
@@ -791,16 +876,16 @@ const PageBanner = ({ title, description, folderColor, onEdit, videoCount, count
                                                     className={`flex-1 transition-all hover:opacity-100 ${!segmentColor ? 'bg-white/50 hover:bg-white/70' : ''
                                                         }`}
                                                     style={{
-                                                        borderBottom: index < Math.min(pinnedVideos.length, 10) - 1 ? '1px solid rgba(0,0,0,0.3)' : 'none',
+                                                        borderRight: index < Math.min(pinnedVideos.length, 10) - 1 ? '1px solid rgba(0,0,0,0.3)' : 'none',
                                                         ...(segmentColor ? {
                                                             backgroundColor: segmentColor,
                                                             opacity: isPriority ? 1 : 0.85
                                                         } : {}),
-                                                        // Crown-like clip-path for priority pin (top segment with pointy top edge)
+                                                        // Crown-like clip-path for priority pin (leftmost segment with pointy left edge)
                                                         ...(isPriority && index === 0 ? {
-                                                            clipPath: 'polygon(0% 30%, 25% 0%, 50% 20%, 75% 0%, 100% 30%, 100% 100%, 0% 100%)',
-                                                            marginTop: '-2px',
-                                                            paddingTop: '2px'
+                                                            clipPath: 'polygon(30% 0%, 0% 25%, 20% 50%, 0% 75%, 30% 100%, 100% 100%, 100% 0%)',
+                                                            marginLeft: '-2px',
+                                                            paddingLeft: '2px'
                                                         } : {})
                                                     }}
                                                     title={isPriority ? `👑 ${pin.title || 'Priority Pin'}` : (pin.title || `Pin ${index + 1}`)}
@@ -809,7 +894,7 @@ const PageBanner = ({ title, description, folderColor, onEdit, videoCount, count
                                         })}
                                     </div>
                                     {/* Selection indicator dot */}
-                                    <div className="relative h-[180px] w-2 flex flex-col">
+                                    <div className="relative w-[320px] h-2 flex flex-row">
                                         {pinnedVideos.slice(0, 10).map((pin, index) => (
                                             <div key={index} className="flex-1 flex items-center justify-center">
                                                 {activePinnedIndex === index && (
@@ -851,94 +936,10 @@ const PageBanner = ({ title, description, folderColor, onEdit, videoCount, count
                         image2YOffset={effectiveLayer2YOffset}
                     />
 
-                    {/* Navigation Buttons - Overlaid on top of Layer 2 image */}
-                    <div className="absolute top-4 right-4 flex items-center gap-4 z-30 pointer-events-auto">
-                        {/* Playlist Preview Navigator */}
-                        {(onNavigatePrev || onNavigateNext) && (
-                            <div className="flex items-center gap-2 bg-black/40 backdrop-blur-md rounded-lg px-3 py-2 border border-white/20">
-                                <button
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        if (onNavigatePrev) onNavigatePrev();
-                                    }}
-                                    className="flex items-center justify-center w-6 h-6 rounded text-white/80 hover:text-white transition-colors"
-                                    title="Previous playlist"
-                                >
-                                    <ChevronLeft size={16} strokeWidth={2.5} />
-                                </button>
-                                {/* Middle button - refresh when previewing, dot otherwise */}
-                                {showReturnButton && onReturn ? (
-                                    <button
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            if (onReturn) onReturn();
-                                        }}
-                                        className="flex items-center justify-center w-6 h-6 rounded text-white/80 hover:text-white transition-colors"
-                                        title="Return to original playlist"
-                                    >
-                                        <RotateCcw size={14} strokeWidth={2.5} />
-                                    </button>
-                                ) : (
-                                    <div className="w-1.5 h-1.5 rounded-full bg-white/60"></div>
-                                )}
-                                <button
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        if (onNavigateNext) onNavigateNext();
-                                    }}
-                                    className="flex items-center justify-center w-6 h-6 rounded text-white/80 hover:text-white transition-colors"
-                                    title="Next playlist"
-                                >
-                                    <ChevronRight size={16} strokeWidth={2.5} />
-                                </button>
-                            </div>
-                        )}
 
-                        {/* 1. Thumbnail/ASCII Navigator */}
-                        {hasAnyOption && (
-                            <div className="flex items-center gap-2 bg-black/40 backdrop-blur-md rounded-lg px-3 py-2 border border-white/20">
-                                <button
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        if (hasMultipleOptions) {
-                                            const prevIndex = activeThumbnail > 0 ? activeThumbnail - 1 : availableOptions.length - 1;
-                                            setActiveThumbnail(prevIndex);
-                                        }
-                                    }}
-                                    disabled={!hasMultipleOptions}
-                                    className="flex items-center justify-center w-6 h-6 rounded text-white/80 hover:text-white transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-                                    title="Previous thumbnail/ASCII"
-                                >
-                                    <ChevronLeft size={16} strokeWidth={2.5} />
-                                </button>
-                                {/* Middle icon - changes based on current option */}
-                                {currentOption === 'pinned' ? (
-                                    <Pin size={14} className="text-white/80" strokeWidth={2.5} fill="currentColor" />
-                                ) : currentOption === 'continue' ? (
-                                    <Clock size={14} className="text-white/80" strokeWidth={2.5} />
-                                ) : currentOption === 'ascii' ? (
-                                    <Star size={14} className="text-white/80" strokeWidth={2.5} fill="currentColor" />
-                                ) : (
-                                    <div className="w-1.5 h-1.5 rounded-full bg-white/60"></div>
-                                )}
-                                <button
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        if (hasMultipleOptions) {
-                                            const nextIndex = activeThumbnail < availableOptions.length - 1 ? activeThumbnail + 1 : 0;
-                                            setActiveThumbnail(nextIndex);
-                                        }
-                                    }}
-                                    disabled={!hasMultipleOptions}
-                                    className="flex items-center justify-center w-6 h-6 rounded text-white/80 hover:text-white transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-                                    title="Next thumbnail/ASCII"
-                                >
-                                    <ChevronRight size={16} strokeWidth={2.5} />
-                                </button>
-                            </div>
-                        )}
-
-                        {/* 3. Colored Folder Navigator */}
+                    {/* Bottom Left Navigation - Page Navigator + Colored Folder Navigator */}
+                    <div className="absolute bottom-4 left-4 z-30 pointer-events-auto flex items-center gap-4">
+                        {/* Colored Folder Navigator */}
                         {onFolderNavigatePrev && onFolderNavigateNext && selectedFolder !== undefined && folderCounts && (
                             <div className="flex items-center gap-2 bg-black/40 backdrop-blur-md rounded-lg px-3 py-2 border border-white/20">
                                 <button
@@ -964,11 +965,9 @@ const PageBanner = ({ title, description, folderColor, onEdit, videoCount, count
                                 </button>
                             </div>
                         )}
-                    </div>
 
-                    {/* Page Navigator - Bottom Left Corner */}
-                    {currentNavPage === 'videos' && totalPages > 1 && (
-                        <div className="absolute bottom-4 left-4 z-30 pointer-events-auto">
+                        {/* Page Navigator */}
+                        {currentNavPage === 'videos' && totalPages > 1 && (
                             <div className="flex items-center gap-2 bg-black/40 backdrop-blur-md rounded-lg px-3 py-2 border border-white/20">
                                 <button
                                     onClick={(e) => {
@@ -1039,8 +1038,8 @@ const PageBanner = ({ title, description, folderColor, onEdit, videoCount, count
                                     <ChevronRight size={16} strokeWidth={2.5} />
                                 </button>
                             </div>
-                        </div>
-                    )}
+                        )}
+                    </div>
                 </div>
             )}
         </div>
