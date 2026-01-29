@@ -903,4 +903,37 @@ The Support Page acts as a central hub for community engagement, resources, and 
    - **Social Links**: Clicking the banner trigger `openUrl()` to external sites.
    - **Internal Content**: Clicking "Future Plans" or "Resources" triggers `navigateToPlaylist()`, switching the view to the `VideosPage` with the target playlist loaded.
 
-   
+   #### ### 4.1.9 Settings Hub (MainSettingsPage)
+
+**1: User-Perspective Description**
+
+The **Settings Hub** is a new, visually distinct page that serves as the entry point for application configuration, accessible via the **Settings (Gear)** icon in the Top Navigation.
+
+- **Layout**: The page features a bold, split-screen layout designed for high visual impact:
+  - **Alignment**: Items are aligned to the top of the container with a fixed padding.
+  - **Equal Height**: Both the left and right primary elements are forced to an identical height (`65vh`) to ensure perfect visual balance.
+
+- **Left Section (The Square)**:
+  - **Description**: A large, square glassmorphism container.
+  - **Dimensions**: Takes up `37.5%` of the width (max `600px`) and uses an `aspect-square` ratio to match the height of the right section.
+  - **Styling**: `bg-white/5`, `backdrop-blur-2xl`, rounded corners (`48px`), and hover effects.
+
+- **Right Section (The Control Panel)**:
+  - **Description**: An enlarged, interactive panel modeled after the `AppBannerPopup` aesthetic.
+  - **Structure**:
+    - **Top 1/3**: A "Header" zone featuring a large central Orb (`80%` height) and two side "Option" rectangles (`28%` width).
+    - **Bottom 2/3**: A "Body" zone split vertically into two halves.
+      - **Bottom Left**: A large single action area.
+      - **Bottom Right**: Split horizontally into a Top Action (`1/3`) and Main Action (`2/3`).
+  - **Styling**: Distinct glassmorphism style (`bg-white/10`) with `overflow-hidden` to contain internal elements.
+
+**2: File Manifest**
+
+**UI/Components:**
+- `src/components/MainSettingsPage.jsx`: The main component implementing this specific layout.
+- `src/App.jsx`: Handles routing to `MainSettingsPage` when `currentPage === 'settings'`.
+
+**State Management:**
+- `navigationStore.js`: Handles routing via `setCurrentPage`.
+
+---

@@ -83,7 +83,8 @@ yttv2/
 │   │   ├── InfiniteScrollWrapper.jsx   # Infinite/Looping horizontal scroll wrapper
 │   │   ├── PageBanner.jsx              # Banner with metadata, media carousel (continue/pinned/ASCII), animated patterns
 │   │   ├── EditPlaylistModal.jsx       # Modal for editing playlist/folder metadata
-│   │   ├── SettingsPage.jsx            # Application configuration hub with navigation to dedicated pages (Orb, Page, App, You)
+│   │   ├── SettingsPage.jsx            # [DEPRECATED] Legacy settings hub
+│   │   ├── MainSettingsPage.jsx        # New Settings Hub (Left Square + Right Popup layout)
 │   │   ├── OrbPage.jsx                 # Dedicated Orb configuration page with presets grid
 │   │   ├── PagePage.jsx                # Dedicated Page Banner and Layer 2 configuration page
 │   │   ├── AppPage.jsx                 # Dedicated App Banner, Color Palette, and Player Borders configuration page
@@ -174,7 +175,7 @@ yttv2/
 | Feature | Primary Document | Related Documents |
 |---------|-----------------|-------------------|
 | **Player Controller** | `advanced-player-controller.md` | `navigation-routing.md`, `state-management.md` |
-| **Settings & Configuration** | `ui-pages.md` (Section 4.1.8) | `state-management.md` (configStore) |
+| **Settings Hub** | `ui-pages.md` (Section 4.1.9) | `state-management.md` (configStore) |
 | **Orb Configuration** | `orb-page.md` | `state-management.md` (configStore) |
 | **Profile & Signature** | `you-page.md` | `state-management.md` (configStore) |
 | **Page Banner & Layer 2** | `page-page.md` | `state-management.md` (configStore), `page-banner.md` |
@@ -385,4 +386,9 @@ For detailed information about the application's theme system and recent color c
   - **Structure**: Split into a top section (centered orb + 40x16px rectangles) and a bottom-right section (split 1/3 top, 2/3 bottom).
   - **Interaction**: Non-blocking `onMouseMove` detection to preserve clickability of underlying controls.
   - **Component**: New `AppBannerPopup.jsx`.
+- **Settings Page Overhaul**: Replaced the legacy settings page with a new **Settings Hub** (`MainSettingsPage.jsx`).
+  - **Layout**: Two large, equal-height elements side-by-side (`65vh` height).
+    - **Left**: A large "Square" container (`37.5%` width, max `600px`).
+    - **Right**: An enlarged version of the `AppBannerPopup` layout (`flex-1`).
+  - **Navigation**: Integrated into the main Top Navigation as a new "Settings" icon (Gear) in Group 3.
 

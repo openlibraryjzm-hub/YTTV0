@@ -14,6 +14,7 @@ import YouPage from './components/YouPage';
 import PagePage from './components/PagePage';
 import AppPage from './components/AppPage';
 import BrowserPage from './components/BrowserPage';
+import MainSettingsPage from './components/MainSettingsPage';
 
 import YouTubePlayer from './components/YouTubePlayer';
 import LocalVideoPlayer from './components/LocalVideoPlayer';
@@ -37,7 +38,7 @@ function App() {
   // Helper to get inspect label
   const getInspectTitle = (label) => inspectMode ? label : undefined;
   const { showPlaylists, setShowPlaylists, setPlaylistItems, currentPlaylistItems, currentPlaylistId, currentVideoIndex, setCurrentVideoIndex } = usePlaylistStore();
-  const { currentPage } = useNavigationStore();
+  const { currentPage, setCurrentPage } = useNavigationStore();
   const [dbInitialized, setDbInitialized] = useState(false);
   const [containerConfig, setContainerConfig] = useState(null);
   const [dictionaryConfig, setDictionaryConfig] = useState(null);
@@ -600,7 +601,12 @@ function App() {
             <BrowserPage />
 
           ) : !showPlaylists && currentPage === 'settings' ? (
-            <SettingsPage currentThemeId={currentThemeId} onThemeChange={setCurrentThemeId} />
+            <MainSettingsPage
+              onNavigateToOrb={() => setCurrentPage('orbs')}
+              onNavigateToPage={() => setCurrentPage('pagepage')}
+              onNavigateToApp={() => setCurrentPage('app')}
+              onNavigateToYou={() => setCurrentPage('you')}
+            />
           ) : !showPlaylists && currentPage === 'support' ? (
             <SupportPage onVideoSelect={handleVideoSelect} />
           ) : null

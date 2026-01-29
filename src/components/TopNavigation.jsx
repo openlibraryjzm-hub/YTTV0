@@ -34,6 +34,7 @@ const TopNavigation = () => {
             { id: 'you', label: 'You', icon: <User size={16} /> },
             { id: 'pagepage', label: 'Page', icon: <FileText size={16} /> },
             { id: 'app', label: 'App', icon: <LayoutGrid size={16} /> },
+            { id: 'settings', label: 'Settings', icon: <Settings size={16} /> },
         ],
         [
             { id: 'support', label: 'Support', icon: <Cat size={16} /> },
