@@ -36,23 +36,20 @@ The feature determines its state from the global `configStore` to ensure persist
 ### Interactive Drawing Tool
 - **Drag & Drop**: When a quadrant is in "Advanced Mode", a blue selection box appears.
 - **Resizing**: Corner handles allow resizing the crop area.
-- **Constraints**: Logic prevents drag/resize actions from leaving the designated quadrant boundaries (e.g., a TL crop cannot be dragged into the TR area).
+- **Relaxed Bounds**: Logic permits dragging/resizing well outside the standard 0-100% box (range: -50% to 150%). This allows users to capture "true spillover" content that exists far outside the central orb area.
 
-## 4. Current Implementation Status
+## 4. Implementation Status
 
-**Implemented:**
-- Global Store integration for persistence.
+**Completed Features:**
+- Global Store integration for persistence (`configStore`).
 - Fullscreen modal UI with high-res image visualizer.
-- "Infinite Spill" vs "Custom Mask" toggle logic.
-- SVG masking system to virtually "cut" the image in real-time.
-- Interactive drag-and-resize handlers for custom masks.
+- "Infinite Spill" (Global) vs "Custom Mask" (Local) toggle logic.
+- **Relaxed Bounds System**: Users can drag masks freely across quadrants or outside the container.
+- **Real-Time Visualization**: The `OrbPage` settings visualizer now supports `overflow-visible`, correctly showing masks that drift outside the standard box.
 
-**Known Limitations / Active Development:**
-- Drag movement constraints may currently be too restrictive.
-- Real-time reflection on the main Orb Page visualizer depends on the store updates propagating correctly.
+## 6. Player Controller Sync
 
-## 5. Integration
-
-The `OrbPage.jsx` component has been updated to:
-1. Pass the global `configStore` state (`orbAdvancedMasks`, `orbMaskRects`) into the modal.
-2. Render these advanced masks in its own miniature visualizer preview, ensuring what you see in the editor is what you get in the settings dashboard.
+The main application header (`PlayerController.jsx`) has been fully integrated:
+1.  It subscribes to `orbAdvancedMasks` and `orbMaskRects`.
+2.  The central `orbClipPath` SVG immediately reflects standard vs. custom masks.
+3.  If a custom mask is used, the header orb shows *only* that specific cutout; otherwise, it shows the standard quadrant spill.

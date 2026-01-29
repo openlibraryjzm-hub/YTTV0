@@ -391,4 +391,8 @@ For detailed information about the application's theme system and recent color c
     - **Left**: A large "Square" container (`37.5%` width, max `600px`).
     - **Right**: An enlarged version of the `AppBannerPopup` layout (`flex-1`).
   - **Navigation**: Integrated into the main Top Navigation as a new "Settings" icon (Gear) in Group 3.
+- **Advanced Orb Cropping**: Implemented a fullscreen masking editor for the Orb.
+  - **Feature**: Free-form masking tool for each quadrant, allowing "infinite spill" or precise custom cuts.
+  - **Relaxed Bounds**: Crops can drag/extend well outside the orb container (-50% to 150%) to capture large spillover details.
+  - **Integration**: Fully synced with the main player header; custom cutouts appear instantly in the top app controller.
 

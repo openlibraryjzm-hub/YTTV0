@@ -326,10 +326,30 @@ export default function OrbPage({ onBack, onNavigateToYou, onNavigateToPage, onN
                                     {orbFavorites.map((favorite) => (
                                         <clipPath key={favorite.id} id={`orbClipPath-${favorite.id}`} clipPathUnits="objectBoundingBox">
                                             <circle cx="0.5" cy="0.5" r="0.5" />
-                                            {favorite.isSpillEnabled && favorite.orbSpill?.tl && <rect x="-50" y="-50" width="50.5" height="50.5" />}
-                                            {favorite.isSpillEnabled && favorite.orbSpill?.tr && <rect x="0.5" y="-50" width="50.5" height="50.5" />}
-                                            {favorite.isSpillEnabled && favorite.orbSpill?.bl && <rect x="-50" y="0.5" width="50.5" height="50.5" />}
-                                            {favorite.isSpillEnabled && favorite.orbSpill?.br && <rect x="0.5" y="0.5" width="50.5" height="50.5" />}
+                                            {/* TL */}
+                                            {favorite.isSpillEnabled && favorite.orbSpill?.tl && (
+                                                favorite.orbAdvancedMasks?.tl
+                                                    ? <rect x={favorite.orbMaskRects?.tl.x / 100} y={favorite.orbMaskRects?.tl.y / 100} width={favorite.orbMaskRects?.tl.w / 100} height={favorite.orbMaskRects?.tl.h / 100} />
+                                                    : <rect x="-50" y="-50" width="50.5" height="50.5" />
+                                            )}
+                                            {/* TR */}
+                                            {favorite.isSpillEnabled && favorite.orbSpill?.tr && (
+                                                favorite.orbAdvancedMasks?.tr
+                                                    ? <rect x={favorite.orbMaskRects?.tr.x / 100} y={favorite.orbMaskRects?.tr.y / 100} width={favorite.orbMaskRects?.tr.w / 100} height={favorite.orbMaskRects?.tr.h / 100} />
+                                                    : <rect x="0.5" y="-50" width="50.5" height="50.5" />
+                                            )}
+                                            {/* BL */}
+                                            {favorite.isSpillEnabled && favorite.orbSpill?.bl && (
+                                                favorite.orbAdvancedMasks?.bl
+                                                    ? <rect x={favorite.orbMaskRects?.bl.x / 100} y={favorite.orbMaskRects?.bl.y / 100} width={favorite.orbMaskRects?.bl.w / 100} height={favorite.orbMaskRects?.bl.h / 100} />
+                                                    : <rect x="-50" y="0.5" width="50.5" height="50.5" />
+                                            )}
+                                            {/* BR */}
+                                            {favorite.isSpillEnabled && favorite.orbSpill?.br && (
+                                                favorite.orbAdvancedMasks?.br
+                                                    ? <rect x={favorite.orbMaskRects?.br.x / 100} y={favorite.orbMaskRects?.br.y / 100} width={favorite.orbMaskRects?.br.w / 100} height={favorite.orbMaskRects?.br.h / 100} />
+                                                    : <rect x="0.5" y="0.5" width="50.5" height="50.5" />
+                                            )}
                                         </clipPath>
                                     ))}
                                 </defs>
@@ -443,7 +463,7 @@ export default function OrbPage({ onBack, onNavigateToYou, onNavigateToPage, onN
                                                     <label className="text-xs font-bold uppercase text-slate-400 ml-1">Spill Areas</label>
 
                                                     {/* Interactive Visualizer */}
-                                                    <div className="relative w-36 h-36 border-2 border-slate-100 rounded-xl overflow-hidden bg-slate-50 mx-auto select-none group">
+                                                    <div className="relative w-36 h-36 border-2 border-slate-100 rounded-xl overflow-visible bg-slate-50 mx-auto select-none group">
                                                         {/* The Image Background */}
                                                         <img
                                                             src={customOrbImage}
@@ -453,21 +473,37 @@ export default function OrbPage({ onBack, onNavigateToYou, onNavigateToPage, onN
                                                         />
 
                                                         {/* The Circle Mask (Inverse) */}
-                                                        <div className="absolute inset-0 pointer-events-none z-10">
-                                                            <svg width="100%" height="100%" viewBox="0 0 100 100">
+                                                        <div className="absolute inset-0 pointer-events-none z-10 overflow-visible">
+                                                            <svg width="100%" height="100%" viewBox="0 0 100 100" style={{ overflow: 'visible' }}>
                                                                 <defs>
                                                                     <mask id="circleMask">
-                                                                        <rect width="100" height="100" fill="white" />
+                                                                        <rect x="-5000" y="-5000" width="10000" height="10000" fill="white" />
                                                                         <circle cx="50" cy="50" r="35" fill="black" />
 
                                                                         {/* Advanced Masks in Visualizer */}
-                                                                        {orbAdvancedMasks.tl && orbSpill.tl && <rect fill="black" x={orbMaskRects.tl.x} y={orbMaskRects.tl.y} width={orbMaskRects.tl.w} height={orbMaskRects.tl.h} />}
-                                                                        {orbAdvancedMasks.tr && orbSpill.tr && <rect fill="black" x={orbMaskRects.tr.x} y={orbMaskRects.tr.y} width={orbMaskRects.tr.w} height={orbMaskRects.tr.h} />}
-                                                                        {orbAdvancedMasks.bl && orbSpill.bl && <rect fill="black" x={orbMaskRects.bl.x} y={orbMaskRects.bl.y} width={orbMaskRects.bl.w} height={orbMaskRects.bl.h} />}
-                                                                        {orbAdvancedMasks.br && orbSpill.br && <rect fill="black" x={orbMaskRects.br.x} y={orbMaskRects.br.y} width={orbMaskRects.br.w} height={orbMaskRects.br.h} />}
+                                                                        {/* TL */}
+                                                                        {orbSpill.tl && (
+                                                                            orbAdvancedMasks.tl ? <rect fill="black" x={orbMaskRects.tl.x} y={orbMaskRects.tl.y} width={orbMaskRects.tl.w} height={orbMaskRects.tl.h} />
+                                                                                : <rect fill="black" x="-5000" y="-5000" width="5050" height="5050" />
+                                                                        )}
+                                                                        {/* TR */}
+                                                                        {orbSpill.tr && (
+                                                                            orbAdvancedMasks.tr ? <rect fill="black" x={orbMaskRects.tr.x} y={orbMaskRects.tr.y} width={orbMaskRects.tr.w} height={orbMaskRects.tr.h} />
+                                                                                : <rect fill="black" x="50" y="-5000" width="5050" height="5050" />
+                                                                        )}
+                                                                        {/* BL */}
+                                                                        {orbSpill.bl && (
+                                                                            orbAdvancedMasks.bl ? <rect fill="black" x={orbMaskRects.bl.x} y={orbMaskRects.bl.y} width={orbMaskRects.bl.w} height={orbMaskRects.bl.h} />
+                                                                                : <rect fill="black" x="-5000" y="50" width="5050" height="5050" />
+                                                                        )}
+                                                                        {/* BR */}
+                                                                        {orbSpill.br && (
+                                                                            orbAdvancedMasks.br ? <rect fill="black" x={orbMaskRects.br.x} y={orbMaskRects.br.y} width={orbMaskRects.br.w} height={orbMaskRects.br.h} />
+                                                                                : <rect fill="black" x="50" y="50" width="5050" height="5050" />
+                                                                        )}
                                                                     </mask>
                                                                 </defs>
-                                                                <rect width="100" height="100" fill="rgba(0,0,0,0.6)" mask="url(#circleMask)" />
+                                                                <rect x="-5000" y="-5000" width="10000" height="10000" fill="rgba(0,0,0,0.6)" mask="url(#circleMask)" />
                                                             </svg>
                                                         </div>
 

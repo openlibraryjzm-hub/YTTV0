@@ -8,37 +8,38 @@ export default function OrbCropModal({
     spillConfig = { tl: false, tr: false, bl: false, br: false },
     scale = 1,
     xOffset = 0,
-    yOffset = 0
+    yOffset = 0,
+    // Global State Props
+    advancedMasks,
+    setAdvancedMasks,
+    maskRects,
+    setMaskRects
 }) {
-    // 1. Local State for Advanced Editing
-    const [advancedMasks, setAdvancedMasks] = useState({
-        tl: false, tr: false, bl: false, br: false
-    });
-
-    // Tracks custom crop rects (0-100% of entire 80vmin container)
-    const [maskRects, setMaskRects] = useState({
-        tl: { x: 0, y: 0, w: 50, h: 50 },
-        tr: { x: 50, y: 0, w: 50, h: 50 },
-        bl: { x: 0, y: 50, w: 50, h: 50 },
-        br: { x: 50, y: 50, w: 50, h: 50 }
-    });
-
-    // Interaction State
+    // Interaction State (Local)
     const containerRef = useRef(null);
     const [interaction, setInteraction] = useState(null); // { type: 'drag'|'resize', q: string, handle?: string, startX, startY, startRect }
 
     // Toggle advanced mode
     const toggleAdvanced = (q) => {
-        setAdvancedMasks(prev => ({ ...prev, [q]: !prev[q] }));
-        if (!advancedMasks[q]) {
-            // Default reset on enable
-            const defaults = {
-                tl: { x: 5, y: 5, w: 40, h: 40 },
-                tr: { x: 55, y: 5, w: 40, h: 40 },
-                bl: { x: 5, y: 55, w: 40, h: 40 },
-                br: { x: 55, y: 55, w: 40, h: 40 }
-            };
-            setMaskRects(prev => ({ ...prev, [q]: defaults[q] }));
+        // Use prop setter
+        const newState = !advancedMasks[q];
+        setAdvancedMasks({ ...advancedMasks, [q]: newState });
+
+        if (newState) {
+            // Default reset on enable if needed, or keep existing
+            // If existing rect is default (0,0,50,50), maybe set a smaller one for visibility?
+            // checking if current rect is the "default" full quadrant
+            const current = maskRects[q];
+            // Simple heuristic: if width is 50, it's likely default. Let's start with a nice 40% box
+            if (current.w === 50 && current.h === 50) {
+                const defaults = {
+                    tl: { x: 5, y: 5, w: 40, h: 40 },
+                    tr: { x: 55, y: 5, w: 40, h: 40 },
+                    bl: { x: 5, y: 55, w: 40, h: 40 },
+                    br: { x: 55, y: 55, w: 40, h: 40 }
+                };
+                setMaskRects({ ...maskRects, [q]: defaults[q] });
+            }
         }
     };
 
@@ -75,60 +76,62 @@ export default function OrbCropModal({
 
         const handleMove = (e) => {
             const containerRect = containerRef.current.getBoundingClientRect();
+            // Calculate delta in percentages relative to container
             const deltaX = ((e.clientX - interaction.startX) / containerRect.width) * 100;
             const deltaY = ((e.clientY - interaction.startY) / containerRect.height) * 100;
 
-            setMaskRects(prev => {
-                const q = interaction.q;
-                const start = interaction.startRect;
-                let newR = { ...start };
+            // Clone the entire rects object to update
+            const newMaskRects = { ...maskRects };
 
-                // Quadrant Bounds
-                const bounds = {
-                    minX: (q === 'tr' || q === 'br') ? 50 : 0,
-                    maxX: (q === 'tl' || q === 'bl') ? 50 : 100,
-                    minY: (q === 'bl' || q === 'br') ? 50 : 0,
-                    maxY: (q === 'tl' || q === 'tr') ? 50 : 100,
-                };
-                const minSize = 5; // Minimum 5% width/height
+            const q = interaction.q;
+            const start = interaction.startRect;
+            let newR = { ...start };
 
-                if (interaction.type === 'drag') {
-                    // Calculate proposed position
-                    let proposedX = start.x + deltaX;
-                    let proposedY = start.y + deltaY;
+            // RELAXED BOUNDS: Allow moving largely outside (e.g. -50% to 150%)
+            // This supports "True Spill" where the crop is logically outside the orb box
+            const bounds = {
+                minX: -50, maxX: 150,
+                minY: -50, maxY: 150,
+            };
+            const minSize = 2; // Minimum 2%
 
-                    // Clamp to bounds while maintaining size
-                    proposedX = Math.max(bounds.minX, Math.min(bounds.maxX - newR.w, proposedX));
-                    proposedY = Math.max(bounds.minY, Math.min(bounds.maxY - newR.h, proposedY));
+            if (interaction.type === 'drag') {
+                let proposedX = start.x + deltaX;
+                let proposedY = start.y + deltaY;
 
+                // Clamp to relaxed bounds
+                proposedX = Math.max(bounds.minX, Math.min(bounds.maxX - newR.w, proposedX));
+                proposedY = Math.max(bounds.minY, Math.min(bounds.maxY - newR.h, proposedY));
+
+                newR.x = proposedX;
+                newR.y = proposedY;
+            } else if (interaction.type === 'resize') {
+                const h = interaction.handle;
+
+                // Horizontal Logic
+                if (h.includes('w')) {
+                    const proposedX = Math.min(start.x + start.w - minSize, Math.max(bounds.minX, start.x + deltaX));
+                    newR.w = start.x + start.w - proposedX;
                     newR.x = proposedX;
-                    newR.y = proposedY;
-                } else if (interaction.type === 'resize') {
-                    const h = interaction.handle;
-
-                    // Horizontal Logic
-                    if (h.includes('w')) { // Left edge changed (nw, sw)
-                        const proposedX = Math.min(start.x + start.w - minSize, Math.max(bounds.minX, start.x + deltaX));
-                        newR.w = start.x + start.w - proposedX;
-                        newR.x = proposedX;
-                    } else if (h.includes('e')) { // Right edge changed (ne, se)
-                        const proposedW = Math.max(minSize, Math.min(bounds.maxX - start.x, start.w + deltaX));
-                        newR.w = proposedW;
-                    }
-
-                    // Vertical Logic
-                    if (h.includes('n')) { // Top edge changed (nw, ne)
-                        const proposedY = Math.min(start.y + start.h - minSize, Math.max(bounds.minY, start.y + deltaY));
-                        newR.h = start.y + start.h - proposedY;
-                        newR.y = proposedY;
-                    } else if (h.includes('s')) { // Bottom edge changed (sw, se)
-                        const proposedH = Math.max(minSize, Math.min(bounds.maxY - start.y, start.h + deltaY));
-                        newR.h = proposedH;
-                    }
+                } else if (h.includes('e')) {
+                    const proposedW = Math.max(minSize, Math.min(bounds.maxX - start.x, start.w + deltaX));
+                    newR.w = proposedW;
                 }
 
-                return { ...prev, [q]: newR };
-            });
+                // Vertical Logic
+                if (h.includes('n')) {
+                    const proposedY = Math.min(start.y + start.h - minSize, Math.max(bounds.minY, start.y + deltaY));
+                    newR.h = start.y + start.h - proposedY;
+                    newR.y = proposedY;
+                } else if (h.includes('s')) {
+                    const proposedH = Math.max(minSize, Math.min(bounds.maxY - start.y, start.h + deltaY));
+                    newR.h = proposedH;
+                }
+            }
+
+            // Update the single quadrant in the rects object
+            newMaskRects[q] = newR;
+            setMaskRects(newMaskRects);
         };
 
         const handleUp = () => setInteraction(null);
@@ -139,7 +142,7 @@ export default function OrbCropModal({
             window.removeEventListener('mousemove', handleMove);
             window.removeEventListener('mouseup', handleUp);
         };
-    }, [interaction]);
+    }, [interaction, maskRects, setMaskRects]); // Dependencies update
 
 
     if (!isOpen || !image) return null;
@@ -249,7 +252,7 @@ export default function OrbCropModal({
                                     onClick={() => toggleAdvanced(q)}
                                     disabled={!spillConfig[q]}
                                     className={`w-6 h-6 rounded flex items-center justify-center transition-all ${!spillConfig[q] ? 'opacity-20 cursor-not-allowed bg-slate-800' :
-                                            advancedMasks[q] ? 'bg-sky-500 text-white shadow-lg scale-110' : 'bg-slate-700 text-slate-400 hover:bg-slate-600'
+                                        advancedMasks[q] ? 'bg-sky-500 text-white shadow-lg scale-110' : 'bg-slate-700 text-slate-400 hover:bg-slate-600'
                                         }`}
                                 >
                                     <MousePointer2 size={12} className={advancedMasks[q] ? "fill-current" : ""} />

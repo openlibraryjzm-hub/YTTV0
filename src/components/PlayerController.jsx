@@ -1506,7 +1506,9 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
     orbSpill, setOrbSpill,
     // Quick Assign/Shuffle (From Config Store)
     quickAssignColor, setQuickAssignColor,
-    quickShuffleColor, setQuickShuffleColor
+    quickShuffleColor, setQuickShuffleColor,
+    // Advanced Orb Masks
+    orbAdvancedMasks, orbMaskRects
   } = useConfigStore();
 
 
@@ -1648,10 +1650,26 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
           <defs>
             <clipPath id="orbClipPath" clipPathUnits="objectBoundingBox">
               <circle cx="0.5" cy="0.5" r="0.5" />
-              {isSpillEnabled && orbSpill.tl && <rect x="-50" y="-50" width="50.5" height="50.5" />}
-              {isSpillEnabled && orbSpill.tr && <rect x="0.5" y="-50" width="50.5" height="50.5" />}
-              {isSpillEnabled && orbSpill.bl && <rect x="-50" y="0.5" width="50.5" height="50.5" />}
-              {isSpillEnabled && orbSpill.br && <rect x="0.5" y="0.5" width="50.5" height="50.5" />}
+              {isSpillEnabled && orbSpill.tl && (
+                orbAdvancedMasks?.tl
+                  ? <rect x={orbMaskRects?.tl.x / 100} y={orbMaskRects?.tl.y / 100} width={orbMaskRects?.tl.w / 100} height={orbMaskRects?.tl.h / 100} />
+                  : <rect x="-50" y="-50" width="50.5" height="50.5" />
+              )}
+              {isSpillEnabled && orbSpill.tr && (
+                orbAdvancedMasks?.tr
+                  ? <rect x={orbMaskRects?.tr.x / 100} y={orbMaskRects?.tr.y / 100} width={orbMaskRects?.tr.w / 100} height={orbMaskRects?.tr.h / 100} />
+                  : <rect x="0.5" y="-50" width="50.5" height="50.5" />
+              )}
+              {isSpillEnabled && orbSpill.bl && (
+                orbAdvancedMasks?.bl
+                  ? <rect x={orbMaskRects?.bl.x / 100} y={orbMaskRects?.bl.y / 100} width={orbMaskRects?.bl.w / 100} height={orbMaskRects?.bl.h / 100} />
+                  : <rect x="-50" y="0.5" width="50.5" height="50.5" />
+              )}
+              {isSpillEnabled && orbSpill.br && (
+                orbAdvancedMasks?.br
+                  ? <rect x={orbMaskRects?.br.x / 100} y={orbMaskRects?.br.y / 100} width={orbMaskRects?.br.w / 100} height={orbMaskRects?.br.h / 100} />
+                  : <rect x="0.5" y="0.5" width="50.5" height="50.5" />
+              )}
             </clipPath>
           </defs>
         </svg>
