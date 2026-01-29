@@ -1319,7 +1319,7 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
                 <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value)}
-                  className="bg-slate-800/80 border border-white/10 rounded-md py-1 pl-1.5 pr-4 text-[10px] font-bold uppercase tracking-wider text-slate-300 focus:outline-none focus:ring-1 focus:ring-sky-500 cursor-pointer hover:bg-slate-700 transition-colors appearance-none w-auto min-w-[70px]"
+                  className="bg-white border-2 border-black rounded-md py-1 pl-1.5 pr-4 text-[10px] font-bold uppercase tracking-wider text-black focus:outline-none focus:ring-1 focus:ring-sky-500 cursor-pointer hover:bg-gray-100 transition-colors appearance-none w-auto min-w-[70px]"
                   title="Sort"
                 >
                   <option value="shuffle">Default</option>
@@ -1451,7 +1451,7 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
                     <button
                       onClick={handleSaveBulkTags}
                       disabled={savingBulkTags}
-                      className="px-2.5 py-1 bg-green-600 hover:bg-green-500 disabled:bg-green-700 disabled:opacity-50 text-white rounded-md transition-all shadow-lg hover:shadow-green-500/25 border border-white/10 text-[10px] font-bold uppercase tracking-wider"
+                      className="px-2.5 py-1 bg-white hover:bg-gray-100 disabled:opacity-50 text-black rounded-md transition-all shadow-lg border-2 border-black text-[10px] font-bold uppercase tracking-wider"
                       title="Save Bulk Tags"
                     >
                       {savingBulkTags ? 'Saving...' : 'Save'}
@@ -1459,7 +1459,7 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
                     <button
                       onClick={handleCancelBulkTags}
                       disabled={savingBulkTags}
-                      className="px-2.5 py-1 bg-red-600 hover:bg-red-500 disabled:bg-red-700 disabled:opacity-50 text-white rounded-md transition-all shadow-lg hover:shadow-red-500/25 border border-white/10 text-[10px] font-bold uppercase tracking-wider"
+                      className="px-2.5 py-1 bg-white hover:bg-gray-100 disabled:opacity-50 text-black rounded-md transition-all shadow-lg border-2 border-black text-[10px] font-bold uppercase tracking-wider"
                       title="Cancel Bulk Tagging"
                     >
                       Cancel
@@ -1471,8 +1471,8 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
                 <button
                   onClick={() => setBulkTagMode(!bulkTagMode)}
                   className={`p-1.5 rounded-md transition-all ${bulkTagMode
-                    ? 'bg-blue-600 text-white shadow-lg'
-                    : 'bg-slate-800/80 text-slate-400 hover:bg-slate-700 hover:text-slate-200 border border-white/10'
+                    ? 'bg-black text-white border-2 border-black shadow-lg'
+                    : 'bg-white text-black hover:bg-gray-100 border-2 border-black'
                     }`}
                   title={bulkTagMode ? "Exit Bulk Tagging" : "Bulk Tag"}
                 >
@@ -1484,7 +1484,7 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
                 {/* Add */}
                 <button
                   onClick={() => setShowUploader(true)}
-                  className="p-1.5 bg-sky-500 hover:bg-sky-400 text-white rounded-md transition-all shadow-lg hover:shadow-sky-500/25 border border-white/10"
+                  className="p-1.5 bg-white hover:bg-gray-100 text-black rounded-md transition-all shadow-lg border-2 border-black"
                   title="Add Config"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

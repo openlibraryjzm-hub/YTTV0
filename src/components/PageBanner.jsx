@@ -671,43 +671,74 @@ const PageBanner = ({ title, description, folderColor, onEdit, videoCount, count
                 {/* Thumbnail/ASCII Section with Header - Continue/Pinned/ASCII with arrow navigation */}
                 {hasAnyOption && (
                     <div className="absolute bottom-[25px] flex flex-col items-center z-20 group" style={{ left: '166px', transform: 'translateX(-50%)', height: '100%', justifyContent: 'flex-end' }}>
+
                         {/* Header - Playlist/Folder Name - Top aligned with banner */}
                         <div className="absolute top-0 left-1/2 -translate-x-1/2 group/header" style={{ marginTop: '-1px' }}>
-                            <div className="bg-black/40 backdrop-blur-md rounded-lg px-4 py-2 border border-white/20 w-[320px] relative">
-                                <h2 className="text-base font-black text-white tracking-tight drop-shadow-md whitespace-nowrap text-center" style={{ textShadow: '-1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0 2px 4px rgba(0,0,0,0.8)' }}>
-                                    {currentNavPage === 'playlists' && currentOption === 'ascii' ? (activePreset?.name || 'All') : title}
-                                </h2>
+                            {(() => {
+                                // Determine Header Styles
+                                let bgStyle = { backgroundColor: '#ffffff' };
+                                let textColor = 'text-black';
+                                let chevronColor = 'text-black';
+                                let gradientL = 'from-gray-200/80';
+                                let gradientR = 'from-gray-200/80';
 
+                                if (selectedFolder === 'unsorted') {
+                                    bgStyle = { backgroundColor: '#000000' };
+                                    textColor = 'text-white';
+                                    chevronColor = 'text-white';
+                                    gradientL = 'from-white/20';
+                                    gradientR = 'from-white/20';
+                                } else {
+                                    const activeId = selectedFolder || folderColor;
+                                    const colorInfo = activeId ? FOLDER_COLORS.find(c => c.id === activeId) : null;
+                                    if (colorInfo) {
+                                        bgStyle = { backgroundColor: colorInfo.hex };
+                                        textColor = 'text-white';
+                                        chevronColor = 'text-white';
+                                        gradientL = 'from-black/20';
+                                        gradientR = 'from-black/20';
+                                    }
+                                }
 
-
-                                {/* Left navigation strip - Previous Playlist */}
-                                {onNavigatePrev && (
-                                    <button
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            onNavigatePrev();
-                                        }}
-                                        className="absolute left-0 top-0 bottom-0 w-12 bg-gradient-to-r from-black/60 to-transparent opacity-0 group-hover/header:opacity-100 hover:from-black/80 transition-all flex items-center justify-center rounded-l-lg"
-                                        title="Previous playlist"
+                                return (
+                                    <div
+                                        className="backdrop-blur-md rounded-lg px-4 pt-2 pb-[4px] border-2 border-black w-[320px] relative shadow-lg transition-colors duration-300"
+                                        style={bgStyle}
                                     >
-                                        <ChevronLeft size={20} className="text-white" strokeWidth={2.5} />
-                                    </button>
-                                )}
+                                        <h2 className={`text-base font-black ${textColor} tracking-tight drop-shadow-sm whitespace-nowrap text-center`}>
+                                            {currentNavPage === 'playlists' && currentOption === 'ascii' ? (activePreset?.name || 'All') : title}
+                                        </h2>
 
-                                {/* Right navigation strip - Next Playlist */}
-                                {onNavigateNext && (
-                                    <button
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            onNavigateNext();
-                                        }}
-                                        className="absolute right-0 top-0 bottom-0 w-12 bg-gradient-to-l from-black/60 to-transparent opacity-0 group-hover/header:opacity-100 hover:from-black/80 transition-all flex items-center justify-center rounded-r-lg"
-                                        title="Next playlist"
-                                    >
-                                        <ChevronRight size={20} className="text-white" strokeWidth={2.5} />
-                                    </button>
-                                )}
-                            </div>
+                                        {/* Left navigation strip - Previous Playlist */}
+                                        {onNavigatePrev && (
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    onNavigatePrev();
+                                                }}
+                                                className={`absolute left-0 top-0 bottom-0 w-12 bg-gradient-to-r ${gradientL} to-transparent opacity-0 group-hover/header:opacity-100 hover:from-opacity-40 transition-all flex items-center justify-center rounded-l-lg`}
+                                                title="Previous playlist"
+                                            >
+                                                <ChevronLeft size={20} className={chevronColor} strokeWidth={2.5} />
+                                            </button>
+                                        )}
+
+                                        {/* Right navigation strip - Next Playlist */}
+                                        {onNavigateNext && (
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    onNavigateNext();
+                                                }}
+                                                className={`absolute right-0 top-0 bottom-0 w-12 bg-gradient-to-l ${gradientR} to-transparent opacity-0 group-hover/header:opacity-100 hover:from-opacity-40 transition-all flex items-center justify-center rounded-r-lg`}
+                                                title="Next playlist"
+                                            >
+                                                <ChevronRight size={20} className={chevronColor} strokeWidth={2.5} />
+                                            </button>
+                                        )}
+                                    </div>
+                                );
+                            })()}
                         </div>
 
                         {/* Fixed-width container for content - now 320px to match video cards */}
@@ -808,7 +839,7 @@ const PageBanner = ({ title, description, folderColor, onEdit, videoCount, count
                                             )}
                                         </div>
                                     ) : activeVideo && (
-                                        <div className="relative h-[180px] w-[320px] rounded-lg overflow-hidden shadow-lg border-2 border-white/20">
+                                        <div className="relative h-[180px] w-[320px] rounded-lg overflow-hidden shadow-lg border-2 border-black">
                                             <img
                                                 src={getThumbnailUrl(activeVideo.video_id, 'medium')}
                                                 alt={activeVideo.title}
@@ -1029,35 +1060,8 @@ const PageBanner = ({ title, description, folderColor, onEdit, videoCount, count
                         </button>
                     </div>
 
-                    {/* Bottom Left Navigation - Page Navigator + Colored Folder Navigator */}
-                    <div className="absolute bottom-4 left-4 z-30 pointer-events-auto flex items-center gap-4">
-                        {/* Colored Folder Navigator */}
-                        {onFolderNavigatePrev && onFolderNavigateNext && selectedFolder !== undefined && folderCounts && (
-                            <div className="flex items-center gap-2 bg-black/40 backdrop-blur-md rounded-lg px-3 py-2 border border-white/20">
-                                <button
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        if (onFolderNavigatePrev) onFolderNavigatePrev();
-                                    }}
-                                    className="flex items-center justify-center w-6 h-6 rounded text-white/80 hover:text-white transition-colors"
-                                    title="Previous folder"
-                                >
-                                    <ChevronLeft size={16} strokeWidth={2.5} />
-                                </button>
-                                <div className="w-1.5 h-1.5 rounded-full bg-white/60"></div>
-                                <button
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        if (onFolderNavigateNext) onFolderNavigateNext();
-                                    }}
-                                    className="flex items-center justify-center w-6 h-6 rounded text-white/80 hover:text-white transition-colors"
-                                    title="Next folder"
-                                >
-                                    <ChevronRight size={16} strokeWidth={2.5} />
-                                </button>
-                            </div>
-                        )}
-
+                    {/* Bottom Left Navigation - Page Navigator only (Folder Navigator moved to Sticky Bar) */}
+                    <div className="absolute bottom-2 left-2 z-30 pointer-events-auto flex items-center gap-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                         {/* Page Navigator */}
                         {currentNavPage === 'videos' && totalPages > 1 && (
                             <div className="flex items-center gap-2 bg-black/40 backdrop-blur-md rounded-lg px-3 py-2 border border-white/20">

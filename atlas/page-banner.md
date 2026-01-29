@@ -22,14 +22,20 @@ Users see a contextual banner (220px fixed height) at the top of scrollable cont
   - **Likes Page**: Shows "Liked Videos" with playlist badges and pagination badge
   - **History Page**: Shows "History" with playlist badges
   - **Pins Page**: Shows "Pinned Videos"
-- **Visual Elements**:
-  - **Header Above Thumbnail** (centered at top of thumbnail section):
-    - **Position**: Absolutely positioned at top of thumbnail container, 1px above page banner top edge
-    - **Width**: 320px (matches thumbnail width)
-    - **Styling**: Glassmorphic backdrop (`bg-black/40 backdrop-blur-md`) with white border
-    - **Content**: Displays current playlist name or colored folder name
-    - **Text**: Bold, centered, white text with dark shadow for readability
-  - **Title**: Compact, bold text (`text-lg md:text-xl`) with dark text shadow for readability, no bottom margin (`mb-0`) - sized to fit snugly above thumbnail
+  - **Visual Elements**:
+    - **Header Above Thumbnail** (centered at top of thumbnail section):
+      - **Position**: Absolutely positioned at top of thumbnail container, 1px above page banner top edge
+      - **Width**: 320px (matches thumbnail width)
+      - **Styling**: Dynamic styling based on current context:
+        - **Default**: White background, Black text, Black border (`border-2 border-black`)
+        - **Unsorted Videos**: Black background, white text (`text-white`)
+        - **Colored Folder**: Folder's color background, White text (`text-white`), Black border
+      - **Content**: Displays current playlist name or colored folder name
+      - **Text**: Bold, colored text (black or white) matching theme, centered
+    - **Sticky Toolbar Integration**:
+      - **Elements**: Sort Dropdown, Bulk Tag Buttons, Add Button
+      - **Styling**: Reverted to high-contrast White background, Black text, Black border (`border-2 border-black`) for consistency with app theme
+    - **Title**: Compact, bold text (`text-lg md:text-xl`) with dark text shadow for readability, no bottom margin (`mb-0`) - sized to fit snugly above thumbnail
   - **Description**: Displayed when provided (not hidden by default)
     - **Position**: To the right of thumbnail area (`ml-[170px] mt-[7px]`)
     - **Lines**: Up to 6 lines (`line-clamp-6`) for long descriptions
@@ -69,10 +75,8 @@ Users see a contextual banner (220px fixed height) at the top of scrollable cont
       - **Height**: `h-3` (12px tall)
     - **Positioning**: Centered horizontally within banner area (332px width) at `bottom-[25px]` (25px up from bottom)
   - **Navigation Controls on Page Banner**: Streamlined navigation with hover-based interactions
-    - **Bottom-Left Corner** (`bottom-4 left-4`): Two navigation groups in horizontal row
-      1. **Colored Folder Navigator** (leftmost): Cycles through folders in current playlist (All → Unsorted → folders with videos)
-         - Left/Right chevron buttons with center dot indicator
-      2. **Page Navigator** (to the right): Pagination controls (only shown on Videos page when multiple pages exist)
+    - **Bottom-Left Corner** (`bottom-2 left-2`): Single navigation group
+      - **Page Navigator**: Pagination controls (only shown on Videos page when multiple pages exist)
          - Clickable page indicator (e.g., "1/99") that allows direct page navigation
          - Previous/Next buttons for page navigation
     - **Styling**: All button groups use glassmorphic backdrop (`bg-black/40 backdrop-blur-md`) with white text and borders
