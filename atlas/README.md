@@ -371,4 +371,9 @@ For detailed information about the application's theme system and recent color c
 1. **Start with feature docs** for user-facing functionality
 2. **Reference technical docs** when you need implementation details
 3. **Use cross-references** to navigate between related topics
-4. **Check this index** when unsure which document contains information
+
+### Update Log (Current Session)
+- **Group View Column**: Implemented a vertical overlay column for viewing "Group Leaders" and their "Subordinates" on both `OrbPage` (Presets tab) and `PagePage` (Folders tab).
+  - **OrbPage**: Button added to preset hover menu. Shows vertical list of orbs.
+  - **PagePage**: Button added to image card hover menu. Shows leader banner and vertical list of member banners.
+

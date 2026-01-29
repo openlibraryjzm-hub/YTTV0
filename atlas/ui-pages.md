@@ -134,8 +134,12 @@ See **Section 2.1: Playlists** for complete logic flow. The UI-specific aspects:
 
 Users see a horizontal scrolling layout with two rows of video cards showing videos from the current playlist:
 
-- **Page Banner**: 
-  - **Location**: Displayed at the very top and remains fixed in place (does not scroll).
+- **Page Banner**:
+  - Customize the banner that appears at the top of pages.
+  - **Layer 1**: The base background color.
+  - **Layer 2**: An overlay image that can be positioned and scaled.
+  - **Groups**: Allows assigning multiple Layer 2 images to a "Group Leader".
+  - **Group Column View**: On the Folders tab, Group Leaders have a **Layout Grid** button that opens a vertical column view of the leader and all assigned members for quick preview and selection.
   - **Comprehensive Documentation**: See `page-banner.md` for complete details on the Page Banner system, including Unified Banner System, Sticky Toolbar integration, customization options, and technical implementation.
   - **Quick Reference**: Shows playlist/folder title, metadata (video count, year, author), description, ASCII avatar, and thumbnail carousel. Supports custom images, animated patterns, and folder color gradients.
   - **Thumbnail Carousel** (top-right): Shows continue watching and/or pinned videos with dot navigation and multi-pin bar

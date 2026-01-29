@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Smile, Plus, ArrowLeft, Trash2, Check, Folder, Settings } from 'lucide-react';
+import { Smile, Plus, ArrowLeft, Trash2, Check, Folder, Settings, LayoutGrid } from 'lucide-react';
+import OrbGroupColumn from './OrbGroupColumn';
 import { useConfigStore } from '../store/configStore';
 import PageBanner from './PageBanner';
 import { FOLDER_COLORS } from '../utils/folderColors';
@@ -26,6 +27,7 @@ export default function OrbPage({ onBack, onNavigateToYou, onNavigateToPage, onN
     const [folderAssignmentOpenId, setFolderAssignmentOpenId] = useState(null); // ID of preset with open folder selector
     const [selectedGroupLeaderId, setSelectedGroupLeaderId] = useState(null); // ID of selected group leader preset
     const [showGroupLeadersOnly, setShowGroupLeadersOnly] = useState(false); // Toggle to show only group leaders with members
+    const [columnLeaderId, setColumnLeaderId] = useState(null); // ID of group leader whose column is open
 
 
     const handleOrbImageUpload = (e) => {
@@ -94,19 +96,19 @@ export default function OrbPage({ onBack, onNavigateToYou, onNavigateToPage, onN
     useEffect(() => {
         // Only attach when presets tab is active
         if (activeTab !== 'presets') return;
-        
+
         const container = horizontalScrollRef.current;
         if (!container) return;
 
         const handleWheel = (e) => {
             // Check if there's horizontal scroll available
             const hasHorizontalScroll = container.scrollWidth > container.clientWidth;
-            
+
             if (hasHorizontalScroll) {
                 // Prevent default vertical scrolling
                 e.preventDefault();
                 e.stopPropagation();
-                
+
                 // Direct scrollLeft assignment for better performance
                 container.scrollLeft += e.deltaY;
             }
@@ -123,14 +125,14 @@ export default function OrbPage({ onBack, onNavigateToYou, onNavigateToPage, onN
     // Calculate folder counts for prism bar
     const folderCounts = {};
     FOLDER_COLORS.forEach(color => {
-        folderCounts[color.id] = orbFavorites.filter(fav => 
+        folderCounts[color.id] = orbFavorites.filter(fav =>
             fav.folderColors && fav.folderColors.includes(color.id)
         ).length;
     });
 
     // Filter presets based on selected folder and group leader toggle
-    const filteredFavorites = (selectedFolderFilter 
-        ? orbFavorites.filter(fav => 
+    const filteredFavorites = (selectedFolderFilter
+        ? orbFavorites.filter(fav =>
             fav.folderColors && fav.folderColors.includes(selectedFolderFilter)
         )
         : orbFavorites
@@ -146,12 +148,12 @@ export default function OrbPage({ onBack, onNavigateToYou, onNavigateToPage, onN
     const toggleFolderAssignment = (favoriteId, folderColorId) => {
         const favorite = orbFavorites.find(f => f.id === favoriteId);
         if (!favorite) return;
-        
+
         const currentFolders = favorite.folderColors || [];
         const newFolders = currentFolders.includes(folderColorId)
             ? currentFolders.filter(id => id !== folderColorId)
             : [...currentFolders, folderColorId];
-        
+
         updateOrbFavoriteFolders(favoriteId, newFolders);
     };
 
@@ -230,44 +232,44 @@ export default function OrbPage({ onBack, onNavigateToYou, onNavigateToPage, onN
                 <div
                     className={`sticky top-0 z-50 transition-all duration-500 cubic-bezier(0.4, 0, 0.2, 1) overflow-hidden -mt-16
                     ${isStuck
-                        ? 'backdrop-blur-xl border-y shadow-2xl mx-0 rounded-none mb-4 pt-2 pb-2 bg-slate-900/70'
-                        : 'backdrop-blur-[2px] border-b border-x border-t border-white/10 shadow-xl mx-8 rounded-b-2xl mb-2 mt-0 pt-1 pb-0 bg-slate-900/40'
-                    }
+                            ? 'backdrop-blur-xl border-y shadow-2xl mx-0 rounded-none mb-4 pt-2 pb-2 bg-slate-900/70'
+                            : 'backdrop-blur-[2px] border-b border-x border-t border-white/10 shadow-xl mx-8 rounded-b-2xl mb-2 mt-0 pt-1 pb-0 bg-slate-900/40'
+                        }
                     `}
                 >
                     <div className={`px-4 flex items-center justify-between transition-all duration-300 relative z-10 ${isStuck ? 'h-[52px]' : 'py-0.5'}`}>
                         {/* Colored Prism Bar */}
-                            <div className="flex-1 flex items-center shrink-0 h-6 mr-3 border-2 border-black rounded-lg overflow-hidden">
-                                <button
-                                    onClick={() => setSelectedFolderFilter(null)}
-                                    className={`h-full px-2 flex items-center justify-center transition-all border-r-2 border-black ${selectedFolderFilter === null ? 'opacity-100 ring-2 ring-white' : 'opacity-60 hover:opacity-100'}`}
-                                    style={{ backgroundColor: '#1e293b' }}
-                                    title="Show All"
-                                >
-                                    <span className="text-[10px] font-bold text-white/90 drop-shadow-md">All</span>
-                                </button>
-                                {FOLDER_COLORS.map((color, index) => {
-                                    const isLast = index === FOLDER_COLORS.length - 1;
-                                    const count = folderCounts[color.id] || 0;
-                                    const isSelected = selectedFolderFilter === color.id;
+                        <div className="flex-1 flex items-center shrink-0 h-6 mr-3 border-2 border-black rounded-lg overflow-hidden">
+                            <button
+                                onClick={() => setSelectedFolderFilter(null)}
+                                className={`h-full px-2 flex items-center justify-center transition-all border-r-2 border-black ${selectedFolderFilter === null ? 'opacity-100 ring-2 ring-white' : 'opacity-60 hover:opacity-100'}`}
+                                style={{ backgroundColor: '#1e293b' }}
+                                title="Show All"
+                            >
+                                <span className="text-[10px] font-bold text-white/90 drop-shadow-md">All</span>
+                            </button>
+                            {FOLDER_COLORS.map((color, index) => {
+                                const isLast = index === FOLDER_COLORS.length - 1;
+                                const count = folderCounts[color.id] || 0;
+                                const isSelected = selectedFolderFilter === color.id;
 
-                                    return (
-                                        <button
-                                            key={color.id}
-                                            onClick={() => setSelectedFolderFilter(isSelected ? null : color.id)}
-                                            className={`h-full flex-1 flex items-center justify-center transition-all ${isSelected ? 'opacity-100 ring-2 ring-white' : 'opacity-60 hover:opacity-100'} ${isLast ? 'rounded-r-md' : ''}`}
-                                            style={{ backgroundColor: color.hex }}
-                                            title={`${color.name} (${count} presets)`}
-                                        >
-                                            {count > 0 && (
-                                                <span className="text-sm font-bold text-white/90 drop-shadow-md">
-                                                    {count}
-                                                </span>
-                                            )}
-                                        </button>
-                                    );
-                                })}
-                            </div>
+                                return (
+                                    <button
+                                        key={color.id}
+                                        onClick={() => setSelectedFolderFilter(isSelected ? null : color.id)}
+                                        className={`h-full flex-1 flex items-center justify-center transition-all ${isSelected ? 'opacity-100 ring-2 ring-white' : 'opacity-60 hover:opacity-100'} ${isLast ? 'rounded-r-md' : ''}`}
+                                        style={{ backgroundColor: color.hex }}
+                                        title={`${color.name} (${count} presets)`}
+                                    >
+                                        {count > 0 && (
+                                            <span className="text-sm font-bold text-white/90 drop-shadow-md">
+                                                {count}
+                                            </span>
+                                        )}
+                                    </button>
+                                );
+                            })}
+                        </div>
                     </div>
                 </div>
 
@@ -278,33 +280,30 @@ export default function OrbPage({ onBack, onNavigateToYou, onNavigateToPage, onN
                         <div className="flex items-center gap-2 border-b border-slate-200 pb-2">
                             <button
                                 onClick={() => setActiveTab('presets')}
-                                className={`rounded-full flex items-center justify-center border-2 shadow-sm transition-all duration-200 px-4 h-9 gap-1.5 ${
-                                    activeTab === 'presets'
-                                        ? 'bg-white border-sky-500 text-sky-600 transform scale-105'
-                                        : 'bg-white border-[#334155] text-slate-600 hover:bg-slate-50 active:scale-95'
-                                }`}
+                                className={`rounded-full flex items-center justify-center border-2 shadow-sm transition-all duration-200 px-4 h-9 gap-1.5 ${activeTab === 'presets'
+                                    ? 'bg-white border-sky-500 text-sky-600 transform scale-105'
+                                    : 'bg-white border-[#334155] text-slate-600 hover:bg-slate-50 active:scale-95'
+                                    }`}
                             >
                                 <Smile size={14} />
                                 <span className="font-bold text-xs uppercase tracking-wide">Presets</span>
                             </button>
                             <button
                                 onClick={() => setActiveTab('configuration')}
-                                className={`rounded-full flex items-center justify-center border-2 shadow-sm transition-all duration-200 px-4 h-9 gap-1.5 ${
-                                    activeTab === 'configuration'
-                                        ? 'bg-white border-sky-500 text-sky-600 transform scale-105'
-                                        : 'bg-white border-[#334155] text-slate-600 hover:bg-slate-50 active:scale-95'
-                                }`}
+                                className={`rounded-full flex items-center justify-center border-2 shadow-sm transition-all duration-200 px-4 h-9 gap-1.5 ${activeTab === 'configuration'
+                                    ? 'bg-white border-sky-500 text-sky-600 transform scale-105'
+                                    : 'bg-white border-[#334155] text-slate-600 hover:bg-slate-50 active:scale-95'
+                                    }`}
                             >
                                 <Settings size={14} />
                                 <span className="font-bold text-xs uppercase tracking-wide">Configuration</span>
                             </button>
                             <button
                                 onClick={() => setActiveTab('groups')}
-                                className={`rounded-full flex items-center justify-center border-2 shadow-sm transition-all duration-200 px-4 h-9 gap-1.5 ${
-                                    activeTab === 'groups'
-                                        ? 'bg-white border-sky-500 text-sky-600 transform scale-105'
-                                        : 'bg-white border-[#334155] text-slate-600 hover:bg-slate-50 active:scale-95'
-                                }`}
+                                className={`rounded-full flex items-center justify-center border-2 shadow-sm transition-all duration-200 px-4 h-9 gap-1.5 ${activeTab === 'groups'
+                                    ? 'bg-white border-sky-500 text-sky-600 transform scale-105'
+                                    : 'bg-white border-[#334155] text-slate-600 hover:bg-slate-50 active:scale-95'
+                                    }`}
                             >
                                 <Folder size={14} />
                                 <span className="font-bold text-xs uppercase tracking-wide">Groups</span>
@@ -336,134 +335,134 @@ export default function OrbPage({ onBack, onNavigateToYou, onNavigateToPage, onN
                                 </h3>
                                 <div className="space-y-2 px-1">
 
-                                {/* Image Scale Slider */}
-                                {customOrbImage && isSpillEnabled && (
-                                    <div className="space-y-1 border-t border-slate-100 pt-2">
-                                        <label className="text-xs font-bold uppercase text-slate-400 px-1">Image Scale</label>
-                                        <div className="flex flex-col items-center gap-1 max-w-[50%]">
-                                            <span className="text-xs font-mono font-bold text-sky-600">{orbImageScale.toFixed(2)}x</span>
-                                            <div className="flex items-center gap-2 w-full">
-                                                <span className="text-[10px] font-bold text-slate-300">0.5x</span>
-                                                <input
-                                                    type="range"
-                                                    min="0.5"
-                                                    max="3.0"
-                                                    step="0.05"
-                                                    value={orbImageScale}
-                                                    onChange={(e) => setOrbImageScale(parseFloat(e.target.value))}
-                                                    className="flex-1 h-2 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-sky-500 hover:accent-sky-400 transition-all border border-slate-200"
-                                                />
-                                                <span className="text-[10px] font-bold text-slate-300">3.0x</span>
+                                    {/* Image Scale Slider */}
+                                    {customOrbImage && isSpillEnabled && (
+                                        <div className="space-y-1 border-t border-slate-100 pt-2">
+                                            <label className="text-xs font-bold uppercase text-slate-400 px-1">Image Scale</label>
+                                            <div className="flex flex-col items-center gap-1 max-w-[50%]">
+                                                <span className="text-xs font-mono font-bold text-sky-600">{orbImageScale.toFixed(2)}x</span>
+                                                <div className="flex items-center gap-2 w-full">
+                                                    <span className="text-[10px] font-bold text-slate-300">0.5x</span>
+                                                    <input
+                                                        type="range"
+                                                        min="0.5"
+                                                        max="3.0"
+                                                        step="0.05"
+                                                        value={orbImageScale}
+                                                        onChange={(e) => setOrbImageScale(parseFloat(e.target.value))}
+                                                        className="flex-1 h-2 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-sky-500 hover:accent-sky-400 transition-all border border-slate-200"
+                                                    />
+                                                    <span className="text-[10px] font-bold text-slate-300">3.0x</span>
+                                                </div>
                                             </div>
                                         </div>
-                                    </div>
-                                )}
+                                    )}
 
-                                {/* Image Position Offset Sliders and Spill Areas */}
-                                {customOrbImage && isSpillEnabled && (
-                                    <div className="space-y-2 border-t border-slate-100 pt-2">
-                                        <div className="flex items-start gap-4">
-                                            {/* Left side: Image Position Sliders */}
-                                            <div className="flex-1 space-y-2 max-w-[50%]">
-                                                <label className="text-xs font-bold uppercase text-slate-400 ml-1">Image Position</label>
-                                                
-                                                {/* X Offset */}
-                                                <div className="space-y-1">
-                                                    <label className="text-[11px] font-bold text-slate-500 px-1">Horizontal (X)</label>
-                                                    <div className="flex flex-col items-center gap-1">
-                                                        <div className="flex items-center gap-2">
-                                                            <span className="text-xs font-mono font-bold text-sky-600">{orbImageXOffset}px</span>
-                                                            {orbImageXOffset !== 0 && (
-                                                                <button
-                                                                    onClick={() => setOrbImageXOffset(0)}
-                                                                    className="text-[9px] font-bold text-slate-400 hover:text-sky-500 transition-colors"
-                                                                >
-                                                                    Reset
-                                                                </button>
-                                                            )}
+                                    {/* Image Position Offset Sliders and Spill Areas */}
+                                    {customOrbImage && isSpillEnabled && (
+                                        <div className="space-y-2 border-t border-slate-100 pt-2">
+                                            <div className="flex items-start gap-4">
+                                                {/* Left side: Image Position Sliders */}
+                                                <div className="flex-1 space-y-2 max-w-[50%]">
+                                                    <label className="text-xs font-bold uppercase text-slate-400 ml-1">Image Position</label>
+
+                                                    {/* X Offset */}
+                                                    <div className="space-y-1">
+                                                        <label className="text-[11px] font-bold text-slate-500 px-1">Horizontal (X)</label>
+                                                        <div className="flex flex-col items-center gap-1">
+                                                            <div className="flex items-center gap-2">
+                                                                <span className="text-xs font-mono font-bold text-sky-600">{orbImageXOffset}px</span>
+                                                                {orbImageXOffset !== 0 && (
+                                                                    <button
+                                                                        onClick={() => setOrbImageXOffset(0)}
+                                                                        className="text-[9px] font-bold text-slate-400 hover:text-sky-500 transition-colors"
+                                                                    >
+                                                                        Reset
+                                                                    </button>
+                                                                )}
+                                                            </div>
+                                                            <div className="flex items-center gap-2 w-full">
+                                                                <span className="text-[10px] font-bold text-slate-300">-100</span>
+                                                                <input
+                                                                    type="range"
+                                                                    min="-100"
+                                                                    max="100"
+                                                                    step="1"
+                                                                    value={orbImageXOffset}
+                                                                    onChange={(e) => setOrbImageXOffset(parseInt(e.target.value))}
+                                                                    className="flex-1 h-2 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-sky-500 hover:accent-sky-400 transition-all border border-slate-200"
+                                                                />
+                                                                <span className="text-[10px] font-bold text-slate-300">+100</span>
+                                                            </div>
                                                         </div>
-                                                        <div className="flex items-center gap-2 w-full">
-                                                            <span className="text-[10px] font-bold text-slate-300">-100</span>
-                                                            <input
-                                                                type="range"
-                                                                min="-100"
-                                                                max="100"
-                                                                step="1"
-                                                                value={orbImageXOffset}
-                                                                onChange={(e) => setOrbImageXOffset(parseInt(e.target.value))}
-                                                                className="flex-1 h-2 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-sky-500 hover:accent-sky-400 transition-all border border-slate-200"
-                                                            />
-                                                            <span className="text-[10px] font-bold text-slate-300">+100</span>
+                                                    </div>
+
+                                                    {/* Y Offset */}
+                                                    <div className="space-y-1">
+                                                        <label className="text-[11px] font-bold text-slate-500 px-1">Vertical (Y)</label>
+                                                        <div className="flex flex-col items-center gap-1">
+                                                            <div className="flex items-center gap-2">
+                                                                <span className="text-xs font-mono font-bold text-sky-600">{orbImageYOffset}px</span>
+                                                                {orbImageYOffset !== 0 && (
+                                                                    <button
+                                                                        onClick={() => setOrbImageYOffset(0)}
+                                                                        className="text-[9px] font-bold text-slate-400 hover:text-sky-500 transition-colors"
+                                                                    >
+                                                                        Reset
+                                                                    </button>
+                                                                )}
+                                                            </div>
+                                                            <div className="flex items-center gap-2 w-full">
+                                                                <span className="text-[10px] font-bold text-slate-300">-100</span>
+                                                                <input
+                                                                    type="range"
+                                                                    min="-100"
+                                                                    max="100"
+                                                                    step="1"
+                                                                    value={orbImageYOffset}
+                                                                    onChange={(e) => setOrbImageYOffset(parseInt(e.target.value))}
+                                                                    className="flex-1 h-2 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-sky-500 hover:accent-sky-400 transition-all border border-slate-200"
+                                                                />
+                                                                <span className="text-[10px] font-bold text-slate-300">+100</span>
+                                                            </div>
                                                         </div>
                                                     </div>
                                                 </div>
 
-                                                {/* Y Offset */}
-                                                <div className="space-y-1">
-                                                    <label className="text-[11px] font-bold text-slate-500 px-1">Vertical (Y)</label>
-                                                    <div className="flex flex-col items-center gap-1">
-                                                        <div className="flex items-center gap-2">
-                                                            <span className="text-xs font-mono font-bold text-sky-600">{orbImageYOffset}px</span>
-                                                            {orbImageYOffset !== 0 && (
+                                                {/* Right side: Spill Areas */}
+                                                <div className="flex-1 space-y-1 -mt-[60px]">
+                                                    <label className="text-xs font-bold uppercase text-slate-400 ml-1">Spill Areas</label>
+
+                                                    {/* Interactive Visualizer */}
+                                                    <div className="relative w-36 h-36 border-2 border-slate-100 rounded-xl overflow-hidden bg-slate-50 mx-auto select-none">
+                                                        {/* The Image Background */}
+                                                        <img
+                                                            src={customOrbImage}
+                                                            className="absolute inset-0 w-full h-full object-cover opacity-50 grayscale transition-transform duration-300 origin-center"
+                                                            style={{ transform: `scale(${orbImageScale}) translate(${orbImageXOffset * 0.5}px, ${orbImageYOffset * 0.5}px)` }}
+                                                            alt=""
+                                                        />
+
+                                                        {/* The Circle Mask (Inverse) */}
+                                                        <div className="absolute inset-0 pointer-events-none z-10">
+                                                            <svg width="100%" height="100%" viewBox="0 0 100 100">
+                                                                <defs>
+                                                                    <mask id="circleMask">
+                                                                        <rect width="100" height="100" fill="white" />
+                                                                        <circle cx="50" cy="50" r="35" fill="black" />
+                                                                    </mask>
+                                                                </defs>
+                                                                <rect width="100" height="100" fill="rgba(0,0,0,0.6)" mask="url(#circleMask)" />
+                                                            </svg>
+                                                        </div>
+
+                                                        {/* Quadrant Toggles */}
+                                                        <div className="absolute inset-0 z-20 grid grid-cols-2 grid-rows-2">
+                                                            {['tl', 'tr', 'bl', 'br'].map((q) => (
                                                                 <button
-                                                                    onClick={() => setOrbImageYOffset(0)}
-                                                                    className="text-[9px] font-bold text-slate-400 hover:text-sky-500 transition-colors"
-                                                                >
-                                                                    Reset
-                                                                </button>
-                                                            )}
-                                                        </div>
-                                                        <div className="flex items-center gap-2 w-full">
-                                                            <span className="text-[10px] font-bold text-slate-300">-100</span>
-                                                            <input
-                                                                type="range"
-                                                                min="-100"
-                                                                max="100"
-                                                                step="1"
-                                                                value={orbImageYOffset}
-                                                                onChange={(e) => setOrbImageYOffset(parseInt(e.target.value))}
-                                                                className="flex-1 h-2 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-sky-500 hover:accent-sky-400 transition-all border border-slate-200"
-                                                            />
-                                                            <span className="text-[10px] font-bold text-slate-300">+100</span>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-
-                                            {/* Right side: Spill Areas */}
-                                            <div className="flex-1 space-y-1 -mt-[60px]">
-                                                <label className="text-xs font-bold uppercase text-slate-400 ml-1">Spill Areas</label>
-                                                
-                                                {/* Interactive Visualizer */}
-                                                <div className="relative w-36 h-36 border-2 border-slate-100 rounded-xl overflow-hidden bg-slate-50 mx-auto select-none">
-                                                    {/* The Image Background */}
-                                                    <img
-                                                        src={customOrbImage}
-                                                        className="absolute inset-0 w-full h-full object-cover opacity-50 grayscale transition-transform duration-300 origin-center"
-                                                        style={{ transform: `scale(${orbImageScale}) translate(${orbImageXOffset * 0.5}px, ${orbImageYOffset * 0.5}px)` }}
-                                                        alt=""
-                                                    />
-
-                                                    {/* The Circle Mask (Inverse) */}
-                                                    <div className="absolute inset-0 pointer-events-none z-10">
-                                                        <svg width="100%" height="100%" viewBox="0 0 100 100">
-                                                            <defs>
-                                                                <mask id="circleMask">
-                                                                    <rect width="100" height="100" fill="white" />
-                                                                    <circle cx="50" cy="50" r="35" fill="black" />
-                                                                </mask>
-                                                            </defs>
-                                                            <rect width="100" height="100" fill="rgba(0,0,0,0.6)" mask="url(#circleMask)" />
-                                                        </svg>
-                                                    </div>
-
-                                                    {/* Quadrant Toggles */}
-                                                    <div className="absolute inset-0 z-20 grid grid-cols-2 grid-rows-2">
-                                                        {['tl', 'tr', 'bl', 'br'].map((q) => (
-                                                            <button
-                                                                key={q}
-                                                                onClick={() => toggleSpillQuadrant(q)}
-                                                                className={`
+                                                                    key={q}
+                                                                    onClick={() => toggleSpillQuadrant(q)}
+                                                                    className={`
                                                                     relative border-dashed border-white/30 transition-all duration-200 hover:bg-sky-500/20 active:scale-95 flex items-center justify-center
                                                                     ${q === 'tl' ? 'border-r border-b rounded-tl-xl' : ''}
                                                                     ${q === 'tr' ? 'border-l border-b rounded-tr-xl' : ''}
@@ -471,58 +470,58 @@ export default function OrbPage({ onBack, onNavigateToYou, onNavigateToPage, onN
                                                                     ${q === 'br' ? 'border-l border-t rounded-br-xl' : ''}
                                                                     ${orbSpill[q] ? 'bg-sky-500/30' : ''}
                                                                 `}
-                                                            >
-                                                                {orbSpill[q] && (
-                                                                    <div className="p-1 bg-sky-500 rounded-full text-white shadow-sm">
-                                                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4">
-                                                                            <polyline points="20 6 9 17 4 12" />
-                                                                        </svg>
-                                                                    </div>
-                                                                )}
-                                                            </button>
-                                                        ))}
-                                                    </div>
+                                                                >
+                                                                    {orbSpill[q] && (
+                                                                        <div className="p-1 bg-sky-500 rounded-full text-white shadow-sm">
+                                                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4">
+                                                                                <polyline points="20 6 9 17 4 12" />
+                                                                            </svg>
+                                                                        </div>
+                                                                    )}
+                                                                </button>
+                                                            ))}
+                                                        </div>
 
-                                                    {/* Center Label */}
-                                                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-30">
-                                                        <div className="bg-black/50 text-white text-[10px] font-bold px-2 py-0.5 rounded-full backdrop-blur-sm">
-                                                            ORB
+                                                        {/* Center Label */}
+                                                        <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-30">
+                                                            <div className="bg-black/50 text-white text-[10px] font-bold px-2 py-0.5 rounded-full backdrop-blur-sm">
+                                                                ORB
+                                                            </div>
                                                         </div>
                                                     </div>
-                                                </div>
 
-                                                {/* Description/Tip underneath */}
-                                                <div className="text-[10px] text-slate-500 space-y-0.5">
-                                                    <p>Click quadrants to toggle spill.</p>
-                                                    <ul className="list-disc pl-3 space-y-0">
-                                                        <li><span className="font-bold text-sky-600">Selected:</span> Overflows</li>
-                                                        <li><span className="font-bold text-slate-400">Unselected:</span> Clipped</li>
-                                                    </ul>
+                                                    {/* Description/Tip underneath */}
+                                                    <div className="text-[10px] text-slate-500 space-y-0.5">
+                                                        <p>Click quadrants to toggle spill.</p>
+                                                        <ul className="list-disc pl-3 space-y-0">
+                                                            <li><span className="font-bold text-sky-600">Selected:</span> Overflows</li>
+                                                            <li><span className="font-bold text-slate-400">Unselected:</span> Clipped</li>
+                                                        </ul>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
-                                    </div>
-                                )}
-
-                                {/* Save Current Configuration Button */}
-                                <div className="border-t border-slate-100 pt-2 mt-2">
-                                    <button
-                                        onClick={handleSaveCurrentOrbAsFavorite}
-                                        disabled={!customOrbImage}
-                                        className={`w-full py-2 rounded-xl text-xs font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-2 border-2 ${customOrbImage
-                                            ? 'bg-sky-500 border-sky-500 text-white hover:bg-sky-600 hover:border-sky-600 shadow-md hover:shadow-lg'
-                                            : 'bg-slate-100 border-slate-200 text-slate-400 cursor-not-allowed'
-                                            }`}
-                                    >
-                                        <Plus size={14} />
-                                        Save Current Configuration as Preset
-                                    </button>
-                                    {!customOrbImage && (
-                                        <p className="text-[10px] text-slate-400 text-center mt-1">
-                                            Upload an orb image first to save it as a preset
-                                        </p>
                                     )}
-                                </div>
+
+                                    {/* Save Current Configuration Button */}
+                                    <div className="border-t border-slate-100 pt-2 mt-2">
+                                        <button
+                                            onClick={handleSaveCurrentOrbAsFavorite}
+                                            disabled={!customOrbImage}
+                                            className={`w-full py-2 rounded-xl text-xs font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-2 border-2 ${customOrbImage
+                                                ? 'bg-sky-500 border-sky-500 text-white hover:bg-sky-600 hover:border-sky-600 shadow-md hover:shadow-lg'
+                                                : 'bg-slate-100 border-slate-200 text-slate-400 cursor-not-allowed'
+                                                }`}
+                                        >
+                                            <Plus size={14} />
+                                            Save Current Configuration as Preset
+                                        </button>
+                                        {!customOrbImage && (
+                                            <p className="text-[10px] text-slate-400 text-center mt-1">
+                                                Upload an orb image first to save it as a preset
+                                            </p>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
                         )}
@@ -541,18 +540,17 @@ export default function OrbPage({ onBack, onNavigateToYou, onNavigateToPage, onN
                                     </h3>
                                     <button
                                         onClick={() => setShowGroupLeadersOnly(!showGroupLeadersOnly)}
-                                        className={`px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase transition-all flex items-center gap-1.5 ${
-                                            showGroupLeadersOnly
-                                                ? 'bg-purple-500 hover:bg-purple-600 text-white'
-                                                : 'bg-slate-200 hover:bg-slate-300 text-slate-700'
-                                        }`}
+                                        className={`px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase transition-all flex items-center gap-1.5 ${showGroupLeadersOnly
+                                            ? 'bg-purple-500 hover:bg-purple-600 text-white'
+                                            : 'bg-slate-200 hover:bg-slate-300 text-slate-700'
+                                            }`}
                                         title={showGroupLeadersOnly ? 'Show all presets' : 'Show only group leaders with members'}
                                     >
                                         <Folder size={12} />
                                         {showGroupLeadersOnly ? 'Group Leaders Only' : 'All Presets'}
                                     </button>
                                 </div>
-                                
+
                                 {orbFavorites.length === 0 ? (
                                     <div className="text-center text-slate-400 py-12 bg-white/50 p-4 rounded-2xl">
                                         <Smile size={48} className="mx-auto mb-4 opacity-50" />
@@ -561,201 +559,212 @@ export default function OrbPage({ onBack, onNavigateToYou, onNavigateToPage, onN
                                     </div>
                                 ) : (
                                     <>
-                                
-                                {/* Horizontal Scrolling Presets Container */}
-                                <div 
-                                    ref={horizontalScrollRef}
-                                    className="horizontal-video-scroll" 
-                                    onWheel={(e) => {
-                                        // Handle wheel scrolling on the presets container
-                                        const container = horizontalScrollRef.current;
-                                        if (container && container.scrollWidth > container.clientWidth) {
-                                            e.preventDefault();
-                                            e.stopPropagation();
-                                            // Direct scrollLeft assignment for better performance
-                                            container.scrollLeft += e.deltaY;
-                                        }
-                                    }}
-                                    style={{ 
-                                        width: '100%',
-                                        overflowX: 'scroll', // Force scrollbar to always show
-                                        overflowY: 'visible', // Allow vertical overflow for buttons
-                                        scrollbarWidth: 'thin', // Show scrollbar on Firefox
-                                        scrollbarColor: 'rgba(148, 163, 184, 0.6) rgba(15, 23, 42, 0.3)', // Firefox scrollbar color
-                                        WebkitOverflowScrolling: 'touch', // Smooth scrolling on iOS
-                                        paddingTop: '12px', // Space for overflow elements at top (buttons at -top-2 need space)
-                                        paddingBottom: '8px', // Space for overflow elements at bottom
-                                    }}
-                                >
-                                    <div 
-                                        className="flex gap-4 animate-fade-in"
-                                        style={{ 
-                                            width: 'max-content',
-                                            paddingTop: '0px', // No additional padding needed
-                                        }}
-                                    >
-                                        {filteredFavorites.map((favorite) => {
-                                            const assignedFolders = favorite.folderColors || [];
-                                            return (
+
+                                        {/* Horizontal Scrolling Presets Container */}
+                                        <div
+                                            ref={horizontalScrollRef}
+                                            className="horizontal-video-scroll"
+                                            onWheel={(e) => {
+                                                // Handle wheel scrolling on the presets container
+                                                const container = horizontalScrollRef.current;
+                                                if (container && container.scrollWidth > container.clientWidth) {
+                                                    e.preventDefault();
+                                                    e.stopPropagation();
+                                                    // Direct scrollLeft assignment for better performance
+                                                    container.scrollLeft += e.deltaY;
+                                                }
+                                            }}
+                                            style={{
+                                                width: '100%',
+                                                overflowX: 'scroll', // Force scrollbar to always show
+                                                overflowY: 'visible', // Allow vertical overflow for buttons
+                                                scrollbarWidth: 'thin', // Show scrollbar on Firefox
+                                                scrollbarColor: 'rgba(148, 163, 184, 0.6) rgba(15, 23, 42, 0.3)', // Firefox scrollbar color
+                                                WebkitOverflowScrolling: 'touch', // Smooth scrolling on iOS
+                                                paddingTop: '12px', // Space for overflow elements at top (buttons at -top-2 need space)
+                                                paddingBottom: '8px', // Space for overflow elements at bottom
+                                            }}
+                                        >
                                             <div
-                                                key={favorite.id}
-                                                className="relative group flex flex-col items-center"
-                                                style={{ 
-                                                    zIndex: folderAssignmentOpenId === favorite.id ? 100 : 'auto',
-                                                    width: '200px',
-                                                    flexShrink: 0
-                                                }}
-                                                onMouseEnter={() => setHoveredFavoriteId(favorite.id)}
-                                                onMouseLeave={() => {
-                                                    setHoveredFavoriteId(null);
-                                                    // Don't close if menu is open - let click outside handle it
-                                                    if (folderAssignmentOpenId !== favorite.id) {
-                                                        setFolderAssignmentOpenId(null);
-                                                    }
+                                                className="flex gap-4 animate-fade-in"
+                                                style={{
+                                                    width: 'max-content',
+                                                    paddingTop: '0px', // No additional padding needed
                                                 }}
                                             >
-                                                {/* Favorite Thumbnail with Spill Effect */}
-                                                <div className="relative w-full aspect-square mx-auto overflow-visible">
-                                                    <button
-                                                        onClick={() => applyOrbFavorite(favorite)}
-                                                        className={`w-full h-full rounded-full border-4 transition-all duration-200 relative overflow-visible bg-sky-50 ${
-                                                            favorite.customOrbImage === customOrbImage
-                                                                ? 'border-sky-500 ring-4 ring-sky-200 shadow-lg scale-105'
-                                                                : 'border-slate-200 hover:border-sky-300 hover:shadow-md'
-                                                        }`}
-                                                    >
-                                                        {/* Image Layer with Spill Effect */}
-                                                        <div 
-                                                            className="absolute inset-0 pointer-events-none transition-all duration-500 flex items-center justify-center z-40" 
-                                                            style={{ 
-                                                                clipPath: favorite.isSpillEnabled && favorite.orbSpill ? `url(#orbClipPath-${favorite.id})` : 'circle(50% at 50% 50%)',
-                                                                overflow: 'visible'
+                                                {filteredFavorites.map((favorite) => {
+                                                    const assignedFolders = favorite.folderColors || [];
+                                                    return (
+                                                        <div
+                                                            key={favorite.id}
+                                                            className="relative group flex flex-col items-center"
+                                                            style={{
+                                                                zIndex: folderAssignmentOpenId === favorite.id ? 100 : 'auto',
+                                                                width: '200px',
+                                                                flexShrink: 0
+                                                            }}
+                                                            onMouseEnter={() => setHoveredFavoriteId(favorite.id)}
+                                                            onMouseLeave={() => {
+                                                                setHoveredFavoriteId(null);
+                                                                // Don't close if menu is open - let click outside handle it
+                                                                if (folderAssignmentOpenId !== favorite.id) {
+                                                                    setFolderAssignmentOpenId(null);
+                                                                }
                                                             }}
                                                         >
-                                                            <img
-                                                                src={favorite.customOrbImage}
-                                                                alt={favorite.name}
-                                                                className="max-w-none transition-all duration-500"
-                                                                style={{
-                                                                    width: favorite.isSpillEnabled ? `calc(100% * ${favorite.orbImageScale || 1})` : '100%',
-                                                                    height: favorite.isSpillEnabled ? `calc(100% * ${favorite.orbImageScale || 1})` : '100%',
-                                                                    transform: favorite.isSpillEnabled ? `translate(${(favorite.orbImageXOffset || 0) * 0.3}px, ${(favorite.orbImageYOffset || 0) * 0.3}px)` : 'none',
-                                                                    objectFit: favorite.isSpillEnabled ? 'contain' : 'cover'
-                                                                }}
-                                                            />
-                                                        </div>
-                                                        
-                                                        {/* Glass Overlay */}
-                                                        <div className="absolute inset-0 z-10 overflow-hidden rounded-full pointer-events-none">
-                                                            <div className="absolute inset-0 bg-sky-200/10" />
-                                                        </div>
-                                                    </button>
-                                                </div>
+                                                            {/* Favorite Thumbnail with Spill Effect */}
+                                                            <div className="relative w-full aspect-square mx-auto overflow-visible">
+                                                                <button
+                                                                    onClick={() => applyOrbFavorite(favorite)}
+                                                                    className={`w-full h-full rounded-full border-4 transition-all duration-200 relative overflow-visible bg-sky-50 ${favorite.customOrbImage === customOrbImage
+                                                                        ? 'border-sky-500 ring-4 ring-sky-200 shadow-lg scale-105'
+                                                                        : 'border-slate-200 hover:border-sky-300 hover:shadow-md'
+                                                                        }`}
+                                                                >
+                                                                    {/* Image Layer with Spill Effect */}
+                                                                    <div
+                                                                        className="absolute inset-0 pointer-events-none transition-all duration-500 flex items-center justify-center z-40"
+                                                                        style={{
+                                                                            clipPath: favorite.isSpillEnabled && favorite.orbSpill ? `url(#orbClipPath-${favorite.id})` : 'circle(50% at 50% 50%)',
+                                                                            overflow: 'visible'
+                                                                        }}
+                                                                    >
+                                                                        <img
+                                                                            src={favorite.customOrbImage}
+                                                                            alt={favorite.name}
+                                                                            className="max-w-none transition-all duration-500"
+                                                                            style={{
+                                                                                width: favorite.isSpillEnabled ? `calc(100% * ${favorite.orbImageScale || 1})` : '100%',
+                                                                                height: favorite.isSpillEnabled ? `calc(100% * ${favorite.orbImageScale || 1})` : '100%',
+                                                                                transform: favorite.isSpillEnabled ? `translate(${(favorite.orbImageXOffset || 0) * 0.3}px, ${(favorite.orbImageYOffset || 0) * 0.3}px)` : 'none',
+                                                                                objectFit: favorite.isSpillEnabled ? 'contain' : 'cover'
+                                                                            }}
+                                                                        />
+                                                                    </div>
 
-                                                {/* Name */}
-                                                <p className="mt-2 text-[10px] text-slate-500 text-center font-bold truncate w-full">
-                                                    {favorite.name}
-                                                </p>
+                                                                    {/* Glass Overlay */}
+                                                                    <div className="absolute inset-0 z-10 overflow-hidden rounded-full pointer-events-none">
+                                                                        <div className="absolute inset-0 bg-sky-200/10" />
+                                                                    </div>
+                                                                </button>
+                                                            </div>
 
-                                                {/* Spill Indicator */}
-                                                {favorite.isSpillEnabled && (
-                                                    <div className="absolute top-0 right-0 bg-sky-500 text-white text-[8px] font-bold px-1.5 py-0.5 rounded-full uppercase tracking-wider">
-                                                        Spill
-                                                    </div>
-                                                )}
+                                                            {/* Name */}
+                                                            <p className="mt-2 text-[10px] text-slate-500 text-center font-bold truncate w-full">
+                                                                {favorite.name}
+                                                            </p>
 
-                                                {/* Folder Assignment Button (on hover) */}
-                                                {hoveredFavoriteId === favorite.id && (
-                                                    <div className="absolute -top-2 -left-2 flex flex-col gap-1 z-[100]">
-                                                        <button
-                                                            onClick={(e) => {
-                                                                e.stopPropagation();
-                                                                setFolderAssignmentOpenId(folderAssignmentOpenId === favorite.id ? null : favorite.id);
-                                                            }}
-                                                            className={`w-6 h-6 rounded-full flex items-center justify-center shadow-md transition-all ${
-                                                                assignedFolders.length > 0
-                                                                    ? 'bg-sky-500 hover:bg-sky-600 text-white'
-                                                                    : 'bg-slate-400 hover:bg-slate-500 text-white'
-                                                            }`}
-                                                            title="Assign to folders"
-                                                        >
-                                                            <Folder size={12} />
-                                                        </button>
-                                                        
-                                                        {/* Folder Color Selector */}
-                                                        {folderAssignmentOpenId === favorite.id && (
-                                                            <div className="folder-assignment-menu absolute top-7 left-0 bg-white border-2 border-slate-200 rounded-lg p-2 shadow-xl z-[100] min-w-[200px]">
-                                                                <div className="text-[10px] font-bold uppercase text-slate-400 mb-2">Assign to Folders</div>
-                                                                <div className="grid grid-cols-4 gap-1">
-                                                                    {FOLDER_COLORS.map((color) => {
-                                                                        const isAssigned = assignedFolders.includes(color.id);
+                                                            {/* Spill Indicator */}
+                                                            {favorite.isSpillEnabled && (
+                                                                <div className="absolute top-0 right-0 bg-sky-500 text-white text-[8px] font-bold px-1.5 py-0.5 rounded-full uppercase tracking-wider">
+                                                                    Spill
+                                                                </div>
+                                                            )}
+
+                                                            {/* Folder Assignment Button (on hover) */}
+                                                            {hoveredFavoriteId === favorite.id && (
+                                                                <div className="absolute -top-2 -left-2 flex flex-col gap-1 z-[100]">
+                                                                    <button
+                                                                        onClick={(e) => {
+                                                                            e.stopPropagation();
+                                                                            setFolderAssignmentOpenId(folderAssignmentOpenId === favorite.id ? null : favorite.id);
+                                                                        }}
+                                                                        className={`w-6 h-6 rounded-full flex items-center justify-center shadow-md transition-all ${assignedFolders.length > 0
+                                                                            ? 'bg-sky-500 hover:bg-sky-600 text-white'
+                                                                            : 'bg-slate-400 hover:bg-slate-500 text-white'
+                                                                            }`}
+                                                                        title="Assign to folders"
+                                                                    >
+                                                                        <Folder size={12} />
+                                                                    </button>
+
+                                                                    {/* Group Column Button (for Leaders) */}
+                                                                    {favorite.groupMembers && favorite.groupMembers.length > 0 && (
+                                                                        <button
+                                                                            onClick={(e) => {
+                                                                                e.stopPropagation();
+                                                                                setColumnLeaderId(favorite.id);
+                                                                            }}
+                                                                            className="w-6 h-6 rounded-full flex items-center justify-center shadow-md transition-all bg-purple-500 hover:bg-purple-600 text-white"
+                                                                            title={`View Group (${favorite.groupMembers.length} members)`}
+                                                                        >
+                                                                            <LayoutGrid size={12} />
+                                                                        </button>
+                                                                    )}
+
+                                                                    {/* Folder Color Selector */}
+                                                                    {folderAssignmentOpenId === favorite.id && (
+                                                                        <div className="folder-assignment-menu absolute top-7 left-0 bg-white border-2 border-slate-200 rounded-lg p-2 shadow-xl z-[100] min-w-[200px]">
+                                                                            <div className="text-[10px] font-bold uppercase text-slate-400 mb-2">Assign to Folders</div>
+                                                                            <div className="grid grid-cols-4 gap-1">
+                                                                                {FOLDER_COLORS.map((color) => {
+                                                                                    const isAssigned = assignedFolders.includes(color.id);
+                                                                                    return (
+                                                                                        <button
+                                                                                            key={color.id}
+                                                                                            onClick={(e) => {
+                                                                                                e.stopPropagation();
+                                                                                                toggleFolderAssignment(favorite.id, color.id);
+                                                                                            }}
+                                                                                            className={`w-8 h-8 rounded border-2 transition-all ${isAssigned
+                                                                                                ? 'border-black ring-2 ring-sky-300 scale-110'
+                                                                                                : 'border-slate-300 hover:border-slate-400'
+                                                                                                }`}
+                                                                                            style={{ backgroundColor: color.hex }}
+                                                                                            title={color.name}
+                                                                                        >
+                                                                                            {isAssigned && (
+                                                                                                <Check size={12} className="text-white drop-shadow-md" />
+                                                                                            )}
+                                                                                        </button>
+                                                                                    );
+                                                                                })}
+                                                                            </div>
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                            )}
+
+                                                            {/* Delete Button (on hover) */}
+                                                            {hoveredFavoriteId === favorite.id && (
+                                                                <button
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        removeOrbFavorite(favorite.id);
+                                                                    }}
+                                                                    className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center shadow-md transition-all z-10"
+                                                                >
+                                                                    <Trash2 size={12} />
+                                                                </button>
+                                                            )}
+
+                                                            {/* Assigned Folder Indicators */}
+                                                            {assignedFolders.length > 0 && (
+                                                                <div className="absolute bottom-0 left-0 right-0 flex items-center justify-center gap-1 pb-1">
+                                                                    {assignedFolders.slice(0, 3).map((folderId) => {
+                                                                        const color = FOLDER_COLORS.find(c => c.id === folderId);
+                                                                        if (!color) return null;
                                                                         return (
-                                                                            <button
-                                                                                key={color.id}
-                                                                                onClick={(e) => {
-                                                                                    e.stopPropagation();
-                                                                                    toggleFolderAssignment(favorite.id, color.id);
-                                                                                }}
-                                                                                className={`w-8 h-8 rounded border-2 transition-all ${
-                                                                                    isAssigned
-                                                                                        ? 'border-black ring-2 ring-sky-300 scale-110'
-                                                                                        : 'border-slate-300 hover:border-slate-400'
-                                                                                }`}
+                                                                            <div
+                                                                                key={folderId}
+                                                                                className="w-3 h-3 rounded-full border border-white/50 shadow-sm"
                                                                                 style={{ backgroundColor: color.hex }}
                                                                                 title={color.name}
-                                                                            >
-                                                                                {isAssigned && (
-                                                                                    <Check size={12} className="text-white drop-shadow-md" />
-                                                                                )}
-                                                                            </button>
+                                                                            />
                                                                         );
                                                                     })}
+                                                                    {assignedFolders.length > 3 && (
+                                                                        <div className="w-3 h-3 rounded-full bg-slate-400 border border-white/50 shadow-sm flex items-center justify-center">
+                                                                            <span className="text-[6px] font-bold text-white">+{assignedFolders.length - 3}</span>
+                                                                        </div>
+                                                                    )}
                                                                 </div>
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                )}
-
-                                                {/* Delete Button (on hover) */}
-                                                {hoveredFavoriteId === favorite.id && (
-                                                    <button
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            removeOrbFavorite(favorite.id);
-                                                        }}
-                                                        className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center shadow-md transition-all z-10"
-                                                    >
-                                                        <Trash2 size={12} />
-                                                    </button>
-                                                )}
-
-                                                {/* Assigned Folder Indicators */}
-                                                {assignedFolders.length > 0 && (
-                                                    <div className="absolute bottom-0 left-0 right-0 flex items-center justify-center gap-1 pb-1">
-                                                        {assignedFolders.slice(0, 3).map((folderId) => {
-                                                            const color = FOLDER_COLORS.find(c => c.id === folderId);
-                                                            if (!color) return null;
-                                                            return (
-                                                                <div
-                                                                    key={folderId}
-                                                                    className="w-3 h-3 rounded-full border border-white/50 shadow-sm"
-                                                                    style={{ backgroundColor: color.hex }}
-                                                                    title={color.name}
-                                                                />
-                                                            );
-                                                        })}
-                                                        {assignedFolders.length > 3 && (
-                                                            <div className="w-3 h-3 rounded-full bg-slate-400 border border-white/50 shadow-sm flex items-center justify-center">
-                                                                <span className="text-[6px] font-bold text-white">+{assignedFolders.length - 3}</span>
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                )}
+                                                            )}
+                                                        </div>
+                                                    );
+                                                })}
                                             </div>
-                                        );
-                                        })}
-                                    </div>
-                                </div>
+                                        </div>
                                     </>
                                 )}
                             </div>
@@ -778,13 +787,13 @@ export default function OrbPage({ onBack, onNavigateToYou, onNavigateToPage, onN
                                         }
 
                                         // Find the selected group leader preset
-                                        const groupLeader = selectedGroupLeaderId 
+                                        const groupLeader = selectedGroupLeaderId
                                             ? orbFavorites.find(fav => fav.id === selectedGroupLeaderId)
                                             : null;
-                                        
+
                                         // Get group members for the selected leader
                                         const groupMembers = groupLeader?.groupMembers || [];
-                                        
+
                                         // Count how many presets are assigned to this group
                                         const assignedCount = groupMembers.length;
 
@@ -809,7 +818,7 @@ export default function OrbPage({ onBack, onNavigateToYou, onNavigateToPage, onN
                                                         {orbFavorites.map((favorite) => {
                                                             const isGroupLeader = selectedGroupLeaderId === favorite.id;
                                                             const isActive = favorite.customOrbImage === customOrbImage;
-                                                            
+
                                                             return (
                                                                 <div
                                                                     key={`left-${favorite.id}`}
@@ -821,19 +830,18 @@ export default function OrbPage({ onBack, onNavigateToYou, onNavigateToPage, onN
                                                                             setSelectedGroupLeaderId(favorite.id);
                                                                             applyOrbFavorite(favorite);
                                                                         }}
-                                                                        className={`w-full aspect-square rounded-full border-2 transition-all duration-200 relative overflow-hidden bg-sky-50 ${
-                                                                            isGroupLeader
-                                                                                ? 'border-sky-500 ring-2 ring-sky-200 shadow-md'
-                                                                                : isActive
+                                                                        className={`w-full aspect-square rounded-full border-2 transition-all duration-200 relative overflow-hidden bg-sky-50 ${isGroupLeader
+                                                                            ? 'border-sky-500 ring-2 ring-sky-200 shadow-md'
+                                                                            : isActive
                                                                                 ? 'border-sky-400 ring-1 ring-sky-100'
                                                                                 : 'border-slate-200 hover:border-sky-300 hover:shadow-sm'
-                                                                        }`}
+                                                                            }`}
                                                                         style={{ width: '64px', height: '64px' }}
                                                                     >
                                                                         {/* Image with spill effect - reuses clipPath from presets tab */}
-                                                                        <div 
-                                                                            className="absolute inset-0 pointer-events-none transition-all duration-500 flex items-center justify-center" 
-                                                                            style={{ 
+                                                                        <div
+                                                                            className="absolute inset-0 pointer-events-none transition-all duration-500 flex items-center justify-center"
+                                                                            style={{
                                                                                 clipPath: favorite.isSpillEnabled && favorite.orbSpill ? `url(#orbClipPath-${favorite.id})` : 'circle(50% at 50% 50%)',
                                                                                 overflow: 'visible'
                                                                             }}
@@ -850,7 +858,7 @@ export default function OrbPage({ onBack, onNavigateToYou, onNavigateToPage, onN
                                                                                 }}
                                                                             />
                                                                         </div>
-                                                                        
+
                                                                         {/* Glass Overlay */}
                                                                         <div className="absolute inset-0 z-10 overflow-hidden rounded-full pointer-events-none">
                                                                             <div className="absolute inset-0 bg-sky-200/10" />
@@ -870,7 +878,7 @@ export default function OrbPage({ onBack, onNavigateToYou, onNavigateToPage, onN
                                                                             </div>
                                                                         )}
                                                                     </button>
-                                                                    
+
                                                                     {/* Tooltip on hover */}
                                                                     {hoveredFavoriteId === favorite.id && (
                                                                         <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-1 bg-slate-800 text-white text-[9px] px-2 py-1 rounded shadow-lg z-50 whitespace-nowrap">
@@ -894,7 +902,7 @@ export default function OrbPage({ onBack, onNavigateToYou, onNavigateToPage, onN
                                                             const isGroupLeader = selectedGroupLeaderId === favorite.id;
                                                             const isAssignedToGroup = groupLeader && groupMembers.includes(favorite.id);
                                                             const isActive = favorite.customOrbImage === customOrbImage;
-                                                            
+
                                                             return (
                                                                 <div
                                                                     key={`right-${favorite.id}`}
@@ -914,21 +922,20 @@ export default function OrbPage({ onBack, onNavigateToYou, onNavigateToPage, onN
                                                                                 applyOrbFavorite(favorite);
                                                                             }
                                                                         }}
-                                                                        className={`w-full aspect-square rounded-full border-2 transition-all duration-200 relative overflow-hidden bg-sky-50 ${
-                                                                            isGroupLeader
-                                                                                ? 'border-sky-500 ring-2 ring-sky-200 shadow-md'
-                                                                                : isAssignedToGroup
+                                                                        className={`w-full aspect-square rounded-full border-2 transition-all duration-200 relative overflow-hidden bg-sky-50 ${isGroupLeader
+                                                                            ? 'border-sky-500 ring-2 ring-sky-200 shadow-md'
+                                                                            : isAssignedToGroup
                                                                                 ? 'border-purple-500 ring-2 ring-purple-200 shadow-md'
                                                                                 : isActive
-                                                                                ? 'border-sky-400 ring-1 ring-sky-100'
-                                                                                : 'border-slate-200 hover:border-sky-300 hover:shadow-sm'
-                                                                        }`}
+                                                                                    ? 'border-sky-400 ring-1 ring-sky-100'
+                                                                                    : 'border-slate-200 hover:border-sky-300 hover:shadow-sm'
+                                                                            }`}
                                                                         style={{ width: '64px', height: '64px' }}
                                                                     >
                                                                         {/* Image with spill effect - reuses clipPath from presets tab */}
-                                                                        <div 
-                                                                            className="absolute inset-0 pointer-events-none transition-all duration-500 flex items-center justify-center" 
-                                                                            style={{ 
+                                                                        <div
+                                                                            className="absolute inset-0 pointer-events-none transition-all duration-500 flex items-center justify-center"
+                                                                            style={{
                                                                                 clipPath: favorite.isSpillEnabled && favorite.orbSpill ? `url(#orbClipPath-${favorite.id})` : 'circle(50% at 50% 50%)',
                                                                                 overflow: 'visible'
                                                                             }}
@@ -945,7 +952,7 @@ export default function OrbPage({ onBack, onNavigateToYou, onNavigateToPage, onN
                                                                                 }}
                                                                             />
                                                                         </div>
-                                                                        
+
                                                                         {/* Glass Overlay */}
                                                                         <div className="absolute inset-0 z-10 overflow-hidden rounded-full pointer-events-none">
                                                                             <div className="absolute inset-0 bg-sky-200/10" />
@@ -957,7 +964,7 @@ export default function OrbPage({ onBack, onNavigateToYou, onNavigateToPage, onN
                                                                                 Leader
                                                                             </div>
                                                                         )}
-                                                                        
+
                                                                         {/* Assigned Badge */}
                                                                         {isAssignedToGroup && !isGroupLeader && (
                                                                             <div className="absolute top-0 right-0 bg-purple-500 text-white text-[8px] font-bold px-1 py-0.5 rounded-bl rounded-tr uppercase z-20">
@@ -972,7 +979,7 @@ export default function OrbPage({ onBack, onNavigateToYou, onNavigateToPage, onN
                                                                             </div>
                                                                         )}
                                                                     </button>
-                                                                    
+
                                                                     {/* Tooltip on hover */}
                                                                     {hoveredFavoriteId === favorite.id && (
                                                                         <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-1 bg-slate-800 text-white text-[9px] px-2 py-1 rounded shadow-lg z-50 whitespace-nowrap">
@@ -995,6 +1002,32 @@ export default function OrbPage({ onBack, onNavigateToYou, onNavigateToPage, onN
                     </div>
                 </div>
             </div>
+            {/* Group Leader Column Overlay */}
+            {columnLeaderId && (() => {
+                const leader = orbFavorites.find(f => f.id === columnLeaderId);
+                const members = leader?.groupMembers?.map(mid => orbFavorites.find(f => f.id === mid)).filter(Boolean) || [];
+
+                if (!leader) {
+                    setColumnLeaderId(null);
+                    return null;
+                }
+
+                return (
+                    <OrbGroupColumn
+                        leader={leader}
+                        members={members}
+                        onClose={() => setColumnLeaderId(null)}
+                        onOrbSelect={(orb) => {
+                            applyOrbFavorite(orb);
+                            // Optional: Close column on selection? 
+                            // PlaylistFolderColumn doesn't close on selection naturally (unless navigating), 
+                            // but here we just apply settings. Let's keep it open to browse.
+                        }}
+                        activeOrbId={null} // We don't track active ID effectively for now
+                    />
+                );
+            })()}
+
         </div>
     );
 }

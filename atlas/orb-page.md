@@ -44,6 +44,11 @@ OrbPage is a dedicated page for orb configuration, accessed via the "Orb" button
   - **Delete on Hover**: Red trash button appears when hovering over a preset (top-right)
   - **One-Click Apply**: Click any preset thumbnail to instantly apply its configuration
   - **Empty State**: Shows message when no presets are saved
+  - **Group View (Column)**: 
+    - For presets that are group leaders, a **Layout Grid** button appears in the hover menu (below Folder button).
+    - Clicking this opens a full-height overlay column showing the group leader and all its subordinate members.
+    - Allows scrolling through subordinates and applying them directly.
+
 
 - **Configuration Tab**:
   - **Custom Orb Image**: Upload button with preview thumbnail
