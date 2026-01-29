@@ -132,6 +132,14 @@ export const useConfigStore = create(
                     orbImageScale: favorite.orbImageScale,
                     orbImageXOffset: favorite.orbImageXOffset ?? 0,
                     orbImageYOffset: favorite.orbImageYOffset ?? 0,
+                    // Save advanced masks
+                    orbAdvancedMasks: favorite.orbAdvancedMasks || { tl: false, tr: false, bl: false, br: false },
+                    orbMaskRects: favorite.orbMaskRects || {
+                        tl: { x: 0, y: 0, w: 50, h: 50 },
+                        tr: { x: 50, y: 0, w: 50, h: 50 },
+                        bl: { x: 0, y: 50, w: 50, h: 50 },
+                        br: { x: 50, y: 50, w: 50, h: 50 }
+                    },
                     folderColors: favorite.folderColors || [], // Array of folder color IDs
                 }]
             })),
@@ -145,6 +153,14 @@ export const useConfigStore = create(
                 orbImageScale: favorite.orbImageScale,
                 orbImageXOffset: favorite.orbImageXOffset ?? 0,
                 orbImageYOffset: favorite.orbImageYOffset ?? 0,
+                // Restore advanced masks
+                orbAdvancedMasks: favorite.orbAdvancedMasks || { tl: false, tr: false, bl: false, br: false },
+                orbMaskRects: favorite.orbMaskRects || {
+                    tl: { x: 0, y: 0, w: 50, h: 50 },
+                    tr: { x: 50, y: 0, w: 50, h: 50 },
+                    bl: { x: 0, y: 50, w: 50, h: 50 },
+                    br: { x: 50, y: 50, w: 50, h: 50 }
+                },
             }),
             renameOrbFavorite: (id, newName) => set((state) => ({
                 orbFavorites: state.orbFavorites.map(f =>
