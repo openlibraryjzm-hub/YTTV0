@@ -108,9 +108,11 @@ Users see a side menu panel that appears on the right side of the screen when in
 
 - **Top Navigation Bar**: Horizontal bar at the top of the side menu containing:
   - **Back Button**: Chevron left button (visible when history exists), navigates to previous page.
-  - **Tabs**: 
-    - Text-based tabs: "Playlists", "Videos".
-    - Icon-only tabs: "History" (Clock), "Likes" (Heart), "Pins" (Pin), "Settings" (Gear), "Support" (Cat).
+  - **Tabs**: Organized into 4 groups separated by vertical dividers:
+    - **Group 1**: "Playlists" (Folder), "Videos" (Play), "Browser" (Globe) - All icon-only.
+    - **Group 2**: "History" (Clock), "Likes" (Heart), "Pins" (Pin) - Icon-only.
+    - **Group 3**: "Orbs" (Disc), "You" (User), "Page" (FileText), "App" (LayoutGrid) - Icon-only.
+    - **Group 4**: "Support" (Cat) - Icon-only.
    - **Side Menu Scroll Controls** (Header): 
      - **Location**: Integrated into the Top Navigation header, to the left of the Back button.
      - **Components**: Up Chevron, Central Dot Button (scroll-to-active), Down Chevron.

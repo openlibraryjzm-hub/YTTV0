@@ -2,14 +2,14 @@ import React, { useState } from 'react';
 import { useNavigationStore } from '../store/navigationStore';
 import { useLayoutStore } from '../store/layoutStore';
 import { usePlaylistStore } from '../store/playlistStore';
-import { ChevronLeft, Heart, Pin, Settings, Clock, Cat } from 'lucide-react';
+import { ChevronLeft, Heart, Pin, Settings, Clock, Cat, Disc, User, FileText, LayoutGrid, Folder, Play, Globe } from 'lucide-react';
 import { THEMES } from '../utils/themes';
 
 const TopNavigation = () => {
     const { currentPage: currentNavPage, setCurrentPage: setCurrentNavPage, history, goBack } = useNavigationStore();
     const { viewMode, setViewMode, inspectMode } = useLayoutStore();
     const { previewPlaylistId, clearPreview } = usePlaylistStore();
-    
+
     const [currentThemeId] = useState('blue'); // Defaulting to blue theme for consistency, could be lifted to store if fully dynamic theming is required here
 
     const theme = THEMES[currentThemeId];
@@ -17,21 +17,34 @@ const TopNavigation = () => {
     // Helper to get inspect label
     const getInspectTitle = (label) => inspectMode ? label : undefined;
 
-    const tabs = [
-        { id: 'playlists', label: 'Playlists' },
-        { id: 'videos', label: 'Videos' },
-        { id: 'history', label: 'History', icon: <Clock size={16} /> },
-        { id: 'likes', label: 'Likes', icon: <Heart size={16} /> },
-        { id: 'pins', label: 'Pins', icon: <Pin size={16} /> },
-        { id: 'settings', label: 'Settings', icon: <Settings size={16} /> },
-        { id: 'support', label: 'Support', icon: <Cat size={16} /> },
+    // Define groups
+    const groups = [
+        [
+            { id: 'playlists', label: 'Playlists', icon: <Folder size={16} /> },
+            { id: 'videos', label: 'Videos', icon: <Play size={16} /> },
+            { id: 'browser', label: 'Browser', icon: <Globe size={16} /> },
+        ],
+        [
+            { id: 'history', label: 'History', icon: <Clock size={16} /> },
+            { id: 'likes', label: 'Likes', icon: <Heart size={16} /> },
+            { id: 'pins', label: 'Pins', icon: <Pin size={16} /> },
+        ],
+        [
+            { id: 'orbs', label: 'Orbs', icon: <Disc size={16} /> },
+            { id: 'you', label: 'You', icon: <User size={16} /> },
+            { id: 'pagepage', label: 'Page', icon: <FileText size={16} /> },
+            { id: 'app', label: 'App', icon: <LayoutGrid size={16} /> },
+        ],
+        [
+            { id: 'support', label: 'Support', icon: <Cat size={16} /> },
+        ]
     ];
 
     const handleTabClick = (tabId) => {
         setCurrentNavPage(tabId);
         // Auto-switch to half mode when clicking tabs if in full mode
-        const isNavigationTab = ['playlists', 'videos', 'history', 'likes', 'pins', 'settings', 'support'].includes(tabId);
-        if (isNavigationTab && viewMode === 'full') {
+        const allTabIds = groups.flat().map(t => t.id);
+        if (allTabIds.includes(tabId) && viewMode === 'full') {
             setViewMode('half');
         }
     };
@@ -41,25 +54,31 @@ const TopNavigation = () => {
             {/* Tabs row */}
             <div className="flex items-center justify-between w-full">
                 <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar scroll-smooth">
-                    {tabs.map((tab) => {
-                        const isIconOnly = ['history', 'likes', 'pins', 'settings', 'support'].includes(tab.id);
-                        const isActive = currentNavPage === tab.id;
+                    {groups.map((group, groupIndex) => (
+                        <div key={groupIndex} className="flex items-center gap-1.5">
+                            {group.map((tab) => {
+                                const isActive = currentNavPage === tab.id;
 
-                        return (
-                            <button
-                                key={tab.id}
-                                onClick={() => handleTabClick(tab.id)}
-                                className={`rounded-full flex items-center justify-center border-2 shadow-sm transition-all duration-200 ${isActive
-                                    ? 'bg-white border-sky-500 text-sky-600 transform scale-105'
-                                    : 'bg-white border-[#334155] text-slate-600 hover:bg-slate-50 active:scale-95'
-                                    } ${isIconOnly ? 'w-9 h-9 p-0' : 'px-4 h-9 gap-1.5'}`}
-                                title={getInspectTitle(`${tab.label} tab`) || tab.label}
-                            >
-                                {tab.icon && <span className={isActive ? 'opacity-100' : 'opacity-80'}>{tab.icon}</span>}
-                                {!isIconOnly && <span className="font-bold text-xs uppercase tracking-wide">{tab.label}</span>}
-                            </button>
-                        );
-                    })}
+                                return (
+                                    <button
+                                        key={tab.id}
+                                        onClick={() => handleTabClick(tab.id)}
+                                        className={`rounded-full flex items-center justify-center border-2 shadow-sm transition-all duration-200 ${isActive
+                                            ? 'bg-white border-sky-500 text-sky-600 transform scale-105'
+                                            : 'bg-white border-[#334155] text-slate-600 hover:bg-slate-50 active:scale-95'
+                                            } w-9 h-9 p-0`}
+                                        title={getInspectTitle(`${tab.label} tab`) || tab.label}
+                                    >
+                                        <span className={isActive ? 'opacity-100' : 'opacity-80'}>{tab.icon}</span>
+                                    </button>
+                                );
+                            })}
+                            {/* Add divider after group if not the last group */}
+                            {groupIndex < groups.length - 1 && (
+                                <div className="h-6 w-px bg-slate-400/50 mx-1"></div>
+                            )}
+                        </div>
+                    ))}
                 </div>
 
                 {/* Right side actions */}

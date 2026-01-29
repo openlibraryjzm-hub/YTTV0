@@ -9,6 +9,11 @@ import VideosPage from './components/VideosPage';
 import HistoryPage from './components/HistoryPage';
 import LikesPage from './components/LikesPage';
 import PinsPage from './components/PinsPage';
+import OrbPage from './components/OrbPage';
+import YouPage from './components/YouPage';
+import PagePage from './components/PagePage';
+import AppPage from './components/AppPage';
+import BrowserPage from './components/BrowserPage';
 
 import YouTubePlayer from './components/YouTubePlayer';
 import LocalVideoPlayer from './components/LocalVideoPlayer';
@@ -583,6 +588,16 @@ function App() {
             <LikesPage onVideoSelect={handleVideoSelect} />
           ) : !showPlaylists && currentPage === 'pins' ? (
             <PinsPage onVideoSelect={handleVideoSelect} />
+          ) : !showPlaylists && currentPage === 'orbs' ? (
+            <OrbPage onVideoSelect={handleVideoSelect} />
+          ) : !showPlaylists && currentPage === 'you' ? (
+            <YouPage onVideoSelect={handleVideoSelect} />
+          ) : !showPlaylists && currentPage === 'pagepage' ? (
+            <PagePage onVideoSelect={handleVideoSelect} />
+          ) : !showPlaylists && currentPage === 'app' ? (
+            <AppPage onVideoSelect={handleVideoSelect} />
+          ) : !showPlaylists && currentPage === 'browser' ? (
+            <BrowserPage />
 
           ) : !showPlaylists && currentPage === 'settings' ? (
             <SettingsPage currentThemeId={currentThemeId} onThemeChange={setCurrentThemeId} />

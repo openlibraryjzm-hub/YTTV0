@@ -376,4 +376,9 @@ For detailed information about the application's theme system and recent color c
 - **Group View Column**: Implemented a vertical overlay column for viewing "Group Leaders" and their "Subordinates" on both `OrbPage` (Presets tab) and `PagePage` (Folders tab).
   - **OrbPage**: Button added to preset hover menu. Shows vertical list of orbs.
   - **PagePage**: Button added to image card hover menu. Shows leader banner and vertical list of member banners.
+- **Top Navigation Layout**: COMPLETE OVERHAUL of the top side menu navigation.
+  - **New Structure**: Tabs organized into 4 groups (Main, Personal, Config, Support) separated by dividers.
+  - **New Pages**: Added direct navigation to `Browser`, `Orbs`, `You`, `Page`, `App`.
+  - **Styling**: All tabs are now **icon-only** (including Playlists/Videos) for a cleaner, unified look.
+  - **Browser Page**: Added placeholder `BrowserPage` component and routing.
 

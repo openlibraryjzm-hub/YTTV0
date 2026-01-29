@@ -706,11 +706,18 @@ Access videos that have been temporarily pinned during the current session.
 - `usePinStore.pinnedVideos`: Array of video objects pinned in memory.
 
 ---
-#### ### 4.1.8 Settings Page
+#### ### 4.1.8 Configuration Pages (Orbs, You, Page, App)
 
 **1: User-Perspective Description**
 
-Users access the configuration area via the "Config" (Settings icon) button on the main Player Controller orb. The Settings Page now serves as a navigation hub that defaults to showing the **OrbPage** (see Section 4.1.8.1). Configuration has been reorganized into four dedicated pages accessible via navigation buttons positioned at the bottom of each page's banner:
+Configuration pages are now accessed directly via the **Top Navigation Bar**, where they are grouped together (Group 3). The legacy "Settings" hub has been replaced by these direct-access pages:
+ 
+ - **Orb Page** (Disc Icon): Dedicated Orb configuration (image, spill, presets).
+ - **You Page** (User Icon): Dedicated Signature & Profile configuration.
+ - **Page Page** (FileText Icon): Page Banner and Layer 2 image library configuration.
+ - **App Page** (LayoutGrid Icon): App Banner, Color Palette, and Player Borders configuration.
+ 
+ Each page features a dedicated layout optimized for its specific configuration tasks, often using the **Page Banner** for context and controls.
 
 - **Default Behavior**: When visiting SettingsPage, the OrbPage is displayed by default.
 
