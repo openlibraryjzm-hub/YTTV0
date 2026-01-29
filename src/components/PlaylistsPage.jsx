@@ -50,6 +50,7 @@ const PlaylistsPage = ({ onVideoSelect }) => {
 
   // Preview thumbnails - tracks shuffled thumbnail previews (presence indicates shuffle was used, for showing refresh button)
   const [previewThumbnails, setPreviewThumbnails] = useState({}); // { key: { videoId, url, videoUrl, title } } - temporary preview thumbnails
+  const [playlistPreviewVideos, setPlaylistPreviewVideos] = useState({}); // { playlistId: [videos] } - for the 4 little thumbnails
   const [showThumbnailInfo, setShowThumbnailInfo] = useState(new Set()); // Set of card keys with info overlay visible
 
   // Global info toggle - shows video titles on all cards (persisted to localStorage)
@@ -313,6 +314,33 @@ const PlaylistsPage = ({ onVideoSelect }) => {
     cleanupTestPlaylist();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    if (playlists.length > 0) {
+      loadPreviews(playlists);
+    }
+  }, [playlists]);
+
+  const loadPreviews = async (playlistsToLoad) => {
+    const previews = {};
+    // Load per playlist to avoid one big blocking call, but ideally use batched API if available
+    // Since getPlaylistItems is efficient enough for local DB, we iterate
+    // Using simple loop to throttle slightly if needed, or Promise.all for speed
+    await Promise.all(playlistsToLoad.map(async (p) => {
+      try {
+        if (!playlistPreviewVideos[p.id]) { // Only load if missing
+          const items = await getPlaylistItems(p.id);
+          previews[p.id] = items.slice(0, 4);
+        }
+      } catch (e) {
+        console.error("Failed to load preview for", p.id, e);
+      }
+    }));
+
+    if (Object.keys(previews).length > 0) {
+      setPlaylistPreviewVideos(prev => ({ ...prev, ...previews }));
+    }
+  };
 
   const loadPlaylists = async () => {
     try {
@@ -964,7 +992,7 @@ const PlaylistsPage = ({ onVideoSelect }) => {
                                 style={{ width: '500px', flexShrink: 0 }}
                                 data-playlist-card="true"
                               >
-                                <div className="border-2 border-slate-700/50 rounded-xl p-2 bg-slate-800/20 hover:border-sky-500/50 transition-colors h-full flex flex-col">
+                                <div className="border-2 border-slate-700/50 rounded-xl p-2 bg-slate-100/90 hover:border-sky-500/50 transition-colors h-full flex flex-col">
                                   {/* Folder Title Bar */}
                                   <div className="mb-2 flex items-center justify-between border-2 border-[#052F4A] rounded-md p-1 bg-slate-100/90 shadow-sm relative overflow-hidden h-[38px]">
                                     <div className="flex items-center gap-2 pl-1 flex-1 min-w-0">
@@ -1434,7 +1462,7 @@ const PlaylistsPage = ({ onVideoSelect }) => {
                             data-playlist-name={playlist.name}
                           >
                             <div
-                              className={`border-2 border-slate-700/50 rounded-xl p-2 bg-slate-800/20 hover:border-sky-500/50 transition-colors h-full flex flex-col ${String(playlist.id) === String(activePlaylistId) ? 'active-playlist-marker' : ''}`}
+                              className={`border-2 border-slate-700/50 rounded-xl p-2 bg-slate-100/90 hover:border-sky-500/50 transition-colors h-full flex flex-col ${String(playlist.id) === String(activePlaylistId) ? 'active-playlist-marker' : ''}`}
                               data-active-playlist={String(playlist.id) === String(activePlaylistId) ? "true" : "false"}
                             >
                               {/* Playlist Info */}
@@ -1658,7 +1686,7 @@ const PlaylistsPage = ({ onVideoSelect }) => {
                               </div>
 
                               {/* Thumbnail */}
-                              <div className="rounded-lg overflow-hidden relative group mt-auto" style={{
+                              <div className="rounded-lg overflow-hidden relative group mt-auto border-2 border-[#052F4A]" style={{
                                 width: '100%',
                                 paddingBottom: '56.25%', // 16:9 aspect ratio
                                 backgroundColor: '#0f172a',
@@ -2068,6 +2096,36 @@ const PlaylistsPage = ({ onVideoSelect }) => {
                                   </div>
                                 );
                               })()}
+
+                              {/* 4 Little Video Thumbnails - Horizontal strip below content */}
+                              <div className="mt-2 grid grid-cols-4 gap-2 px-1 pb-1">
+                                {(playlistPreviewVideos[playlist.id] || []).slice(0, 4).map((video) => (
+                                  <div
+                                    key={video.video_id}
+                                    className="aspect-video relative rounded-md overflow-hidden bg-black/50 border-2 border-[#052F4A] hover:ring-2 hover:ring-sky-500 transition-all cursor-pointer group/mini shadow-md"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      if (onVideoSelect) onVideoSelect(video.video_url);
+                                    }}
+                                    title={video.title}
+                                  >
+                                    <img
+                                      src={getThumbnailUrl(video.video_id, 'medium')}
+                                      alt=""
+                                      className="w-full h-full object-cover opacity-80 group-hover/mini:opacity-100 transition-opacity"
+                                      onError={(e) => e.target.style.display = 'none'}
+                                    />
+                                    {/* Tiny play icon on hover */}
+                                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/mini:opacity-100 bg-black/30 transition-opacity">
+                                      <Play size={12} className="text-white fill-current" />
+                                    </div>
+                                  </div>
+                                ))}
+                                {/* Fill empty slots if < 4 (optional, currently just leaves space blank) */}
+                                {Array.from({ length: Math.max(0, 4 - (playlistPreviewVideos[playlist.id] || []).length) }).map((_, i) => (
+                                  <div key={`empty-${i}`} className="aspect-video relative rounded-md bg-slate-800/20 border border-slate-700/30" />
+                                ))}
+                              </div>
                             </div>
                           </div>
                         );

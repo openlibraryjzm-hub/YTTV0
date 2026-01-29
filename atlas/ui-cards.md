@@ -19,16 +19,21 @@ Playlist cards and Colored Folder cards share the same card schema and structure
 Users see playlist cards built using the reusable Card component system:
 
 - **Card Structure**:
-  - **Thumbnail Area**: 16:9 aspect ratio, rounded corners
+  - **Thumbnail Area**: 16:9 aspect ratio, rounded corners, with `border-2 border-[#052F4A]` outline
     - Image: Custom cover (if set) or first video's thumbnail
     - Fallback: Gray placeholder icon if no thumbnail
     - **Hover Overlay**: Semi-transparent black (visual darkening only, no centered buttons)
     - **3-Dot Menu**: Positioned at the top-right of the thumbnail, visible on hover.
   - **Content Area**:
-    - **Container**: The entire card (title + thumbnail) is wrapped in a square border (`border-2 border-slate-700/50`) with rounded corners (`rounded-xl`) and a subtle background (`bg-slate-800/20`).
+    - **Container**: The entire card (title + thumbnail) is wrapped in a square border (`border-2 border-slate-700/50`) with rounded corners (`rounded-xl`) and a white background (`bg-slate-100/90`).
     - **Playlist Title**: Positioned inside the container, above the thumbnail.
     - **Title Styling**: Enclosed in a separate inner rectangle with a dark blue border (`border-[#052F4A]`) and light background (`bg-slate-100/90`). Text matches border color (`#052F4A`).
     - **Hover Actions**: Play, Shuffle, and Preview buttons appear on the right side of the Title Bar on hover. (Same hover actions apply to Folder Cards).
+  - **Quick Preview Strip**:
+    - Located at the bottom of the card content area.
+    - Displays 4 mini video thumbnails (medium quality) from the playlist.
+    - Each mini thumbnail has `border-2 border-[#052F4A]` and hover play icon.
+    - Clicking a mini thumbnail plays that specific video.
 
 - **Visual States**:
   - **Default**: Transparent background, no border
@@ -201,13 +206,14 @@ When users click the tag icon button in a playlist card's hover controls, an exp
 Colored Folder cards use the exact same visual structure as Playlist cards, appearing on the Playlists Page when the folder toggle is enabled. Folders are grouped by their parent playlist with section headers.
 
 - **Card Structure** (identical to Playlist Cards):
-  - **Container**: Bordered card (`border-2 border-slate-700/50 rounded-xl`) with hover highlight
+  - **Container**: Bordered card (`border-2 border-slate-700/50 rounded-xl`) with white background (`bg-slate-100/90`) and hover highlight
   - **Title Bar**: Dark blue border with light background, contains:
     - **Colored Dot**: Circle indicator matching the folder color
     - **Folder Name**: Shows custom name if renamed, otherwise shows color name (e.g., "Gaming" or "Red")
     - **Hover Actions**: Eye (Preview), Play, Shuffle buttons appear on hover
   - **Thumbnail Area**: 16:9 aspect ratio below title bar
     - Image: First video's thumbnail from the folder
+    - **Border**: `border-2 border-[#052F4A]` outline around thumbnail
     - **3-Dot Menu**: Top-right on hover with folder-specific options
 
 - **3-Dot Menu Options**:

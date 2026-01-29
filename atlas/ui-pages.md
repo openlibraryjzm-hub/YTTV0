@@ -23,12 +23,13 @@ Users see a horizontal scrolling layout with playlist and folder cards arranged 
   - **Vertical Scrolling Disabled**: Page does not scroll vertically - only horizontal scrolling is active
 
 - **Playlist Cards**: Each card displays:
-  - Thumbnail (16:9 aspect ratio, first video's thumbnail)
+  - Thumbnail (16:9 aspect ratio, first video's thumbnail, with `border-2 border-[#052F4A]`)
   - Playlist name (truncated if too long)
   - Description (optional, line-clamped to 2 lines)
   - Video count (e.g., "5 videos")
   - Hover overlay with preview and play buttons
   - 3-dot menu with expand/export/add-to-tab/delete options
+  - **Quick Preview Strip**: A row of 4 small video thumbnails displayed at the bottom of the card, allowing direct access to the first 4 videos of the playlist.
 
 - **Header Actions**: Top of page shows:
 - **Sticky Toolbar**: A dynamic toolbar that sits below the Page Banner and sticks to the top of the viewport when scrolling.
