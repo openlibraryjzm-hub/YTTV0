@@ -44,6 +44,7 @@ The application employs a high-contrast, structured design with distinct borders
     - **Static Images**: Scroll indefinitely.
     - **GIFs**: Play natively without scrolling (to avoid motion issues).
   - **Separator**: Features a "Solid" separator line (12px) with the Light Blue Pattern, separating the banner from the app content.
+  - **Hover Popup**: Features a hover-activated popup in the rightmost 1/6th zone.
   - **Comprehensive Documentation**: See `app-banner.md` for complete details.
 
 - **Page Banner ("Videos Banner")**:

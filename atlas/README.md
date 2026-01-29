@@ -381,4 +381,8 @@ For detailed information about the application's theme system and recent color c
   - **New Pages**: Added direct navigation to `Browser`, `Orbs`, `You`, `Page`, `App`.
   - **Styling**: All tabs are now **icon-only** (including Playlists/Videos) for a cleaner, unified look.
   - **Browser Page**: Added placeholder `BrowserPage` component and routing.
+- **App Banner Hover Popup**: Implemented a glassmorphism popup activated by hovering the rightmost 1/6th of the App Banner.
+  - **Structure**: Split into a top section (centered orb + 40x16px rectangles) and a bottom-right section (split 1/3 top, 2/3 bottom).
+  - **Interaction**: Non-blocking `onMouseMove` detection to preserve clickability of underlying controls.
+  - **Component**: New `AppBannerPopup.jsx`.
 

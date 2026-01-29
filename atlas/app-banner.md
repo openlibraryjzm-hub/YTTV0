@@ -27,6 +27,10 @@ Users see a full-width banner at the very top of the application (200px height) 
 - **Window Controls Integration**: Custom window controls (Minimize, Maximize, Close) float in the top-right corner
 - **Draggable Region**: The entire banner area is draggable (`data-tauri-drag-region`), allowing users to move the window
 - **Separator Line**: A 12px separator line at the bottom uses the selected animated pattern (Diagonal, Dots, Mesh, Solid) to separate the banner from app content
+- **Hover Popup**: Hovering the rightmost 1/6th reveals a 185x110px popup split into zones: 
+  - **Top Section**: Centered orb flanked by two wide 40x16px rectangles.
+  - **Bottom Right**: Split into a top 1/3 strip and a main 2/3 area.
+  - **Bottom Left**: Currently empty.
 
 **2: File Manifest**
 
