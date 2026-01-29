@@ -108,6 +108,17 @@ export const useConfigStore = create(
             orbSpill: { tl: true, tr: true, bl: true, br: true },
             setOrbSpill: (val) => set({ orbSpill: val }),
 
+            // Advanced Orb Masking (Custom Crops)
+            orbAdvancedMasks: { tl: false, tr: false, bl: false, br: false },
+            setOrbAdvancedMasks: (val) => set({ orbAdvancedMasks: val }),
+            orbMaskRects: {
+                tl: { x: 0, y: 0, w: 50, h: 50 },
+                tr: { x: 50, y: 0, w: 50, h: 50 },
+                bl: { x: 0, y: 50, w: 50, h: 50 },
+                br: { x: 50, y: 50, w: 50, h: 50 }
+            },
+            setOrbMaskRects: (val) => set({ orbMaskRects: val }),
+
             // Orb Favorites - saved configurations
             orbFavorites: [],
             addOrbFavorite: (favorite) => set((state) => ({
@@ -136,12 +147,12 @@ export const useConfigStore = create(
                 orbImageYOffset: favorite.orbImageYOffset ?? 0,
             }),
             renameOrbFavorite: (id, newName) => set((state) => ({
-                orbFavorites: state.orbFavorites.map(f => 
+                orbFavorites: state.orbFavorites.map(f =>
                     f.id === id ? { ...f, name: newName } : f
                 )
             })),
             updateOrbFavoriteFolders: (id, folderColors) => set((state) => ({
-                orbFavorites: state.orbFavorites.map(f => 
+                orbFavorites: state.orbFavorites.map(f =>
                     f.id === id ? { ...f, folderColors: folderColors || [] } : f
                 )
             })),
@@ -149,21 +160,21 @@ export const useConfigStore = create(
             // groupLeaderId: ID of the orb preset that is the group leader
             // groupMembers: Array of orb preset IDs that belong to this group
             setOrbGroupLeader: (leaderId, memberIds) => set((state) => ({
-                orbFavorites: state.orbFavorites.map(f => 
-                    f.id === leaderId 
+                orbFavorites: state.orbFavorites.map(f =>
+                    f.id === leaderId
                         ? { ...f, groupMembers: memberIds || [] }
                         : memberIds && memberIds.includes(f.id)
-                        ? { ...f, groupLeaderId: leaderId }
-                        : f.groupLeaderId === leaderId
-                        ? { ...f, groupLeaderId: null }
-                        : f
+                            ? { ...f, groupLeaderId: leaderId }
+                            : f.groupLeaderId === leaderId
+                                ? { ...f, groupLeaderId: null }
+                                : f
                 )
             })),
             assignOrbToGroup: (presetId, groupLeaderId) => set((state) => {
                 const leader = state.orbFavorites.find(f => f.id === groupLeaderId);
                 const currentMembers = leader?.groupMembers || [];
                 const isAlreadyMember = currentMembers.includes(presetId);
-                
+
                 return {
                     orbFavorites: state.orbFavorites.map(f => {
                         if (f.id === groupLeaderId) {
@@ -411,7 +422,7 @@ export const useConfigStore = create(
             assignLayer2ToGroup: (imageId, folderId, groupLeaderId, groupLeaderFolderId) => set((state) => {
                 const currentImageKey = `${folderId}:${imageId}`;
                 const leaderKey = `${groupLeaderFolderId}:${groupLeaderId}`;
-                
+
                 // Find the leader image to get its current members
                 let leaderImage = null;
                 state.layer2Folders.forEach(folder => {
@@ -422,17 +433,17 @@ export const useConfigStore = create(
                         }
                     }
                 });
-                
+
                 const currentMembers = leaderImage?.groupMembers || [];
                 const isAlreadyMember = currentMembers.includes(currentImageKey);
-                
+
                 return {
                     layer2Folders: state.layer2Folders.map(folder => {
                         if (folder.id === groupLeaderFolderId) {
                             // Update leader image's member list
                             return {
                                 ...folder,
-                                images: folder.images.map(img => 
+                                images: folder.images.map(img =>
                                     img.id === groupLeaderId
                                         ? {
                                             ...img,
@@ -463,7 +474,7 @@ export const useConfigStore = create(
                     })
                 };
             }),
-            
+
             // Per-Playlist Layer 2 Image Overrides
             // Maps playlistId -> { image, scale, xOffset, yOffset, imageId, folderId, bgColor }
             // If a playlist has an override, it uses that image instead of the default

@@ -1231,9 +1231,9 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
       const now = Date.now();
       const timeSinceLastClick = now - lastPinClickTimeRef.current;
       lastPinClickTimeRef.current = now;
-      
+
       const isCurrentlyPinned = isPinned(targetVideo.id) || isPriorityPin(targetVideo.id);
-      
+
       if (timeSinceLastClick < 300 && isCurrentlyPinned) {
         // Double-click on pinned video → Unpin completely
         removePin(targetVideo.id);
@@ -1334,7 +1334,7 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
   const handleStarAlignToPlay = async () => {
     // Get the color the Star is currently displaying (video's folder assignment)
     const starDisplayColor = currentVideoFolders.length > 0 ? currentVideoFolders[0] : null;
-    
+
     if (!starDisplayColor) {
       console.log(`[ColorSync] Video is not in any folder - nothing to align`);
       return;
@@ -1342,9 +1342,9 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
 
     try {
       console.log(`[ColorSync] Aligning Play to Star color: ${starDisplayColor}`);
-      
+
       const newItems = await getVideosInFolder(currentPlaylistId, starDisplayColor);
-      
+
       if (newItems.length > 0) {
         setPlaylistItems(newItems, currentPlaylistId, { playlist_id: currentPlaylistId, folder_color: starDisplayColor });
         // Auto-play first video if current video is not in the new view
@@ -1567,7 +1567,7 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
     // Reset to show view count when video changes
     setShowViewCount(true);
     setMetadataOpacity(1);
-    
+
     // Only cycle if using merged view (long author name with both metadata available)
     if (shouldUseMergedView) {
       const interval = setInterval(() => {
@@ -1579,7 +1579,7 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
           setMetadataOpacity(1);
         }, 600); // Half of transition duration (1200ms total)
       }, 12000); // 12 seconds
-      
+
       return () => clearInterval(interval);
     } else {
       // If not using merged view, show view count if available
@@ -1681,7 +1681,7 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
                 </div>
               </div>
               <div className={`border-4 shadow-2xl flex flex-col relative overflow-visible transition-all duration-300 group/playlist ${isEditMode ? 'ring-4 ring-sky-400/30' : theme.orbBorder + ' ' + theme.menuBg + ' backdrop-blur-2xl rounded-2xl overflow-hidden'}`} style={{ width: `${menuWidth}px`, height: `${menuHeight}px` }}>
-                <div 
+                <div
                   className="flex-grow flex flex-col items-center justify-center px-4 relative z-10 overflow-hidden w-full h-full"
                   onMouseDown={(e) => {
                     if (e.button === 2) { // Right mouse button
@@ -1777,7 +1777,7 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
                           // Merged view: Cycle between view count and publish year (for long author names)
                           <div className="flex items-center gap-1 shrink-0">
                             <span className="opacity-50 shrink-0">|</span>
-                            <span 
+                            <span
                               className="shrink-0 transition-opacity ease-in-out"
                               style={{ opacity: metadataOpacity, transitionDuration: '1200ms' }}
                             >

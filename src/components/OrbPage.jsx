@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Smile, Plus, ArrowLeft, Trash2, Check, Folder, Settings, LayoutGrid } from 'lucide-react';
 import OrbGroupColumn from './OrbGroupColumn';
+import OrbCropModal from './OrbCropModal';
 import { useConfigStore } from '../store/configStore';
 import PageBanner from './PageBanner';
 import { FOLDER_COLORS } from '../utils/folderColors';
@@ -18,7 +19,9 @@ export default function OrbPage({ onBack, onNavigateToYou, onNavigateToPage, onN
         removeOrbFavorite,
         applyOrbFavorite,
         updateOrbFavoriteFolders,
-        assignOrbToGroup
+        assignOrbToGroup,
+        orbAdvancedMasks, setOrbAdvancedMasks,
+        orbMaskRects, setOrbMaskRects,
     } = useConfigStore();
 
     const [hoveredFavoriteId, setHoveredFavoriteId] = useState(null);
@@ -28,6 +31,7 @@ export default function OrbPage({ onBack, onNavigateToYou, onNavigateToPage, onN
     const [selectedGroupLeaderId, setSelectedGroupLeaderId] = useState(null); // ID of selected group leader preset
     const [showGroupLeadersOnly, setShowGroupLeadersOnly] = useState(false); // Toggle to show only group leaders with members
     const [columnLeaderId, setColumnLeaderId] = useState(null); // ID of group leader whose column is open
+    const [isCropModalOpen, setIsCropModalOpen] = useState(false); // State for advanced crop modal
 
 
     const handleOrbImageUpload = (e) => {
@@ -54,6 +58,11 @@ export default function OrbPage({ onBack, onNavigateToYou, onNavigateToPage, onN
             orbImageScale,
             orbImageXOffset,
             orbImageYOffset,
+            orbImageScale,
+            orbImageXOffset,
+            orbImageYOffset,
+            orbAdvancedMasks: { ...orbAdvancedMasks },
+            orbMaskRects: JSON.parse(JSON.stringify(orbMaskRects)), // Deep copy
         });
     };
 
@@ -434,7 +443,7 @@ export default function OrbPage({ onBack, onNavigateToYou, onNavigateToPage, onN
                                                     <label className="text-xs font-bold uppercase text-slate-400 ml-1">Spill Areas</label>
 
                                                     {/* Interactive Visualizer */}
-                                                    <div className="relative w-36 h-36 border-2 border-slate-100 rounded-xl overflow-hidden bg-slate-50 mx-auto select-none">
+                                                    <div className="relative w-36 h-36 border-2 border-slate-100 rounded-xl overflow-hidden bg-slate-50 mx-auto select-none group">
                                                         {/* The Image Background */}
                                                         <img
                                                             src={customOrbImage}
@@ -450,6 +459,12 @@ export default function OrbPage({ onBack, onNavigateToYou, onNavigateToPage, onN
                                                                     <mask id="circleMask">
                                                                         <rect width="100" height="100" fill="white" />
                                                                         <circle cx="50" cy="50" r="35" fill="black" />
+
+                                                                        {/* Advanced Masks in Visualizer */}
+                                                                        {orbAdvancedMasks.tl && orbSpill.tl && <rect fill="black" x={orbMaskRects.tl.x} y={orbMaskRects.tl.y} width={orbMaskRects.tl.w} height={orbMaskRects.tl.h} />}
+                                                                        {orbAdvancedMasks.tr && orbSpill.tr && <rect fill="black" x={orbMaskRects.tr.x} y={orbMaskRects.tr.y} width={orbMaskRects.tr.w} height={orbMaskRects.tr.h} />}
+                                                                        {orbAdvancedMasks.bl && orbSpill.bl && <rect fill="black" x={orbMaskRects.bl.x} y={orbMaskRects.bl.y} width={orbMaskRects.bl.w} height={orbMaskRects.bl.h} />}
+                                                                        {orbAdvancedMasks.br && orbSpill.br && <rect fill="black" x={orbMaskRects.br.x} y={orbMaskRects.br.y} width={orbMaskRects.br.w} height={orbMaskRects.br.h} />}
                                                                     </mask>
                                                                 </defs>
                                                                 <rect width="100" height="100" fill="rgba(0,0,0,0.6)" mask="url(#circleMask)" />
@@ -481,6 +496,20 @@ export default function OrbPage({ onBack, onNavigateToYou, onNavigateToPage, onN
                                                                 </button>
                                                             ))}
                                                         </div>
+
+                                                        {/* Expand Button for Advanced Crop */}
+                                                        <button
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                setIsCropModalOpen(true);
+                                                            }}
+                                                            className="absolute top-1 right-1 z-40 p-1.5 bg-black/40 hover:bg-sky-500 text-white rounded-lg transition-all backdrop-blur-sm opacity-0 group-hover:opacity-100"
+                                                            title="Advanced Crop & View"
+                                                        >
+                                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                                                                <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" />
+                                                            </svg>
+                                                        </button>
 
                                                         {/* Center Label */}
                                                         <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-30">
@@ -1027,6 +1056,22 @@ export default function OrbPage({ onBack, onNavigateToYou, onNavigateToPage, onN
                     />
                 );
             })()}
+
+            {/* Advanced Crop Modal */}
+            <OrbCropModal
+                isOpen={isCropModalOpen}
+                onClose={() => setIsCropModalOpen(false)}
+                image={customOrbImage}
+                spillConfig={orbSpill}
+                scale={orbImageScale}
+                xOffset={orbImageXOffset}
+                yOffset={orbImageYOffset}
+                // Advanced State
+                advancedMasks={orbAdvancedMasks}
+                setAdvancedMasks={setOrbAdvancedMasks}
+                maskRects={orbMaskRects}
+                setMaskRects={setOrbMaskRects}
+            />
 
         </div>
     );
