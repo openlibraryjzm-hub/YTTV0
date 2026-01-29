@@ -2,9 +2,11 @@ import React, { useState, useRef, useEffect } from 'react';
 import ReactDOM from 'react-dom';
 import { useTabStore } from '../store/tabStore';
 import { useTabPresetStore } from '../store/tabPresetStore';
+
 import { useLayoutStore } from '../store/layoutStore';
+import { List, Layers } from 'lucide-react';
 import AddPlaylistToTabModal from './AddPlaylistToTabModal';
-import TabPresetsDropdown from './TabPresetsDropdown';
+import TabPresetCreateModal from './TabPresetCreateModal';
 
 const TabMenu = ({ onAdd, onRename, onDelete, inspectMode }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -112,7 +114,7 @@ const TabMenu = ({ onAdd, onRename, onDelete, inspectMode }) => {
   );
 };
 
-const TabBar = ({ onAddPlaylistToTab, showPresets = true }) => {
+const TabBar = ({ onAddPlaylistToTab, showPresets = true, mode = 'tabs', setMode }) => {
   const { tabs, activeTabId, setActiveTab, createTab, deleteTab, renameTab } = useTabStore();
   const { inspectMode } = useLayoutStore();
 
@@ -123,6 +125,7 @@ const TabBar = ({ onAddPlaylistToTab, showPresets = true }) => {
   const [editTabName, setEditTabName] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
   const [addModalTabId, setAddModalTabId] = useState(null);
+  const [showPresetCreateModal, setShowPresetCreateModal] = useState(false);
 
   const handleCreateTab = () => {
     if (newTabName.trim()) {
@@ -132,15 +135,18 @@ const TabBar = ({ onAddPlaylistToTab, showPresets = true }) => {
     }
   };
 
-  const handleStartEdit = (tab) => {
-    if (tab.id === 'all') return;
-    setEditingTabId(tab.id);
-    setEditTabName(tab.name);
+  const handleStartEdit = (item) => {
+    if (item.id === 'all') return;
+    setEditingTabId(item.id);
+    setEditTabName(item.name);
   };
 
-  const handleSaveEdit = (tabId) => {
+  const handleSaveEdit = (itemId) => {
     if (editTabName.trim()) {
-      renameTab(tabId, editTabName.trim());
+      if (mode === 'tabs') {
+        renameTab(itemId, editTabName.trim());
+      }
+      // TODO: Handle preset rename if needed
       setEditingTabId(null);
       setEditTabName('');
     }
@@ -169,7 +175,7 @@ const TabBar = ({ onAddPlaylistToTab, showPresets = true }) => {
   };
 
   const currentTab = tabs.find(t => t.id === addModalTabId);
-  const { activePresetId, presets } = useTabPresetStore();
+  const { activePresetId, presets, setActivePreset } = useTabPresetStore();
   const activePreset = presets.find(p => p.id === activePresetId) || presets[0];
 
   const visibleTabsRaw = activePresetId === 'all' || !activePreset || activePreset.tabIds.length === 0
@@ -177,6 +183,18 @@ const TabBar = ({ onAddPlaylistToTab, showPresets = true }) => {
     : tabs.filter(tab => tab.id === 'all' || activePreset.tabIds.includes(tab.id));
 
   const visibleTabs = visibleTabsRaw.filter(tab => tab.id !== 'all');
+
+  // Determine items to display based on mode
+  const displayItems = mode === 'presets' ? presets : visibleTabs;
+  const activeItemId = mode === 'presets' ? activePresetId : activeTabId;
+  const handleItemClick = (id) => {
+    if (mode === 'presets') {
+      setActivePreset(id);
+      if (setMode) setMode('tabs');
+    } else {
+      setActiveTab(activeTabId === id ? 'all' : id);
+    }
+  };
 
   return (
     <>
@@ -188,24 +206,38 @@ const TabBar = ({ onAddPlaylistToTab, showPresets = true }) => {
           onAdd={handleAddPlaylist}
         />
       )}
+      {showPresetCreateModal && (
+        <TabPresetCreateModal
+          onClose={() => setShowPresetCreateModal(false)}
+        />
+      )}
       <div className="flex items-center gap-2 min-w-0">
-        {showPresets && (
-          <div className="flex-shrink-0 relative z-20">
-            <TabPresetsDropdown />
-          </div>
+
+        {/* Toggle Mode Button */}
+        {setMode && (
+          <button
+            onClick={() => setMode(prev => prev === 'tabs' ? 'presets' : 'tabs')}
+            className={`p-1.5 rounded-md transition-all flex-shrink-0 ${mode === 'presets'
+              ? 'bg-sky-600 text-white shadow-sm'
+              : 'bg-slate-700 text-slate-400 hover:bg-slate-600 hover:text-white border border-transparent'
+              }`}
+            title={mode === 'tabs' ? "Show Presets" : "Show Tabs"}
+          >
+            {mode === 'tabs' ? <List size={16} /> : <Layers size={16} />}
+          </button>
         )}
 
         <div className="flex items-center gap-1 overflow-x-auto flex-1 min-w-0 pb-1 no-scrollbar">
-          {visibleTabs.map((tab) => (
-            <div key={tab.id} className="flex-shrink-0">
-              {editingTabId === tab.id ? (
+          {displayItems.map((item) => (
+            <div key={item.id} className="flex-shrink-0">
+              {editingTabId === item.id ? (
                 <input
                   type="text"
                   value={editTabName}
                   onChange={(e) => setEditTabName(e.target.value)}
-                  onBlur={() => handleSaveEdit(tab.id)}
+                  onBlur={() => handleSaveEdit(item.id)}
                   onKeyDown={(e) => {
-                    if (e.key === 'Enter') handleSaveEdit(tab.id);
+                    if (e.key === 'Enter') handleSaveEdit(item.id);
                     else if (e.key === 'Escape') handleCancelEdit();
                   }}
                   className="px-2 py-1 text-xs bg-slate-700 text-white rounded border border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
@@ -214,20 +246,20 @@ const TabBar = ({ onAddPlaylistToTab, showPresets = true }) => {
                 />
               ) : (
                 <div
-                  className={`rounded-full flex items-center justify-center border-2 shadow-sm transition-all duration-200 px-4 h-9 gap-1.5 cursor-pointer group relative ${activeTabId === tab.id
+                  className={`rounded-full flex items-center justify-center border-2 shadow-sm transition-all duration-200 px-4 h-9 gap-1.5 cursor-pointer group relative ${activeItemId === item.id
                     ? 'bg-white border-sky-500 text-sky-600 transform scale-105'
                     : 'bg-white border-[#334155] text-slate-600 hover:bg-slate-50 active:scale-95'
                     }`}
-                  onClick={() => setActiveTab(activeTabId === tab.id ? 'all' : tab.id)}
-                  title={getInspectTitle(`Tab: ${tab.name}`)}
+                  onClick={() => handleItemClick(item.id)}
+                  title={getInspectTitle(`${mode === 'presets' ? 'Preset' : 'Tab'}: ${item.name}`)}
                 >
-                  <span className="font-bold text-xs uppercase tracking-wide">{tab.name}</span>
+                  <span className="font-bold text-xs uppercase tracking-wide">{item.name}</span>
 
-                  {tab.id !== 'all' && (
+                  {mode === 'tabs' && item.id !== 'all' && (
                     <TabMenu
-                      onAdd={() => handleOpenAddModal(tab.id)}
-                      onRename={() => handleStartEdit(tab)}
-                      onDelete={() => deleteTab(tab.id)}
+                      onAdd={() => handleOpenAddModal(item.id)}
+                      onRename={() => handleStartEdit(item)}
+                      onDelete={() => deleteTab(item.id)}
                       inspectMode={inspectMode}
                     />
                   )}
@@ -236,34 +268,48 @@ const TabBar = ({ onAddPlaylistToTab, showPresets = true }) => {
             </div>
           ))}
 
-          {showCreateTab ? (
-            <div className="flex items-center gap-1 flex-shrink-0">
-              <input
-                type="text"
-                value={newTabName}
-                onChange={(e) => setNewTabName(e.target.value)}
-                onBlur={() => {
-                  if (newTabName.trim()) handleCreateTab();
-                  else setShowCreateTab(false);
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') handleCreateTab();
-                  else if (e.key === 'Escape') {
-                    setShowCreateTab(false);
-                    setNewTabName('');
-                  }
-                }}
-                placeholder="Tab name"
-                className="px-2 py-1.5 text-xs bg-slate-700 text-white rounded border border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
-                style={{ minWidth: '100px' }}
-                autoFocus
-              />
-            </div>
-          ) : (
+          {mode === 'tabs' && (
+            showCreateTab ? (
+              <div className="flex items-center gap-1 flex-shrink-0">
+                <input
+                  type="text"
+                  value={newTabName}
+                  onChange={(e) => setNewTabName(e.target.value)}
+                  onBlur={() => {
+                    if (newTabName.trim()) handleCreateTab();
+                    else setShowCreateTab(false);
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') handleCreateTab();
+                    else if (e.key === 'Escape') {
+                      setShowCreateTab(false);
+                      setNewTabName('');
+                    }
+                  }}
+                  placeholder="Tab name"
+                  className="px-2 py-1.5 text-xs bg-slate-700 text-white rounded border border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
+                  style={{ minWidth: '100px' }}
+                  autoFocus
+                />
+              </div>
+            ) : (
+              <button
+                onClick={() => setShowCreateTab(true)}
+                className="flex items-center justify-center w-7 h-7 rounded-lg bg-slate-700 text-slate-300 hover:bg-slate-600 transition-colors flex-shrink-0"
+                title="Create new tab"
+              >
+                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+              </button>
+            )
+          )}
+
+          {mode === 'presets' && (
             <button
-              onClick={() => setShowCreateTab(true)}
+              onClick={() => setShowPresetCreateModal(true)}
               className="flex items-center justify-center w-7 h-7 rounded-lg bg-slate-700 text-slate-300 hover:bg-slate-600 transition-colors flex-shrink-0"
-              title="Create new tab"
+              title="Create new preset"
             >
               <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />

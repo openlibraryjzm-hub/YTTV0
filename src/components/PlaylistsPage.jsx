@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { createPlaylist, getAllPlaylists, getPlaylistItems, deletePlaylist, deletePlaylistByName, getAllFoldersWithVideos, exportPlaylist, getFoldersForPlaylist, toggleStuckFolder, getAllStuckFolders, getVideosInFolder, getAllVideoProgress, getAllPlaylistMetadata, addVideoToPlaylist, getFolderMetadata } from '../api/playlistApi';
 import { getThumbnailUrl } from '../utils/youtubeUtils';
 import { usePlaylistStore } from '../store/playlistStore';
-import { Play, Shuffle, Grid3x3, RotateCcw, Info, ChevronUp, List } from 'lucide-react';
+import { Play, Shuffle, Grid3x3, RotateCcw, Info, ChevronUp, List, Layers } from 'lucide-react';
 import PlaylistFolderColumn from './PlaylistFolderColumn';
 import { useFolderStore } from '../store/folderStore';
 import { useTabStore } from '../store/tabStore';
@@ -18,6 +18,7 @@ import CardMenu from './NewCardMenu'; // Using NewCardMenu as CardMenu
 import TabBar from './TabBar';
 import CardThumbnail from './CardThumbnail';
 import PageBanner from './PageBanner';
+import { usePinStore } from '../store/pinStore';
 import { useConfigStore } from '../store/configStore';
 import TabPresetsDropdown from './TabPresetsDropdown';
 import AddPlaylistToTabModal from './AddPlaylistToTabModal';
@@ -61,10 +62,42 @@ const PlaylistsPage = ({ onVideoSelect }) => {
     return saved === 'true';
   });
 
+  // Tab Bar Mode ('tabs' or 'presets')
+  const [tabBarMode, setTabBarMode] = useState('tabs');
+
   // Keep ref in sync with state
   pieDataRef.current.hoveredPieSegment = hoveredPieSegment;
   pieDataRef.current.playlistFolders = playlistFolders;
-  const { setPlaylistItems, currentPlaylistItems, setCurrentFolder, setPreviewPlaylist, setAllPlaylists, activePlaylistId } = usePlaylistStore();
+  const { setPlaylistItems, currentPlaylistItems, currentPlaylistId, currentVideoIndex, setCurrentFolder, setPreviewPlaylist, setAllPlaylists } = usePlaylistStore();
+  const { pinnedVideos: allPinnedVideos, priorityPinIds } = usePinStore();
+
+  const priorityVideo = React.useMemo(() => {
+    return allPinnedVideos.find(v => priorityPinIds.includes(v.id));
+  }, [allPinnedVideos, priorityPinIds]);
+
+  const activeRecentVideo = React.useMemo(() => {
+    if (!currentPlaylistId) return null;
+
+    // Try to find playlist cover first
+    const currentPlaylist = playlists.find(p => String(p.id) === String(currentPlaylistId));
+    if (currentPlaylist) {
+      const thumbData = playlistThumbnails[currentPlaylist.id];
+      const thumbUrl = thumbData ? (thumbData.max || thumbData.standard) : null;
+
+      if (thumbUrl) {
+        return {
+          id: `playlist-cover-${currentPlaylist.id}`,
+          video_id: 'dummy', // Placeholder
+          title: currentPlaylist.name,
+          thumbnailUrl: thumbUrl
+        };
+      }
+    }
+
+    // Fallback to current video if no playlist cover found
+    if (!currentPlaylistItems || currentPlaylistItems.length === 0) return null;
+    return currentPlaylistItems[currentVideoIndex] || currentPlaylistItems[0];
+  }, [currentPlaylistId, playlists, playlistThumbnails, currentPlaylistItems, currentVideoIndex]);
   const { showColoredFolders, setShowColoredFolders } = useFolderStore();
   const [imageLoadErrors, setImageLoadErrors] = useState(new Set());
   const { tabs, activeTabId, addPlaylistToTab, removePlaylistFromTab } = useTabStore();
@@ -761,6 +794,10 @@ const PlaylistsPage = ({ onVideoSelect }) => {
                     videoCount={playlistCount}
                     countLabel="Playlist"
                     author={`${totalVideos} Videos`}
+                    continueVideo={activeRecentVideo}
+                    onContinue={() => setCurrentPage('videos')}
+                    pinnedVideos={priorityVideo ? [priorityVideo] : []}
+                    onPinnedClick={(video) => onVideoSelect && onVideoSelect(video.video_url)}
                   />
                 </div>
               );
@@ -787,7 +824,12 @@ const PlaylistsPage = ({ onVideoSelect }) => {
 
                 {/* Left: Tab Bar */}
                 <div className="flex-1 overflow-x-auto no-scrollbar mask-gradient-right min-w-0">
-                  <TabBar onAddPlaylistToTab={addPlaylistToTab} showPresets={true} />
+                  <TabBar
+                    onAddPlaylistToTab={addPlaylistToTab}
+                    showPresets={true}
+                    mode={tabBarMode}
+                    setMode={setTabBarMode}
+                  />
                 </div>
 
                 {/* Right: Controls */}
@@ -1464,8 +1506,8 @@ const PlaylistsPage = ({ onVideoSelect }) => {
                             data-playlist-name={playlist.name}
                           >
                             <div
-                              className={`border-2 border-slate-700/50 rounded-xl p-2 bg-slate-100/90 hover:border-sky-500/50 transition-colors h-full flex flex-col ${String(playlist.id) === String(activePlaylistId) ? 'active-playlist-marker' : ''}`}
-                              data-active-playlist={String(playlist.id) === String(activePlaylistId) ? "true" : "false"}
+                              className={`border-2 border-slate-700/50 rounded-xl p-2 bg-slate-100/90 hover:border-sky-500/50 transition-colors h-full flex flex-col ${String(playlist.id) === String(currentPlaylistId) ? 'active-playlist-marker' : ''}`}
+                              data-active-playlist={String(playlist.id) === String(currentPlaylistId) ? "true" : "false"}
                             >
                               {/* Playlist Info */}
                               <div className="mb-2 flex items-center justify-between border-2 border-[#052F4A] rounded-md p-1 bg-slate-100/90 shadow-sm relative overflow-hidden h-[38px]">

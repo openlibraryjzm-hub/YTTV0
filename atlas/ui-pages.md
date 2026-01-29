@@ -34,7 +34,10 @@ Users see a horizontal scrolling layout with playlist and folder cards arranged 
 - **Header Actions**: Top of page shows:
 - **Sticky Toolbar**: A dynamic toolbar that sits below the Page Banner and sticks to the top of the viewport when scrolling.
   - **Unified Compact Design**: Shares the same single-row architecture and unified banner background as the Videos Page toolbar.
-  - **Tab Bar**: Integrated into the left side of the row (`flex-1`). Contains the **Tab Presets Dropdown** (which acts as the "All" / Master switch) and the scrollable list of tabs.
+  - **Tab Bar**: Integrated into the left side of the row (`flex-1`).
+    - **Toggle Mode Button**: Left-most button (List/Layers icon) switches between **Tabs View** (filtered tabs of current preset) and **Presets View** (all presets).
+    - **Tabs View**: Horizontally scrollable list of tabs.
+    - **Presets View**: Horizontally scrollable list of all presets. Selecting a preset auto-switches back to Tabs view. Includes a `+` button at the end to create new presets.
   - **Controls Cluster**: A compact group on the right side containing:
     - **Folder Toggle (Icon)**: Toggles inline folder display.
     - **Add Playlist (Icon)**: Opens playlist import/create modal.

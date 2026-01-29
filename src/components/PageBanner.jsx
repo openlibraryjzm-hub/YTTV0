@@ -799,36 +799,7 @@ const PageBanner = ({ title, description, folderColor, onEdit, videoCount, count
                                     ) : currentOption === 'ascii' ? (
                                         <div className="h-[180px] w-[320px] flex items-center justify-center rounded-lg border-2 border-white/20 overflow-hidden">
                                             {/* Always show Tab Presets on Playlists page, ASCII on other pages */}
-                                            {currentNavPage === 'playlists' ? (
-                                                <div className="w-full h-full flex flex-col p-3 gap-2 overflow-y-auto">
-                                                    {presets && presets.length > 0 ? (
-                                                        presets.map((preset) => (
-                                                            <div
-                                                                key={preset.id}
-                                                                onClick={(e) => {
-                                                                    e.stopPropagation();
-                                                                    setActivePreset(preset.id);
-                                                                }}
-                                                                className={`px-3 py-2 rounded-md border transition-all flex-shrink-0 cursor-pointer ${preset.id === activePresetId
-                                                                    ? 'bg-sky-500/30 border-sky-400/50 text-white'
-                                                                    : 'bg-black/20 border-white/10 text-white/70 hover:bg-black/40 hover:border-white/30'
-                                                                    }`}
-                                                            >
-                                                                <div className="text-sm font-semibold truncate" style={{ textShadow: '-1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000' }}>
-                                                                    {preset.name}
-                                                                </div>
-                                                                <div className="text-xs text-white/50 mt-0.5" style={{ textShadow: '-1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000' }}>
-                                                                    {preset.tabIds?.length || 0} {preset.tabIds?.length === 1 ? 'tab' : 'tabs'}
-                                                                </div>
-                                                            </div>
-                                                        ))
-                                                    ) : (
-                                                        <div className="text-sm text-white/50 text-center py-4" style={{ textShadow: '-1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000' }}>
-                                                            No presets available
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            ) : displayAvatar && displayAvatar.includes('\n') ? (
+                                            {displayAvatar && displayAvatar.includes('\n') ? (
                                                 <pre className="font-mono text-[5px] leading-none whitespace-pre text-white/90 drop-shadow-md select-none max-w-full max-h-full" style={{ textShadow: '-0.5px -0.5px 0 #000, 0.5px -0.5px 0 #000, -0.5px 0.5px 0 #000, 0.5px 0.5px 0 #000, 0 1px 2px rgba(0,0,0,1)' }}>
                                                     {displayAvatar}
                                                 </pre>
@@ -841,7 +812,7 @@ const PageBanner = ({ title, description, folderColor, onEdit, videoCount, count
                                     ) : activeVideo && (
                                         <div className="relative h-[180px] w-[320px] rounded-lg overflow-hidden shadow-lg border-2 border-black">
                                             <img
-                                                src={getThumbnailUrl(activeVideo.video_id, 'medium')}
+                                                src={activeVideo.thumbnailUrl || getThumbnailUrl(activeVideo.video_id, 'medium')}
                                                 alt={activeVideo.title}
                                                 className="w-full h-full object-cover"
                                             />
