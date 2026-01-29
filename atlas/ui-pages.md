@@ -134,9 +134,11 @@ Users see a horizontal scrolling layout with two rows of video cards showing vid
   - **Unified Background**: Inherits the **Custom Page Banner Image** (if set) and continues the same horizontal scroll animation, maintaining visual alignment with the top banner.
   - **Positioning**: Uses inline style `marginTop: '-19px'` for precise vertical positioning, providing increased spacing from the page banner (45px more than the original -64px baseline)
   - **Videos Page Layout**:
-    - **Left**: All/Unsorted buttons + Colored Folder Prism (16-color horizontal bar).
-    - **Right**: Sort Dropdown (Default/Date/Progress/Last Viewed) + Save/Cancel buttons (when in bulk tag mode) + Bulk Tag Mode toggle + Add Button.
-    - **Sort Dropdown**: Compact design with reduced padding (`pl-1.5 pr-4`) and minimum width constraint for space efficiency.
+    - **Left**: Sort Dropdown + All/Unsorted Prism + Compact Folder Navigator + Colored Folder Prism.
+    - **Right**: Save/Cancel buttons (when in bulk tag mode) + Bulk Tag Mode toggle + Add Button.
+    - **Sort Dropdown**: Compact design moved to the far left for better access.
+    - **All/Unsorted Prism**: Unified container with distinct styling (White "ALL" / Black "Unsorted?").
+    - **Compact Folder Navigator**: Dynamic colored arrow buttons situated between the prisms.
     - **Bulk Tag Controls**: When bulk tag mode is active, Save (green) and Cancel (red) buttons appear between the sort dropdown and bulk tag toggle, providing clear workflow actions.
   - **Playlists Page Layout**:
     - **Left**: Tab Bar navigation.

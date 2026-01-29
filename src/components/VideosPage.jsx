@@ -1302,7 +1302,7 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
             className={`sticky top-0 z-40 transition-all duration-500 cubic-bezier(0.4, 0, 0.2, 1) overflow-hidden
             ${isStuck
                 ? 'backdrop-blur-xl border-y shadow-2xl mx-0 rounded-none mb-6 pt-2 pb-2 bg-slate-900/70'
-                : 'backdrop-blur-[2px] border-b border-x border-t border-white/10 shadow-xl mx-8 rounded-b-2xl mb-8 mt-0 pt-1 pb-0 bg-transparent'
+                : 'backdrop-blur-[2px] border-b border-x border-t border-white/10 shadow-xl mx-[22px] rounded-b-2xl mb-8 mt-0 pt-1 pb-0 bg-transparent'
               }
             `}
             style={{
@@ -1314,31 +1314,103 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
 
             <div className={`px-4 flex items-center justify-between transition-all duration-300 relative z-10 ${isStuck ? 'h-[52px]' : 'py-0.5'}`}>
 
+              {/* Sort Dropdown - Moved to Far Left */}
+              <div className="relative group shrink-0 mr-3">
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value)}
+                  className="bg-slate-800/80 border border-white/10 rounded-md py-1 pl-1.5 pr-4 text-[10px] font-bold uppercase tracking-wider text-slate-300 focus:outline-none focus:ring-1 focus:ring-sky-500 cursor-pointer hover:bg-slate-700 transition-colors appearance-none w-auto min-w-[70px]"
+                  title="Sort"
+                >
+                  <option value="shuffle">Default</option>
+                  <option value="chronological">Date</option>
+                  <option value="progress">Progress</option>
+                  <option value="lastViewed">Last Viewed</option>
+                </select>
+              </div>
+
 
               {/* Folder Selection Row */}
               {/* Left Side: All, Unsorted, and Colored Prism */}
               <div className="flex items-center gap-0 overflow-x-auto no-scrollbar mask-gradient-right flex-1 min-w-0 pr-0">
-                {/* Compact Folder Buttons */}
-                <div className="flex items-center gap-1.5 shrink-0 pr-3">
+                {/* All/Unsorted Prism */}
+                <div className="flex items-center shrink-0 h-6 mr-3 border-2 border-black rounded-lg overflow-hidden">
                   <button
                     onClick={() => setSelectedFolder(null)}
-                    className={`px-2 py-0.5 rounded-md text-[10px] font-bold transition-all uppercase tracking-wider ${selectedFolder === null
-                      ? 'bg-sky-500 text-white shadow-sm'
-                      : 'bg-slate-800/80 text-slate-400 hover:bg-slate-700 hover:text-slate-200 border border-white/5'
-                      }`}
+                    className={`h-full px-3 flex items-center justify-center transition-all ${selectedFolder === null
+                      ? 'opacity-100 z-10 relative after:content-[""] after:absolute after:inset-0 after:ring-2 after:ring-inset after:ring-black/10'
+                      : 'opacity-60 hover:opacity-100'
+                      } bg-white text-black text-[10px] font-bold uppercase tracking-wider`}
+                    title="Show All"
                   >
                     All
                   </button>
                   <button
                     onClick={() => setSelectedFolder('unsorted')}
-                    className={`px-2 py-0.5 rounded-md text-[10px] font-bold transition-all uppercase tracking-wider ${selectedFolder === 'unsorted'
-                      ? 'bg-slate-500 text-white shadow-sm'
-                      : 'bg-slate-800/80 text-slate-400 hover:bg-slate-700 hover:text-slate-200 border border-white/5'
-                      }`}
+                    className={`h-full w-8 flex items-center justify-center transition-all ${selectedFolder === 'unsorted'
+                      ? 'opacity-100 z-10 relative after:content-[""] after:absolute after:inset-0 after:ring-2 after:ring-inset after:ring-white/30'
+                      : 'opacity-60 hover:opacity-100'
+                      } bg-black text-white text-[10px] font-bold`}
+                    title="Unsorted"
                   >
-                    Unsorted
+                    ?
                   </button>
                 </div>
+
+                {/* Compact Folder Navigator */}
+                {(() => {
+                  let navBg = 'rgba(30, 41, 59, 0.8)'; // slate-800/80
+                  let iconColor = 'text-white/60';
+                  let iconHoverColor = 'hover:text-white';
+                  let dividerColor = 'bg-white/10';
+                  let hoverBg = 'hover:bg-white/10';
+
+                  if (selectedFolder === null) {
+                    navBg = '#ffffff';
+                    iconColor = 'text-black/60';
+                    iconHoverColor = 'hover:text-black';
+                    dividerColor = 'bg-black/10';
+                    hoverBg = 'hover:bg-black/5';
+                  } else if (selectedFolder === 'unsorted') {
+                    navBg = '#000000';
+                    iconColor = 'text-white/60';
+                    iconHoverColor = 'hover:text-white';
+                    dividerColor = 'bg-white/10';
+                    hoverBg = 'hover:bg-white/10';
+                  } else {
+                    const colorInfo = FOLDER_COLORS.find(c => c.id === selectedFolder);
+                    if (colorInfo) {
+                      navBg = colorInfo.hex;
+                      iconColor = 'text-white/90'; // More opaque on colors
+                      iconHoverColor = 'hover:text-white';
+                      dividerColor = 'bg-white/20'; // More visible divider
+                      hoverBg = 'hover:bg-black/10'; // Darken on hover
+                    }
+                  }
+
+                  return (
+                    <div
+                      className="flex items-center shrink-0 h-6 mr-3 border-2 border-black rounded-lg overflow-hidden transition-colors duration-300"
+                      style={{ backgroundColor: navBg }}
+                    >
+                      <button
+                        onClick={handleFolderNavigatePrev}
+                        className={`h-full px-1.5 flex items-center justify-center ${hoverBg} ${iconColor} ${iconHoverColor} transition-colors disabled:opacity-30 disabled:hover:bg-transparent`}
+                        title="Previous Folder"
+                      >
+                        <ChevronLeft size={12} strokeWidth={3} />
+                      </button>
+                      <div className={`w-px h-3 ${dividerColor} mx-0`}></div>
+                      <button
+                        onClick={handleFolderNavigateNext}
+                        className={`h-full px-1.5 flex items-center justify-center ${hoverBg} ${iconColor} ${iconHoverColor} transition-colors disabled:opacity-30 disabled:hover:bg-transparent`}
+                        title="Next Folder"
+                      >
+                        <ChevronRight size={12} strokeWidth={3} />
+                      </button>
+                    </div>
+                  );
+                })()}
 
                 <div className="flex-1 flex items-center shrink-0 h-6 mr-3 border-2 border-black rounded-lg overflow-hidden">
                   {FOLDER_COLORS.map((color, index) => {
@@ -1371,20 +1443,7 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
 
               {/* Right Side: Sort Dropdown + Actions */}
               <div className="flex items-center gap-2 shrink-0 ml-auto">
-                {/* Compact Sort */}
-                <div className="relative group shrink-0">
-                  <select
-                    value={sortBy}
-                    onChange={(e) => setSortBy(e.target.value)}
-                    className="bg-slate-800/80 border border-white/10 rounded-md py-1 pl-1.5 pr-4 text-[10px] font-bold uppercase tracking-wider text-slate-300 focus:outline-none focus:ring-1 focus:ring-sky-500 cursor-pointer hover:bg-slate-700 transition-colors appearance-none w-auto min-w-[70px]"
-                    title="Sort"
-                  >
-                    <option value="shuffle">Default</option>
-                    <option value="chronological">Date</option>
-                    <option value="progress">Progress</option>
-                    <option value="lastViewed">Last Viewed</option>
-                  </select>
-                </div>
+
 
                 {/* Save and Cancel buttons - only show in bulk tag mode */}
                 {bulkTagMode && (

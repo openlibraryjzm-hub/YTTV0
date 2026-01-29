@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { FOLDER_COLORS } from '../utils/folderColors';
+import { usePlaylistStore } from '../store/playlistStore';
 import { Pen, Play, ChevronRight, ChevronLeft, RotateCcw, Clock, Pin, Sparkles, Info, Star, Search, Settings, Layers } from 'lucide-react';
 import { getThumbnailUrl } from '../utils/youtubeUtils';
 
@@ -105,6 +106,7 @@ const PageBanner = ({ title, description, folderColor, onEdit, videoCount, count
     } = usePaginationStore();
 
     const { currentPage: currentNavPage } = useNavigationStore();
+    const { currentPlaylistItems, currentVideoIndex } = usePlaylistStore();
 
     // Local state for page editing
     const [isEditingPageLocal, setIsEditingPageLocal] = useState(false);
@@ -812,16 +814,29 @@ const PageBanner = ({ title, description, folderColor, onEdit, videoCount, count
                                                 alt={activeVideo.title}
                                                 className="w-full h-full object-cover"
                                             />
+                                            {/* Continue Label */}
+                                            {currentOption === 'continue' && (
+                                                <div className="absolute top-1 left-1 px-1.5 py-0.5 rounded bg-black/60 backdrop-blur-sm text-[10px] font-bold text-white/90 uppercase shadow-sm border border-white/10">
+                                                    {(() => {
+                                                        const currentPlaying = currentPlaylistItems && currentPlaylistItems[currentVideoIndex];
+                                                        const isPlaying = activeVideo && currentPlaying &&
+                                                            (activeVideo.id === currentPlaying.id || activeVideo.video_id === currentPlaying.video_id);
+                                                        return isPlaying ? 'CURRENTLY PLAYING' : 'CONTINUE';
+                                                    })()}
+                                                </div>
+                                            )}
+
                                             {/* Pin type icon - only show when viewing pinned video */}
                                             {currentOption === 'pinned' && activePinnedVideo && (
                                                 <div
-                                                    className="absolute top-1 left-1 flex items-center gap-0.5 px-1 py-0.5 rounded bg-black/60 backdrop-blur-sm"
+                                                    className="absolute top-1 left-1 flex items-center gap-0.5 px-1 py-0.5 rounded bg-black/60 backdrop-blur-sm border border-white/10"
                                                     title={
                                                         activePinnedVideo.isPriority && activePinnedVideo.isFollower ? 'Priority Follower Pin' :
                                                             activePinnedVideo.isPriority ? 'Priority Pin' :
                                                                 activePinnedVideo.isFollower ? 'Follower Pin' : 'Pin'
                                                     }
                                                 >
+                                                    <span className="text-[10px] font-bold text-white/90 uppercase mr-1">PINNED</span>
                                                     {/* Crown for priority */}
                                                     {activePinnedVideo.isPriority && (
                                                         <span className="text-[10px]" style={{ color: '#FFD700' }}>👑</span>
@@ -840,6 +855,8 @@ const PageBanner = ({ title, description, folderColor, onEdit, videoCount, count
                                             )}
                                         </div>
                                     )}
+
+
 
                                     {/* Left navigation strip - Previous Pin */}
                                     {currentOption === 'pinned' && hasMultiplePins && (

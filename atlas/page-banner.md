@@ -47,10 +47,15 @@ Users see a contextual banner (220px fixed height) at the top of scrollable cont
     - **Tab Presets List** (Playlists Page): Interactive list of tab presets replacing the carousel
     - **Thumbnail Size**: `h-[180px] w-[320px]` (180px × 320px) - matches video card width for visual consistency
     - **Pin Type Badge** (on pinned thumbnails): Top-left badge showing pin type:
-      - **Normal Pin**: White pin icon
-      - **Follower Pin**: White pin icon + → arrow
-      - **Priority Pin**: 👑 crown + golden pin icon
-      - **Priority Follower Pin**: 👑 crown + golden pin icon + → arrow
+      - **Styling**: `bg-black/60 backdrop-blur-sm border border-white/10` with "PINNED" text label
+      - **Content**: Displays "PINNED" label + icons:
+        - **Normal Pin**: White pin icon
+        - **Follower Pin**: White pin icon + → arrow
+        - **Priority Pin**: 👑 crown + golden pin icon
+        - **Priority Follower Pin**: 👑 crown + golden pin icon + → arrow
+    - **Continue Badge** (on continue thumbnail): Top-left badge showing status:
+      - **Styling**: `bg-black/60 backdrop-blur-sm border border-white/10`
+      - **Content**: "CONTINUE" (standard) or "CURRENTLY PLAYING" (if active video matches current player video)
     - **Hover Navigation**:
       - **Header Navigation Strips**: Hover over header to reveal left/right gradient strips for playlist preview navigation
       - **Thumbnail Navigation Strips**: Hover over thumbnail to reveal left/right gradient strips for pin navigation (when viewing pins with multiple pins)
@@ -552,7 +557,7 @@ The Sticky Toolbar is a dynamic toolbar component that sits directly below the P
 - **Backdrop Blur**: Subtle blur (`backdrop-blur-[2px]`) for slight depth
 - **Borders**: Thin borders on all sides (`border-b border-x border-t border-white/10`) with 10% white opacity
 - **Rounded Corners**: Rounded bottom corners (`rounded-b-2xl`) matching Page Banner
-- **Margins**: Horizontal margins (`mx-8`) for visual spacing
+- **Margins**: Horizontal margins (`mx-[22px]`) for wider visual width
 - **Padding**: Minimal vertical padding (`pt-1 pb-0`)
 - **Shadow**: Subtle shadow (`shadow-xl`)
 
@@ -574,16 +579,21 @@ The Sticky Toolbar is a dynamic toolbar component that sits directly below the P
 
 **3: Videos Page Sticky Toolbar Layout**
 
-**Left Side - Folder Selection & Sort:**
-- **Sort Dropdown**: Compact sort selector with four options:
+**Left Side - Sort, Folders & Navigation:**
+- **Sort Dropdown** (Far Left): Compact sort selector with four options:
   - "Default" (shuffle order)
   - "Date" (chronological)
   - "Progress" (by watch progress)
   - "Last Viewed" (by last viewed timestamp - most recently viewed first)
   - Styled with dark background (`bg-slate-800/80`), small text (`text-[10px]`), uppercase, bold
-- **All/Unsorted Buttons**: Two compact buttons:
-  - **"All"**: Shows all videos (selected state: `bg-sky-500`, unselected: `bg-slate-800/80`)
-  - **"Unsorted"**: Shows unsorted videos (selected state: `bg-slate-500`, unselected: `bg-slate-800/80`)
+- **All/Unsorted Prism**: A unified, prism-style container for the "All" and "Unsorted" toggles:
+  - **Structure**: `border-2 border-black rounded-lg overflow-hidden`
+  - **"All" Button**: White background (`bg-white`), Black text (`text-black`), Bold "ALL" label.
+  - **"Unsorted" Button**: Black background (`bg-black`), White text (`text-white`), displays a simple "?" label.
+- **Compact Folder Navigator**: Situated between the All/Unsorted prism and the Main Folder Prism.
+  - **Function**: Cycles through colored folders (Prev/Next).
+  - **Dynamic Styling**: Background color dynamically matches the currently selected folder (or All/Unsorted state).
+  - **Icons**: Left/Right chevrons (`ChevronLeft`, `ChevronRight`).
 - **Color Bar Prism**: A unified, stretchable horizontal bar displaying all 16 folder colors:
   - **Layout**: Flex container with `flex-1` to fill available space
   - **Structure**: Each folder color is a flex-1 button, creating equal-width segments
