@@ -51,6 +51,7 @@ Users see playlist cards built using the reusable Card component system:
       - **Play Button**: Plays the video currently shown in the thumbnail (after shuffle) or first video (default)
       - **Folder Menu Button**: Tag icon - Toggles the Folder Pie Chart Menu expansion
       - **Info Button**: Info icon - Toggles video title overlay on the thumbnail. Shows the title of the currently displayed video.
+  - **List View Toggle** (Bottom Left): List icon button. Opens the **Folder List View (Reel Overlay)**, displaying all folders for this playlist in a vertical scrolling column.
   - **Global Info Toggle** (Sticky Top Bar): Info icon button that toggles video title overlays for ALL playlist/folder cards. State persisted to localStorage.
   - **3-Dot Menu** (inline with title): Expand, Export, Add to Tab, Delete options
 
@@ -242,13 +243,16 @@ Colored Folder cards use the exact same visual structure as Playlist cards, appe
 **2: File Manifest**
 
 **UI/Components:**
+
 - `src/components/PlaylistsPage.jsx`: Renders folder cards inline with playlists
+- `src/components/PlaylistFolderColumn.jsx`: Renders the folder reel overlay
 
 **State Management:**
 - `src/components/PlaylistsPage.jsx` (local state):
   - `folders`: Array of folder objects from `getAllFoldersWithVideos()`
   - `folderMetadata`: Map of `"playlistId:folderColor"` to `{ name, description }`
   - `stuckFolders`: Set of stuck folder keys
+  - `openFolderListIds`: Set of playlist IDs with active Reel View overlay
 
 **API/Bridge:**
 - `src/api/playlistApi.js`:
@@ -257,6 +261,37 @@ Colored Folder cards use the exact same visual structure as Playlist cards, appe
   - `getVideosInFolder(playlistId, folderColor)` - Gets videos in a folder
   - `toggleStuckFolder(playlistId, folderColor)` - Toggles sticky state
   - `createPlaylist()`, `addVideoToPlaylist()` - Used for Convert to Playlist
+
+---
+
+#### ### 4.1.1.1d Folder List View (Reel Overlay)
+
+**1: User-Perspective Description**
+
+User clicks the "List" icon (bottom-left of Playlist Card thumbnail) to open the Reel View for a specific playlist. This creates a focused, vertical browsing experience for that playlist's folders.
+
+- **Visual Structure**:
+  - **Overlay**: Full-screen semi-transparent black backdrop (`bg-black/60` with blur).
+  - **Vertical Reel**: A centered vertical column containing the playlist's folder cards.
+  - **Card Sizing**: Folder cards match the standard 500px width of playlist cards.
+  - **Scroll Behavior**: The column scrolls vertically (`overflow-y-auto`), distinct from the main page's horizontal scrolling.
+  - **Close Action**: Closed via top-right "X" button or by clicking the backdrop.
+
+- **Folder Card Styling (In Reel)**:
+  - **Appearance**: Identical to standard Folder Cards but arranged vertically.
+  - **Left Stripe**: Colored vertical stripe on the thumbnail (`colored left-0 top-0 bottom-0 w-3`) acts as a quick visual identifier.
+  - **Glow Effect**: Hovering a folder in the reel triggers a radial gradient glow behind the card matching the folder's color.
+
+- **Interactions**:
+  - **Select**: Clicking a folder loads its videos into the view.
+  - **Sticky Toggle**: Users can stick/unstick folders directly from this view via the 3-dot menu.
+  - **Play Folder**: Play button in the hover overlay plays the folder's videos.
+
+**2: File Manifest**
+
+**UI/Components:**
+- `src/components/PlaylistFolderColumn.jsx`: The overlay component implementing the vertical reel.
+
 
 ---
 #### ### 4.1.2.1 Videos Card

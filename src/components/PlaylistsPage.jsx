@@ -2,7 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { createPlaylist, getAllPlaylists, getPlaylistItems, deletePlaylist, deletePlaylistByName, getAllFoldersWithVideos, exportPlaylist, getFoldersForPlaylist, toggleStuckFolder, getAllStuckFolders, getVideosInFolder, getAllVideoProgress, getAllPlaylistMetadata, addVideoToPlaylist, getFolderMetadata } from '../api/playlistApi';
 import { getThumbnailUrl } from '../utils/youtubeUtils';
 import { usePlaylistStore } from '../store/playlistStore';
-import { Play, Shuffle, Grid3x3, RotateCcw, Info, ChevronUp } from 'lucide-react';
+import { Play, Shuffle, Grid3x3, RotateCcw, Info, ChevronUp, List } from 'lucide-react';
+import PlaylistFolderColumn from './PlaylistFolderColumn';
 import { useFolderStore } from '../store/folderStore';
 import { useTabStore } from '../store/tabStore';
 import { useTabPresetStore } from '../store/tabPresetStore';
@@ -44,6 +45,7 @@ const PlaylistsPage = ({ onVideoSelect }) => {
   const [stuckFolders, setStuckFolders] = useState(new Set()); // Track stuck folders: Set of "playlistId:folderColor" strings
   const [folderMetadata, setFolderMetadata] = useState({}); // Store folder custom names: { "playlistId:folderColor": { name, description } }
   const [openFolderMenuIds, setOpenFolderMenuIds] = useState(new Set()); // Track which playlists have folder selector menu open
+  const [openFolderListIds, setOpenFolderListIds] = useState(new Set()); // Track which playlists have folder list view open
   const [hoveredPieSegment, setHoveredPieSegment] = useState({}); // Track hovered pie segment per playlist: { playlistId: folderColorId }
   const pieChartRefs = useRef({}); // Refs for pie chart containers to handle wheel events
   const pieDataRef = useRef({ hoveredPieSegment: {}, playlistFolders: {} }); // Ref to hold latest state for wheel handler
@@ -655,7 +657,7 @@ const PlaylistsPage = ({ onVideoSelect }) => {
   };
 
   return (
-    <div className="w-full h-full flex flex-col">
+    <div className="w-full h-full flex flex-col relative">
       {showBulkImporter ? (
         <BulkPlaylistImporter
           onImportComplete={handleBulkImportComplete}
@@ -1607,11 +1609,22 @@ const PlaylistsPage = ({ onVideoSelect }) => {
                                         }
                                         setOpenFolderMenuIds(prev => {
                                           const next = new Set(prev);
+                                          const isOpening = !next.has(playlist.id);
                                           if (next.has(playlist.id)) {
                                             next.delete(playlist.id);
                                           } else {
                                             next.add(playlist.id);
                                           }
+
+                                          // If opening pie menu, ensure list view is closed
+                                          if (isOpening) {
+                                            setOpenFolderListIds(prevList => {
+                                              const nextList = new Set(prevList);
+                                              nextList.delete(playlist.id);
+                                              return nextList;
+                                            });
+                                          }
+
                                           return next;
                                         });
                                       }}
@@ -1750,6 +1763,37 @@ const PlaylistsPage = ({ onVideoSelect }) => {
                                 )}
 
                                 {/* Play overlay on hover - REMOVED per user request */}
+
+                                {/* Folder List Toggle - Bottom Left */}
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setOpenFolderListIds(prev => {
+                                      const next = new Set(prev);
+                                      const isOpening = !next.has(playlist.id);
+                                      if (next.has(playlist.id)) {
+                                        next.delete(playlist.id);
+                                      } else {
+                                        next.add(playlist.id);
+                                      }
+
+                                      // If opening list view, ensure pie menu is closed
+                                      if (isOpening) {
+                                        setOpenFolderMenuIds(prevMenu => {
+                                          const nextMenu = new Set(prevMenu);
+                                          nextMenu.delete(playlist.id);
+                                          return nextMenu;
+                                        });
+                                      }
+
+                                      return next;
+                                    });
+                                  }}
+                                  className="absolute bottom-2 left-2 p-1.5 rounded-full bg-black/60 text-slate-200 hover:bg-sky-500 hover:text-white transition-all opacity-0 group-hover:opacity-100 z-30 transform hover:scale-110"
+                                  title="Show folders list"
+                                >
+                                  <List size={16} />
+                                </button>
 
                                 {/* 3-dot menu - moved to hover overlay (Top Right) */}
                                 <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-30" onClick={e => e.stopPropagation()}>
@@ -2512,7 +2556,56 @@ const PlaylistsPage = ({ onVideoSelect }) => {
           </div>
         </>
       )}
-    </div >
+      {/* Vertical Folder Column Overlay */}
+      {(() => {
+        const activeListId = Array.from(openFolderListIds)[0];
+        if (!activeListId) return null;
+
+        const playlist = playlists.find(p => p.id === activeListId);
+        if (!playlist) return null;
+
+        const folders = playlistFolders[playlist.id] || [];
+
+        return (
+          <PlaylistFolderColumn
+            playlist={playlist}
+            folders={folders}
+            cardRect={true} // Force render since we're centering
+            onClose={() => setOpenFolderListIds(new Set())}
+            onFolderSelect={async (folder) => {
+              try {
+                const items = await getVideosInFolder(folder.playlist_id, folder.folder_color);
+                setPlaylistItems(items, folder.playlist_id, { playlist_id: folder.playlist_id, folder_color: folder.folder_color }, playlist.name);
+                if (items.length > 0 && onVideoSelect) {
+                  onVideoSelect(items[0].video_url);
+                }
+              } catch (error) {
+                console.error('Failed to load folder items:', error);
+              }
+            }}
+            onStickyToggle={async (playlistId, folderColor) => {
+              try {
+                const newStuckStatus = await toggleStuckFolder(playlistId, folderColor);
+                const folderKey = `${playlistId}:${folderColor}`;
+                setStuckFolders((prev) => {
+                  const next = new Set(prev);
+                  if (newStuckStatus) {
+                    next.add(folderKey);
+                  } else {
+                    next.delete(folderKey);
+                  }
+                  return next;
+                });
+              } catch (error) {
+                console.error('Failed to toggle stick folder:', error);
+              }
+            }}
+            stuckFolders={stuckFolders}
+            folderMetadata={folderMetadata}
+          />
+        );
+      })()}
+    </div>
   );
 };
 

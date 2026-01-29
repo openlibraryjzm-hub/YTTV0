@@ -39,13 +39,28 @@ Users see a horizontal scrolling layout with playlist and folder cards arranged 
     - **Folder Toggle (Icon)**: Toggles inline folder display.
     - **Add Playlist (Icon)**: Opens playlist import/create modal.
 
-- **Colored Folders**: When folder toggle is on, folder cards appear in the horizontal scroll above playlists:
-  - **Grouped by Playlist**: Folders are organized under their parent playlist with section headers
-  - **Playlist Headers**: Each group has an uppercase header with gradient divider lines showing the playlist name
-  - **Folder Card Schema**: Folder cards use the same structure as playlist cards (bordered container, title bar with colored dot + name, hover controls, thumbnail with 3-dot menu)
-  - **Custom Names**: Folders display custom names if renamed, otherwise show the color name
-  - **3-Dot Menu**: Options include "Stick/Unstick Folder" and "Convert to Playlist"
-  - **"Source Playlists" Header**: Separates folder section from regular playlists (only visible when folders are shown)
+- **Colored Folders**: Users have three ways to view and interact with colored folders:
+  
+  1. **Sticky Folders (Horizontal)**: 
+     - "Stuck" folders always appear in the main horizontal scroll, positioned immediately after their parent playlist.
+     - They persist even when other folder views are closed.
+     - Useful for frequently accessed folders.
+
+  2. **Inline Expansion (Horizontal)**:
+     - Activated via the "Expand Folders" option in the playlist's 3-dot menu.
+     - Temporarily inserts all folders for that playlist into the horizontal scroll, immediately to the right of the playlist card.
+     - Useful for quick access without leaving the main page context.
+
+  3. **Folder Reel View (Vertical Overlay)**:
+     - Activated via the "List" icon on the bottom-left of a Playlist Card.
+     - Opens a focused **vertical overlay** showing only that playlist's folders.
+     - Best for browsing deep folder structures or managing multiple folders at once.
+     - See **ui-cards.md** Section 4.1.1.1d for full details.
+
+- **Folder Card Functionality**:
+  - **Structure**: Matches playlist cards (500px width), with added colored dot indicators and stripe accents.
+  - **Management**: 3-dot menu allows Sticking/Unsticking and "Convert to Playlist".
+  - **Headers**: When "Show Colored Folders" global toggle is on, a "Source Playlists" header differentiates regular playlists from the folder section (if applicable).
 
 - **Scroll to Top Arrow**: A centered up-facing arrow button at the bottom of the page
   - **Functionality**: Clicking the arrow smoothly scrolls the horizontal container back to the beginning (left edge)
