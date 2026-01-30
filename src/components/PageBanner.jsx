@@ -193,8 +193,19 @@ const PageBanner = ({ title, description, folderColor, onEdit, videoCount, count
 
                 if (playlistFolder && playlistFolder.images?.length > 0) {
                     // Check for color assignment within this playlist folder first
+                    let assignedImageId = null;
                     if (folderColor && playlistFolder.colorAssignments?.[folderColor]) {
-                        const assignedImageId = playlistFolder.colorAssignments[folderColor];
+                        assignedImageId = playlistFolder.colorAssignments[folderColor];
+                    } else if (!folderColor) {
+                        // Check for Unsorted or All assignments
+                        if (title === 'Unsorted Videos' && playlistFolder.colorAssignments?.['unsorted']) {
+                            assignedImageId = playlistFolder.colorAssignments['unsorted'];
+                        } else if (title !== 'Unsorted Videos' && playlistFolder.colorAssignments?.['all']) {
+                            assignedImageId = playlistFolder.colorAssignments['all'];
+                        }
+                    }
+
+                    if (assignedImageId) {
                         const assignedImage = playlistFolder.images.find(i => i.id === assignedImageId);
                         if (assignedImage) {
                             return {
@@ -230,7 +241,7 @@ const PageBanner = ({ title, description, folderColor, onEdit, videoCount, count
         // This takes priority when a colored folder is selected
         // BUT ONLY if there isn't a playlist-specific override that has already handled it.
         // Since the block above returns if an override is found, we don't need explicit skipping logic here.
-        if (folderColor && (themeGroupLeaderFolderId || themeFolderId)) {
+        if (themeGroupLeaderFolderId || themeFolderId) {
             // Determine active theme folder
             let activeThemeFolder = null;
             if (themeGroupLeaderFolderId) {
@@ -239,21 +250,33 @@ const PageBanner = ({ title, description, folderColor, onEdit, videoCount, count
                 activeThemeFolder = layer2Folders?.find(f => f.id === themeFolderId);
             }
 
-            // Check for assignment
-            if (activeThemeFolder?.colorAssignments?.[folderColor]) {
-                const assignedImageId = activeThemeFolder.colorAssignments[folderColor];
-                const assignedImage = activeThemeFolder.images?.find(i => i.id === assignedImageId);
+            if (activeThemeFolder) {
+                // Check for assignment (Color, Unsorted, or All)
+                let assignedImageId = null;
+                if (folderColor && activeThemeFolder.colorAssignments?.[folderColor]) {
+                    assignedImageId = activeThemeFolder.colorAssignments[folderColor];
+                } else if (!folderColor) {
+                    if (title === 'Unsorted Videos' && activeThemeFolder.colorAssignments?.['unsorted']) {
+                        assignedImageId = activeThemeFolder.colorAssignments['unsorted'];
+                    } else if (title !== 'Unsorted Videos' && activeThemeFolder.colorAssignments?.['all']) {
+                        assignedImageId = activeThemeFolder.colorAssignments['all'];
+                    }
+                }
 
-                if (assignedImage) {
-                    return {
-                        image: assignedImage.image,
-                        scale: assignedImage.scale,
-                        xOffset: assignedImage.xOffset,
-                        yOffset: assignedImage.yOffset,
-                        imageId: assignedImage.id,
-                        folderId: activeThemeFolder.id,
-                        bgColor: assignedImage.bgColor
-                    };
+                if (assignedImageId) {
+                    const assignedImage = activeThemeFolder.images?.find(i => i.id === assignedImageId);
+
+                    if (assignedImage) {
+                        return {
+                            image: assignedImage.image,
+                            scale: assignedImage.scale,
+                            xOffset: assignedImage.xOffset,
+                            yOffset: assignedImage.yOffset,
+                            imageId: assignedImage.id,
+                            folderId: activeThemeFolder.id,
+                            bgColor: assignedImage.bgColor
+                        };
+                    }
                 }
             }
         }

@@ -1544,7 +1544,11 @@ export default function PagePage({ onBack, onNavigateToOrb, onNavigateToYou, onN
                                                 </div>
 
                                                 <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
-                                                    {FOLDER_COLORS.map(color => {
+                                                    {[
+                                                        { id: 'all', name: 'All (Default)', hex: '#ffffff', isSpecial: true },
+                                                        { id: 'unsorted', name: 'Unsorted', hex: '#64748b', isSpecial: true },
+                                                        ...FOLDER_COLORS
+                                                    ].map(color => {
                                                         const assignedImageId = folder.colorAssignments?.[color.id];
                                                         const assignedImage = assignedImageId && folder.images ? folder.images.find(i => i.id === assignedImageId) : null;
                                                         const isEditing = activeColorAssignment?.folderId === folder.id && activeColorAssignment?.colorId === color.id;
@@ -1565,7 +1569,7 @@ export default function PagePage({ onBack, onNavigateToOrb, onNavigateToYou, onN
                                                                         }`}
                                                                     style={{
                                                                         backgroundColor: color.hex,
-                                                                        borderColor: assignedImage ? 'white' : 'transparent',
+                                                                        borderColor: assignedImage ? 'white' : (color.id === 'all' ? '#cbd5e1' : 'transparent'),
                                                                         opacity: (activeColorAssignment && !isEditing && activeColorAssignment.folderId === folder.id) ? 0.3 : 1
                                                                     }}
                                                                     title={`${color.name}${assignedImage ? ' (Click to change/remove)' : ' (Click to assign image)'}`}

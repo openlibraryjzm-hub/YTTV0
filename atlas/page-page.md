@@ -69,7 +69,7 @@ PagePage is a dedicated page for Page Banner and Layer 2 image library configura
       - **Playlist Assignment Dropdown**: Select which Playlists show this folder as their theme. (Multi-select).
       - **Pull Group Button**: Dropdown to "pull" an existing Group Leader (and all its members) from another folder into this one instantly.
       - **Delete Folder Button**.
-    - **Color Assignments Section**: Horizontal row of 16 color dots for theme mapping.
+    - **Color Assignments Section**: Horizontal row of 16 color dots (plus "All" and "Unsorted" slots) for theme mapping.
     - **Image Stream**: Horizontal scroll of images.
       - **Group Visualization**: Images are automatically organized into visual groups. "Group Leaders" appear first with a label, followed by their members. Ungrouped images follow.
       - **Move to Folder**: Every image has a "Folder" icon button in the top-right corner. Clicking it allows moving that individual image (or the entire group if it's a leader) to another folder.
