@@ -91,7 +91,7 @@ const selectImageFromFolder = (folder, pageKey, pageType, folderColor) => {
     return availableImages[0];
 };
 
-const PageBanner = ({ title, description, folderColor, onEdit, videoCount, countLabel = 'Video', creationYear, author, avatar, continueVideo, onContinue, pinnedVideos = [], onPinnedClick, children, childrenPosition = 'right', topRightContent, seamlessBottom = false, playlistBadges, onPlaylistBadgeLeftClick, onPlaylistBadgeRightClick, allPlaylists, filteredPlaylist, customDescription, onNavigateNext, onNavigatePrev, onReturn, showReturnButton, currentPlaylistId, showAscii = true, orbControls, onFolderNavigatePrev, onFolderNavigateNext, selectedFolder, folderCounts }) => {
+const PageBanner = ({ title, description, folderColor, onEdit, videoCount, countLabel = 'Video', creationYear, author, avatar, continueVideo, onContinue, pinnedVideos = [], onPinnedClick, children, childrenPosition = 'right', topRightContent, seamlessBottom = false, playlistBadges, onPlaylistBadgeLeftClick, onPlaylistBadgeRightClick, allPlaylists, filteredPlaylist, customDescription, onNavigateNext, onNavigatePrev, onReturn, showReturnButton, currentPlaylistId, showAscii = true, orbControls, customLeftContent, onFolderNavigatePrev, onFolderNavigateNext, selectedFolder, folderCounts }) => {
     // Pagination store for page navigator
     const {
         currentPage: paginationPage,
@@ -162,6 +162,36 @@ const PageBanner = ({ title, description, folderColor, onEdit, videoCount, count
                 };
             }
             return null;
+        }
+
+        // Check for specific Color Assignment in the Active Theme
+        // This takes priority when a colored folder is selected
+        if (folderColor && (themeGroupLeaderFolderId || themeFolderId)) {
+            // Determine active theme folder
+            let activeThemeFolder = null;
+            if (themeGroupLeaderFolderId) {
+                activeThemeFolder = layer2Folders?.find(f => f.id === themeGroupLeaderFolderId);
+            } else if (themeFolderId) {
+                activeThemeFolder = layer2Folders?.find(f => f.id === themeFolderId);
+            }
+
+            // Check for assignment
+            if (activeThemeFolder?.colorAssignments?.[folderColor]) {
+                const assignedImageId = activeThemeFolder.colorAssignments[folderColor];
+                const assignedImage = activeThemeFolder.images?.find(i => i.id === assignedImageId);
+
+                if (assignedImage) {
+                    return {
+                        image: assignedImage.image,
+                        scale: assignedImage.scale,
+                        xOffset: assignedImage.xOffset,
+                        yOffset: assignedImage.yOffset,
+                        imageId: assignedImage.id,
+                        folderId: activeThemeFolder.id,
+                        bgColor: assignedImage.bgColor
+                    };
+                }
+            }
         }
 
         // Check for theme group leader (app-wide theme) - NEW
@@ -472,8 +502,12 @@ const PageBanner = ({ title, description, folderColor, onEdit, videoCount, count
                             </p>
                         ))}
 
-                        {/* Orb Controls - Compact version for banner */}
-                        {orbControls && (
+                        {/* Custom Left Content (e.g. Spill Editor for OrbPage) */}
+                        {customLeftContent ? (
+                            <div className="mt-1">
+                                {customLeftContent}
+                            </div>
+                        ) : orbControls && (
                             <div className="mt-3 flex items-center gap-3">
                                 {/* Orb Image Preview/Upload */}
                                 <label className="relative w-16 h-16 rounded-full border-2 border-white/30 overflow-hidden flex items-center justify-center bg-black/20 backdrop-blur-sm cursor-pointer group hover:border-white/50 transition-all">

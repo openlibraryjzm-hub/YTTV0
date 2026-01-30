@@ -12,7 +12,7 @@ OrbPage is a dedicated page for orb configuration, accessed via the "Orb" button
 
 - **Page Structure**:
   - **Page Banner**: "Orb Configuration" title with description (no author/avatar to avoid ASCII art)
-    - **Compact Orb Controls**: Left side of banner shows orb image preview, spill toggle, and remove button in compact format
+    - **Spill Editor**: Left side of banner shows interactive spill editor with visualizer, quadrant toggles, and upload controls
   - **Back Button**: "Back to Settings" button in banner's top-right corner
   - **Navigation Buttons**: Four buttons (Orb, You, Page, App) positioned at bottom of Page Banner
   - **Sticky Toolbar**: Contains Colored Prism Bar with clickable filtering
@@ -51,15 +51,11 @@ OrbPage is a dedicated page for orb configuration, accessed via the "Orb" button
 
 
 - **Configuration Tab**:
-  - **Custom Orb Image**: Upload button with preview thumbnail
-  - **Spill Toggle**: Master switch to enable/disable image overflow (also in banner)
-  - **Image Scale Slider**: 0.5x to 3.0x zoom control (max-width 50%, visible when spill enabled)
+  - **Preview Area**: Left side shows a placeholder/preview instruction area (Spill Editor moved to Banner)
+  - **Image Scale Slider**: 0.5x to 3.0x zoom control (Right side, visible when spill enabled)
     - Value displayed centered above slider
-  - **Image Position Sliders**: X and Y offset controls (-100 to +100px) with reset buttons (max-width 50%)
+  - **Image Position Sliders**: X and Y offset controls (-100 to +100px) with reset buttons (Right side)
     - Values and reset buttons displayed centered above each slider
-  - **Spill Areas Visualizer**: Interactive quadrant selector positioned to the right of sliders
-    - Shows actual image with circular mask (compact size: 144px × 144px)
-    - Description/tip displayed underneath
   - **Save Configuration Button**: Saves current setup as a new preset
   - **Compact Layout**: All controls visible without vertical scrolling
 

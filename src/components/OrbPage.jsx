@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Smile, Plus, ArrowLeft, Trash2, Check, Folder, Settings, LayoutGrid } from 'lucide-react';
+import { Smile, Plus, ArrowLeft, Trash2, Check, Folder, Settings, LayoutGrid, ChevronDown, Image } from 'lucide-react';
 import OrbGroupColumn from './OrbGroupColumn';
 import OrbCropModal from './OrbCropModal';
 import { useConfigStore } from '../store/configStore';
@@ -28,10 +28,17 @@ export default function OrbPage({ onBack, onNavigateToYou, onNavigateToPage, onN
     const [activeTab, setActiveTab] = useState('presets'); // 'presets', 'configuration', or 'groups'
     const [selectedFolderFilter, setSelectedFolderFilter] = useState(null); // null = show all
     const [folderAssignmentOpenId, setFolderAssignmentOpenId] = useState(null); // ID of preset with open folder selector
-    const [selectedGroupLeaderId, setSelectedGroupLeaderId] = useState(null); // ID of selected group leader preset
+    const [selectedGroupLeaderId, setSelectedGroupLeaderId] = useState(null); // ID of selected group leader preset (Groups Tab)
     const [showGroupLeadersOnly, setShowGroupLeadersOnly] = useState(false); // Toggle to show only group leaders with members
     const [columnLeaderId, setColumnLeaderId] = useState(null); // ID of group leader whose column is open
     const [isCropModalOpen, setIsCropModalOpen] = useState(false); // State for advanced crop modal
+
+    // content tab state
+    const [selectedConfigGroupLeaderId, setSelectedConfigGroupLeaderId] = useState(null);
+    const [configShowAllPresets, setConfigShowAllPresets] = useState(true);
+    const [expandedConfigGroupLeaderSelector, setExpandedConfigGroupLeaderSelector] = useState(false);
+    const [hideSubordinates, setHideSubordinates] = useState(false); // Toggle to hide subordinate orbs in groups tab
+    const [hideSingletons, setHideSingletons] = useState(false); // Toggle to hide unassigned/non-leader orbs in groups tab
 
 
     const handleOrbImageUpload = (e) => {
@@ -96,10 +103,13 @@ export default function OrbPage({ onBack, onNavigateToYou, onNavigateToPage, onN
             if (folderAssignmentOpenId && !e.target.closest('.folder-assignment-menu')) {
                 setFolderAssignmentOpenId(null);
             }
+            if (expandedConfigGroupLeaderSelector && !e.target.closest('[data-config-group-leader-selector]')) {
+                setExpandedConfigGroupLeaderSelector(false);
+            }
         };
         document.addEventListener('mousedown', handleClickOutside);
         return () => document.removeEventListener('mousedown', handleClickOutside);
-    }, [folderAssignmentOpenId]);
+    }, [folderAssignmentOpenId, expandedConfigGroupLeaderSelector]);
 
     // Convert vertical wheel scrolling to horizontal scrolling (optimized)
     useEffect(() => {
@@ -166,6 +176,133 @@ export default function OrbPage({ onBack, onNavigateToYou, onNavigateToPage, onN
         updateOrbFavoriteFolders(favoriteId, newFolders);
     };
 
+    // Spill Editor component for Page Banner
+    const spillEditor = (
+        <div className="flex items-center gap-4 animate-fade-in">
+            {/* Interactive Visualizer */}
+            <div className="relative w-24 h-24 border-2 border-white/20 rounded-xl overflow-visible bg-black/20 select-none group backdrop-blur-sm shadow-lg">
+                {/* The Image (Clipped directly) */}
+                {customOrbImage ? (
+                    <>
+                        <img
+                            src={customOrbImage}
+                            className="absolute inset-0 w-full h-full object-cover transition-transform duration-300 origin-center"
+                            style={{
+                                transform: `scale(${orbImageScale}) translate(${orbImageXOffset * 0.3}px, ${orbImageYOffset * 0.3}px)`,
+                                clipPath: 'url(#settingVisualizerClip)'
+                            }}
+                            alt=""
+                        />
+
+                        {/* Hidden SVG Definitions for Clip Path */}
+                        <svg width="0" height="0" className="absolute">
+                            <defs>
+                                <clipPath id="settingVisualizerClip" clipPathUnits="objectBoundingBox">
+                                    <circle cx="0.5" cy="0.5" r="0.35" />
+
+                                    {/* Advanced Masks */}
+                                    {/* TL */}
+                                    {orbSpill.tl && (
+                                        orbAdvancedMasks.tl ? <rect x={orbMaskRects.tl.x / 100} y={orbMaskRects.tl.y / 100} width={orbMaskRects.tl.w / 100} height={orbMaskRects.tl.h / 100} />
+                                            : <rect x="-50" y="-50" width="50.5" height="50.5" />
+                                    )}
+                                    {/* TR */}
+                                    {orbSpill.tr && (
+                                        orbAdvancedMasks.tr ? <rect x={orbMaskRects.tr.x / 100} y={orbMaskRects.tr.y / 100} width={orbMaskRects.tr.w / 100} height={orbMaskRects.tr.h / 100} />
+                                            : <rect x="0.5" y="-50" width="50.5" height="50.5" />
+                                    )}
+                                    {/* BL */}
+                                    {orbSpill.bl && (
+                                        orbAdvancedMasks.bl ? <rect x={orbMaskRects.bl.x / 100} y={orbMaskRects.bl.y / 100} width={orbMaskRects.bl.w / 100} height={orbMaskRects.bl.h / 100} />
+                                            : <rect x="-50" y="0.5" width="50.5" height="50.5" />
+                                    )}
+                                    {/* BR */}
+                                    {orbSpill.br && (
+                                        orbAdvancedMasks.br ? <rect x={orbMaskRects.br.x / 100} y={orbMaskRects.br.y / 100} width={orbMaskRects.br.w / 100} height={orbMaskRects.br.h / 100} />
+                                            : <rect x="0.5" y="0.5" width="50.5" height="50.5" />
+                                    )}
+                                </clipPath>
+                            </defs>
+                        </svg>
+
+                        {/* Quadrant Toggles */}
+                        <div className="absolute inset-0 z-20 grid grid-cols-2 grid-rows-2">
+                            {['tl', 'tr', 'bl', 'br'].map((q) => (
+                                <button
+                                    key={q}
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        toggleSpillQuadrant(q);
+                                    }}
+                                    className={`
+                                                                    relative border-dashed border-white/30 transition-all duration-200 hover:bg-sky-500/20 active:scale-95 flex items-center justify-center
+                                                                    ${q === 'tl' ? 'border-r border-b rounded-tl-xl' : ''}
+                                                                    ${q === 'tr' ? 'border-l border-b rounded-tr-xl' : ''}
+                                                                    ${q === 'bl' ? 'border-r border-t rounded-bl-xl' : ''}
+                                                                    ${q === 'br' ? 'border-l border-t rounded-br-xl' : ''}
+                                                                    ${orbSpill[q] ? 'bg-sky-500/30' : ''}
+                                                                `}
+                                >
+                                    {orbSpill[q] && (
+                                        <div className="p-0.5 bg-sky-500 rounded-full text-white shadow-sm">
+                                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4">
+                                                <polyline points="20 6 9 17 4 12" />
+                                            </svg>
+                                        </div>
+                                    )}
+                                </button>
+                            ))}
+                        </div>
+                    </>
+                ) : (
+                    <div className="w-full h-full flex items-center justify-center text-white/30 text-[9px] font-bold uppercase text-center p-2">
+                        No Image
+                    </div>
+                )}
+
+                {/* Expand Button for Advanced Crop */}
+                <button
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        setIsCropModalOpen(true);
+                    }}
+                    className="absolute top-1 right-1 z-40 p-1 bg-black/40 hover:bg-sky-500 text-white rounded transition-all backdrop-blur-sm opacity-0 group-hover:opacity-100"
+                    title="Advanced Crop & View"
+                >
+                    <Settings size={12} />
+                </button>
+            </div>
+
+            {/* Controls */}
+            <div className="flex flex-col gap-2">
+                <div className="flex items-center gap-2">
+                    <label className="px-3 py-1.5 bg-sky-500 hover:bg-sky-600 text-white text-[10px] font-bold uppercase rounded-md cursor-pointer transition-all shadow-md border border-white/10 flex items-center gap-1.5">
+                        <Plus size={12} />
+                        Upload
+                        <input
+                            type="file"
+                            onChange={handleOrbImageUpload}
+                            accept="image/*"
+                            className="hidden"
+                        />
+                    </label>
+                    {customOrbImage && (
+                        <button
+                            onClick={() => setCustomOrbImage(null)}
+                            className="px-3 py-1.5 bg-white/10 hover:bg-red-500/20 text-white/70 hover:text-red-300 border border-white/10 hover:border-red-500/30 text-[10px] font-bold uppercase rounded-md transition-all flex items-center gap-1.5"
+                        >
+                            <Trash2 size={12} />
+                            Remove
+                        </button>
+                    )}
+                </div>
+                <div className="text-[10px] text-white/50 leading-tight max-w-[140px]">
+                    <p>Click quadrants to toggle spill. Use <span className="text-white/80 font-bold"><Settings size={10} className="inline mb-0.5" /></span> for advanced crop.</p>
+                </div>
+            </div>
+        </div>
+    );
+
     return (
         <div className="w-full h-full flex flex-col">
             <div ref={scrollContainerRef} className="flex-1 overflow-y-auto bg-transparent relative">
@@ -177,19 +314,7 @@ export default function OrbPage({ onBack, onNavigateToYou, onNavigateToPage, onN
                         folderColor={null}
                         showAscii={false}
                         seamlessBottom={true}
-                        orbControls={{
-                            customOrbImage,
-                            isSpillEnabled,
-                            onImageUpload: handleOrbImageUpload,
-                            onToggleSpill: (e) => {
-                                if (e) {
-                                    e.stopPropagation();
-                                    e.preventDefault();
-                                }
-                                setIsSpillEnabled(!isSpillEnabled);
-                            },
-                            onRemoveImage: () => setCustomOrbImage(null)
-                        }}
+                        customLeftContent={spillEditor}
                         topRightContent={
                             onBack ? (
                                 <button
@@ -363,209 +488,320 @@ export default function OrbPage({ onBack, onNavigateToYou, onNavigateToPage, onN
                                     <Settings size={14} /> Orb Configuration
                                 </h3>
                                 <div className="space-y-2 px-1">
+                                    {/* Layout: Left (Instructions/Empty) | Right (Sliders) */}
+                                    <div className="flex items-start gap-4">
+                                        {/* Left Side: Group Leader Previewer */}
+                                        <div className="flex-1 space-y-3 p-4 rounded-xl border-2 border-slate-200 bg-slate-50/50 h-full">
+                                            {(() => {
+                                                // 1. Get Group Leaders
+                                                const groupLeaders = orbFavorites.filter(fav =>
+                                                    fav.groupMembers && fav.groupMembers.length >= 1
+                                                );
 
-                                    {/* Image Scale Slider */}
-                                    {customOrbImage && isSpillEnabled && (
-                                        <div className="space-y-1 border-t border-slate-100 pt-2">
-                                            <label className="text-xs font-bold uppercase text-slate-400 px-1">Image Scale</label>
-                                            <div className="flex flex-col items-center gap-1 max-w-[50%]">
-                                                <span className="text-xs font-mono font-bold text-sky-600">{orbImageScale.toFixed(2)}x</span>
-                                                <div className="flex items-center gap-2 w-full">
-                                                    <span className="text-[10px] font-bold text-slate-300">0.5x</span>
-                                                    <input
-                                                        type="range"
-                                                        min="0.5"
-                                                        max="3.0"
-                                                        step="0.05"
-                                                        value={orbImageScale}
-                                                        onChange={(e) => setOrbImageScale(parseFloat(e.target.value))}
-                                                        className="flex-1 h-2 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-sky-500 hover:accent-sky-400 transition-all border border-slate-200"
-                                                    />
-                                                    <span className="text-[10px] font-bold text-slate-300">3.0x</span>
-                                                </div>
-                                            </div>
+                                                // 2. Determine Selection
+                                                const activeLeaderId = (!configShowAllPresets && selectedConfigGroupLeaderId) || null;
+                                                const selectedLeader = activeLeaderId
+                                                    ? orbFavorites.find(f => f.id === activeLeaderId)
+                                                    : null;
+
+                                                // 3. Get Items to Display
+                                                let displayItems = [];
+                                                if (configShowAllPresets) {
+                                                    displayItems = orbFavorites;
+                                                } else if (selectedLeader) {
+                                                    // Leader first, then members
+                                                    displayItems = [selectedLeader];
+                                                    if (selectedLeader.groupMembers) {
+                                                        const memberObjects = selectedLeader.groupMembers
+                                                            .map(mid => orbFavorites.find(f => f.id === mid))
+                                                            .filter(Boolean);
+                                                        displayItems = [...displayItems, ...memberObjects];
+                                                    }
+                                                }
+
+                                                return (
+                                                    <div className="space-y-3 h-full flex flex-col">
+                                                        <div className="flex items-center justify-between">
+                                                            <label className="text-xs font-bold uppercase text-slate-400 flex items-center gap-2">
+                                                                <Folder size={12} className={selectedLeader ? "text-sky-500" : "text-slate-400"} />
+                                                                {configShowAllPresets ? 'All Presets' : selectedLeader ? 'Group Leader' : 'Group Preview'}
+                                                            </label>
+                                                            {(selectedLeader || configShowAllPresets) && (
+                                                                <button
+                                                                    onClick={() => {
+                                                                        setSelectedConfigGroupLeaderId(null);
+                                                                        setConfigShowAllPresets(false);
+                                                                        setExpandedConfigGroupLeaderSelector(false);
+                                                                    }}
+                                                                    className="text-[9px] font-bold text-red-400 hover:text-red-500 transition-colors"
+                                                                >
+                                                                    Clear
+                                                                </button>
+                                                            )}
+                                                        </div>
+
+                                                        {/* Group Leader Selector Dropdown */}
+                                                        <div className="relative" data-config-group-leader-selector>
+                                                            <button
+                                                                onClick={() => setExpandedConfigGroupLeaderSelector(!expandedConfigGroupLeaderSelector)}
+                                                                className="flex items-center gap-2 px-2 py-1.5 bg-white hover:bg-slate-50 border-2 border-slate-200 hover:border-sky-300 rounded-lg text-[10px] font-medium text-slate-700 transition-all w-full justify-between"
+                                                            >
+                                                                <span className="truncate">
+                                                                    {configShowAllPresets
+                                                                        ? 'All Presets'
+                                                                        : selectedLeader
+                                                                            ? `${selectedLeader.name} (${selectedLeader.groupMembers?.length || 0} members)`
+                                                                            : 'Select Group Leader...'
+                                                                    }
+                                                                </span>
+                                                                <ChevronDown
+                                                                    size={12}
+                                                                    className={`transition-transform ${expandedConfigGroupLeaderSelector ? 'rotate-180' : ''}`}
+                                                                />
+                                                            </button>
+
+                                                            {expandedConfigGroupLeaderSelector && (
+                                                                <div className="absolute top-full left-0 right-0 mt-1 bg-white border-2 border-slate-200 rounded-lg shadow-lg z-50 max-h-64 overflow-y-auto">
+                                                                    {/* All Presets Option */}
+                                                                    <button
+                                                                        onClick={(e) => {
+                                                                            e.stopPropagation();
+                                                                            setConfigShowAllPresets(true);
+                                                                            setSelectedConfigGroupLeaderId(null);
+                                                                            setExpandedConfigGroupLeaderSelector(false);
+                                                                        }}
+                                                                        className={`w-full px-3 py-2 text-left text-[10px] font-medium transition-all flex items-center gap-2 border-b border-slate-100 ${configShowAllPresets
+                                                                            ? 'bg-sky-50 text-sky-700'
+                                                                            : 'hover:bg-slate-50 text-slate-600'
+                                                                            }`}
+                                                                    >
+                                                                        <div className="w-8 h-8 rounded-full border-2 border-slate-200 overflow-hidden flex-shrink-0 bg-slate-100 flex items-center justify-center">
+                                                                            <LayoutGrid size={14} className="text-slate-400" />
+                                                                        </div>
+                                                                        <div className="flex-1 min-w-0">
+                                                                            <div className="font-bold truncate">All Presets</div>
+                                                                            <div className="text-[9px] text-slate-500">Show all saved presets</div>
+                                                                        </div>
+                                                                        {configShowAllPresets && <Check size={12} className="text-sky-600" />}
+                                                                    </button>
+
+                                                                    {groupLeaders.length === 0 ? (
+                                                                        <div className="px-3 py-4 text-[10px] text-slate-400 text-center">
+                                                                            No group leaders found.
+                                                                        </div>
+                                                                    ) : (
+                                                                        groupLeaders.map((leader) => {
+                                                                            const isSelected = selectedConfigGroupLeaderId === leader.id;
+                                                                            return (
+                                                                                <button
+                                                                                    key={leader.id}
+                                                                                    onClick={() => {
+                                                                                        setConfigShowAllPresets(false);
+                                                                                        setSelectedConfigGroupLeaderId(leader.id);
+                                                                                        setExpandedConfigGroupLeaderSelector(false);
+                                                                                    }}
+                                                                                    className={`w-full px-3 py-2 text-left text-[10px] font-medium transition-all flex items-center gap-2 border-b border-slate-100 last:border-b-0 ${isSelected
+                                                                                        ? 'bg-sky-50 text-sky-700'
+                                                                                        : 'hover:bg-slate-50 text-slate-600'
+                                                                                        }`}
+                                                                                >
+                                                                                    <div className="w-8 h-8 rounded-full border-2 border-slate-200 overflow-hidden flex-shrink-0">
+                                                                                        <img src={leader.customOrbImage} alt="" className="w-full h-full object-cover" />
+                                                                                    </div>
+                                                                                    <div className="flex-1 min-w-0">
+                                                                                        <div className="font-bold truncate">{leader.name}</div>
+                                                                                        <div className="text-[9px] text-slate-500">{leader.groupMembers?.length} members</div>
+                                                                                    </div>
+                                                                                    {isSelected && <Check size={12} className="text-sky-600" />}
+                                                                                </button>
+                                                                            );
+                                                                        })
+                                                                    )}
+                                                                </div>
+                                                            )}
+                                                        </div>
+
+                                                        {/* Grid display */}
+                                                        <div className="flex-1 overflow-y-auto min-h-[200px] border-t border-slate-200 pt-2 -mx-2 px-2">
+                                                            {(configShowAllPresets || selectedLeader) ? (
+                                                                <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 gap-2">
+                                                                    {displayItems.map((item) => {
+                                                                        const isLeader = selectedLeader && item.id === selectedLeader.id;
+                                                                        const isCurrent = customOrbImage === item.customOrbImage &&
+                                                                            // Simplified check, ideally check all props, but image is good proxy for now
+                                                                            true;
+
+                                                                        return (
+                                                                            <div key={item.id} className="relative group" style={{ width: '64px', height: '64px' }}>
+                                                                                <button
+                                                                                    onClick={() => applyOrbFavorite(item)}
+                                                                                    className={`w-full h-full relative aspect-square rounded-full border-2 transition-all ${isCurrent ? 'border-sky-500 ring-2 ring-sky-200 z-10' :
+                                                                                        isLeader ? 'border-purple-400 ring-1 ring-purple-100' : 'border-slate-200 hover:border-sky-300'
+                                                                                        }`}
+                                                                                    title={item.name}
+                                                                                >
+                                                                                    {/* Image Layer with Spill Effect */}
+                                                                                    <div
+                                                                                        className="absolute inset-0 pointer-events-none flex items-center justify-center overflow-visible"
+                                                                                        style={{
+                                                                                            clipPath: item.isSpillEnabled && item.orbSpill ? `url(#orbClipPath-${item.id})` : 'circle(50% at 50% 50%)',
+                                                                                        }}
+                                                                                    >
+                                                                                        <img
+                                                                                            src={item.customOrbImage}
+                                                                                            alt=""
+                                                                                            className="max-w-none transition-all duration-300"
+                                                                                            style={{
+                                                                                                width: item.isSpillEnabled ? `calc(100% * ${item.orbImageScale || 1})` : '100%',
+                                                                                                height: item.isSpillEnabled ? `calc(100% * ${item.orbImageScale || 1})` : '100%',
+                                                                                                transform: item.isSpillEnabled ? `translate(${(item.orbImageXOffset || 0) * 0.3}px, ${(item.orbImageYOffset || 0) * 0.3}px)` : 'none',
+                                                                                                objectFit: item.isSpillEnabled ? 'contain' : 'cover'
+                                                                                            }}
+                                                                                        />
+                                                                                    </div>
+
+                                                                                    {/* Leader Badge */}
+                                                                                    {isLeader && (
+                                                                                        <div className="absolute -top-1 -right-1 bg-purple-500 text-white text-[7px] font-bold px-1 py-0.5 rounded uppercase z-20 shadow-sm border border-white/50">
+                                                                                            Leader
+                                                                                        </div>
+                                                                                    )}
+
+                                                                                    {/* Active Check */}
+                                                                                    {isCurrent && (
+                                                                                        <div className="absolute inset-0 flex items-center justify-center bg-black/10 rounded-full z-20 backdrop-blur-[1px]">
+                                                                                            <Check size={16} className="text-white drop-shadow-md" />
+                                                                                        </div>
+                                                                                    )}
+                                                                                </button>
+
+                                                                                {/* Delete Button */}
+                                                                                <button
+                                                                                    onClick={(e) => {
+                                                                                        e.stopPropagation();
+                                                                                        if (window.confirm('Delete this preset?')) {
+                                                                                            removeOrbFavorite(item.id);
+                                                                                        }
+                                                                                    }}
+                                                                                    className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center shadow-md transition-all z-30 opacity-0 group-hover:opacity-100 scale-90 hover:scale-100"
+                                                                                    title="Delete Preset"
+                                                                                >
+                                                                                    <Trash2 size={10} />
+                                                                                </button>
+                                                                            </div>
+                                                                        );
+                                                                    })}
+                                                                </div>
+                                                            ) : (
+                                                                <div className="h-full flex flex-col items-center justify-center text-slate-400">
+                                                                    <div className="p-4 rounded-full bg-slate-100 mb-2">
+                                                                        <Folder size={24} className="opacity-50" />
+                                                                    </div>
+                                                                    <p className="text-[10px] font-bold uppercase">Select Group to Preview</p>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })()}
                                         </div>
-                                    )}
 
-                                    {/* Image Position Offset Sliders and Spill Areas */}
-                                    {customOrbImage && isSpillEnabled && (
-                                        <div className="space-y-2 border-t border-slate-100 pt-2">
-                                            <div className="flex items-start gap-4">
-                                                {/* Left side: Image Position Sliders */}
-                                                <div className="flex-1 space-y-2 max-w-[50%]">
-                                                    <label className="text-xs font-bold uppercase text-slate-400 ml-1">Image Position</label>
+                                        {/* Right Side: Image Adjustment Sliders */}
+                                        <div className="flex-1 space-y-4">
+                                            <label className="text-xs font-bold uppercase text-slate-400 border-b border-slate-100 pb-1 w-full block">Image Adjustments</label>
+
+                                            {customOrbImage && isSpillEnabled ? (
+                                                <div className="space-y-3">
+                                                    {/* Scale */}
+                                                    <div className="space-y-1">
+                                                        <div className="flex items-center justify-between">
+                                                            <label className="text-[10px] font-bold text-slate-500">Scale</label>
+                                                            <span className="text-[10px] font-mono font-bold text-sky-600 bg-sky-50 px-1.5 py-0.5 rounded">{orbImageScale.toFixed(2)}x</span>
+                                                        </div>
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="text-[9px] font-bold text-slate-300">0.5</span>
+                                                            <input
+                                                                type="range"
+                                                                min="0.5"
+                                                                max="3.0"
+                                                                step="0.05"
+                                                                value={orbImageScale}
+                                                                onChange={(e) => setOrbImageScale(parseFloat(e.target.value))}
+                                                                className="flex-1 h-2 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-sky-500 hover:accent-sky-400 transition-all border border-slate-200"
+                                                            />
+                                                            <span className="text-[9px] font-bold text-slate-300">3.0</span>
+                                                        </div>
+                                                    </div>
 
                                                     {/* X Offset */}
                                                     <div className="space-y-1">
-                                                        <label className="text-[11px] font-bold text-slate-500 px-1">Horizontal (X)</label>
-                                                        <div className="flex flex-col items-center gap-1">
+                                                        <div className="flex items-center justify-between">
+                                                            <label className="text-[10px] font-bold text-slate-500">Horizontal (X)</label>
                                                             <div className="flex items-center gap-2">
-                                                                <span className="text-xs font-mono font-bold text-sky-600">{orbImageXOffset}px</span>
+                                                                <span className="text-[10px] font-mono font-bold text-sky-600 bg-sky-50 px-1.5 py-0.5 rounded">{orbImageXOffset}px</span>
                                                                 {orbImageXOffset !== 0 && (
                                                                     <button
                                                                         onClick={() => setOrbImageXOffset(0)}
-                                                                        className="text-[9px] font-bold text-slate-400 hover:text-sky-500 transition-colors"
+                                                                        className="text-[9px] font-bold text-slate-400 hover:text-sky-500"
                                                                     >
                                                                         Reset
                                                                     </button>
                                                                 )}
                                                             </div>
-                                                            <div className="flex items-center gap-2 w-full">
-                                                                <span className="text-[10px] font-bold text-slate-300">-100</span>
-                                                                <input
-                                                                    type="range"
-                                                                    min="-100"
-                                                                    max="100"
-                                                                    step="1"
-                                                                    value={orbImageXOffset}
-                                                                    onChange={(e) => setOrbImageXOffset(parseInt(e.target.value))}
-                                                                    className="flex-1 h-2 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-sky-500 hover:accent-sky-400 transition-all border border-slate-200"
-                                                                />
-                                                                <span className="text-[10px] font-bold text-slate-300">+100</span>
-                                                            </div>
+                                                        </div>
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="text-[9px] font-bold text-slate-300">-100</span>
+                                                            <input
+                                                                type="range"
+                                                                min="-100"
+                                                                max="100"
+                                                                step="1"
+                                                                value={orbImageXOffset}
+                                                                onChange={(e) => setOrbImageXOffset(parseInt(e.target.value))}
+                                                                className="flex-1 h-2 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-sky-500 hover:accent-sky-400 transition-all border border-slate-200"
+                                                            />
+                                                            <span className="text-[9px] font-bold text-slate-300">+100</span>
                                                         </div>
                                                     </div>
 
                                                     {/* Y Offset */}
                                                     <div className="space-y-1">
-                                                        <label className="text-[11px] font-bold text-slate-500 px-1">Vertical (Y)</label>
-                                                        <div className="flex flex-col items-center gap-1">
+                                                        <div className="flex items-center justify-between">
+                                                            <label className="text-[10px] font-bold text-slate-500">Vertical (Y)</label>
                                                             <div className="flex items-center gap-2">
-                                                                <span className="text-xs font-mono font-bold text-sky-600">{orbImageYOffset}px</span>
+                                                                <span className="text-[10px] font-mono font-bold text-sky-600 bg-sky-50 px-1.5 py-0.5 rounded">{orbImageYOffset}px</span>
                                                                 {orbImageYOffset !== 0 && (
                                                                     <button
                                                                         onClick={() => setOrbImageYOffset(0)}
-                                                                        className="text-[9px] font-bold text-slate-400 hover:text-sky-500 transition-colors"
+                                                                        className="text-[9px] font-bold text-slate-400 hover:text-sky-500"
                                                                     >
                                                                         Reset
                                                                     </button>
                                                                 )}
                                                             </div>
-                                                            <div className="flex items-center gap-2 w-full">
-                                                                <span className="text-[10px] font-bold text-slate-300">-100</span>
-                                                                <input
-                                                                    type="range"
-                                                                    min="-100"
-                                                                    max="100"
-                                                                    step="1"
-                                                                    value={orbImageYOffset}
-                                                                    onChange={(e) => setOrbImageYOffset(parseInt(e.target.value))}
-                                                                    className="flex-1 h-2 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-sky-500 hover:accent-sky-400 transition-all border border-slate-200"
-                                                                />
-                                                                <span className="text-[10px] font-bold text-slate-300">+100</span>
-                                                            </div>
+                                                        </div>
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="text-[9px] font-bold text-slate-300">-100</span>
+                                                            <input
+                                                                type="range"
+                                                                min="-100"
+                                                                max="100"
+                                                                step="1"
+                                                                value={orbImageYOffset}
+                                                                onChange={(e) => setOrbImageYOffset(parseInt(e.target.value))}
+                                                                className="flex-1 h-2 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-sky-500 hover:accent-sky-400 transition-all border border-slate-200"
+                                                            />
+                                                            <span className="text-[9px] font-bold text-slate-300">+100</span>
                                                         </div>
                                                     </div>
                                                 </div>
-
-                                                {/* Right side: Spill Areas */}
-                                                <div className="flex-1 space-y-1 -mt-[60px]">
-                                                    <label className="text-xs font-bold uppercase text-slate-400 ml-1">Spill Areas</label>
-
-                                                    {/* Interactive Visualizer */}
-                                                    <div className="relative w-36 h-36 border-2 border-slate-100 rounded-xl overflow-visible bg-slate-50 mx-auto select-none group">
-                                                        {/* The Image (Clipped directly) */}
-                                                        <img
-                                                            src={customOrbImage}
-                                                            className="absolute inset-0 w-full h-full object-cover transition-transform duration-300 origin-center"
-                                                            style={{
-                                                                transform: `scale(${orbImageScale}) translate(${orbImageXOffset * 0.5}px, ${orbImageYOffset * 0.5}px)`,
-                                                                clipPath: 'url(#settingVisualizerClip)'
-                                                            }}
-                                                            alt=""
-                                                        />
-
-                                                        {/* Hidden SVG Definitions for Clip Path */}
-                                                        <svg width="0" height="0" className="absolute">
-                                                            <defs>
-                                                                <clipPath id="settingVisualizerClip" clipPathUnits="objectBoundingBox">
-                                                                    <circle cx="0.5" cy="0.5" r="0.35" /> {/* Matches cx=50 cy=50 r=35 in 100x100 box */}
-
-                                                                    {/* Advanced Masks */}
-                                                                    {/* TL */}
-                                                                    {orbSpill.tl && (
-                                                                        orbAdvancedMasks.tl ? <rect x={orbMaskRects.tl.x / 100} y={orbMaskRects.tl.y / 100} width={orbMaskRects.tl.w / 100} height={orbMaskRects.tl.h / 100} />
-                                                                            : <rect x="-50" y="-50" width="50.5" height="50.5" />
-                                                                    )}
-                                                                    {/* TR */}
-                                                                    {orbSpill.tr && (
-                                                                        orbAdvancedMasks.tr ? <rect x={orbMaskRects.tr.x / 100} y={orbMaskRects.tr.y / 100} width={orbMaskRects.tr.w / 100} height={orbMaskRects.tr.h / 100} />
-                                                                            : <rect x="0.5" y="-50" width="50.5" height="50.5" />
-                                                                    )}
-                                                                    {/* BL */}
-                                                                    {orbSpill.bl && (
-                                                                        orbAdvancedMasks.bl ? <rect x={orbMaskRects.bl.x / 100} y={orbMaskRects.bl.y / 100} width={orbMaskRects.bl.w / 100} height={orbMaskRects.bl.h / 100} />
-                                                                            : <rect x="-50" y="0.5" width="50.5" height="50.5" />
-                                                                    )}
-                                                                    {/* BR */}
-                                                                    {orbSpill.br && (
-                                                                        orbAdvancedMasks.br ? <rect x={orbMaskRects.br.x / 100} y={orbMaskRects.br.y / 100} width={orbMaskRects.br.w / 100} height={orbMaskRects.br.h / 100} />
-                                                                            : <rect x="0.5" y="0.5" width="50.5" height="50.5" />
-                                                                    )}
-                                                                </clipPath>
-                                                            </defs>
-                                                        </svg>
-
-                                                        {/* Quadrant Toggles */}
-                                                        <div className="absolute inset-0 z-20 grid grid-cols-2 grid-rows-2">
-                                                            {['tl', 'tr', 'bl', 'br'].map((q) => (
-                                                                <button
-                                                                    key={q}
-                                                                    onClick={() => toggleSpillQuadrant(q)}
-                                                                    className={`
-                                                                    relative border-dashed border-white/30 transition-all duration-200 hover:bg-sky-500/20 active:scale-95 flex items-center justify-center
-                                                                    ${q === 'tl' ? 'border-r border-b rounded-tl-xl' : ''}
-                                                                    ${q === 'tr' ? 'border-l border-b rounded-tr-xl' : ''}
-                                                                    ${q === 'bl' ? 'border-r border-t rounded-bl-xl' : ''}
-                                                                    ${q === 'br' ? 'border-l border-t rounded-br-xl' : ''}
-                                                                    ${orbSpill[q] ? 'bg-sky-500/30' : ''}
-                                                                `}
-                                                                >
-                                                                    {orbSpill[q] && (
-                                                                        <div className="p-1 bg-sky-500 rounded-full text-white shadow-sm">
-                                                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4">
-                                                                                <polyline points="20 6 9 17 4 12" />
-                                                                            </svg>
-                                                                        </div>
-                                                                    )}
-                                                                </button>
-                                                            ))}
-                                                        </div>
-
-                                                        {/* Expand Button for Advanced Crop */}
-                                                        <button
-                                                            onClick={(e) => {
-                                                                e.stopPropagation();
-                                                                setIsCropModalOpen(true);
-                                                            }}
-                                                            className="absolute top-1 right-1 z-40 p-1.5 bg-black/40 hover:bg-sky-500 text-white rounded-lg transition-all backdrop-blur-sm opacity-0 group-hover:opacity-100"
-                                                            title="Advanced Crop & View"
-                                                        >
-                                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                                                                <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" />
-                                                            </svg>
-                                                        </button>
-
-                                                        {/* Center Label */}
-                                                        <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-30">
-                                                            <div className="bg-black/50 text-white text-[10px] font-bold px-2 py-0.5 rounded-full backdrop-blur-sm">
-                                                                ORB
-                                                            </div>
-                                                        </div>
-                                                    </div>
-
-                                                    {/* Description/Tip underneath */}
-                                                    <div className="text-[10px] text-slate-500 space-y-0.5">
-                                                        <p>Click quadrants to toggle spill.</p>
-                                                        <ul className="list-disc pl-3 space-y-0">
-                                                            <li><span className="font-bold text-sky-600">Selected:</span> Overflows</li>
-                                                            <li><span className="font-bold text-slate-400">Unselected:</span> Clipped</li>
-                                                        </ul>
-                                                    </div>
+                                            ) : (
+                                                <div className="text-center py-8 text-slate-400 bg-slate-100 rounded-lg border-2 border-dashed border-slate-200">
+                                                    <p className="text-[10px]">Enable spill to adjust image settings</p>
                                                 </div>
-                                            </div>
+                                            )}
                                         </div>
-                                    )}
+                                    </div>
 
                                     {/* Save Current Configuration Button */}
                                     <div className="border-t border-slate-100 pt-2 mt-2">
@@ -865,9 +1101,18 @@ export default function OrbPage({ onBack, onNavigateToYou, onNavigateToPage, onN
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                 {/* Left side: All orb presets - click to select group leader */}
                                                 <div className="space-y-3 p-4 rounded-xl border-2 border-slate-100 bg-white">
-                                                    <label className="text-xs font-bold uppercase text-slate-400">
-                                                        {groupLeader ? 'Group Leader' : 'Select Group Leader'}
-                                                    </label>
+                                                    <div className="flex items-center justify-between">
+                                                        <label className="text-xs font-bold uppercase text-slate-400">
+                                                            {groupLeader ? 'Group Leader' : 'Select Group Leader'}
+                                                        </label>
+                                                        <button
+                                                            onClick={() => setHideSubordinates(!hideSubordinates)}
+                                                            className={`text-[9px] font-bold uppercase px-2 py-1 rounded-md transition-all ${hideSubordinates ? 'bg-indigo-100 text-indigo-600' : 'bg-slate-100 text-slate-400 hover:bg-slate-200'}`}
+                                                            title="Hide images that are already assigned to a group"
+                                                        >
+                                                            {hideSubordinates ? 'Show Subordinates' : 'Hide Subordinates'}
+                                                        </button>
+                                                    </div>
                                                     {groupLeader && (
                                                         <div className="mb-3 pb-3 border-b border-slate-200 space-y-2 text-center">
                                                             <div className="text-xs font-bold text-sky-600">
@@ -879,7 +1124,17 @@ export default function OrbPage({ onBack, onNavigateToYou, onNavigateToPage, onN
                                                         </div>
                                                     )}
                                                     <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 gap-2 max-h-[600px] overflow-y-auto pr-2">
-                                                        {orbFavorites.map((favorite) => {
+                                                        {orbFavorites.filter(fav => {
+                                                            if (!hideSubordinates) return true;
+                                                            // Check if this favorite is a member of ANY group
+                                                            // We iterate through all favorites to see if 'fav.id' is in their groupMembers
+                                                            const isSubordinate = orbFavorites.some(parent =>
+                                                                parent.id !== fav.id && // not looking at itself (though shouldn't be in own group)
+                                                                parent.groupMembers &&
+                                                                parent.groupMembers.includes(fav.id)
+                                                            );
+                                                            return !isSubordinate;
+                                                        }).map((favorite) => {
                                                             const isGroupLeader = selectedGroupLeaderId === favorite.id;
                                                             const isActive = favorite.customOrbImage === customOrbImage;
 
@@ -958,11 +1213,34 @@ export default function OrbPage({ onBack, onNavigateToYou, onNavigateToPage, onN
 
                                                 {/* Right side: All orb presets - click to assign to group leader */}
                                                 <div className="space-y-3 p-4 rounded-xl border-2 border-slate-100 bg-white">
-                                                    <label className="text-xs font-bold uppercase text-slate-400">
-                                                        {groupLeader ? 'Assign Presets to Group' : 'Select Group Leader'}
-                                                    </label>
+                                                    <div className="flex items-center justify-between">
+                                                        <label className="text-xs font-bold uppercase text-slate-400">
+                                                            {groupLeader ? 'Assign Presets to Group' : 'Select Group Leader'}
+                                                        </label>
+                                                        <button
+                                                            onClick={() => setHideSingletons(!hideSingletons)}
+                                                            className={`text-[9px] font-bold uppercase px-2 py-1 rounded-md transition-all ${hideSingletons ? 'bg-indigo-100 text-indigo-600' : 'bg-slate-100 text-slate-400 hover:bg-slate-200'}`}
+                                                            title="Hide images that are neither a group leader nor assigned to a group"
+                                                        >
+                                                            {hideSingletons ? 'Show Unassigned' : 'Hide Unassigned'}
+                                                        </button>
+                                                    </div>
                                                     <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 gap-2 max-h-[600px] overflow-y-auto pr-2">
-                                                        {orbFavorites.map((favorite) => {
+                                                        {orbFavorites.filter(fav => {
+                                                            if (!hideSingletons) return true;
+                                                            // Logic: Hide if (Not Assigned to ANY group) AND (Not a Leader with Subordinates)
+
+                                                            // 1. Is it a group member of ANY group?
+                                                            const isSubordinate = orbFavorites.some(p => p.groupMembers && p.groupMembers.includes(fav.id));
+                                                            if (isSubordinate) return true; // It is assigned, so show it (don't hide)
+
+                                                            // 2. Is it a group leader of ANY group (with members)?
+                                                            const isLeader = fav.groupMembers && fav.groupMembers.length > 0;
+                                                            if (isLeader) return true; // It is a leader, so show it (don't hide)
+
+                                                            // If neither, it is a "Singleton" / "Unassigned" -> Hide it
+                                                            return false;
+                                                        }).map((favorite) => {
                                                             const isGroupLeader = selectedGroupLeaderId === favorite.id;
                                                             const isAssignedToGroup = groupLeader && groupMembers.includes(favorite.id);
                                                             const isActive = favorite.customOrbImage === customOrbImage;

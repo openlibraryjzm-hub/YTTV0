@@ -351,7 +351,8 @@ export const useConfigStore = create(
                     playlistIds: [], // Empty = show on all playlists
                     isThemeFolder: false,
                     condition: null, // null = first image, 'random' = random selection
-                    folderColors: [] // Array of folder color IDs
+                    folderColors: [], // Array of folder color IDs
+                    colorAssignments: {} // Map of colorId -> imageId
                 }]
             })),
             removeLayer2Folder: (folderId) => set((state) => {
@@ -485,6 +486,34 @@ export const useConfigStore = create(
                                     )
                                 };
                             }
+                        }
+                        return folder;
+                    })
+                };
+            }),
+
+            // Layer 2 Color Assignments (Image -> Color)
+            // Maps a color (e.g. 'red', 'blue') to a specific imageId within a folder
+            assignLayer2ImageToColor: (folderId, colorId, imageId) => set((state) => ({
+                layer2Folders: state.layer2Folders.map(folder =>
+                    folder.id === folderId
+                        ? {
+                            ...folder,
+                            colorAssignments: {
+                                ...(folder.colorAssignments || {}),
+                                [colorId]: imageId
+                            }
+                        }
+                        : folder
+                )
+            })),
+            unassignLayer2ImageFromColor: (folderId, colorId) => set((state) => {
+                return {
+                    layer2Folders: state.layer2Folders.map(folder => {
+                        if (folder.id === folderId && folder.colorAssignments) {
+                            const newAssignments = { ...folder.colorAssignments };
+                            delete newAssignments[colorId];
+                            return { ...folder, colorAssignments: newAssignments };
                         }
                         return folder;
                     })
