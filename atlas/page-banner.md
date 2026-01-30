@@ -201,7 +201,13 @@ Users see a contextual banner (220px fixed height) at the top of scrollable cont
      1. **Settings Page Preview** (no currentPlaylistId): Uses global `customPageBannerImage2` with global scale/offset (highest priority for preview)
      2. **Theme Group Leader**: If a group leader is set as theme, selects image from that group (app-wide) - NEW
      3. **Theme Folder**: If a folder is set as theme, selects image from that folder (app-wide) - Legacy
-     4. **Playlist Override**: Per-playlist override takes precedence over theme for that specific playlist
+     4. **Playlist Override**: Per-playlist override (assigned via PagePage/Colors Tab) takes precedence above all Global Theme settings.
+       - **Persistent Context**: Applies across all playlist views including "All Videos", "Unsorted", and **Specific Colored Folders**.
+       - **Override Behavior**:
+         - **Name Resolution**: Uses robust playlist name lookup (ID-based) to ensure override sticks even when viewing sub-folders (where title changes).
+         - **Content Priority**: If the Override Folder has a specific image assigned to the current color (e.g., Red), it uses that.
+         - **Fallback Defaults**: If no specific color assignment exists, it defaults to **Random Selection** from the override folder (unless folder is strictly sequential).
+         - **Global Skip**: If a valid override folder is found, the Global Theme logic is completely skipped to prevent "leaking" back to the default theme.
      5. **Default Folder**: Falls back to image from Default folder
      - **Theme Group Leader Selection Logic**: When theme group leader is set, selects from group leader + all group members
        - **Destination Filtering**: Images are first filtered by their destination assignments
@@ -375,6 +381,10 @@ Users see a contextual banner (220px fixed height) at the top of scrollable cont
   - **Setting Conditions**: Click the "First"/"Random" button next to folder name to set folder condition
     - Options: "First (Default)" or "Random"
     - Dropdown shows current selection and allows toggling between modes
+  - **Playlist Assignments**: Folders can be assigned to specific Playlists.
+    - **Function**: When a user visits an assigned playlist, this folder becomes the active "Theme Override".
+    - **Persistence**: The override applies to all tabs within that playlist (All, Unsorted, Colored Folders).
+    - **Setting**: Managed via the "Playlist Assignment" dropdown in the **Colors Tab** of PagePage.
 - **Image Destinations**: Each image can be assigned to specific pages and colored folders
   - **Destination Assignment**: Click the map pin button (top-left of image thumbnail) to assign destinations
   - **Pages**: Select which page types the image appears on:

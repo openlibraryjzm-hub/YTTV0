@@ -66,6 +66,7 @@ PagePage is a dedicated page for Page Banner and Layer 2 image library configura
   - **Folder Row**:
     - **Header**: 
       - Folder name (renamable).
+      - **Playlist Assignment Dropdown**: Select which Playlists show this folder as their theme. (Multi-select).
       - **Pull Group Button**: Dropdown to "pull" an existing Group Leader (and all its members) from another folder into this one instantly.
       - **Delete Folder Button**.
     - **Color Assignments Section**: Horizontal row of 16 color dots for theme mapping.

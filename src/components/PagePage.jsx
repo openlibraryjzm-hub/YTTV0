@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Layout, Plus, ArrowLeft, Trash2, Check, Image, Folder, Shuffle, Star, MapPin, ChevronDown, LayoutGrid, Palette, X, Pencil } from 'lucide-react';
+import { Layout, Plus, ArrowLeft, Trash2, Check, Image, Folder, Shuffle, Star, MapPin, ChevronDown, LayoutGrid, Palette, X, Pencil, List } from 'lucide-react';
 import { useConfigStore } from '../store/configStore';
 import PageBanner from './PageBanner';
 import PageGroupColumn from './PageGroupColumn';
@@ -1162,6 +1162,29 @@ export default function PagePage({ onBack, onNavigateToOrb, onNavigateToYou, onN
                                                                             setPageBannerBgColor(img.bgColor);
                                                                         }
                                                                         setSelectedLayer2FolderId(img.folderId);
+
+                                                                        // Set Theme Logic
+                                                                        let targetLeaderId = img.id;
+                                                                        let targetFolderId = img.folderId;
+
+                                                                        if (img.groupMembers && img.groupMembers.length > 0) {
+                                                                            // Is Leader
+                                                                            targetLeaderId = img.id;
+                                                                            targetFolderId = img.folderId;
+                                                                        } else if (img.groupLeaderId) {
+                                                                            // Is Member - Extract Leader
+                                                                            const [lFolderId, lImageId] = img.groupLeaderId.split(':');
+                                                                            targetLeaderId = lImageId;
+                                                                            targetFolderId = lFolderId;
+                                                                        }
+
+                                                                        // Apply Theme
+                                                                        setThemeGroupLeader(targetLeaderId, targetFolderId);
+
+                                                                        // Mirror Config Tab Dropdown Behavior (Update Local State)
+                                                                        setSelectedBannerGroupLeaderId(targetLeaderId);
+                                                                        setSelectedBannerGroupLeaderFolderId(targetFolderId);
+                                                                        setShowAllImages(false);
                                                                     }}
                                                                     className={`w-full h-full transition-all duration-200 relative overflow-hidden ${isActive
                                                                         ? 'border-purple-500 ring-4 ring-purple-200 shadow-lg scale-105'
@@ -1355,6 +1378,62 @@ export default function PagePage({ onBack, onNavigateToOrb, onNavigateToYou, onN
                                                     </h4>
                                                 )}
                                                 <div className="flex items-center gap-2">
+                                                    {/* Playlist Assignments Dropdown */}
+                                                    <div className="relative">
+                                                        <button
+                                                            className={`px-2 py-1 rounded-md text-[10px] font-bold uppercase flex items-center gap-1.5 transition-colors ${folder.playlistIds && folder.playlistIds.length > 0
+                                                                ? 'bg-sky-100 text-sky-600 hover:bg-sky-200'
+                                                                : 'bg-slate-100 hover:bg-slate-200 text-slate-600'
+                                                                }`}
+                                                            onClick={() => setExpandedFolderPlaylistSelector(expandedFolderPlaylistSelector === folder.id ? null : folder.id)}
+                                                        >
+                                                            <List size={12} />
+                                                            {folder.playlistIds && folder.playlistIds.length > 0 ? `${folder.playlistIds.length} Playlists` : 'Playlist'}
+                                                            <ChevronDown size={10} />
+                                                        </button>
+
+                                                        {expandedFolderPlaylistSelector === folder.id && (
+                                                            <div className="group-pull-dropdown absolute top-full right-0 mt-2 w-56 bg-white rounded-xl shadow-xl border border-slate-100 py-1 z-50 animate-in fade-in zoom-in-95 duration-200">
+                                                                <div className="px-3 py-2 border-b border-slate-100 bg-slate-50/50 rounded-t-xl">
+                                                                    <h4 className="text-[10px] font-bold uppercase text-slate-400 tracking-wider">
+                                                                        Assign as Theme
+                                                                    </h4>
+                                                                    <p className="text-[9px] text-slate-400 mt-0.5 leading-tight">
+                                                                        Overrides global theme when visiting these playlists
+                                                                    </p>
+                                                                </div>
+                                                                <div className="max-h-56 overflow-y-auto custom-scrollbar">
+                                                                    {allPlaylists.map(playlist => {
+                                                                        const isAssigned = folder.playlistIds && folder.playlistIds.includes(playlist.name);
+                                                                        return (
+                                                                            <button
+                                                                                key={playlist.name}
+                                                                                onClick={(e) => {
+                                                                                    e.stopPropagation();
+                                                                                    const currentIds = folder.playlistIds || [];
+                                                                                    const newIds = isAssigned
+                                                                                        ? currentIds.filter(id => id !== playlist.name)
+                                                                                        : [...currentIds, playlist.name];
+                                                                                    setLayer2FolderPlaylists(folder.id, newIds);
+                                                                                }}
+                                                                                className={`w-full text-left px-3 py-2 text-xs flex items-center gap-2 transition-colors ${isAssigned
+                                                                                    ? 'bg-sky-50 text-sky-700 font-bold'
+                                                                                    : 'text-slate-600 hover:bg-slate-50'
+                                                                                    }`}
+                                                                            >
+                                                                                <div className={`w-3 h-3 rounded-full border flex items-center justify-center ${isAssigned ? 'bg-sky-500 border-sky-500' : 'border-slate-300'
+                                                                                    }`}>
+                                                                                    {isAssigned && <Check size={8} className="text-white" />}
+                                                                                </div>
+                                                                                <span className="truncate flex-1">{playlist.name}</span>
+                                                                            </button>
+                                                                        );
+                                                                    })}
+                                                                </div>
+                                                            </div>
+                                                        )}
+                                                    </div>
+
                                                     {/* Pull Group Dropdown */}
                                                     <div className="relative">
                                                         <button
@@ -1520,36 +1599,42 @@ export default function PagePage({ onBack, onNavigateToOrb, onNavigateToYou, onN
 
                                             {/* Images Partitioned by Group */}
                                             {(() => {
-                                                const groups = {}; // leaderId -> { leader: img, members: [img] }
-                                                const ungrouped = [];
+                                                const orderedImages = [];
+                                                const usedImageIds = new Set();
 
-                                                // 1. Partition images
                                                 if (folder.images) {
-                                                    folder.images.forEach(img => {
-                                                        // Identify if this image is a leader
-                                                        const isLeader = img.groupMembers && img.groupMembers.length > 0;
-                                                        // Identify if this image is a member of a group
-                                                        const isMember = !!img.groupLeaderId;
+                                                    // 1. Find Leaders
+                                                    const leaders = folder.images.filter(img => img.groupMembers && img.groupMembers.length > 0);
 
-                                                        if (isLeader) {
-                                                            if (!groups[img.id]) groups[img.id] = { leader: img, members: [] };
-                                                            else groups[img.id].leader = img;
-                                                        } else if (isMember) {
-                                                            // groupLeaderId is "folderId:imageId". We assume same folder for visualization simplicity
-                                                            const [lFolderId, lImageId] = img.groupLeaderId.split(':');
-                                                            if (lFolderId === folder.id) {
-                                                                if (!groups[lImageId]) groups[lImageId] = { leader: null, members: [] };
-                                                                groups[lImageId].members.push(img);
-                                                            } else {
-                                                                ungrouped.push(img);
-                                                            }
-                                                        } else {
-                                                            ungrouped.push(img);
+                                                    // 2. For each leader, add leader + its members
+                                                    leaders.forEach(leader => {
+                                                        orderedImages.push(leader);
+                                                        usedImageIds.add(leader.id);
+
+                                                        // Find members in THIS folder
+                                                        if (leader.groupMembers) {
+                                                            leader.groupMembers.forEach(memberKey => {
+                                                                const [mFolderId, mImageId] = memberKey.split(':');
+                                                                if (mFolderId === folder.id) {
+                                                                    const member = folder.images.find(i => i.id === mImageId);
+                                                                    if (member) {
+                                                                        orderedImages.push(member);
+                                                                        usedImageIds.add(member.id);
+                                                                    }
+                                                                }
+                                                            });
+                                                        }
+                                                    });
+
+                                                    // 3. Add any remaining images that haven't been added
+                                                    folder.images.forEach(img => {
+                                                        if (!usedImageIds.has(img.id)) {
+                                                            orderedImages.push(img);
                                                         }
                                                     });
                                                 }
 
-                                                // 2. Helper to render image card
+                                                // Calculate helpers
                                                 const renderImage = (img) => {
                                                     const isActive = customPageBannerImage2 === img.image;
                                                     const isAssignedToActiveColor = activeColorAssignment?.folderId === folder.id &&
@@ -1560,6 +1645,8 @@ export default function PagePage({ onBack, onNavigateToOrb, onNavigateToYou, onN
                                                         .filter(([_, imgId]) => imgId === img.id)
                                                         .map(([cId]) => FOLDER_COLORS.find(c => c.id === cId))
                                                         .filter(Boolean) : [];
+
+                                                    const isLeader = img.groupMembers && img.groupMembers.length > 0;
 
                                                     return (
                                                         <div key={img.id} className="relative flex-shrink-0" style={{ width: '200px' }}>
@@ -1572,6 +1659,29 @@ export default function PagePage({ onBack, onNavigateToOrb, onNavigateToYou, onN
                                                                         applyLayer2Image(img);
                                                                         if (img.bgColor) setPageBannerBgColor(img.bgColor);
                                                                         setSelectedLayer2FolderId(folder.id);
+
+                                                                        // Set Theme Logic
+                                                                        let targetLeaderId = img.id;
+                                                                        let targetFolderId = folder.id;
+
+                                                                        if (isLeader) {
+                                                                            // Is Leader
+                                                                            targetLeaderId = img.id;
+                                                                            targetFolderId = folder.id;
+                                                                        } else if (img.groupLeaderId) {
+                                                                            // Is Member
+                                                                            const [lFolderId, lImageId] = img.groupLeaderId.split(':');
+                                                                            targetLeaderId = lImageId;
+                                                                            targetFolderId = lFolderId;
+                                                                        }
+
+                                                                        // Apply Theme
+                                                                        setThemeGroupLeader(targetLeaderId, targetFolderId);
+
+                                                                        // Mirror Config Tab Dropdown Behavior (Update Local State)
+                                                                        setSelectedBannerGroupLeaderId(targetLeaderId);
+                                                                        setSelectedBannerGroupLeaderFolderId(targetFolderId);
+                                                                        setShowAllImages(false);
                                                                     }
                                                                 }}
                                                                 className={`w-full aspect-video rounded-lg overflow-hidden border-2 transition-all relative ${isAssignedToActiveColor
@@ -1604,7 +1714,7 @@ export default function PagePage({ onBack, onNavigateToOrb, onNavigateToYou, onN
                                                                 )}
                                                             </button>
                                                             {/* Label for Leader */}
-                                                            {img.groupMembers && img.groupMembers.length > 0 && (
+                                                            {isLeader && (
                                                                 <div className="absolute top-2 left-2 px-1.5 py-0.5 bg-sky-500 text-white text-[9px] font-bold uppercase rounded shadow-sm z-30">
                                                                     Leader
                                                                 </div>
@@ -1660,12 +1770,7 @@ export default function PagePage({ onBack, onNavigateToOrb, onNavigateToYou, onN
                                                     );
                                                 };
 
-                                                const groupIds = Object.keys(groups);
-                                                const hasGroups = groupIds.length > 0;
-                                                const hasUngrouped = ungrouped.length > 0;
-
-                                                // If no images at all
-                                                if (!hasGroups && !hasUngrouped) {
+                                                if (orderedImages.length === 0) {
                                                     return (
                                                         <div className="horizontal-video-scroll w-full py-8 text-center text-slate-400 text-[10px] border-2 border-dashed border-slate-100 rounded-lg">
                                                             No images in this folder
@@ -1674,101 +1779,27 @@ export default function PagePage({ onBack, onNavigateToOrb, onNavigateToYou, onN
                                                 }
 
                                                 return (
-                                                    <div className="space-y-4 pt-2">
-                                                        {/* Render Groups */}
-                                                        {groupIds.map(leaderId => {
-                                                            const group = groups[leaderId];
-                                                            if (!group.leader && group.members.length === 0) return null;
-
-                                                            return (
-                                                                <div key={leaderId} className="space-y-1">
-                                                                    {/* Group Header */}
-                                                                    <div className="flex items-center gap-2 pl-1 mb-1">
-                                                                        <div className="w-6 h-6 rounded-md bg-purple-100 text-purple-600 flex items-center justify-center">
-                                                                            <LayoutGrid size={14} />
-                                                                        </div>
-                                                                        <span className="text-[10px] font-bold uppercase text-slate-500 tracking-wider">
-                                                                            Group Leader
-                                                                        </span>
-                                                                        {group.leader && group.leader.groupMembers && (
-                                                                            <span className="text-[10px] font-medium text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded-full ml-auto">
-                                                                                {group.leader.groupMembers.length + 1} items
-                                                                            </span>
-                                                                        )}
-                                                                    </div>
-
-                                                                    {/* Group Stream */}
-                                                                    <div
-                                                                        className="horizontal-video-scroll"
-                                                                        style={{
-                                                                            width: '100%',
-                                                                            overflowX: 'scroll',
-                                                                            overflowY: 'visible',
-                                                                            scrollbarWidth: 'thin',
-                                                                            scrollbarColor: 'rgba(148, 163, 184, 0.6) rgba(15, 23, 42, 0.3)',
-                                                                            WebkitOverflowScrolling: 'touch',
-                                                                            display: 'flex',
-                                                                            gap: '12px',
-                                                                            paddingBottom: '8px'
-                                                                        }}
-                                                                        onWheel={(e) => {
-                                                                            if (e.deltaY !== 0) {
-                                                                                e.preventDefault();
-                                                                                e.currentTarget.scrollLeft += e.deltaY;
-                                                                            }
-                                                                        }}
-                                                                    >
-                                                                        {/* Leader */}
-                                                                        {group.leader && renderImage(group.leader)}
-                                                                        {/* Divider */}
-                                                                        {group.leader && group.members.length > 0 && (
-                                                                            <div className="w-px bg-slate-200 self-stretch my-2"></div>
-                                                                        )}
-                                                                        {/* Members */}
-                                                                        {group.members.map(renderImage)}
-                                                                    </div>
-                                                                </div>
-                                                            );
-                                                        })}
-
-                                                        {/* Render Ungrouped */}
-                                                        {hasUngrouped && (
-                                                            <div className="space-y-1">
-                                                                {hasGroups && (
-                                                                    <div className="flex items-center gap-2 pl-1 mb-1 pt-2 border-t border-slate-100 mt-2">
-                                                                        <Image size={14} className="text-slate-400" />
-                                                                        <span className="text-[10px] font-bold uppercase text-slate-500 tracking-wider">
-                                                                            Unsorted Images
-                                                                        </span>
-                                                                        <span className="text-[10px] font-medium text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded-full ml-auto">
-                                                                            {ungrouped.length} items
-                                                                        </span>
-                                                                    </div>
-                                                                )}
-                                                                <div
-                                                                    className="horizontal-video-scroll"
-                                                                    style={{
-                                                                        width: '100%',
-                                                                        overflowX: 'scroll',
-                                                                        overflowY: 'visible',
-                                                                        scrollbarWidth: 'thin',
-                                                                        scrollbarColor: 'rgba(148, 163, 184, 0.6) rgba(15, 23, 42, 0.3)',
-                                                                        WebkitOverflowScrolling: 'touch',
-                                                                        display: 'flex',
-                                                                        gap: '12px',
-                                                                        paddingBottom: '8px'
-                                                                    }}
-                                                                    onWheel={(e) => {
-                                                                        if (e.deltaY !== 0) {
-                                                                            e.preventDefault();
-                                                                            e.currentTarget.scrollLeft += e.deltaY;
-                                                                        }
-                                                                    }}
-                                                                >
-                                                                    {ungrouped.map(renderImage)}
-                                                                </div>
-                                                            </div>
-                                                        )}
+                                                    <div
+                                                        className="horizontal-video-scroll pt-2"
+                                                        style={{
+                                                            width: '100%',
+                                                            overflowX: 'scroll',
+                                                            overflowY: 'visible',
+                                                            scrollbarWidth: 'thin',
+                                                            scrollbarColor: 'rgba(148, 163, 184, 0.6) rgba(15, 23, 42, 0.3)',
+                                                            WebkitOverflowScrolling: 'touch',
+                                                            display: 'flex',
+                                                            gap: '12px',
+                                                            paddingBottom: '8px'
+                                                        }}
+                                                        onWheel={(e) => {
+                                                            if (e.deltaY !== 0) {
+                                                                e.preventDefault();
+                                                                e.currentTarget.scrollLeft += e.deltaY;
+                                                            }
+                                                        }}
+                                                    >
+                                                        {orderedImages.map(renderImage)}
                                                     </div>
                                                 );
                                             })()}

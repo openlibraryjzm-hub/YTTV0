@@ -405,5 +405,9 @@ For detailed information about the application's theme system and recent color c
   - **Move to Folder**: "Folder" icon on image cards allows moving individual images or entire groups (via Leader) to specific folders.
   - **Pull Group**: New dropdown on Folder Headers allows "pulling" complete groups (Leader + Members) from other folders into the current one with one click.
   - **Smart References**: Moving Leaders or Members automatically updates their group relationship links (`groupLeaderId`, `groupMembers`).
+- **Playlist Theme Override**: Refined the logic for per-playlist theme overrides.
+  - **Robust Resolution**: Implemented ID-based name lookup to ensure overrides persist when navigating into sub-folders (e.g. "Red Folder").
+  - **Consistent Behavior**: Overrides now correctly block the Global Theme even when viewing colored tabs.
+  - **Randomized Fallback**: Override folders now default to randomized image selection (instead of first image) when no specific color assignment matches.
 
 

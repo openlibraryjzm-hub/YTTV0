@@ -79,15 +79,16 @@ const selectImageFromFolder = (folder, pageKey, pageType, folderColor) => {
         return null;
     }
 
-    // If folder has random condition, use seeded random based on pageKey for consistency
-    if (folder.condition === 'random') {
+    // Default: use seeded random based on pageKey for consistency
+    // Unless explicitly set to sequential (which we might support later)
+    if (folder.condition !== 'sequential') {
         const seed = pageKey || `${Date.now()}-${Math.random()}`;
         const randomValue = seededRandom(seed);
         const randomIndex = Math.floor(randomValue * availableImages.length);
         return availableImages[randomIndex];
     }
 
-    // Default: use first available image
+    // Fallback: use first available image
     return availableImages[0];
 };
 
@@ -164,8 +165,71 @@ const PageBanner = ({ title, description, folderColor, onEdit, videoCount, count
             return null;
         }
 
+        // Check for Playlist Folder Override (New Feature)
+        // If the current playlist is assigned to a specific folder, use that folder as the source
+        // This OVERRIDES the global theme logic
+        // Check for Playlist Folder Override (New Feature)
+        // If the current playlist is assigned to a specific folder, use that folder as the source
+        // This OVERRIDES the global theme logic
+        if (currentPlaylistId) {
+            // Priority 1: Accurate Name Lookup via ID (if allPlaylists is available)
+            // This is critical because 'title' prop changes when viewing folders (e.g. "Red Folder")
+            let currentPlaylistName = null;
+            if (allPlaylists && allPlaylists.length > 0) {
+                const currentPlaylist = allPlaylists.find(p => p.id === currentPlaylistId);
+                if (currentPlaylist) {
+                    currentPlaylistName = currentPlaylist.name;
+                }
+            }
+
+            // Priority 2: Fallback to title prop (only if we couldn't find it above)
+            // Useful for race conditions or if allPlaylists isn't loaded yet
+            if (!currentPlaylistName && title && title !== 'Playlist') {
+                currentPlaylistName = title;
+            }
+
+            if (currentPlaylistName) {
+                const playlistFolder = layer2Folders?.find(f => f.playlistIds && f.playlistIds.includes(currentPlaylistName));
+
+                if (playlistFolder && playlistFolder.images?.length > 0) {
+                    // Check for color assignment within this playlist folder first
+                    if (folderColor && playlistFolder.colorAssignments?.[folderColor]) {
+                        const assignedImageId = playlistFolder.colorAssignments[folderColor];
+                        const assignedImage = playlistFolder.images.find(i => i.id === assignedImageId);
+                        if (assignedImage) {
+                            return {
+                                image: assignedImage.image,
+                                scale: assignedImage.scale,
+                                xOffset: assignedImage.xOffset,
+                                yOffset: assignedImage.yOffset,
+                                imageId: assignedImage.id,
+                                folderId: playlistFolder.id,
+                                bgColor: assignedImage.bgColor
+                            };
+                        }
+                    }
+
+                    // Select random/first image from this playlist folder
+                    const overrideImage = selectImageFromFolder(playlistFolder, pageKey, pageType, folderColor);
+                    if (overrideImage) {
+                        return {
+                            image: overrideImage.image,
+                            scale: overrideImage.scale,
+                            xOffset: overrideImage.xOffset,
+                            yOffset: overrideImage.yOffset,
+                            imageId: overrideImage.id,
+                            folderId: playlistFolder.id,
+                            bgColor: overrideImage.bgColor
+                        };
+                    }
+                }
+            }
+        }
+
         // Check for specific Color Assignment in the Active Theme
         // This takes priority when a colored folder is selected
+        // BUT ONLY if there isn't a playlist-specific override that has already handled it.
+        // Since the block above returns if an override is found, we don't need explicit skipping logic here.
         if (folderColor && (themeGroupLeaderFolderId || themeFolderId)) {
             // Determine active theme folder
             let activeThemeFolder = null;
@@ -345,7 +409,7 @@ const PageBanner = ({ title, description, folderColor, onEdit, videoCount, count
     };
 
     // Memoize effective layer 2 image - pageKey ensures consistent random selection per page
-    const effectiveLayer2 = React.useMemo(() => getEffectiveLayer2Image(), [pageKey, pageType, folderColor, themeFolderId, themeGroupLeaderId, themeGroupLeaderFolderId, currentPlaylistId, layer2Folders, playlistLayer2Overrides, customPageBannerImage2, pageBannerImage2Scale, pageBannerImage2XOffset, pageBannerImage2YOffset]);
+    const effectiveLayer2 = React.useMemo(() => getEffectiveLayer2Image(), [pageKey, pageType, folderColor, themeFolderId, themeGroupLeaderId, themeGroupLeaderFolderId, currentPlaylistId, layer2Folders, playlistLayer2Overrides, customPageBannerImage2, pageBannerImage2Scale, pageBannerImage2XOffset, pageBannerImage2YOffset, allPlaylists, title]);
 
     // Track image changes for smooth transitions
     const prevImageIdRef = useRef(null);

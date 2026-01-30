@@ -1290,6 +1290,7 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
                 onFolderNavigateNext={handleFolderNavigateNext}
                 selectedFolder={selectedFolder}
                 folderCounts={folderCounts}
+                allPlaylists={allPlaylists}
               />
             </div>
           )}
