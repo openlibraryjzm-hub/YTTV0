@@ -936,8 +936,8 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
     if (!activePlaylistId) return;
 
     try {
-      if (selectedFolder && selectedFolder !== 'unsorted') {
-        // Update Folder Metadata
+      if (selectedFolder) {
+        // Update Folder Metadata (including 'unsorted')
         await setFolderMetadata(activePlaylistId, selectedFolder, data.name, data.description, data.customAscii);
         // Refresh local state
         setFolderMetadataState({ name: data.name, description: data.description, customAscii: data.customAscii });
@@ -1087,7 +1087,7 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
 
   // Helper to get banner info
   const activeObject = useMemo(() => {
-    if (selectedFolder && selectedFolder !== 'unsorted') {
+    if (selectedFolder) {
       return folderMetadata; // This will be null or {name, description}
     }
     return allPlaylists.find(p => p.id === activePlaylistId);
@@ -1103,11 +1103,17 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
 
     if (selectedFolder) {
       if (selectedFolder === 'unsorted') {
-        title = 'Unsorted Videos';
-        description = `Videos from "${allPlaylists.find(p => p.id === activePlaylistId)?.name || 'Playlist'}" that haven't been assigned to any folder.`;
+        if (activeObject && activeObject.name) {
+          title = activeObject.name;
+          description = activeObject.description || '';
+          customAscii = activeObject.customAscii;
+        } else {
+          title = 'Unsorted Videos';
+          description = `Videos from "${allPlaylists.find(p => p.id === activePlaylistId)?.name || 'Playlist'}" that haven't been assigned to any folder.`;
+        }
         color = 'unsorted';
         hex = '#64748b'; // Slate-500
-        isEditable = false;
+        isEditable = true;
       } else {
         // Folder View
         const colorInfo = FOLDER_COLORS.find(c => c.id === selectedFolder);
@@ -1140,10 +1146,16 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
 
   // Determine initial data for modal
   const modalInitialData = useMemo(() => {
-    if (selectedFolder && selectedFolder !== 'unsorted') {
-      // Folder edit
-      const colorInfo = FOLDER_COLORS.find(c => c.id === selectedFolder);
-      const defaultName = colorInfo ? `${colorInfo.name} Folder` : 'Folder';
+    if (selectedFolder) {
+      // Folder edit (including unsorted)
+      let defaultName = 'Folder';
+
+      if (selectedFolder === 'unsorted') {
+        defaultName = 'Unsorted Videos';
+      } else {
+        const colorInfo = FOLDER_COLORS.find(c => c.id === selectedFolder);
+        if (colorInfo) defaultName = `${colorInfo.name} Folder`;
+      }
 
       return {
         name: activeObject?.name || defaultName,

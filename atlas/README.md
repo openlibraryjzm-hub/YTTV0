@@ -408,6 +408,9 @@ For detailed information about the application's theme system and recent color c
 - **Playlist Theme Override**: Refined the logic for per-playlist theme overrides.
   - **Robust Resolution**: Implemented ID-based name lookup to ensure overrides persist when navigating into sub-folders (e.g. "Red Folder").
   - **Consistent Behavior**: Overrides now correctly block the Global Theme even when viewing colored tabs.
-  - **Randomized Fallback**: Override folders now default to randomized image selection (instead of first image) when no specific color assignment matches.
-
-
+- **Playlist/Folder Editing**: Re-implemented the ability to edit name, description, and ASCII art for Unsorted, Colored Folders, and Playlists.
+  - **EntryPoint**: Wired up the "Settings" cog on the **Page Banner** to trigger the Edit Modal.
+  - **Unsorted Support**: Explicitly enabled editing for the "Unsorted Videos" view.
+  - **Context-Aware**: Edits automatically apply to the correct context (specific folder vs. main playlist) based on current view.
+- **ASCII Art Priority Fix**: Resolved an issue where the global user signature was overriding custom folder ASCII art. The `PageBanner` now strictly prioritizes the passed `avatar` prop.
+- **Banner Carousel Reset**: Changed behavior so the Page Banner's media carousel (Recent/Pins/ASCII) resets to "Recent" whenever navigating between playlists or folders, rather than persisting the previous view mode.

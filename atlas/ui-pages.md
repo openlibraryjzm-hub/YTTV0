@@ -144,6 +144,9 @@ Users see a horizontal scrolling layout with two rows of video cards showing vid
   - **Groups**: Allows assigning multiple Layer 2 images to a "Group Leader".
   - **Group Column View**: On the Folders tab, Group Leaders have a **Layout Grid** button that opens a vertical column view of the leader and all assigned members for quick preview and selection.
   - **Comprehensive Documentation**: See `page-banner.md` for complete details on the Page Banner system, including Unified Banner System, Sticky Toolbar integration, customization options, and technical implementation.
+  - **Settings Button**: Located in the bottom-right of the banner image. Allows editing the current context's name, description, and ASCII art.
+    - **Folder Support**: Fully supports editing for "Unsorted", all Colored Folders, and the main Playlist view.
+    - **Persistence**: Changes are saved to `folder_metadata` (for folders) or `playlists` (for main view).
   - **Quick Reference**: Shows playlist/folder title, metadata (video count, year, author), description, ASCII avatar, and thumbnail carousel. Supports custom images, animated patterns, and folder color gradients.
   - **Thumbnail Carousel** (top-right): Shows continue watching and/or pinned videos with dot navigation and multi-pin bar
   - **Playlist Navigator** (top-right): Chevron buttons to browse playlists in preview mode without affecting player

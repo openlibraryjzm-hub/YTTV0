@@ -98,7 +98,7 @@ Users see a contextual banner (220px fixed height) at the top of scrollable cont
   - **Scale, X Position, Y Position**: Independent controls via Settings → Appearance → Page Banner
   - **Transparent Background**: Layer 2 renders on transparent background (no Layer 1 color behind it)
   - **Navigation Overlay**: All navigation buttons overlaid on top of Layer 2 image with glassmorphic styling
-    - **Hover Controls**: Search button and Settings button appear on hover
+    - **Hover Controls**: Search button and Settings button (opens Edit Modal) appear on hover
 - **Unified Banner System**: When custom image is set, the banner visually connects with the Sticky Toolbar below it using synchronized horizontal scroll animation (can be disabled via Settings)
   - Layer 2 images are managed via Settings → Appearance → Page Banner (no inline thumbnail strip)
 - **Theme Folder System**: Folders can be set as app-wide page banner themes that apply to all pages
@@ -492,7 +492,7 @@ Users see a contextual banner (220px fixed height) at the top of scrollable cont
   - Update description
   - Upload custom page banner image
   - Custom banners saved to `folder_metadata` table
-- **Not Available**: For "Unsorted Videos" view (no edit functionality)
+  - **Available**: For "Unsorted Videos" view (supports editing name/description/ASCII)
 
 **Via Settings:**
 - **Location**: Settings → Appearance → Page Banner (first section at top of Appearance tab)

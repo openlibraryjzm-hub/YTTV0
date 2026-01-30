@@ -502,12 +502,17 @@ const PageBanner = ({ title, description, folderColor, onEdit, videoCount, count
     // Track which pinned video is selected (when viewing pinned)
     const [activePinnedIndex, setActivePinnedIndex] = useState(0);
 
+    // Reset active thumbnail to default (Recent) when context changes (playlist/folder)
+    useEffect(() => {
+        setActiveThumbnail(0);
+    }, [pageKey]);
+
     // Determine which options are available
     const hasContinue = !!continueVideo;
     const hasPinned = pinnedVideos && pinnedVideos.length > 0;
     const hasMultiplePins = pinnedVideos && pinnedVideos.length > 1;
-    const hasAscii = showAscii && !!(userAvatar || avatar); // Use userAvatar from store or avatar prop, unless showAscii is false
-    const displayAvatar = userAvatar || avatar; // The actual avatar to display
+    const hasAscii = showAscii && !!(avatar || userAvatar); // Use avatar prop first, then userAvatar from store, unless showAscii is false
+    const displayAvatar = avatar || userAvatar; // The actual avatar to display - prioritize prop over store
 
     // Count available options for dot navigation
     const availableOptions = [];
@@ -1143,7 +1148,7 @@ const PageBanner = ({ title, description, folderColor, onEdit, videoCount, count
                         <button
                             onClick={(e) => {
                                 e.stopPropagation();
-                                // TODO: Add settings functionality
+                                if (onEdit) onEdit();
                             }}
                             className="flex items-center justify-center w-10 h-10 rounded-lg bg-black/40 backdrop-blur-md border border-white/20 text-white/80 hover:text-white hover:bg-black/60 transition-all"
                             title="Settings"
