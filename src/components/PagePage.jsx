@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Layout, Plus, ArrowLeft, Trash2, Check, Image, Folder, Shuffle, Star, MapPin, ChevronDown, LayoutGrid, Palette, X } from 'lucide-react';
+import { Layout, Plus, ArrowLeft, Trash2, Check, Image, Folder, Shuffle, Star, MapPin, ChevronDown, LayoutGrid, Palette, X, Pencil } from 'lucide-react';
 import { useConfigStore } from '../store/configStore';
 import PageBanner from './PageBanner';
 import PageGroupColumn from './PageGroupColumn';
@@ -19,7 +19,8 @@ export default function PagePage({ onBack, onNavigateToOrb, onNavigateToYou, onN
         setLayer2FolderPlaylists, setLayer2FolderCondition, themeFolderId, setThemeFolder, clearThemeFolder,
         themeGroupLeaderId, themeGroupLeaderFolderId, setThemeGroupLeader, clearThemeGroupLeader,
         updateLayer2FolderFolders, assignLayer2ToGroup,
-        assignLayer2ImageToColor, unassignLayer2ImageFromColor
+        assignLayer2ImageToColor, unassignLayer2ImageFromColor,
+        moveLayer2Image, moveGroupToFolder
     } = useConfigStore();
 
     const scrollContainerRef = useRef(null);
@@ -56,6 +57,8 @@ export default function PagePage({ onBack, onNavigateToOrb, onNavigateToYou, onN
     const [expandedFolderPlaylistSelector, setExpandedFolderPlaylistSelector] = useState(null);
     const [selectedFolderFilter, setSelectedFolderFilter] = useState(null); // null = show all
     const [folderAssignmentOpenId, setFolderAssignmentOpenId] = useState(null); // ID of folder with open color selector
+    const [expandedGroupPullSelector, setExpandedGroupPullSelector] = useState(null); // folderId
+    // Theme folder specific state
     // Theme folder specific state
     const [expandedThemeConditionSelector, setExpandedThemeConditionSelector] = useState(false);
     const [expandedThemePlaylistSelector, setExpandedThemePlaylistSelector] = useState(false);
@@ -64,6 +67,10 @@ export default function PagePage({ onBack, onNavigateToOrb, onNavigateToYou, onN
     const [editingThemeFolderName, setEditingThemeFolderName] = useState('');
     const [isEditingThemeName, setIsEditingThemeName] = useState(false);
     const [pageColumnLeader, setPageColumnLeader] = useState(null); // {id, folderId} of group leader whose column is open
+    const [isCreatingFolder, setIsCreatingFolder] = useState(false);
+    const [newFolderName, setNewFolderName] = useState('');
+    const [expandedMoveSelector, setExpandedMoveSelector] = useState(null); // imageId
+
 
     // Fetch playlists for folder assignment dropdown
     useEffect(() => {
@@ -88,6 +95,20 @@ export default function PagePage({ onBack, onNavigateToOrb, onNavigateToYou, onN
         document.addEventListener('mousedown', handleClickOutside);
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, [folderAssignmentOpenId]);
+
+    // Close move selector when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (e) => {
+            if (expandedMoveSelector && !e.target.closest('.move-selector-dropdown') && !e.target.closest('[data-move-button]')) {
+                setExpandedMoveSelector(null);
+            }
+            if (expandedGroupPullSelector && !e.target.closest('.group-pull-dropdown') && !e.target.closest('[data-group-pull-button]')) {
+                setExpandedGroupPullSelector(null);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, [expandedMoveSelector, expandedGroupPullSelector]);
 
     // Close banner group leader selector when clicking outside
     useEffect(() => {
@@ -1215,6 +1236,56 @@ export default function PagePage({ onBack, onNavigateToOrb, onNavigateToYou, onN
                                         </span>
                                     )}
                                 </h3>
+                                {/* Create New Folder */}
+                                <div className="flex items-center gap-2">
+                                    {isCreatingFolder ? (
+                                        <div className="flex items-center gap-1 bg-white p-1 rounded-lg border border-slate-200 shadow-sm animate-in fade-in slide-in-from-right-4 duration-200">
+                                            <input
+                                                type="text"
+                                                value={newFolderName}
+                                                onChange={(e) => setNewFolderName(e.target.value)}
+                                                placeholder="Folder Name"
+                                                className="w-32 px-2 py-1 text-[10px] font-bold bg-slate-50 border border-slate-200 rounded outline-none focus:border-purple-400 focus:ring-1 focus:ring-purple-100"
+                                                autoFocus
+                                                onKeyDown={(e) => {
+                                                    if (e.key === 'Enter' && newFolderName.trim()) {
+                                                        addLayer2Folder(newFolderName.trim());
+                                                        setNewFolderName('');
+                                                        setIsCreatingFolder(false);
+                                                    } else if (e.key === 'Escape') {
+                                                        setIsCreatingFolder(false);
+                                                    }
+                                                }}
+                                            />
+                                            <button
+                                                onClick={() => {
+                                                    if (newFolderName.trim()) {
+                                                        addLayer2Folder(newFolderName.trim());
+                                                        setNewFolderName('');
+                                                        setIsCreatingFolder(false);
+                                                    }
+                                                }}
+                                                className="p-1 bg-purple-500 text-white rounded hover:bg-purple-600 transition-colors"
+                                            >
+                                                <Check size={12} />
+                                            </button>
+                                            <button
+                                                onClick={() => setIsCreatingFolder(false)}
+                                                className="p-1 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded transition-colors"
+                                            >
+                                                <X size={12} />
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <button
+                                            onClick={() => setIsCreatingFolder(true)}
+                                            className="px-3 py-1.5 bg-purple-500 hover:bg-purple-600 text-white rounded-lg text-[10px] font-bold uppercase transition-all flex items-center gap-1.5 shadow-sm hover:shadow-md"
+                                        >
+                                            <Plus size={12} />
+                                            New Folder
+                                        </button>
+                                    )}
+                                </div>
                             </div>
 
                             {filteredLayer2Folders.length === 0 ? (
@@ -1228,18 +1299,150 @@ export default function PagePage({ onBack, onNavigateToOrb, onNavigateToYou, onN
                                         <div key={folder.id} className="bg-white/50 rounded-2xl p-4 border border-slate-100 shadow-sm">
                                             {/* Start Folder Header */}
                                             <div className="flex items-center justify-between mb-4 pb-2 border-b border-slate-100">
-                                                <h4 className="font-bold text-sm text-slate-700 flex items-center gap-2">
-                                                    <Folder size={16} className="text-sky-500" />
-                                                    {folder.name}
-                                                    <span className="text-[10px] font-normal text-slate-400">
-                                                        ({folder.images ? folder.images.length : 0} images)
-                                                    </span>
-                                                </h4>
+                                                {editingLayer2FolderId === folder.id ? (
+                                                    <div className="flex items-center gap-2 flex-1">
+                                                        <Folder size={16} className="text-purple-500" />
+                                                        <input
+                                                            type="text"
+                                                            value={editingLayer2FolderName}
+                                                            onChange={(e) => setEditingLayer2FolderName(e.target.value)}
+                                                            className="flex-1 max-w-[200px] px-2 py-1 text-sm font-bold text-slate-700 bg-white border-2 border-purple-200 rounded-md outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100"
+                                                            autoFocus
+                                                            onKeyDown={(e) => {
+                                                                if (e.key === 'Enter') {
+                                                                    if (editingLayer2FolderName.trim()) {
+                                                                        renameLayer2Folder(folder.id, editingLayer2FolderName.trim());
+                                                                    }
+                                                                    setEditingLayer2FolderId(null);
+                                                                } else if (e.key === 'Escape') {
+                                                                    setEditingLayer2FolderId(null);
+                                                                }
+                                                            }}
+                                                        />
+                                                        <button
+                                                            onClick={() => {
+                                                                if (editingLayer2FolderName.trim()) {
+                                                                    renameLayer2Folder(folder.id, editingLayer2FolderName.trim());
+                                                                }
+                                                                setEditingLayer2FolderId(null);
+                                                            }}
+                                                            className="p-1 text-green-500 hover:bg-green-50 rounded"
+                                                        >
+                                                            <Check size={14} />
+                                                        </button>
+                                                        <button
+                                                            onClick={() => setEditingLayer2FolderId(null)}
+                                                            className="p-1 text-red-500 hover:bg-red-50 rounded"
+                                                        >
+                                                            <X size={14} />
+                                                        </button>
+                                                    </div>
+                                                ) : (
+                                                    <h4
+                                                        className="font-bold text-sm text-slate-700 flex items-center gap-2 group cursor-pointer hover:text-purple-600 transition-colors"
+                                                        onClick={() => {
+                                                            setEditingLayer2FolderId(folder.id);
+                                                            setEditingLayer2FolderName(folder.name);
+                                                        }}
+                                                        title="Click to rename"
+                                                    >
+                                                        <Folder size={16} className="text-sky-500 group-hover:text-purple-500 transition-colors" />
+                                                        {folder.name}
+                                                        <span className="text-[10px] font-normal text-slate-400 transition-opacity opacity-100 group-hover:opacity-50">
+                                                            ({folder.images ? folder.images.length : 0} images)
+                                                        </span>
+                                                        <Pencil size={12} className="opacity-0 group-hover:opacity-100 text-slate-400" />
+                                                    </h4>
+                                                )}
                                                 <div className="flex items-center gap-2">
+                                                    {/* Pull Group Dropdown */}
+                                                    <div className="relative">
+                                                        <button
+                                                            className="px-2 py-1 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-md text-[10px] font-bold uppercase flex items-center gap-1.5 transition-colors"
+                                                            data-group-pull-button
+                                                            onClick={() => setExpandedGroupPullSelector(expandedGroupPullSelector === folder.id ? null : folder.id)}
+                                                        >
+                                                            <LayoutGrid size={12} />
+                                                            Pull Group
+                                                            <ChevronDown size={10} />
+                                                        </button>
+
+                                                        {expandedGroupPullSelector === folder.id && (
+                                                            <div className="group-pull-dropdown absolute top-full right-0 mt-2 w-56 bg-white rounded-xl shadow-xl border border-slate-100 py-1 z-50 animate-in fade-in zoom-in-95 duration-200">
+                                                                <div className="px-3 py-2 border-b border-slate-100 bg-slate-50/50 rounded-t-xl">
+                                                                    <h4 className="text-[10px] font-bold uppercase text-slate-400 tracking-wider">
+                                                                        Select Group Leader
+                                                                    </h4>
+                                                                </div>
+                                                                <div className="max-h-56 overflow-y-auto custom-scrollbar">
+                                                                    {(() => {
+                                                                        // Find all available group leaders from all folders
+                                                                        const allLeaders = [];
+                                                                        layer2Folders.forEach(f => {
+                                                                            if (f.images) {
+                                                                                f.images.forEach(img => {
+                                                                                    if (img.groupMembers && img.groupMembers.length > 0) {
+                                                                                        // Only show if not already in CURRENT folder
+                                                                                        if (f.id !== folder.id) {
+                                                                                            allLeaders.push({ image: img, folderId: f.id });
+                                                                                        }
+                                                                                    }
+                                                                                });
+                                                                            }
+                                                                        });
+
+                                                                        if (allLeaders.length === 0) {
+                                                                            return (
+                                                                                <div className="px-4 py-3 text-center text-slate-400 text-xs italic">
+                                                                                    No other groups found
+                                                                                </div>
+                                                                            );
+                                                                        }
+
+                                                                        return allLeaders.map(({ image, folderId }) => (
+                                                                            <button
+                                                                                key={`${folderId}:${image.id}`}
+                                                                                onClick={() => {
+                                                                                    moveGroupToFolder(image.id, folderId, folder.id);
+                                                                                    setExpandedGroupPullSelector(null);
+                                                                                }}
+                                                                                className="w-full text-left px-3 py-2 text-xs flex items-center gap-3 hover:bg-purple-50 hover:text-purple-600 transition-colors border-b border-slate-50 last:border-0"
+                                                                            >
+                                                                                <div className="w-8 h-8 rounded bg-slate-100 flex-shrink-0 overflow-hidden border border-slate-200">
+                                                                                    <img src={image.image} alt="" className="w-full h-full object-cover" />
+                                                                                </div>
+                                                                                <div className="flex-1 min-w-0">
+                                                                                    <div className="font-medium truncate">Group Leader</div>
+                                                                                    <div className="text-[10px] text-slate-400">
+                                                                                        {image.groupMembers.length + 1} items • From {layer2Folders.find(f => f.id === folderId)?.name}
+                                                                                    </div>
+                                                                                </div>
+                                                                                <LayoutGrid size={12} className="text-slate-300" />
+                                                                            </button>
+                                                                        ));
+                                                                    })()}
+                                                                </div>
+                                                            </div>
+                                                        )}
+                                                    </div>
+
                                                     {activeColorAssignment && activeColorAssignment.folderId === folder.id && (
                                                         <span className="text-[10px] font-bold text-purple-600 bg-purple-100 px-2 py-1 rounded animate-pulse">
                                                             Select image for {activeColorAssignment.colorId}...
                                                         </span>
+                                                    )}
+                                                    {folder.id !== 'default' && (
+                                                        <button
+                                                            onClick={() => {
+                                                                if (window.confirm(`Delete folder "${folder.name}" and all its images?`)) {
+                                                                    removeLayer2Folder(folder.id);
+                                                                }
+                                                            }}
+                                                            className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
+                                                            title="Delete Folder"
+                                                        >
+                                                            <Trash2 size={14} />
+                                                        </button>
                                                     )}
                                                 </div>
                                             </div>
@@ -1315,91 +1518,260 @@ export default function PagePage({ onBack, onNavigateToOrb, onNavigateToYou, onN
                                                 </p>
                                             </div>
 
-                                            {/* Images Stream */}
-                                            <div
-                                                className="horizontal-video-scroll"
-                                                style={{
-                                                    width: '100%',
-                                                    overflowX: 'scroll',
-                                                    overflowY: 'visible',
-                                                    scrollbarWidth: 'thin',
-                                                    scrollbarColor: 'rgba(148, 163, 184, 0.6) rgba(15, 23, 42, 0.3)',
-                                                    WebkitOverflowScrolling: 'touch',
-                                                    paddingTop: '8px',
-                                                    paddingBottom: '8px',
-                                                    display: 'flex',
-                                                    gap: '12px'
-                                                }}
-                                            >
-                                                {(!folder.images || folder.images.length === 0) ? (
-                                                    <div className="w-full py-8 text-center text-slate-400 text-[10px] border-2 border-dashed border-slate-100 rounded-lg">
-                                                        No images in this folder
-                                                    </div>
-                                                ) : (
-                                                    folder.images.map(img => {
-                                                        const isActive = customPageBannerImage2 === img.image;
-                                                        const isAssignedToActiveColor = activeColorAssignment?.folderId === folder.id &&
-                                                            folder.colorAssignments?.[activeColorAssignment.colorId] === img.id;
+                                            {/* Images Partitioned by Group */}
+                                            {(() => {
+                                                const groups = {}; // leaderId -> { leader: img, members: [img] }
+                                                const ungrouped = [];
 
-                                                        return (
-                                                            <div
-                                                                key={img.id}
-                                                                className="relative flex-shrink-0"
-                                                                style={{ width: '200px' }}
+                                                // 1. Partition images
+                                                if (folder.images) {
+                                                    folder.images.forEach(img => {
+                                                        // Identify if this image is a leader
+                                                        const isLeader = img.groupMembers && img.groupMembers.length > 0;
+                                                        // Identify if this image is a member of a group
+                                                        const isMember = !!img.groupLeaderId;
+
+                                                        if (isLeader) {
+                                                            if (!groups[img.id]) groups[img.id] = { leader: img, members: [] };
+                                                            else groups[img.id].leader = img;
+                                                        } else if (isMember) {
+                                                            // groupLeaderId is "folderId:imageId". We assume same folder for visualization simplicity
+                                                            const [lFolderId, lImageId] = img.groupLeaderId.split(':');
+                                                            if (lFolderId === folder.id) {
+                                                                if (!groups[lImageId]) groups[lImageId] = { leader: null, members: [] };
+                                                                groups[lImageId].members.push(img);
+                                                            } else {
+                                                                ungrouped.push(img);
+                                                            }
+                                                        } else {
+                                                            ungrouped.push(img);
+                                                        }
+                                                    });
+                                                }
+
+                                                // 2. Helper to render image card
+                                                const renderImage = (img) => {
+                                                    const isActive = customPageBannerImage2 === img.image;
+                                                    const isAssignedToActiveColor = activeColorAssignment?.folderId === folder.id &&
+                                                        folder.colorAssignments?.[activeColorAssignment.colorId] === img.id;
+
+                                                    // Check if image is assigned to any color for dots overlay
+                                                    const colorDots = folder.colorAssignments ? Object.entries(folder.colorAssignments)
+                                                        .filter(([_, imgId]) => imgId === img.id)
+                                                        .map(([cId]) => FOLDER_COLORS.find(c => c.id === cId))
+                                                        .filter(Boolean) : [];
+
+                                                    return (
+                                                        <div key={img.id} className="relative flex-shrink-0" style={{ width: '200px' }}>
+                                                            <button
+                                                                onClick={() => {
+                                                                    if (activeColorAssignment && activeColorAssignment.folderId === folder.id) {
+                                                                        assignLayer2ImageToColor(folder.id, activeColorAssignment.colorId, img.id);
+                                                                        setActiveColorAssignment(null);
+                                                                    } else {
+                                                                        applyLayer2Image(img);
+                                                                        if (img.bgColor) setPageBannerBgColor(img.bgColor);
+                                                                        setSelectedLayer2FolderId(folder.id);
+                                                                    }
+                                                                }}
+                                                                className={`w-full aspect-video rounded-lg overflow-hidden border-2 transition-all relative ${isAssignedToActiveColor
+                                                                    ? 'border-green-500 ring-4 ring-green-200'
+                                                                    : activeColorAssignment && activeColorAssignment.folderId === folder.id
+                                                                        ? 'border-purple-300 hover:border-purple-500 hover:scale-105 hover:shadow-md'
+                                                                        : isActive
+                                                                            ? 'border-sky-500 ring-2 ring-sky-200'
+                                                                            : 'border-slate-200 hover:border-sky-300'
+                                                                    }`}
                                                             >
+                                                                <div className="absolute inset-0 bg-slate-800" style={{ backgroundColor: img.bgColor || '#1e293b' }}></div>
+                                                                <img src={img.image} className="w-full h-full object-cover relative z-10" alt="" />
+
+                                                                {/* Color Assignment Dots Overlay */}
+                                                                <div className="absolute bottom-1 right-1 flex gap-0.5 z-20 flex-wrap justify-end max-w-[80%]">
+                                                                    {colorDots.map(color => (
+                                                                        <div key={color.id}
+                                                                            className="w-2.5 h-2.5 rounded-full border border-white shadow-sm"
+                                                                            style={{ backgroundColor: color.hex }}
+                                                                            title={`Assigned to ${color.name}`}
+                                                                        />
+                                                                    ))}
+                                                                </div>
+
+                                                                {isAssignedToActiveColor && (
+                                                                    <div className="absolute inset-0 bg-green-500/20 flex items-center justify-center z-30">
+                                                                        <Check className="text-white drop-shadow-md" />
+                                                                    </div>
+                                                                )}
+                                                            </button>
+                                                            {/* Label for Leader */}
+                                                            {img.groupMembers && img.groupMembers.length > 0 && (
+                                                                <div className="absolute top-2 left-2 px-1.5 py-0.5 bg-sky-500 text-white text-[9px] font-bold uppercase rounded shadow-sm z-30">
+                                                                    Leader
+                                                                </div>
+                                                            )}
+
+                                                            {/* Move to Folder Button (Top Right) */}
+                                                            <div className="absolute top-2 right-2 z-30">
                                                                 <button
-                                                                    onClick={() => {
-                                                                        // Logic:
-                                                                        // If Assigning Color: Assign this image
-                                                                        // Else: Normal apply logic
-                                                                        if (activeColorAssignment && activeColorAssignment.folderId === folder.id) {
-                                                                            assignLayer2ImageToColor(folder.id, activeColorAssignment.colorId, img.id);
-                                                                            setActiveColorAssignment(null); // Close picker
-                                                                        } else {
-                                                                            applyLayer2Image(img);
-                                                                            if (img.bgColor) setPageBannerBgColor(img.bgColor);
-                                                                            setSelectedLayer2FolderId(folder.id);
+                                                                    data-move-button
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        setExpandedMoveSelector(expandedMoveSelector === img.id ? null : img.id);
+                                                                    }}
+                                                                    className="p-1.5 bg-slate-900/60 hover:bg-purple-600 text-white rounded-lg backdrop-blur-sm transition-colors shadow-sm"
+                                                                    title="Move to folder"
+                                                                >
+                                                                    <Folder size={12} />
+                                                                </button>
+
+                                                                {/* Move Dropdown */}
+                                                                {expandedMoveSelector === img.id && (
+                                                                    <div className="move-selector-dropdown absolute top-full right-0 mt-2 w-48 bg-white rounded-xl shadow-xl border border-slate-100 py-1 z-50 animate-in fade-in zoom-in-95 duration-200">
+                                                                        <div className="px-3 py-2 border-b border-slate-100 bg-slate-50/50 rounded-t-xl">
+                                                                            <h4 className="text-[10px] font-bold uppercase text-slate-400 tracking-wider">
+                                                                                Move to Folder
+                                                                            </h4>
+                                                                        </div>
+                                                                        <div className="max-h-48 overflow-y-auto custom-scrollbar">
+                                                                            {layer2Folders.map(targetFolder => (
+                                                                                <button
+                                                                                    key={targetFolder.id}
+                                                                                    onClick={(e) => {
+                                                                                        e.stopPropagation();
+                                                                                        moveLayer2Image(img.id, folder.id, targetFolder.id);
+                                                                                        setExpandedMoveSelector(null);
+                                                                                    }}
+                                                                                    disabled={targetFolder.id === folder.id}
+                                                                                    className={`w-full text-left px-3 py-2 text-xs flex items-center gap-2 transition-colors ${targetFolder.id === folder.id
+                                                                                        ? 'text-slate-300 cursor-default bg-slate-50'
+                                                                                        : 'text-slate-600 hover:bg-purple-50 hover:text-purple-600'
+                                                                                        }`}
+                                                                                >
+                                                                                    <Folder size={12} className={targetFolder.id === folder.id ? 'opacity-50' : ''} />
+                                                                                    <span className="truncate flex-1">{targetFolder.name}</span>
+                                                                                    {targetFolder.id === folder.id && <Check size={10} />}
+                                                                                </button>
+                                                                            ))}
+                                                                        </div>
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                };
+
+                                                const groupIds = Object.keys(groups);
+                                                const hasGroups = groupIds.length > 0;
+                                                const hasUngrouped = ungrouped.length > 0;
+
+                                                // If no images at all
+                                                if (!hasGroups && !hasUngrouped) {
+                                                    return (
+                                                        <div className="horizontal-video-scroll w-full py-8 text-center text-slate-400 text-[10px] border-2 border-dashed border-slate-100 rounded-lg">
+                                                            No images in this folder
+                                                        </div>
+                                                    );
+                                                }
+
+                                                return (
+                                                    <div className="space-y-4 pt-2">
+                                                        {/* Render Groups */}
+                                                        {groupIds.map(leaderId => {
+                                                            const group = groups[leaderId];
+                                                            if (!group.leader && group.members.length === 0) return null;
+
+                                                            return (
+                                                                <div key={leaderId} className="space-y-1">
+                                                                    {/* Group Header */}
+                                                                    <div className="flex items-center gap-2 pl-1 mb-1">
+                                                                        <div className="w-6 h-6 rounded-md bg-purple-100 text-purple-600 flex items-center justify-center">
+                                                                            <LayoutGrid size={14} />
+                                                                        </div>
+                                                                        <span className="text-[10px] font-bold uppercase text-slate-500 tracking-wider">
+                                                                            Group Leader
+                                                                        </span>
+                                                                        {group.leader && group.leader.groupMembers && (
+                                                                            <span className="text-[10px] font-medium text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded-full ml-auto">
+                                                                                {group.leader.groupMembers.length + 1} items
+                                                                            </span>
+                                                                        )}
+                                                                    </div>
+
+                                                                    {/* Group Stream */}
+                                                                    <div
+                                                                        className="horizontal-video-scroll"
+                                                                        style={{
+                                                                            width: '100%',
+                                                                            overflowX: 'scroll',
+                                                                            overflowY: 'visible',
+                                                                            scrollbarWidth: 'thin',
+                                                                            scrollbarColor: 'rgba(148, 163, 184, 0.6) rgba(15, 23, 42, 0.3)',
+                                                                            WebkitOverflowScrolling: 'touch',
+                                                                            display: 'flex',
+                                                                            gap: '12px',
+                                                                            paddingBottom: '8px'
+                                                                        }}
+                                                                        onWheel={(e) => {
+                                                                            if (e.deltaY !== 0) {
+                                                                                e.preventDefault();
+                                                                                e.currentTarget.scrollLeft += e.deltaY;
+                                                                            }
+                                                                        }}
+                                                                    >
+                                                                        {/* Leader */}
+                                                                        {group.leader && renderImage(group.leader)}
+                                                                        {/* Divider */}
+                                                                        {group.leader && group.members.length > 0 && (
+                                                                            <div className="w-px bg-slate-200 self-stretch my-2"></div>
+                                                                        )}
+                                                                        {/* Members */}
+                                                                        {group.members.map(renderImage)}
+                                                                    </div>
+                                                                </div>
+                                                            );
+                                                        })}
+
+                                                        {/* Render Ungrouped */}
+                                                        {hasUngrouped && (
+                                                            <div className="space-y-1">
+                                                                {hasGroups && (
+                                                                    <div className="flex items-center gap-2 pl-1 mb-1 pt-2 border-t border-slate-100 mt-2">
+                                                                        <Image size={14} className="text-slate-400" />
+                                                                        <span className="text-[10px] font-bold uppercase text-slate-500 tracking-wider">
+                                                                            Unsorted Images
+                                                                        </span>
+                                                                        <span className="text-[10px] font-medium text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded-full ml-auto">
+                                                                            {ungrouped.length} items
+                                                                        </span>
+                                                                    </div>
+                                                                )}
+                                                                <div
+                                                                    className="horizontal-video-scroll"
+                                                                    style={{
+                                                                        width: '100%',
+                                                                        overflowX: 'scroll',
+                                                                        overflowY: 'visible',
+                                                                        scrollbarWidth: 'thin',
+                                                                        scrollbarColor: 'rgba(148, 163, 184, 0.6) rgba(15, 23, 42, 0.3)',
+                                                                        WebkitOverflowScrolling: 'touch',
+                                                                        display: 'flex',
+                                                                        gap: '12px',
+                                                                        paddingBottom: '8px'
+                                                                    }}
+                                                                    onWheel={(e) => {
+                                                                        if (e.deltaY !== 0) {
+                                                                            e.preventDefault();
+                                                                            e.currentTarget.scrollLeft += e.deltaY;
                                                                         }
                                                                     }}
-                                                                    className={`w-full aspect-video rounded-lg overflow-hidden border-2 transition-all relative ${isAssignedToActiveColor
-                                                                        ? 'border-green-500 ring-4 ring-green-200'
-                                                                        : activeColorAssignment && activeColorAssignment.folderId === folder.id
-                                                                            ? 'border-purple-300 hover:border-purple-500 hover:scale-105 hover:shadow-md' // Selection mode
-                                                                            : isActive
-                                                                                ? 'border-sky-500 ring-2 ring-sky-200'
-                                                                                : 'border-slate-200 hover:border-sky-300'
-                                                                        }`}
                                                                 >
-                                                                    <img src={img.image} className="w-full h-full object-cover" alt="" />
-                                                                    {/* Overlays */}
-                                                                    {/* If assigned to ANY color in this folder, maybe show unique dots? */}
-                                                                    {folder.colorAssignments && Object.entries(folder.colorAssignments).map(([cId, imgId]) => {
-                                                                        if (imgId === img.id) {
-                                                                            const color = FOLDER_COLORS.find(c => c.id === cId);
-                                                                            if (color) {
-                                                                                return (
-                                                                                    <div key={cId}
-                                                                                        className="absolute bottom-1 right-1 w-3 h-3 rounded-full border border-white shadow-sm"
-                                                                                        style={{ backgroundColor: color.hex }}
-                                                                                        title={`Assigned to ${color.name}`}
-                                                                                    />
-                                                                                );
-                                                                            }
-                                                                        }
-                                                                        return null;
-                                                                    })}
-
-                                                                    {isAssignedToActiveColor && (
-                                                                        <div className="absolute inset-0 bg-green-500/20 flex items-center justify-center">
-                                                                            <Check className="text-white drop-shadow-md" />
-                                                                        </div>
-                                                                    )}
-                                                                </button>
+                                                                    {ungrouped.map(renderImage)}
+                                                                </div>
                                                             </div>
-                                                        );
-                                                    })
-                                                )}
-                                            </div>
+                                                        )}
+                                                    </div>
+                                                );
+                                            })()}
                                         </div>
                                     ))}
                                 </div>

@@ -400,4 +400,10 @@ For detailed information about the application's theme system and recent color c
   - **Collapsible Priority Pins**: "Priority Pins - History" section is now collapsible and starts collapsed by default.
   - **Consistent Styling**: Headers and text updated to use theme color `#052F4A`.
   - **Updated**: `PinsPage.jsx`, `StickyVideoCarousel.jsx`.
+- **Manual Folder Grouping**: Implemented manual organization tools for Layer 2 images in the "Colors" tab.
+  - **Reverted Automation**: Removed automatic group migration in favor of user control.
+  - **Move to Folder**: "Folder" icon on image cards allows moving individual images or entire groups (via Leader) to specific folders.
+  - **Pull Group**: New dropdown on Folder Headers allows "pulling" complete groups (Leader + Members) from other folders into the current one with one click.
+  - **Smart References**: Moving Leaders or Members automatically updates their group relationship links (`groupLeaderId`, `groupMembers`).
+
 

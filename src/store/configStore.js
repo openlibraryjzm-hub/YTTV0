@@ -507,6 +507,231 @@ export const useConfigStore = create(
                         : folder
                 )
             })),
+            // Move image between folders and update references
+            moveLayer2Image: (imageId, oldFolderId, newFolderId) => set((state) => {
+                if (oldFolderId === newFolderId) return state;
+
+                const oldFolder = state.layer2Folders.find(f => f.id === oldFolderId);
+                const imageToMove = oldFolder?.images.find(i => i.id === imageId);
+
+                if (!oldFolder || !imageToMove) return state;
+
+                const getNewKey = (id) => `${newFolderId}:${id}`;
+                const getOldKey = (id) => `${oldFolderId}:${id}`;
+
+                // Calculate updated state in steps
+                let newState = {
+                    layer2Folders: state.layer2Folders.map(folder => {
+                        // 1. Remove from old folder
+                        if (folder.id === oldFolderId) {
+                            return {
+                                ...folder,
+                                images: folder.images.filter(i => i.id !== imageId),
+                                colorAssignments: Object.fromEntries(
+                                    Object.entries(folder.colorAssignments || {}).filter(([_, id]) => id !== imageId)
+                                )
+                            };
+                        }
+                        // 2. Add to new folder
+                        if (folder.id === newFolderId) {
+                            return {
+                                ...folder,
+                                images: [...folder.images, imageToMove]
+                            };
+                        }
+                        return folder;
+                    })
+                };
+
+                // 3. Update References (Deep Scan)
+                newState.layer2Folders = newState.layer2Folders.map(folder => ({
+                    ...folder,
+                    images: folder.images.map(img => {
+                        // Case A: We moved a LEADER. Update MEMBERS.
+                        if (img.groupLeaderId === getOldKey(imageId)) {
+                            return { ...img, groupLeaderId: getNewKey(imageId) };
+                        }
+
+                        // Case B: We moved a MEMBER. Update LEADER.
+                        if (img.groupMembers && img.groupMembers.includes(getOldKey(imageId))) {
+                            return {
+                                ...img,
+                                groupMembers: img.groupMembers.map(m => m === getOldKey(imageId) ? getNewKey(imageId) : m)
+                            };
+                        }
+
+                        return img;
+                    })
+                }));
+
+                return newState;
+            }),
+
+            // Move group (leader + members) to a new folder
+            moveGroupToFolder: (leaderId, leaderFolderId, targetFolderId) => set((state) => {
+                if (leaderFolderId === targetFolderId) return state;
+
+                // 1. Find Leader and Members
+                const sourceFolder = state.layer2Folders.find(f => f.id === leaderFolderId);
+                if (!sourceFolder) return state;
+
+                const leaderImage = sourceFolder.images.find(img => img.id === leaderId);
+                if (!leaderImage) return state;
+
+                const memberKeys = leaderImage.groupMembers || [];
+                // memberKey format: "folderId:imageId"
+
+                // 2. Build list of all images to move (Leader + Members)
+                const itemsToMove = [];
+
+                // Add Leader
+                itemsToMove.push({
+                    imageId: leaderId,
+                    folderId: leaderFolderId,
+                    imageObj: leaderImage,
+                    isLeader: true
+                });
+
+                // Add Members
+                memberKeys.forEach(key => {
+                    const [mFolderId, mImageId] = key.split(':');
+                    const mFolder = state.layer2Folders.find(f => f.id === mFolderId);
+                    if (mFolder) {
+                        const mImage = mFolder.images.find(i => i.id === mImageId);
+                        if (mImage) {
+                            itemsToMove.push({
+                                imageId: mImageId,
+                                folderId: mFolderId,
+                                imageObj: mImage,
+                                isLeader: false
+                            });
+                        }
+                    }
+                });
+
+                // 3. Construct new state: Remove from old locations, Add to new location, Update Refs
+                const getNewKey = (id) => `${targetFolderId}:${id}`;
+
+                // Create a map for quick reference update of moving items
+                // OldKey -> NewKey
+                const keyMap = {};
+                itemsToMove.forEach(item => {
+                    keyMap[`${item.folderId}:${item.imageId}`] = `${targetFolderId}:${item.imageId}`;
+                });
+
+                // Helper to update a single key if it was moved
+                const updateKey = (key) => keyMap[key] || key;
+
+
+                const newState = {
+                    layer2Folders: state.layer2Folders.map(folder => {
+                        let newImages = [...folder.images];
+                        let hasChanges = false;
+
+                        // A. Remove items moving OUT of this folder
+                        const itemsRemoving = itemsToMove.filter(i => i.folderId === folder.id);
+                        if (itemsRemoving.length > 0) {
+                            newImages = newImages.filter(img => !itemsRemoving.find(ir => ir.imageId === img.id));
+                            hasChanges = true;
+                        }
+
+                        // B. Add items moving INTO this folder (only if it's the target)
+                        if (folder.id === targetFolderId) {
+                            const itemsAdding = itemsToMove.map(i => {
+                                // We need to update the image object's internal refs (if they point to moved items)
+                                // But we'll do a global pass for refs in step C.
+                                // Here just put the object in.
+                                return i.imageObj;
+                            });
+                            newImages = [...newImages, ...itemsAdding];
+                            hasChanges = true;
+                        }
+
+                        // C. Update References for ALL images (whether moved or not)
+                        // Because some images might reference the moved items
+                        newImages = newImages.map(img => {
+                            let updatedImg = { ...img };
+                            let imgChanged = false;
+
+                            // Update groupLeaderId reference
+                            if (updatedImg.groupLeaderId && keyMap[updatedImg.groupLeaderId]) {
+                                updatedImg.groupLeaderId = keyMap[updatedImg.groupLeaderId];
+                                imgChanged = true;
+                            }
+
+                            // Update groupMembers references
+                            if (updatedImg.groupMembers && updatedImg.groupMembers.length > 0) {
+                                const newMembers = updatedImg.groupMembers.map(m => keyMap[m] || m);
+                                // Check if changed (simple length check or deep compare not needed if map is pure)
+                                // Just assign.
+                                if (JSON.stringify(newMembers) !== JSON.stringify(updatedImg.groupMembers)) {
+                                    updatedImg.groupMembers = newMembers;
+                                    imgChanged = true;
+                                }
+                            }
+
+                            return imgChanged ? updatedImg : img;
+                        });
+
+                        return { ...folder, images: newImages };
+                    })
+                };
+
+                return newState;
+            }),
+            // Automatically migrate groups in 'default' to their own folders
+            separateGroupsIntoFolders: () => set((state) => {
+                const defaultFolder = state.layer2Folders.find(f => f.id === 'default');
+                if (!defaultFolder) return state;
+
+                const newFolders = [];
+                let remainingImages = [...defaultFolder.images];
+                let hasChanges = false;
+
+                // Identify Group Leaders
+                const leaders = defaultFolder.images.filter(img => img.groupMembers && img.groupMembers.length > 0);
+
+                if (leaders.length === 0) return state; // Nothing to do
+
+                leaders.forEach((leader, idx) => {
+                    hasChanges = true;
+                    const folderId = Date.now().toString() + idx; // Ensure unique IDs if multiple
+                    const memberIds = leader.groupMembers.map(m => m.split(':')[1]); // extract imageId from 'folderId:imageId'
+
+                    // Identify images to move (Leader + Members)
+                    const imagesToMove = defaultFolder.images.filter(img =>
+                        img.id === leader.id || memberIds.includes(img.id)
+                    );
+
+                    // Create new folder
+                    newFolders.push({
+                        id: folderId,
+                        name: `Group ${idx + 1}`,
+                        images: imagesToMove,
+                        playlistIds: [],
+                        isThemeFolder: false,
+                        condition: null,
+                        folderColors: [],
+                        colorAssignments: {}
+                    });
+
+                    // Remove from remaining images
+                    remainingImages = remainingImages.filter(img =>
+                        img.id !== leader.id && !memberIds.includes(img.id)
+                    );
+                });
+
+                if (!hasChanges) return state;
+
+                return {
+                    layer2Folders: [
+                        // Update default folder with remaining images
+                        ...state.layer2Folders.map(f => f.id === 'default' ? { ...f, images: remainingImages } : f),
+                        // Append new folders
+                        ...newFolders
+                    ]
+                };
+            }),
             unassignLayer2ImageFromColor: (folderId, colorId) => set((state) => {
                 return {
                     layer2Folders: state.layer2Folders.map(folder => {

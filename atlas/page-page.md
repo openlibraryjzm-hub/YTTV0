@@ -58,19 +58,23 @@ PagePage is a dedicated page for Page Banner and Layer 2 image library configura
     - Visual indicators for active image and selected folder membership.
 
 - **Colors Tab**:
-  - **Purpose**: dedicated interface for managing "Theme Color Assignments".
+  - **Purpose**: Dedicated interface for managing "Theme Color Assignments" and **Manual Folder Organization**.
+  - **Header Controls**: 
+    - **Create New Folder** button: Create custom folders (e.g., "Holiday 2023").
+    - **Filter Bar**: View folders by assigned color.
   - **Layout**: Vertical list of filtered Layer 2 folders.
   - **Folder Row**:
-    - **Header**: Folder name and image count.
-    - **Color Assignments Section**: Horizontal row of 16 color dots (Red through Pink).
-      - **Empty Dot**: Click to assign an image from this folder to this color.
-      - **Filled Dot**: Shows thumbnail of assigned image. Click to change assignment or unassign.
-      - **Visual Feedback**: Active assignments show image thumbnails clipped to the circle.
-    - **Image Stream**: Horizontal scroll of images within that folder to select from when assigning.
+    - **Header**: 
+      - Folder name (renamable).
+      - **Pull Group Button**: Dropdown to "pull" an existing Group Leader (and all its members) from another folder into this one instantly.
+      - **Delete Folder Button**.
+    - **Color Assignments Section**: Horizontal row of 16 color dots for theme mapping.
+    - **Image Stream**: Horizontal scroll of images.
+      - **Group Visualization**: Images are automatically organized into visual groups. "Group Leaders" appear first with a label, followed by their members. Ungrouped images follow.
+      - **Move to Folder**: Every image has a "Folder" icon button in the top-right corner. Clicking it allows moving that individual image (or the entire group if it's a leader) to another folder.
   - **Interaction**:
-    - Click a color dot to enter "Selection Mode" for that color.
-    - Click an image in the stream to assign it to the selected color.
-    - Once assigned, that image will be prioritized when the banner is in that theme color context.
+    - **Move Logic**: Moving a Group Leader automatically moves its members and updates references. Moving a member updates the leader's reference.
+    - **Assignments**: Click color dots to map specific images to folder colors.
 
 - **Groups Tab**:
   - **Two-Column Layout**: 
