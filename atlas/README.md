@@ -395,4 +395,9 @@ For detailed information about the application's theme system and recent color c
   - **Feature**: Free-form masking tool for each quadrant, allowing "infinite spill" or precise custom cuts.
   - **Relaxed Bounds**: Crops can drag/extend well outside the orb container (-50% to 150%) to capture large spillover details.
   - **Integration**: Fully synced with the main player header; custom cutouts appear instantly in the top app controller.
+- **Pins Page Refactor**:
+  - **Date Grouping**: Pins are now grouped by date (e.g., "30th January, 2026") with headers and counts.
+  - **Collapsible Priority Pins**: "Priority Pins - History" section is now collapsible and starts collapsed by default.
+  - **Consistent Styling**: Headers and text updated to use theme color `#052F4A`.
+  - **Updated**: `PinsPage.jsx`, `StickyVideoCarousel.jsx`.
 

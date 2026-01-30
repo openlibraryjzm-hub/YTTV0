@@ -19,10 +19,12 @@ const StickyVideoCarousel = ({ children, title = "Stickied Videos" }) => {
     if (count <= 3) {
         return (
             <div className="w-full mb-8 animate-fade-in px-8"> {/* Added padding to match carousel visual width if needed, or just container padding */}
-                <div className="flex items-center gap-2 mb-3">
-                    <SplatterIcon className="w-5 h-5 text-amber-500" />
-                    <h3 className="text-lg font-bold text-[#052F4A]">{title}</h3>
-                </div>
+                {title && (
+                    <div className="flex items-center gap-2 mb-3">
+                        <SplatterIcon className="w-5 h-5 text-amber-500" />
+                        <h3 className="text-lg font-bold text-[#052F4A]">{title}</h3>
+                    </div>
+                )}
                 <div className="grid grid-cols-3 gap-6">
                     {children}
                 </div>
@@ -99,13 +101,15 @@ const StickyVideoCarousel = ({ children, title = "Stickied Videos" }) => {
             onMouseEnter={() => setShowControls(true)}
             onMouseLeave={() => setShowControls(false)}
         >
-            <div className="flex items-center gap-2 mb-3">
-                <SplatterIcon className="w-5 h-5 text-amber-500" />
-                <h3 className="text-lg font-bold text-[#052F4A]">{title}</h3>
-                <span className="text-xs font-medium text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full border border-slate-200">
-                    Scroll to view {count} items
-                </span>
-            </div>
+            {title && (
+                <div className="flex items-center gap-2 mb-3">
+                    <SplatterIcon className="w-5 h-5 text-amber-500" />
+                    <h3 className="text-lg font-bold text-[#052F4A]">{title}</h3>
+                    <span className="text-xs font-medium text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full border border-slate-200">
+                        Scroll to view {count} items
+                    </span>
+                </div>
+            )}
 
             <div className="relative -mx-4 px-4 sticky-carousel-wrapper">
                 <style jsx>{`
@@ -171,7 +175,7 @@ const StickyVideoCarousel = ({ children, title = "Stickied Videos" }) => {
 };
 
 // Splatter Icon Component
-const SplatterIcon = ({ className }) => (
+export const SplatterIcon = ({ className }) => (
     <svg
         viewBox="0 0 100 100"
         className={className}

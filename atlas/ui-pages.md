@@ -566,17 +566,20 @@ Users see a vertical list of history cards showing the last 100 watched videos:
 Users see a dedicated page for pinned videos, separating "Priority Pins" from "Regular Pins":
 
 - **Priority Pins Carousel**: The top section displays priority pins (videos pinned via the yellow star/pin button).
-  - Presented in a horizontal carousel (StickyVideoCarousel).
-  - These pins **do not expire**.
-  - Always sorted by most recently pinned first (left to right).
+  - **Collapsible History**: The carousel is wrapped in a collapsible section labeled "Priority Pins - History".
+  - **Default State**: Starts collapsed (showing only a thin bar with item count) to reduce visual clutter.
+  - **Content**: When expanded, displays priority pins in a horizontal carousel (StickyVideoCarousel).
+  - **Sorting**: Always sorted by most recently pinned first.
 
-- **Regular Pins Grid**: The main section displays normal pins (videos pinned via the standard pin button).
-  - Presented in a standard 3-column grid.
-  - **Persistent**: Regular pins persist until manually removed (no expiration).
-  - Sorted by **most recently pinned** (newest first).
+- **Regular Pins Grid (Date Grouped)**: The main section displays normal pins (videos pinned via the standard pin button).
+  - **Date Grouping**: Videos are grouped by the date they were pinned (e.g., "30th January, 2026").
+  - **Headers**: Each group has a header displaying the full date and video count.
+  - **Layout**: Within each date group, videos are presented in a standard grid layout.
+  - **Sort Order**: Groups are ordered by date (newest first).
 
 - **Visuals**:
   - Uses the standard `PageBanner` "Pinned Videos" header.
+  - **Typography**: Headers and text use the app's theme color `#052F4A` for consistency.
   - `VideoCard` components are reused for both priority and regular pins.
 
 **2: File Manifest**
