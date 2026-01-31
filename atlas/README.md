@@ -414,3 +414,8 @@ For detailed information about the application's theme system and recent color c
   - **Context-Aware**: Edits automatically apply to the correct context (specific folder vs. main playlist) based on current view.
 - **ASCII Art Priority Fix**: Resolved an issue where the global user signature was overriding custom folder ASCII art. The `PageBanner` now strictly prioritizes the passed `avatar` prop.
 - **Banner Carousel Reset**: Changed behavior so the Page Banner's media carousel (Recent/Pins/ASCII) resets to "Recent" whenever navigating between playlists or folders, rather than persisting the previous view mode.
+- **Orb Group Playlist Override**: Orb Groups can now target specific playlists (by ID or Name) to force their theme (Wallpaper + Orb Image) to display when that playlist is active.
+  - **Logic**: Orb Group assignment > Folder Assignment > Global.
+  - **Player Sync**: The central Orb Menu in the player controller now correctly syncs with this override, displaying the specific Orb Group image + correct scale/offset..
+- **Advanced Orb Scale Fix**: Resolved an issue where saved stored Orb scales (multiplier format) were being incorrectly treated as percentages in the Player Controller, causing images to shrink to 1px.
+  - **PlayerController**: Updated to treat scale as a direct multiplier (defaulting to 1.0) with no division, matching the storage format.

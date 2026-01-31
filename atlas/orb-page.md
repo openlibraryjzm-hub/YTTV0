@@ -41,6 +41,9 @@ OrbPage is a dedicated page for orb configuration, accessed via the "Orb" button
   - **Folder Assignment**: Folder icon button (top-left on hover) opens color grid to assign presets to folder colors
     - Checkmarks indicate assigned folders
     - Assigned folder indicators shown as colored dots at bottom of thumbnail (up to 3, with +N for more)
+  - **Playlist Assignment**: Music icon button (top-left on hover) opens menu to assign presets to specific playlists
+    - Allows setting this Orb Group as the override for specific playlists (e.g. "Horror Theme" for "Horror Playlist")
+    - Assigned presets show amber Music icon when active
   - **Delete on Hover**: Red trash button appears when hovering over a preset (top-right)
   - **One-Click Apply**: Click any preset thumbnail to instantly apply its configuration
   - **Empty State**: Shows message when no presets are saved

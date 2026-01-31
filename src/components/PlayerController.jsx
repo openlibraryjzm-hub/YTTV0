@@ -69,6 +69,19 @@ import AudioVisualizer from './AudioVisualizer';
 
 
 
+// Seeded random function for consistent random selection per page
+const seededRandom = (seed) => {
+  let hash = 0;
+  if (seed) {
+    for (let i = 0; i < seed.length; i++) {
+      const char = seed.charCodeAt(i);
+      hash = ((hash << 5) - hash) + char;
+      hash = hash & hash;
+    }
+  }
+  return (Math.abs(hash) % 10000) / 10000;
+};
+
 // Use folder colors from the app's folder system
 const COLORS = FOLDER_COLORS.map(color => ({ hex: color.hex, name: color.name, id: color.id }));
 
@@ -1508,7 +1521,9 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
     quickAssignColor, setQuickAssignColor,
     quickShuffleColor, setQuickShuffleColor,
     // Advanced Orb Masks
-    orbAdvancedMasks, orbMaskRects
+    orbAdvancedMasks, orbMaskRects,
+    // Orb Favorites for Overrides
+    orbFavorites
   } = useConfigStore();
 
 
@@ -1527,7 +1542,64 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
     return count.toString();
   };
 
-  const orbImageSrc = customOrbImage || playlistImage;
+  // --- Orb Image Override Logic ---
+  const getEffectiveOrbImage = () => {
+    // 1. Identify Playlist
+    let playlistName = null;
+    if (currentPlaylistId) {
+      const p = allPlaylists.find(p => String(p.id) === String(currentPlaylistId));
+      if (p) playlistName = p.name;
+    }
+    if (!playlistName && currentPlaylistTitle) playlistName = currentPlaylistTitle;
+
+    if (!playlistName) return null;
+
+    // 2. Check Orb Group Override
+    const orbGroup = orbFavorites?.find(f =>
+      f.playlistIds &&
+      (f.playlistIds.includes(playlistName) || (currentPlaylistId && f.playlistIds.includes(String(currentPlaylistId))))
+    );
+
+    if (orbGroup) {
+      // Collect group images
+      let images = [orbGroup];
+      if (orbGroup.groupMembers) {
+        orbGroup.groupMembers.forEach(mid => {
+          const m = orbFavorites.find(x => x.id === mid);
+          if (m) images.push(m);
+        });
+      }
+
+      // Filter by Folder Color (if active)
+      const activeFolderColor = currentFolder ? currentFolder.folder_color : null;
+      if (activeFolderColor && activeFolderColor !== 'all') {
+        images = images.filter(img => img.folderColors && img.folderColors.includes(activeFolderColor));
+      }
+
+      if (images.length > 0) {
+        // Use playlist ID as seed for consistency
+        const seed = String(currentPlaylistId || 'default');
+        const rand = seededRandom(seed);
+        const idx = Math.floor(rand * images.length);
+        const selected = images[idx];
+        if (selected && selected.customOrbImage) {
+          return {
+            image: selected.customOrbImage,
+            scale: selected.orbImageScale || 1, // Use raw multiplier (e.g. 1.0), do NOT divide by 100
+            xOffset: selected.orbImageXOffset || 0,
+            yOffset: selected.orbImageYOffset || 0
+          };
+        }
+      }
+    }
+    return null;
+  };
+
+  const effectiveOrb = getEffectiveOrbImage();
+  const orbImageSrc = effectiveOrb?.image || customOrbImage || playlistImage;
+  const displayScale = effectiveOrb ? effectiveOrb.scale : orbImageScale;
+  const displayX = effectiveOrb ? effectiveOrb.xOffset : orbImageXOffset;
+  const displayY = effectiveOrb ? effectiveOrb.yOffset : orbImageYOffset;
 
   // Get video display info (use preview if in preview mode)
   // Fallback to activeVideoItem if displayVideoItem is not set
@@ -1902,9 +1974,9 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
                   alt=""
                   className="max-w-none transition-all duration-500"
                   style={{
-                    width: isSpillEnabled ? `${orbSize * orbImageScale * orbImageScaleW}px` : '100%',
-                    height: isSpillEnabled ? `${orbSize * orbImageScale * orbImageScaleH}px` : '100%',
-                    transform: isSpillEnabled ? `translate(${orbImageXOffset}px, ${orbImageYOffset}px)` : 'none',
+                    width: isSpillEnabled ? `${orbSize * displayScale * orbImageScaleW}px` : '100%',
+                    height: isSpillEnabled ? `${orbSize * displayScale * orbImageScaleH}px` : '100%',
+                    transform: isSpillEnabled ? `translate(${displayX}px, ${displayY}px)` : 'none',
                     objectFit: isSpillEnabled ? 'contain' : 'cover'
                   }}
                 />

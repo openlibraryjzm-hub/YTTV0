@@ -141,6 +141,7 @@ export const useConfigStore = create(
                         br: { x: 50, y: 50, w: 50, h: 50 }
                     },
                     folderColors: favorite.folderColors || [], // Array of folder color IDs
+                    playlistIds: favorite.playlistIds || [], // Array of playlist IDs for theme overrides
                 }]
             })),
             removeOrbFavorite: (id) => set((state) => ({
@@ -170,6 +171,11 @@ export const useConfigStore = create(
             updateOrbFavoriteFolders: (id, folderColors) => set((state) => ({
                 orbFavorites: state.orbFavorites.map(f =>
                     f.id === id ? { ...f, folderColors: folderColors || [] } : f
+                )
+            })),
+            updateOrbFavoritePlaylists: (id, playlistIds) => set((state) => ({
+                orbFavorites: state.orbFavorites.map(f =>
+                    f.id === id ? { ...f, playlistIds: playlistIds || [] } : f
                 )
             })),
             // Group management for orb presets

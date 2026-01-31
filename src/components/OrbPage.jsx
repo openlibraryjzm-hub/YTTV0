@@ -1,8 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Smile, Plus, ArrowLeft, Trash2, Check, Folder, Settings, LayoutGrid, ChevronDown, Image } from 'lucide-react';
+import { Smile, Plus, ArrowLeft, Trash2, Check, Folder, Settings, LayoutGrid, ChevronDown, Image, Music } from 'lucide-react';
 import OrbGroupColumn from './OrbGroupColumn';
 import OrbCropModal from './OrbCropModal';
 import { useConfigStore } from '../store/configStore';
+import { usePlaylistStore } from '../store/playlistStore';
 import PageBanner from './PageBanner';
 import { FOLDER_COLORS } from '../utils/folderColors';
 
@@ -19,15 +20,19 @@ export default function OrbPage({ onBack, onNavigateToYou, onNavigateToPage, onN
         removeOrbFavorite,
         applyOrbFavorite,
         updateOrbFavoriteFolders,
+        updateOrbFavoritePlaylists,
         assignOrbToGroup,
         orbAdvancedMasks, setOrbAdvancedMasks,
         orbMaskRects, setOrbMaskRects,
     } = useConfigStore();
 
+    const allPlaylists = usePlaylistStore(state => state.allPlaylists);
+
     const [hoveredFavoriteId, setHoveredFavoriteId] = useState(null);
     const [activeTab, setActiveTab] = useState('presets'); // 'presets', 'configuration', or 'groups'
     const [selectedFolderFilter, setSelectedFolderFilter] = useState(null); // null = show all
     const [folderAssignmentOpenId, setFolderAssignmentOpenId] = useState(null); // ID of preset with open folder selector
+    const [playlistAssignmentOpenId, setPlaylistAssignmentOpenId] = useState(null); // ID of preset with open playlist selector
     const [selectedGroupLeaderId, setSelectedGroupLeaderId] = useState(null); // ID of selected group leader preset (Groups Tab)
     const [showGroupLeadersOnly, setShowGroupLeadersOnly] = useState(false); // Toggle to show only group leaders with members
     const [columnLeaderId, setColumnLeaderId] = useState(null); // ID of group leader whose column is open
@@ -106,6 +111,9 @@ export default function OrbPage({ onBack, onNavigateToYou, onNavigateToPage, onN
             if (expandedConfigGroupLeaderSelector && !e.target.closest('[data-config-group-leader-selector]')) {
                 setExpandedConfigGroupLeaderSelector(false);
             }
+            if (playlistAssignmentOpenId && !e.target.closest('.playlist-assignment-menu')) {
+                setPlaylistAssignmentOpenId(null);
+            }
         };
         document.addEventListener('mousedown', handleClickOutside);
         return () => document.removeEventListener('mousedown', handleClickOutside);
@@ -174,6 +182,19 @@ export default function OrbPage({ onBack, onNavigateToYou, onNavigateToPage, onN
             : [...currentFolders, folderColorId];
 
         updateOrbFavoriteFolders(favoriteId, newFolders);
+    };
+
+    // Toggle playlist assignment for a preset
+    const togglePlaylistAssignment = (favoriteId, playlistName) => {
+        const favorite = orbFavorites.find(f => f.id === favoriteId);
+        if (!favorite) return;
+
+        const currentPlaylists = favorite.playlistIds || [];
+        const newPlaylists = currentPlaylists.includes(playlistName)
+            ? currentPlaylists.filter(name => name !== playlistName)
+            : [...currentPlaylists, playlistName];
+
+        updateOrbFavoritePlaylists(favoriteId, newPlaylists);
     };
 
     // Spill Editor component for Page Banner
@@ -992,6 +1013,23 @@ export default function OrbPage({ onBack, onNavigateToYou, onNavigateToPage, onN
                                                                         </button>
                                                                     )}
 
+                                                                    {/* Playlist Assignment Button */}
+                                                                    <button
+                                                                        onClick={(e) => {
+                                                                            e.stopPropagation();
+                                                                            setPlaylistAssignmentOpenId(playlistAssignmentOpenId === favorite.id ? null : favorite.id);
+                                                                        }}
+                                                                        className={`w-6 h-6 rounded-full flex items-center justify-center shadow-md transition-all ${favorite.playlistIds?.length > 0
+                                                                            ? 'bg-amber-500 hover:bg-amber-600 text-white'
+                                                                            : 'bg-slate-400 hover:bg-slate-500 text-white'
+                                                                            }`}
+                                                                        title="Assign to Playlists"
+                                                                    >
+                                                                        <Music size={12} />
+                                                                    </button>
+
+
+
                                                                     {/* Folder Color Selector */}
                                                                     {folderAssignmentOpenId === favorite.id && (
                                                                         <div className="folder-assignment-menu absolute top-7 left-0 bg-white border-2 border-slate-200 rounded-lg p-2 shadow-xl z-[100] min-w-[200px]">
@@ -1019,6 +1057,37 @@ export default function OrbPage({ onBack, onNavigateToYou, onNavigateToPage, onN
                                                                                         </button>
                                                                                     );
                                                                                 })}
+                                                                            </div>
+                                                                        </div>
+                                                                    )}
+
+                                                                    {/* Playlist Assignment Selector */}
+                                                                    {playlistAssignmentOpenId === favorite.id && (
+                                                                        <div className="playlist-assignment-menu absolute top-7 left-8 bg-white border-2 border-slate-200 rounded-lg p-2 shadow-xl z-[100] min-w-[200px] max-h-[300px] overflow-hidden flex flex-col">
+                                                                            <div className="text-[10px] font-bold uppercase text-slate-400 mb-2 px-1">Assign to Playlists</div>
+                                                                            <div className="overflow-y-auto flex-1 space-y-1 pr-1">
+                                                                                {allPlaylists.map((playlist) => {
+                                                                                    const isAssigned = favorite.playlistIds?.includes(playlist.id);
+                                                                                    return (
+                                                                                        <button
+                                                                                            key={playlist.id}
+                                                                                            onClick={(e) => {
+                                                                                                e.stopPropagation();
+                                                                                                togglePlaylistAssignment(favorite.id, playlist.id);
+                                                                                            }}
+                                                                                            className={`w-full text-left px-2 py-1.5 rounded-lg text-[10px] font-medium transition-all flex items-center justify-between ${isAssigned
+                                                                                                ? 'bg-amber-50 text-amber-700 border border-amber-200'
+                                                                                                : 'hover:bg-slate-50 text-slate-600 border border-transparent'
+                                                                                                }`}
+                                                                                        >
+                                                                                            <span className="truncate flex-1">{playlist.name}</span>
+                                                                                            {isAssigned && <Check size={12} className="text-amber-500 ml-2" />}
+                                                                                        </button>
+                                                                                    );
+                                                                                })}
+                                                                                {allPlaylists.length === 0 && (
+                                                                                    <div className="text-[9px] text-slate-400 text-center py-2">No playlists found</div>
+                                                                                )}
                                                                             </div>
                                                                         </div>
                                                                     )}

@@ -20,7 +20,7 @@ The Advanced Player Controller is a comprehensive UI component positioned at the
 The Central Orb is a circular element (154px diameter by default) positioned at the center of the PlayerController. Users see:
 - **Audio Visualizer Border**: The static blue border has been removed. The Audio Visualizer now acts as the dynamic, reactive border for the orb, starting exactly where the image ends (Radius 77px).
 - **Window Controls**: Custom Minimize/Maximize/Close buttons interactively float in the top-right corner of the banner area.
-- **Orb Image**: Displays the current video's thumbnail by default, or a custom uploaded image if set. The image is clipped to a circular shape with optional "spill" effects that allow the image to extend beyond the circle boundaries in configurable quadrants (top-left, top-right, bottom-left, bottom-right).
+- **Orb Image**: Displays the current video's thumbnail by default, or a custom uploaded image if set. Supports **Orb Group Overrides**: If the current playlist is assigned to an Orb Group, the central orb image (and its scale/offset) will be overridden by a random image from that group or its leader. The image is clipped to a circular shape with optional "spill" effects.
 - **Upload Button**: On hover, an upload icon appears at the top of the orb (12 o'clock position). Clicking opens a file picker to upload a custom image. The uploaded image is immediately displayed and persisted to localStorage.
 - **Orb Buttons**: Eight buttons appear around the orb on hover, positioned in a radial pattern:
   - **Editor** (Scissors icon) - [Placeholder] Reserved for future direct pixel-editing/masking tools.
@@ -86,9 +86,10 @@ The Central Orb is a circular element (154px diameter by default) positioned at 
    - Spill state controls CSS `clipPath` application (line 1309-1312) - when enabled, allows image to extend beyond circle
 
 3. **Image Display Logic:**
-   - Source priority: `customOrbImage` (if set) → `playlistImage` (current video thumbnail) → fallback placeholder
+   - Source priority: `Effective Orb` (Orb Group Override) → `customOrbImage` (Global Config) → `playlistImage` (current video thumbnail) → fallback placeholder
+   - **Override Logic**: If current playlist matches a saved Orb Group favorite (via `playlistIds`), a random image is selected from that group (seeded by playlist ID so it remains consistent per playlist).
    - Image rendered with `clipPath: 'url(#orbClipPath)'` (line 1415) which applies circular clipping + spill quadrants
-   - When spill enabled: Image scales by `orbSize * orbImageScale * orbImageScaleW/H` and translates by offsets
+   - When spill enabled: Image scales by `orbSize * displayScale * orbImageScaleW/H` and translates by offsets. NOTE: Saved Orb Favorites store scale as a multiplier (e.g. 1.0), while some legacy parts might use percentages. The PlayerController normalizes this to treat stored values as multipliers.
    - When spill disabled: Image uses `objectFit: 'cover'` at 100% size
 
 **Source of Truth:**

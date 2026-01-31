@@ -365,6 +365,17 @@ Users see a contextual banner (220px fixed height) at the top of scrollable cont
 
 **Layer 2 Image Management:**
 - Layer 2 images are managed exclusively via Settings → Appearance → Page Banner
+- **Override Hierarchy**: The banner image is selected based on the following priority (highest to lowest):
+  1. **Orb Group Playlist Override**: If the current playlist is assigned to a saved Orb Group (via `playlistIds`), that group's image (or a random member's image) is enforced. This overrides ALL other settings.
+  2. **Playlist Assignment (Layer 2 Folder)**: If a Layer 2 Folder is assigned to the current playlist (via Colors Tab), that folder is used.
+  3. **Theme Folder**: If a folder is set as the app-wide Theme, it is used.
+  4. **Default Folder**: Falls back to the 'Default' folder.
+
+- **Orb Group Playlist Overrides**:
+  - **Purpose**: Enforces a specific cohesive visual theme (Wallpaper + Orb Image) for specific playlists (e.g., "Horror" playlist always gets "Horror Theme").
+  - **Configuration**: Set in the **Orb Page > Presets** tab by assigning playlists to Orb Groups.
+  - **Player Sync**: The central Orb Menu also respects this override.
+
 - **Theme Folder System**: Folders can be set as app-wide themes
   - **Set as Theme**: Click "Set Theme" button on any folder with images to apply it app-wide
   - **App-Wide Application**: Theme folder's images apply to all pages (Videos, Playlists, Likes, Pins, etc.)

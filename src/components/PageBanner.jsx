@@ -127,7 +127,8 @@ const PageBanner = ({ title, description, folderColor, onEdit, videoCount, count
         playlistLayer2Overrides,
         themeFolderId,
         themeGroupLeaderId,
-        themeGroupLeaderFolderId
+        themeGroupLeaderFolderId,
+        orbFavorites
     } = useConfigStore();
 
     const { presets, activePresetId, setActivePreset } = useTabPresetStore();
@@ -165,15 +166,11 @@ const PageBanner = ({ title, description, folderColor, onEdit, videoCount, count
             return null;
         }
 
-        // Check for Playlist Folder Override (New Feature)
-        // If the current playlist is assigned to a specific folder, use that folder as the source
-        // This OVERRIDES the global theme logic
-        // Check for Playlist Folder Override (New Feature)
-        // If the current playlist is assigned to a specific folder, use that folder as the source
-        // This OVERRIDES the global theme logic
+        // Check for Playlist Override (Orb Group or Layer 2 Folder)
+        // Checks if the current playlist is assigned to a specific Orb Group or Layer 2 Folder.
+        // This OVERRIDES the global theme logic.
         if (currentPlaylistId) {
             // Priority 1: Accurate Name Lookup via ID (if allPlaylists is available)
-            // This is critical because 'title' prop changes when viewing folders (e.g. "Red Folder")
             let currentPlaylistName = null;
             if (allPlaylists && allPlaylists.length > 0) {
                 const currentPlaylist = allPlaylists.find(p => p.id === currentPlaylistId);
@@ -182,13 +179,56 @@ const PageBanner = ({ title, description, folderColor, onEdit, videoCount, count
                 }
             }
 
-            // Priority 2: Fallback to title prop (only if we couldn't find it above)
-            // Useful for race conditions or if allPlaylists isn't loaded yet
+            // Priority 2: Fallback to title prop
             if (!currentPlaylistName && title && title !== 'Playlist') {
                 currentPlaylistName = title;
             }
 
             if (currentPlaylistName) {
+                // --- 1. ORB GROUP OVERRIDE (HIGHEST PRIORITY) ---
+                const playlistOrbLeader = orbFavorites?.find(f =>
+                    f.playlistIds &&
+                    (f.playlistIds.includes(currentPlaylistName) || (currentPlaylistId && f.playlistIds.includes(currentPlaylistId)))
+                );
+
+                if (playlistOrbLeader) {
+                    // 1. Collect all images in group (Leader + Members)
+                    let groupImages = [playlistOrbLeader];
+                    if (playlistOrbLeader.groupMembers) {
+                        playlistOrbLeader.groupMembers.forEach(memberId => {
+                            const member = orbFavorites.find(m => m.id === memberId);
+                            if (member) groupImages.push(member);
+                        });
+                    }
+
+                    // 2. Filter by Folder Color (if active)
+                    if (folderColor && folderColor !== 'all' && folderColor !== 'unsorted') {
+                        groupImages = groupImages.filter(img => img.folderColors && img.folderColors.includes(folderColor));
+                    }
+
+                    // 3. Select Image
+                    if (groupImages.length > 0) {
+                        // Random selection using pageKey
+                        const seed = pageKey || `${Date.now()}`;
+                        const randomValue = seededRandom(seed);
+                        const randomIndex = Math.floor(randomValue * groupImages.length);
+                        const selected = groupImages[randomIndex];
+
+                        if (selected.customOrbImage) {
+                            return {
+                                image: selected.customOrbImage,
+                                scale: selected.orbImageScale || 100,
+                                xOffset: selected.orbImageXOffset || 0,
+                                yOffset: selected.orbImageYOffset || 0,
+                                imageId: selected.id,
+                                folderId: `orb-group-${playlistOrbLeader.id}`,
+                                bgColor: null
+                            };
+                        }
+                    }
+                }
+
+                // --- 2. LAYER 2 FOLDER OVERRIDE (STANDARD FOLDERS) ---
                 const playlistFolder = layer2Folders?.find(f => f.playlistIds && f.playlistIds.includes(currentPlaylistName));
 
                 if (playlistFolder && playlistFolder.images?.length > 0) {
@@ -236,6 +276,8 @@ const PageBanner = ({ title, description, folderColor, onEdit, videoCount, count
                 }
             }
         }
+
+
 
         // Check for specific Color Assignment in the Active Theme
         // This takes priority when a colored folder is selected
@@ -432,7 +474,7 @@ const PageBanner = ({ title, description, folderColor, onEdit, videoCount, count
     };
 
     // Memoize effective layer 2 image - pageKey ensures consistent random selection per page
-    const effectiveLayer2 = React.useMemo(() => getEffectiveLayer2Image(), [pageKey, pageType, folderColor, themeFolderId, themeGroupLeaderId, themeGroupLeaderFolderId, currentPlaylistId, layer2Folders, playlistLayer2Overrides, customPageBannerImage2, pageBannerImage2Scale, pageBannerImage2XOffset, pageBannerImage2YOffset, allPlaylists, title]);
+    const effectiveLayer2 = React.useMemo(() => getEffectiveLayer2Image(), [pageKey, pageType, folderColor, themeFolderId, themeGroupLeaderId, themeGroupLeaderFolderId, currentPlaylistId, layer2Folders, playlistLayer2Overrides, customPageBannerImage2, pageBannerImage2Scale, pageBannerImage2XOffset, pageBannerImage2YOffset, allPlaylists, title, orbFavorites]);
 
     // Track image changes for smooth transitions
     const prevImageIdRef = useRef(null);
