@@ -8,7 +8,7 @@ const ImageHoverPreview = ({
     src,
     previewSrc, // Optional high-res source for preview (defaults to src)
     alt = 'Preview',
-    delay = 500,
+    delay = 0,
     maxWidth = 900,
     maxHeight = 1200,
     children
@@ -26,16 +26,16 @@ const ImageHoverPreview = ({
         // Store mouse event for later use
         lastMouseEventRef.current = e;
 
-        // Clear any existing timeout
-        if (hoverTimeoutRef.current) {
-            clearTimeout(hoverTimeoutRef.current);
-        }
-
-        // Set timeout for delayed preview
-        hoverTimeoutRef.current = setTimeout(() => {
+        // Show preview immediately or with provided delay
+        if (delay === 0) {
             setShowPreview(true);
             updatePreviewPosition(e);
-        }, delay);
+        } else {
+            hoverTimeoutRef.current = setTimeout(() => {
+                setShowPreview(true);
+                updatePreviewPosition(e);
+            }, delay);
+        }
     };
 
     const handleMouseLeave = () => {

@@ -68,7 +68,7 @@ yttv2/
 │   │   ├── CardContent.jsx       # Card content (title, subtitle, metadata)
 │   │   ├── CardActions.jsx       # Quick actions and menu management
 │   │   ├── CardMenu.jsx          # Enhanced 3-dot menu with submenu support
-│   │   ├── ImageHoverPreview.jsx # 4chanX-style image expansion on hover (500ms delay, high-res preview)
+│   │   ├── ImageHoverPreview.jsx # 4chanX-style image expansion on hover (high-res preview)
 │   │   ├── VideoCard.jsx         # Video card implementation
 │   │   ├── FolderCard.jsx        # Colored folder card component
 │   │   ├── FolderSelector.jsx    # 16-color folder selector

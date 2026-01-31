@@ -99,7 +99,7 @@ Twitter content appears in standard video cards with special handling:
 
 ### 4chanX-Style Expansion
 
-Hovering over any video thumbnail triggers an enlarged preview after 500ms delay.
+Hovering over any video thumbnail triggers an enlarged preview instantly.
 
 **Features:**
 - **High-Resolution**: Uses original media URLs for Twitter content
@@ -129,7 +129,7 @@ Hovering over any video thumbnail triggers an enlarged preview after 500ms delay
 **Component**: `ImageHoverPreview.jsx`
 - Wraps `CardThumbnail` components
 - Accepts `src` (thumbnail) and `previewSrc` (high-res) props
-- 500ms hover delay before showing preview
+- **Instant hover**: Previews appear immediately on mouse enter
 - Fixed position overlay at z-index 9999
 - **Styling**: Light sky blue border and background (`#e0f2fe`) matching app theme
 - **Smooth Fade-In**: Opacity transition (0 → 1) after positioning to prevent visual jump
