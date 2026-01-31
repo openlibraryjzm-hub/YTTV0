@@ -70,6 +70,7 @@ Twitter content appears in standard video cards with special handling:
 - Uses `thumbnail_url` field (Twitter media thumbnail)
 - Falls back to `video_url` (original media) if no thumbnail
 - Uses `object-fit: contain` for proper aspect ratio
+- **Background**: Light sky blue (`#e0f2fe`) matching app theme (visible when image doesn't fill 16:9 ratio)
 
 **Metadata:**
 - **Author**: Stored as `"Name (@handle)"` format
@@ -89,7 +90,8 @@ Twitter content appears in standard video cards with special handling:
 - Profile picture (circular avatar with letter fallback)
 - Username and @handle in header
 - Tweet text in content area
-- Shrunken thumbnail with border
+- Shrunken thumbnail with margins (no border for cleaner look)
+- **Border only appears**: When in bulk tag mode or video is currently playing
 
 ## Image Hover Preview
 
@@ -99,9 +101,9 @@ Hovering over any video thumbnail triggers an enlarged preview after 500ms delay
 
 **Features:**
 - **High-Resolution**: Uses original media URLs for Twitter content
-- **Smart Positioning**: Prevents overflow on right/bottom edges
+- **Smart Positioning**: Intelligently centers large images, follows cursor for small images
 - **Vertical Extension**: Can extend above viewport for tall images
-- **Cursor Following**: Preview repositions based on cursor location
+- **Adaptive Behavior**: Different positioning strategies based on image size
 - **Max Dimensions**: 900x1200px with aspect ratio preservation
 
 **Preview Sources:**
@@ -109,11 +111,16 @@ Hovering over any video thumbnail triggers an enlarged preview after 500ms delay
 - **YouTube**: Uses `maxresdefault` thumbnail (highest quality)
 
 **Positioning Logic:**
-1. Try right of cursor → if overflow, try left
-2. Try below cursor → if overflow, try above
-3. Clamp to right edge if still overflowing
-4. Clamp to bottom edge if still overflowing
-5. Allow extension above viewport top (unlimited vertical space)
+- **Large Images** (>70% of viewport): Centered in viewport for optimal visibility
+  - Horizontally and vertically centered
+  - Clamped to edges if larger than viewport
+  - Allows extending above viewport for very tall images (keeps 100px visible minimum)
+- **Small Images** (<70% of viewport): Cursor-following with smart overflow prevention
+  1. Try right of cursor → if overflow, try left
+  2. Try below cursor → if overflow, try above
+  3. Clamp to right edge if still overflowing
+  4. Clamp to bottom edge if still overflowing
+  5. Allow extension above viewport top (unlimited vertical space)
 
 ### Technical Implementation
 
@@ -122,6 +129,8 @@ Hovering over any video thumbnail triggers an enlarged preview after 500ms delay
 - Accepts `src` (thumbnail) and `previewSrc` (high-res) props
 - 500ms hover delay before showing preview
 - Fixed position overlay at z-index 9999
+- **Styling**: Light sky blue border and background (`#e0f2fe`) matching app theme
+- **Smooth Fade-In**: Opacity transition (0 → 1) after positioning to prevent visual jump
 
 ## Database Schema
 

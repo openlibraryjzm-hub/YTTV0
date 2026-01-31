@@ -28,7 +28,7 @@ const CardThumbnail = ({
         position: 'relative',
         width: '100%',
         paddingBottom: '56.25%', // 16:9 aspect ratio
-        backgroundColor: '#0f172a',
+        backgroundColor: '#e0f2fe',
         overflow: 'hidden'
       }}
     >

@@ -426,3 +426,9 @@ For detailed information about the application's theme system and recent color c
   - **Player Sync**: The central Orb Menu in the player controller now correctly syncs with this override, displaying the specific Orb Group image + correct scale/offset..
 - **Advanced Orb Scale Fix**: Resolved an issue where saved stored Orb scales (multiplier format) were being incorrectly treated as percentages in the Player Controller, causing images to shrink to 1px.
   - **PlayerController**: Updated to treat scale as a direct multiplier (defaulting to 1.0) with no division, matching the storage format.
+- **Image Hover Preview Performance**: Eliminated the delayed positioning jump for the image expansion.
+  - **Instant Positioning**: Calculations now occur immediately upon image load using stored cursor coordinates.
+  - **Smooth Transitions**: Added a 0.15s opacity fade-in to hide initial loading and ensure a premium feel.
+- **Thumbnail Theming**:
+  - **Background Sync**: Changed `CardThumbnail` background from dark blue to light sky blue (`#e0f2fe`) to seamlessly blend with the app background when portrait/tall images are displayed.
+  - **Twitter Borderless Style**: Removed uniform card borders from Twitter-style thumbnails for a cleaner, native look.

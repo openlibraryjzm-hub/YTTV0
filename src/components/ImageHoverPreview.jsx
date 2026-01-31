@@ -16,11 +16,16 @@ const ImageHoverPreview = ({
     const [showPreview, setShowPreview] = useState(false);
     const [previewPosition, setPreviewPosition] = useState({ x: 0, y: 0 });
     const [imageSize, setImageSize] = useState({ width: 0, height: 0 });
+    const [imageLoaded, setImageLoaded] = useState(false);
     const hoverTimeoutRef = useRef(null);
     const containerRef = useRef(null);
     const previewRef = useRef(null);
+    const lastMouseEventRef = useRef(null); // Store last mouse event for repositioning on load
 
     const handleMouseEnter = (e) => {
+        // Store mouse event for later use
+        lastMouseEventRef.current = e;
+
         // Clear any existing timeout
         if (hoverTimeoutRef.current) {
             clearTimeout(hoverTimeoutRef.current);
@@ -40,50 +45,96 @@ const ImageHoverPreview = ({
             hoverTimeoutRef.current = null;
         }
         setShowPreview(false);
+        setImageLoaded(false); // Reset for next hover
     };
 
     const handleMouseMove = (e) => {
+        // Store mouse event for later use
+        lastMouseEventRef.current = e;
+
         if (showPreview) {
             updatePreviewPosition(e);
         }
     };
 
-    const updatePreviewPosition = (e) => {
+    const updatePreviewPosition = (e, size = null) => {
         const padding = 20; // Padding from edges
         const viewportWidth = window.innerWidth;
         const viewportHeight = window.innerHeight;
 
-        // Start with cursor position + offset
-        let x = e.clientX + padding;
-        let y = e.clientY + padding;
+        // Use provided size or fall back to state
+        const currentSize = size || imageSize;
 
-        // Priority 1: Ensure image doesn't go off RIGHT edge
-        if (x + imageSize.width > viewportWidth - padding) {
-            // Try positioning to the left of cursor
-            x = e.clientX - imageSize.width - padding;
+        // Don't position if we don't have size yet
+        if (currentSize.width === 0 || currentSize.height === 0) {
+            return;
         }
 
-        // Priority 2: Ensure image doesn't go off BOTTOM edge
-        if (y + imageSize.height > viewportHeight - padding) {
-            // Position above cursor instead
-            y = e.clientY - imageSize.height - padding;
+        // Calculate available space
+        const availableWidth = viewportWidth - (padding * 2);
+        const availableHeight = viewportHeight - (padding * 2);
+
+        // Determine if image is "large" (takes up more than 70% of viewport)
+        const isLargeWidth = currentSize.width > availableWidth * 0.7;
+        const isLargeHeight = currentSize.height > availableHeight * 0.7;
+
+        let x, y;
+
+        if (isLargeWidth || isLargeHeight) {
+            // For large images: Center them in the viewport
+            x = (viewportWidth - currentSize.width) / 2;
+            y = (viewportHeight - currentSize.height) / 2;
+
+            // Ensure we don't go off left edge
+            x = Math.max(padding, x);
+
+            // Allow extending above viewport for very tall images
+            // but try to keep at least some visible
+            if (y < -currentSize.height + 100) {
+                y = -currentSize.height + 100; // Keep at least 100px visible
+            }
+
+            // Clamp to right edge if needed
+            if (x + currentSize.width > viewportWidth - padding) {
+                x = viewportWidth - currentSize.width - padding;
+            }
+
+            // Clamp to bottom edge if needed
+            if (y + currentSize.height > viewportHeight - padding) {
+                y = viewportHeight - currentSize.height - padding;
+            }
+        } else {
+            // For smaller images: Follow cursor with smart positioning
+            x = e.clientX + padding;
+            y = e.clientY + padding;
+
+            // Priority 1: Ensure image doesn't go off RIGHT edge
+            if (x + currentSize.width > viewportWidth - padding) {
+                // Try positioning to the left of cursor
+                x = e.clientX - currentSize.width - padding;
+            }
+
+            // Priority 2: Ensure image doesn't go off BOTTOM edge
+            if (y + currentSize.height > viewportHeight - padding) {
+                // Position above cursor instead
+                y = e.clientY - currentSize.height - padding;
+            }
+
+            // Priority 3: If still off-screen on right, clamp to right edge
+            if (x + currentSize.width > viewportWidth - padding) {
+                x = viewportWidth - currentSize.width - padding;
+            }
+
+            // Priority 4: If still off-screen on bottom, clamp to bottom edge
+            if (y + currentSize.height > viewportHeight - padding) {
+                y = viewportHeight - currentSize.height - padding;
+            }
+
+            // Only prevent going off LEFT edge
+            x = Math.max(padding, x);
+
+            // Allow negative Y (extending above viewport) for tall images
         }
-
-        // Priority 3: If still off-screen on right, clamp to right edge
-        if (x + imageSize.width > viewportWidth - padding) {
-            x = viewportWidth - imageSize.width - padding;
-        }
-
-        // Priority 4: If still off-screen on bottom, clamp to bottom edge
-        if (y + imageSize.height > viewportHeight - padding) {
-            y = viewportHeight - imageSize.height - padding;
-        }
-
-        // Only prevent going off LEFT edge (allow top extension)
-        x = Math.max(padding, x);
-
-        // Allow negative Y (extending above viewport) - don't clamp to 0
-        // This gives us more space for tall images
 
         setPreviewPosition({ x, y });
     };
@@ -105,7 +156,16 @@ const ImageHoverPreview = ({
             width = height * aspectRatio;
         }
 
-        setImageSize({ width, height });
+        const newSize = { width, height };
+        setImageSize(newSize);
+
+        // Immediately recalculate position with the new size to prevent jump
+        if (lastMouseEventRef.current) {
+            updatePreviewPosition(lastMouseEventRef.current, newSize);
+        }
+
+        // Mark as loaded to trigger fade-in
+        setImageLoaded(true);
     };
 
     // Cleanup timeout on unmount
@@ -140,10 +200,12 @@ const ImageHoverPreview = ({
                         zIndex: 9999,
                         pointerEvents: 'none',
                         boxShadow: '0 10px 40px rgba(0, 0, 0, 0.5)',
-                        border: '2px solid rgba(255, 255, 255, 0.2)',
+                        border: '2px solid #e0f2fe',
                         borderRadius: '8px',
                         overflow: 'hidden',
-                        backgroundColor: '#0f172a',
+                        backgroundColor: '#e0f2fe',
+                        opacity: imageLoaded ? 1 : 0,
+                        transition: 'opacity 0.15s ease-in-out',
                     }}
                 >
                     <img

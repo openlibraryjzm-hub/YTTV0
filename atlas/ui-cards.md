@@ -303,7 +303,8 @@ Users see video cards built using the Card component system with video-specific 
 - **Card Structure**:
   - **Thumbnail Area**: 16:9 aspect ratio
     - Image: Video thumbnail from YouTube
-    - **Border**: `border-2 border-black` outline around thumbnail
+    - **Border**: `border-2 border-black` outline around thumbnail (YouTube style); **Borderless** by default for Twitter style
+    - **Background**: Light sky blue (`#e0f2fe`) matching app theme (visible when image doesn't fill 16:9 ratio)
     - **Badges**:
       - **Top-left**: "Now Playing" indicator (3 animated bouncing dots in Warm Red, only when playing)
       - **Top-left**: "Watched" indicator (Green tick icon, only when watched and not playing)
