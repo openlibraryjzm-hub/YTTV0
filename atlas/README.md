@@ -441,4 +441,7 @@ For detailed information about the application's theme system and recent color c
   - **Logic**: Automatically upgrades video thumbnails from `name=thumb` to high-resolution `name=large` for the preview expansion, as raw video files cannot be rendered in standard image tags.
   - **Continuity**: Preserves existing high-res photo behavior (`name=orig`) while adding robust detection for MP4, GIF, and other video formats.
   - **Optimization**: Integrated `useMemo` for URL calculation to ensure smooth UI performance during hover interactions.
+- **Top Menu Badges**:
+  - **Contextual Awareness**: Added sky-blue **Active Tab** and indigo **Active Preset** badges to the Top Playlist Menu in the Player Controller.
+  - **Hierarchy**: Ordered as **[Preset] [Tab] [Folder]** to reflect the filtering hierarchy.
 

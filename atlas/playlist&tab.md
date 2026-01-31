@@ -340,6 +340,9 @@ Users see a horizontal tab bar integrated into the Sticky Toolbar on the Playlis
 
 - **Tab Filtering**: When a tab is active, only playlists assigned to that tab are shown in the grid. The "All" tab shows all playlists regardless of tab assignments.
 
+- **Player Controller Integration**: The currently active Tab name is displayed as a sky-blue badge in the Top Playlist Menu of the Player Controller.
+
+
 **2: File Manifest**
 
 **UI/Components:**
@@ -457,6 +460,9 @@ Users see a dropdown button on the right side of the Tab Bar (within the Sticky 
 - **Preset Functionality**: When a preset is active, the tab bar only shows tabs included in that preset (plus the "All" tab which always shows). This allows users to create different workspace configurations.
 
 - **Preset Switching**: Clicking a preset in the dropdown immediately switches to that preset, filtering the visible tabs.
+
+- **Player Controller Integration**: The currently active Preset name is displayed as an indigo badge in the Top Playlist Menu of the Player Controller.
+
 
 - **Visual Styling**: 
   - All presets (including "All") use the same light color scheme: white background, sky blue text (`text-sky-600`), and sky blue border (`border-sky-500`) when selected.

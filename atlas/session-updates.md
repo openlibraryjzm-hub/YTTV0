@@ -383,3 +383,17 @@
 2. **Documentation Alignment**:
    - Updated `atlas/twitter-integration.md` and `atlas/README.md` to reflect the new hover logic for video content.
    - Verified that all documentation accurately represents the current "Twitter style" vs "YouTube style" card behaviors and themes.
+
+---
+
+# Session Updates (Feb 01, 2026) -> Top Menu Badges
+**Timestamp:** 01/02/2026 12:15pm
+
+## Key Changes
+1. **Top Playlist Menu**:
+   - **Feature**: Added badges to the Top Playlist Menu in the Player Controller to indicate the currently active **Tab** and **Preset**.
+   - **Visuals**:
+        - **Active Tab**: Sky-blue badge appearing to the left of any folder badges.
+        - **Active Preset**: Indigo badge appearing to the left of the Tab badge.
+   - **Context**: Helps users understand the current filter context (Tab > Preset > Folder) directly from the player header.
+   - **Refinement**: Swapped position so the **Preset Badge** is the leftmost element, reflecting the highest level of hierarchy.

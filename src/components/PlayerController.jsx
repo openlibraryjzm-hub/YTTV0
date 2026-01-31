@@ -1798,9 +1798,49 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
                     {playlistTitle}
                   </h1>
 
-                  {/* Video Folder Badge */}
-                  {currentVideoFolders.length > 0 && (
+                  {/* Badges Container */}
+                  {(currentVideoFolders.length > 0 || activeTabId !== 'all' || activePresetId !== 'all') && (
                     <div className="flex flex-wrap justify-center gap-1 mb-0.5 animate-in fade-in zoom-in duration-300">
+
+                      {/* Active Preset Badge */}
+                      {activePresetId !== 'all' && (() => {
+                        const activePreset = safePresets.find(p => p.id === activePresetId);
+                        if (!activePreset) return null;
+                        return (
+                          <span
+                            key="badge-preset"
+                            className="text-[9px] font-black uppercase tracking-[0.15em] px-2 py-0.5 rounded-full border shadow-sm backdrop-blur-sm"
+                            style={{
+                              color: '#4338ca', // Indigo 700
+                              borderColor: '#a5b4fc', // Indigo 300
+                              backgroundColor: '#eef2ffcc' // Indigo 50 + alpha
+                            }}
+                          >
+                            {activePreset.name}
+                          </span>
+                        );
+                      })()}
+
+                      {/* Active Tab Badge */}
+                      {activeTabId !== 'all' && (() => {
+                        const activeTab = safeTabs.find(t => t.id === activeTabId);
+                        if (!activeTab) return null;
+                        return (
+                          <span
+                            key="badge-tab"
+                            className="text-[9px] font-black uppercase tracking-[0.15em] px-2 py-0.5 rounded-full border shadow-sm backdrop-blur-sm"
+                            style={{
+                              color: '#0369a1', // Sky 700
+                              borderColor: '#7dd3fc', // Sky 300
+                              backgroundColor: '#f0f9ffcc' // Sky 50 + alpha
+                            }}
+                          >
+                            {activeTab.name}
+                          </span>
+                        );
+                      })()}
+
+                      {/* Video Folder Badge */}
                       {currentVideoFolders.map(folderId => {
                         const folderColor = FOLDER_COLORS.find(c => c.id === folderId);
                         if (!folderColor) return null;

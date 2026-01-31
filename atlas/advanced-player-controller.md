@@ -414,7 +414,10 @@ Users see a bottom toolbar in the video menu rectangle with distinct, grouped ac
 
 The Top Playlist Menu is the left rectangle in the PlayerController. It has been significantly refined for compactness and accessibility:
 
-*   **Display**: Shows the current playlist's title, centered within the menu. If the video belongs to a colored folder, a colored badge displaying the folder name appears below the title.
+*   **Display**: Shows the current playlist's title, centered within the menu. Below the title, badges appear to indicate context:
+    *   **Active Preset**: (If not "All") An indigo badge showing the current preset name.
+    *   **Active Tab**: (If not "All") A sky-blue badge showing the current tab name.
+    *   **Folder**: (If video is in a folder) A colored badge displaying the folder name.
 *   **Bottom Control Bar**: Divided into two distinct zones:
     *   **Left Side (Metadata)**: Displays the current video's author, view count, and published year with a dynamic layout system:
       - **Short Author Names (≤18 characters)**: Shows all metadata separately: `Author | Views | Year`
