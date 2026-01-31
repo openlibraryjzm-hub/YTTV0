@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useMemo } from 'react';
 import Card from './Card';
 import CardThumbnail from './CardThumbnail';
 import CardContent from './CardContent';
@@ -57,11 +57,25 @@ const VideoCard = ({
   const thumbnailUrl = video.thumbnail_url || getThumbnailUrl(video.video_id, 'medium');
 
   // For preview, use high-res source:
-  // - For local/Twitter content: use the original video_url (which is the media URL)
+  // - For local/Twitter content: 
+  //   - If it's a video/gif file (MP4), we can't show it in <img>, so use enlarged thumbnail
+  //   - If it's an image, use the original video_url
   // - For YouTube: use maxresdefault thumbnail
-  const previewUrl = video.is_local
-    ? video.video_url
-    : getThumbnailUrl(video.video_id, 'maxres');
+  const previewUrl = useMemo(() => {
+    if (video.is_local) {
+      const isVideoFile = video.video_url?.match(/\.(mp4|gif|mov|m3u8|webm|ts)/i);
+      const isTwitter = video.video_url?.includes('twimg.com') || video.thumbnail_url?.includes('twimg.com');
+
+      if (isVideoFile && isTwitter) {
+        // Upgrade Twitter thumbnail from 'thumb' to 'large' or 'orig'
+        // 'large' is generally safe for video thumbnails
+        return video.thumbnail_url?.replace(/name=[a-z]+/, 'name=large');
+      }
+
+      return video.video_url || video.thumbnail_url;
+    }
+    return getThumbnailUrl(video.video_id, 'maxres');
+  }, [video]);
 
   const primaryFolder = videoFolders.length > 0 ? getFolderColorById(videoFolders[0]) : null;
   const quickAssignColor = getFolderColorById(quickAssignFolder);

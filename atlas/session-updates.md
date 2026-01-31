@@ -363,5 +363,23 @@
 
 4.  **Implementation Details**:
     -   **State Management**: Added `playlistMap`, `folderMap`, `folderNameMap`, and `allPlaylists` state.
-    -   **API Integration**: Uses `getPlaylistsForVideoIds`, `getVideoFolderAssignments`, `getFolderMetadata`, and `getVideosInFolder`.
-    -   **Navigation**: Integrates with `navigationStore` and `playlistStore` for seamless page navigation.
+    - **API Integration**: Uses `getPlaylistsForVideoIds`, `getVideoFolderAssignments`, `getFolderMetadata`, and `getVideosInFolder`.
+    - **Navigation**: Integrates with `navigationStore` and `playlistStore` for seamless page navigation.
+
+---
+
+# Session Updates (Feb 01, 2026) -> High-Resolution Video Thumbnails
+**Timestamp:** 01/02/2026 4:15am
+
+## Key Changes
+1. **High-Res Video Previews**:
+   - **Feature**: Hovering over Twitter videos and GIFs now triggers an enlarged high-resolution thumbnail preview instead of just a raw MP4 or static placeholder.
+   - **Technical Implementation**:
+     - Updated `VideoCard.jsx` to detect Twitter video files (`.mp4`, `.gif`, etc.).
+     - Implemented dynamic string manipulation to "upgrade" thumbnail URLs from `name=thumb` to `name=large`.
+     - Integrated `useMemo` for performance optimization, ensuring the URL calculation only runs when the video object changes.
+   - **UI Continuity**: Maintained the existing `name=orig` behavior for photos, ensuring all Twitter media types now provide a premium expansion experience.
+
+2. **Documentation Alignment**:
+   - Updated `atlas/twitter-integration.md` and `atlas/README.md` to reflect the new hover logic for video content.
+   - Verified that all documentation accurately represents the current "Twitter style" vs "YouTube style" card behaviors and themes.

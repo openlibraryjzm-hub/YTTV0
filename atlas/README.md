@@ -431,4 +431,8 @@ For detailed information about the application's theme system and recent color c
   - **Smooth Transitions**: Added a 0.15s opacity fade-in to hide initial loading and ensure a premium feel.
 - **Thumbnail Theming**:
   - **Background Sync**: Changed `CardThumbnail` background from dark blue to light sky blue (`#e0f2fe`) to seamlessly blend with the app background when portrait/tall images are displayed.
-  - **Twitter Borderless Style**: Removed uniform card borders from Twitter-style thumbnails for a cleaner, native look.
+  - **Twitter Video Hover Previews**: Enhanced the 4chanX-style image expansion to support Twitter videos and GIFs.
+  - **Logic**: Automatically upgrades video thumbnails from `name=thumb` to high-resolution `name=large` for the preview expansion, as raw video files cannot be rendered in standard image tags.
+  - **Continuity**: Preserves existing high-res photo behavior (`name=orig`) while adding robust detection for MP4, GIF, and other video formats.
+  - **Optimization**: Integrated `useMemo` for URL calculation to ensure smooth UI performance during hover interactions.
+
