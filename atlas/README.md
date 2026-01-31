@@ -68,6 +68,7 @@ yttv2/
 │   │   ├── CardContent.jsx       # Card content (title, subtitle, metadata)
 │   │   ├── CardActions.jsx       # Quick actions and menu management
 │   │   ├── CardMenu.jsx          # Enhanced 3-dot menu with submenu support
+│   │   ├── ImageHoverPreview.jsx # 4chanX-style image expansion on hover (500ms delay, high-res preview)
 │   │   ├── VideoCard.jsx         # Video card implementation
 │   │   ├── FolderCard.jsx        # Colored folder card component
 │   │   ├── FolderSelector.jsx    # 16-color folder selector
@@ -183,6 +184,7 @@ yttv2/
 | **Support Hub** | `ui.md` | `navigation-routing.md`, `playlistStore.js` |
 | **Playlists & Tabs** | `playlist&tab.md` | `database-schema.md`, `api-bridge.md`, `state-management.md` |
 | **Import/Export** | `importexport.md` | `api-bridge.md`, `database-schema.md` |
+| **Twitter/X Integration** | `twitter-integration.md` | `importexport.md`, `database-schema.md`, `ui.md` |
 | **UI Components** | `ui.md` | `state-management.md`, `navigation-routing.md` |
 | **Watch History** | `history.md` | `database-schema.md`, `api-bridge.md`, `state-management.md` |
 | **Video Player** | `videoplayer.md` | `database-schema.md`, `api-bridge.md`, `state-management.md` |
@@ -239,6 +241,11 @@ yttv2/
 **Covers**: Local video file playback, file upload, HTML5 video player
 **Key Topics**: Local file paths, file selection dialog, progress tracking for local videos, player routing
 **Cross-References**: See `videoplayer.md` for player architecture, `database-schema.md` for is_local field, `api-bridge.md` for file commands
+
+#### `twitter-integration.md`
+**Covers**: Twitter/X media import, display, and image hover preview system
+**Key Topics**: Twitter JSON import (bookmarks/tweets), title cleaning, profile pictures, 4chanX-style image expansion, high-res preview URLs, smart positioning
+**Cross-References**: See `importexport.md` for import patterns, `database-schema.md` for profile_image_url field, `ui.md` for card components
 
 #### `audio-visualizer.md`
 **Covers**: System-wide audio visualization, cpal backend integration, FFT processing

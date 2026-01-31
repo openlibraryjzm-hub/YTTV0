@@ -25,6 +25,7 @@ pub struct PlaylistItem {
     pub author: Option<String>,
     pub view_count: Option<String>,
     pub published_at: Option<String>,
+    pub profile_image_url: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]

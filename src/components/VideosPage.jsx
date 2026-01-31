@@ -52,7 +52,7 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
     clearBulkTagSelections,
   } = useFolderStore();
   const { shuffleStates, getShuffleState } = useShuffleStore();
-  const { setViewMode, inspectMode, viewMode } = useLayoutStore();
+  const { setViewMode, inspectMode, viewMode, videoCardStyle } = useLayoutStore();
   const { currentPage: currentNavTab, setCurrentPage: setCurrentNavTab } = useNavigationStore();
   const scrollContainerRef = useRef(null);
   const horizontalScrollRef = useRef(null);
@@ -1574,6 +1574,7 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
                           isStickied={true} // It is stickied in this list
                           playlistId={activePlaylistId}
                           folderMetadata={allFolderMetadata}
+                          cardStyle={videoCardStyle}
                           progress={(() => {
                             const videoId = extractVideoId(video.video_url) || video.video_id;
                             const data = videoProgress.get(videoId);
@@ -1647,6 +1648,7 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
                               isStickied={isContextStickied}
                               playlistId={activePlaylistId}
                               folderMetadata={allFolderMetadata}
+                              cardStyle={videoCardStyle}
                               progress={(() => {
                                 const videoId = extractVideoId(video.video_url) || video.video_id;
                                 const data = videoProgress.get(video.id) || videoProgress.get(extractVideoId(video.video_url));
@@ -1700,6 +1702,7 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
                               isStickied={isContextStickied}
                               playlistId={activePlaylistId}
                               folderMetadata={allFolderMetadata}
+                              cardStyle={videoCardStyle}
                               progress={(() => {
                                 const videoId = extractVideoId(video.video_url) || video.video_id;
                                 const data = videoProgress.get(video.id) || videoProgress.get(extractVideoId(video.video_url));

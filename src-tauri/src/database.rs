@@ -206,6 +206,12 @@ impl Database {
                 .execute("ALTER TABLE playlist_items ADD COLUMN published_at TEXT", [])?;
         }
 
+        // Migration: Add profile_image_url column for Twitter/social media profile pictures
+        if !columns.contains(&"profile_image_url".to_string()) {
+            self.conn
+                .execute("ALTER TABLE playlist_items ADD COLUMN profile_image_url TEXT", [])?;
+        }
+
         // Migration: Add Video Progress columns
         let mut vp_stmt = self.conn.prepare("PRAGMA table_info(video_progress)")?;
         let vp_columns: Vec<String> = vp_stmt
@@ -294,7 +300,7 @@ impl Database {
         
         // First video (position 0 or min)
         let mut first_video_stmt = self.conn.prepare(
-             "SELECT id, playlist_id, video_url, video_id, title, thumbnail_url, position, added_at, is_local, author, view_count, published_at 
+             "SELECT id, playlist_id, video_url, video_id, title, thumbnail_url, position, added_at, is_local, author, view_count, published_at, profile_image_url 
               FROM playlist_items 
               WHERE playlist_id = ?1 
               ORDER BY position ASC 
@@ -303,7 +309,7 @@ impl Database {
 
         // Recent video logic: join video_progress and order by last_updated desc
         let mut recent_video_stmt = self.conn.prepare(
-             "SELECT pi.id, pi.playlist_id, pi.video_url, pi.video_id, pi.title, pi.thumbnail_url, pi.position, pi.added_at, pi.is_local, pi.author, pi.view_count, pi.published_at 
+             "SELECT pi.id, pi.playlist_id, pi.video_url, pi.video_id, pi.title, pi.thumbnail_url, pi.position, pi.added_at, pi.is_local, pi.author, pi.view_count, pi.published_at, pi.profile_image_url 
               FROM playlist_items pi
               INNER JOIN video_progress vp ON pi.video_id = vp.video_id
               WHERE pi.playlist_id = ?1
@@ -328,6 +334,7 @@ impl Database {
                     author: row.get(9).unwrap_or(None),
                     view_count: row.get(10).unwrap_or(None),
                     published_at: row.get(11).unwrap_or(None),
+                    profile_image_url: row.get(12).unwrap_or(None),
                 })
             }) {
                 Ok(v) => Some(v),
@@ -349,6 +356,7 @@ impl Database {
                     author: row.get(9).unwrap_or(None),
                     view_count: row.get(10).unwrap_or(None),
                     published_at: row.get(11).unwrap_or(None),
+                    profile_image_url: row.get(12).unwrap_or(None),
                 })
             }) {
                 Ok(v) => Some(v),
@@ -514,6 +522,7 @@ impl Database {
         author: Option<&str>,
         view_count: Option<&str>,
         published_at: Option<&str>,
+        profile_image_url: Option<&str>,
     ) -> Result<i64> {
         // Get the next position (max position + 1)
         let position: i32 = self.conn.query_row(
@@ -524,9 +533,9 @@ impl Database {
 
         let now = Utc::now().to_rfc3339();
         self.conn.execute(
-            "INSERT INTO playlist_items (playlist_id, video_url, video_id, title, thumbnail_url, position, added_at, is_local, author, view_count, published_at) 
-             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11)",
-            params![playlist_id, video_url, video_id, title, thumbnail_url, position, now, if is_local { 1 } else { 0 }, author, view_count, published_at],
+            "INSERT INTO playlist_items (playlist_id, video_url, video_id, title, thumbnail_url, position, added_at, is_local, author, view_count, published_at, profile_image_url) 
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12)",
+            params![playlist_id, video_url, video_id, title, thumbnail_url, position, now, if is_local { 1 } else { 0 }, author, view_count, published_at, profile_image_url],
         )?;
 
         Ok(self.conn.last_insert_rowid())
@@ -534,7 +543,7 @@ impl Database {
 
     pub fn get_playlist_items(&self, playlist_id: i64) -> Result<Vec<PlaylistItem>> {
         let mut stmt = self.conn.prepare(
-            "SELECT id, playlist_id, video_url, video_id, title, thumbnail_url, position, added_at, is_local, author, view_count, published_at 
+            "SELECT id, playlist_id, video_url, video_id, title, thumbnail_url, position, added_at, is_local, author, view_count, published_at, profile_image_url 
              FROM playlist_items 
              WHERE playlist_id = ?1 
              ORDER BY position ASC"
@@ -555,6 +564,7 @@ impl Database {
                     author: row.get(9).unwrap_or(None),
                     view_count: row.get(10).unwrap_or(None),
                     published_at: row.get(11).unwrap_or(None),
+                    profile_image_url: row.get(12).unwrap_or(None),
                 })
             })?
             .collect::<Result<Vec<_>, _>>()?;
@@ -700,7 +710,7 @@ impl Database {
         folder_color: &str,
     ) -> Result<Vec<PlaylistItem>> {
         let mut stmt = self.conn.prepare(
-            "SELECT pi.id, pi.playlist_id, pi.video_url, pi.video_id, pi.title, pi.thumbnail_url, pi.position, pi.added_at, pi.is_local, pi.author, pi.view_count, pi.published_at
+            "SELECT pi.id, pi.playlist_id, pi.video_url, pi.video_id, pi.title, pi.thumbnail_url, pi.position, pi.added_at, pi.is_local, pi.author, pi.view_count, pi.published_at, pi.profile_image_url
              FROM playlist_items pi
              INNER JOIN video_folder_assignments vfa ON pi.id = vfa.item_id
              WHERE vfa.playlist_id = ?1 AND vfa.folder_color = ?2
@@ -722,6 +732,7 @@ impl Database {
                     author: row.get(9).unwrap_or(None),
                     view_count: row.get(10).unwrap_or(None),
                     published_at: row.get(11).unwrap_or(None),
+                    profile_image_url: row.get(12).unwrap_or(None),
                 })
             })?
             .collect::<Result<Vec<_>, _>>()?;
@@ -812,7 +823,7 @@ impl Database {
             let first_video = if let Some(pos) = min_position {
                 // Get the first video in this folder (by position, then by id for consistency)
                 let mut video_stmt = self.conn.prepare(
-                    "SELECT pi.id, pi.playlist_id, pi.video_url, pi.video_id, pi.title, pi.thumbnail_url, pi.position, pi.added_at, pi.is_local, pi.author, pi.view_count, pi.published_at
+                    "SELECT pi.id, pi.playlist_id, pi.video_url, pi.video_id, pi.title, pi.thumbnail_url, pi.position, pi.added_at, pi.is_local, pi.author, pi.view_count, pi.published_at, pi.profile_image_url
                      FROM playlist_items pi
                      INNER JOIN video_folder_assignments vfa ON pi.id = vfa.item_id
                      WHERE vfa.playlist_id = ?1 AND vfa.folder_color = ?2 AND pi.position = ?3
@@ -834,6 +845,7 @@ impl Database {
                         author: row.get(9).unwrap_or(None),
                         view_count: row.get(10).unwrap_or(None),
                         published_at: row.get(11).unwrap_or(None),
+                        profile_image_url: row.get(12).unwrap_or(None),
                     })
                 }) {
                     Ok(video) => Some(video),
@@ -892,7 +904,7 @@ impl Database {
             // Get the first video (lowest position) for this folder
             let first_video = if let Some(pos) = min_position {
                 let mut video_stmt = self.conn.prepare(
-                    "SELECT pi.id, pi.playlist_id, pi.video_url, pi.video_id, pi.title, pi.thumbnail_url, pi.position, pi.added_at, pi.is_local, pi.author, pi.view_count, pi.published_at
+                    "SELECT pi.id, pi.playlist_id, pi.video_url, pi.video_id, pi.title, pi.thumbnail_url, pi.position, pi.added_at, pi.is_local, pi.author, pi.view_count, pi.published_at, pi.profile_image_url
                      FROM playlist_items pi
                      INNER JOIN video_folder_assignments vfa ON pi.id = vfa.item_id
                      WHERE vfa.playlist_id = ?1 AND vfa.folder_color = ?2 AND pi.position = ?3
@@ -914,6 +926,7 @@ impl Database {
                         author: row.get(9).unwrap_or(None),
                         view_count: row.get(10).unwrap_or(None),
                         published_at: row.get(11).unwrap_or(None),
+                        profile_image_url: row.get(12).unwrap_or(None),
                     })
                 }) {
                     Ok(video) => Some(video),

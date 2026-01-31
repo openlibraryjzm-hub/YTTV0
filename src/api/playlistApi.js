@@ -47,7 +47,7 @@ export const deletePlaylistByName = async (name) => {
 };
 
 // Playlist item operations
-export const addVideoToPlaylist = async (playlistId, videoUrl, videoId, title, thumbnailUrl, author, viewCount, publishedAt, isLocal = false) => {
+export const addVideoToPlaylist = async (playlistId, videoUrl, videoId, title, thumbnailUrl, author, viewCount, publishedAt, isLocal = false, profileImageUrl = null) => {
   try {
     const id = await invoke('add_video_to_playlist', {
       playlistId,
@@ -58,7 +58,8 @@ export const addVideoToPlaylist = async (playlistId, videoUrl, videoId, title, t
       isLocal,
       author,
       viewCount,
-      publishedAt
+      publishedAt,
+      profileImageUrl
     });
     return id;
   } catch (error) {

@@ -5,6 +5,7 @@ import CardContent from './CardContent';
 import CardActions from './CardActions';
 import BulkTagColorGrid from './BulkTagColorGrid';
 import StarColorPicker from './StarColorPicker';
+import ImageHoverPreview from './ImageHoverPreview';
 import { getThumbnailUrl } from '../utils/youtubeUtils';
 import { FOLDER_COLORS, getFolderColorById } from '../utils/folderColors';
 import { usePinStore } from '../store/pinStore';
@@ -40,6 +41,7 @@ const VideoCard = ({
   isStickied = false,
   playlistId = null,
   folderMetadata = {},
+  cardStyle = 'youtube', // 'youtube' | 'twitter'
 }) => {
   const { inspectMode } = useLayoutStore();
   const { quickAssignFolder } = useFolderStore();
@@ -50,7 +52,17 @@ const VideoCard = ({
   const [isStarHovered, setIsStarHovered] = useState(false);
   const starHoverTimeoutRef = useRef(null);
   const starHoverDelayRef = useRef(null);
-  const thumbnailUrl = getThumbnailUrl(video.video_id, 'medium');
+
+  // Use stored thumbnail_url if available (for Twitter/local content), otherwise construct YouTube thumbnail
+  const thumbnailUrl = video.thumbnail_url || getThumbnailUrl(video.video_id, 'medium');
+
+  // For preview, use high-res source:
+  // - For local/Twitter content: use the original video_url (which is the media URL)
+  // - For YouTube: use maxresdefault thumbnail
+  const previewUrl = video.is_local
+    ? video.video_url
+    : getThumbnailUrl(video.video_id, 'maxres');
+
   const primaryFolder = videoFolders.length > 0 ? getFolderColorById(videoFolders[0]) : null;
   const quickAssignColor = getFolderColorById(quickAssignFolder);
 
@@ -102,12 +114,12 @@ const VideoCard = ({
     if (pinLongPressTimerRef.current) {
       clearTimeout(pinLongPressTimerRef.current);
       pinLongPressTimerRef.current = null;
-      
+
       // Check for double-click (within 300ms)
       const now = Date.now();
       const timeSinceLastClick = now - lastClickTimeRef.current;
       lastClickTimeRef.current = now;
-      
+
       if (timeSinceLastClick < 300 && (isPinnedVideo || isPriority)) {
         // Double-click on pinned video → Unpin completely
         removePin(video.id);
@@ -270,22 +282,22 @@ const VideoCard = ({
               borderWidth: (isPriority || isPinnedVideo) ? '1px' : '0px',
             }}
             title={getInspectTitle(
-              isFollower 
+              isFollower
                 ? (isPriority ? 'Priority Follower Pin (Double-click to unpin)' : 'Follower Pin (Double-click to unpin)')
-                : isPriority 
-                  ? 'Priority Pin (Click for follower, Double-click to unpin)' 
-                  : isPinnedVideo 
-                    ? 'Pinned (Click for follower, Double-click to unpin)' 
+                : isPriority
+                  ? 'Priority Pin (Click for follower, Double-click to unpin)'
+                  : isPinnedVideo
+                    ? 'Pinned (Click for follower, Double-click to unpin)'
                     : 'Pin (Click) / Priority (Hold)'
             ) || (
-              isFollower 
-                ? (isPriority ? 'Priority Follower Pin (Double-click to unpin)' : 'Follower Pin (Double-click to unpin)')
-                : isPriority 
-                  ? 'Priority Pin (Click for follower, Double-click to unpin)' 
-                  : isPinnedVideo 
-                    ? 'Pinned (Click for follower, Double-click to unpin)' 
-                    : 'Pin (Click) / Priority (Hold)'
-            )}
+                isFollower
+                  ? (isPriority ? 'Priority Follower Pin (Double-click to unpin)' : 'Follower Pin (Double-click to unpin)')
+                  : isPriority
+                    ? 'Priority Pin (Click for follower, Double-click to unpin)'
+                    : isPinnedVideo
+                      ? 'Pinned (Click for follower, Double-click to unpin)'
+                      : 'Pin (Click) / Priority (Hold)'
+              )}
           >
             {isFollower ? (
               /* Follower Pin Icon - 2 pins stacked diagonally */
@@ -418,6 +430,145 @@ const VideoCard = ({
     }
   ].filter(Boolean);
 
+  // Twitter/X style rendering
+  if (cardStyle === 'twitter') {
+    return (
+      <Card
+        onClick={bulkTagMode ? undefined : onVideoClick}
+        selected={isSelected}
+        playing={isCurrentlyPlaying}
+        className={bulkTagMode ? 'cursor-default' : ''}
+        variant="minimal"
+      >
+        <div
+          onMouseEnter={() => bulkTagMode && setIsHovered(true)}
+          onMouseLeave={() => bulkTagMode && setIsHovered(false)}
+          className={`relative group rounded-lg ${bulkTagMode ? 'overflow-visible' : 'overflow-hidden'}`}
+        >
+          {/* Twitter/X Header Section (Top 1/5th) */}
+          <div className="flex items-start gap-3 p-3 pb-2">
+            {/* Profile Picture Circle */}
+            <div className="flex-shrink-0">
+              {video.profile_image_url ? (
+                <img
+                  src={video.profile_image_url}
+                  alt="Profile"
+                  className="w-10 h-10 rounded-full object-cover shadow-md"
+                  onError={(e) => {
+                    // Fallback to letter avatar if image fails to load
+                    e.target.style.display = 'none';
+                    e.target.nextSibling.style.display = 'flex';
+                  }}
+                />
+              ) : null}
+              <div
+                className="w-10 h-10 rounded-full bg-gradient-to-br from-sky-400 to-blue-600 flex items-center justify-center text-white font-bold text-sm shadow-md overflow-hidden"
+                style={{ display: video.profile_image_url ? 'none' : 'flex' }}
+              >
+                {/* Extract first letter of name for avatar */}
+                {video.author ? video.author.charAt(0).toUpperCase() : 'T'}
+              </div>
+            </div>
+
+            {/* Username, Handle, and Tweet Text */}
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-1.5 mb-0.5">
+                {(() => {
+                  // Parse author field: "Name (@handle)" format
+                  const authorMatch = video.author?.match(/^(.+?)\s*\(@(.+?)\)$/);
+                  if (authorMatch) {
+                    return (
+                      <>
+                        <span className="font-bold text-[#052F4A] text-sm">{authorMatch[1]}</span>
+                        <span className="text-slate-500 text-xs">@{authorMatch[2]}</span>
+                      </>
+                    );
+                  }
+                  // Fallback if format doesn't match
+                  return <span className="font-bold text-[#052F4A] text-sm">{video.author || 'Twitter User'}</span>;
+                })()}
+              </div>
+              <p className="text-slate-700 text-xs leading-relaxed line-clamp-2">
+                {video.title || "Check out this amazing content!"}
+              </p>
+            </div>
+          </div>
+
+          {/* Shrunken Thumbnail with Margins */}
+          <div className="px-3 pb-3">
+            <ImageHoverPreview src={thumbnailUrl} previewSrc={previewUrl} alt={video.title || `Video ${index + 1}`} delay={500}>
+              <CardThumbnail
+                src={thumbnailUrl}
+                alt={video.title || `Video ${index + 1}`}
+                overlay={playOverlay}
+                badges={bulkTagMode ? badges.filter(b => b.position !== 'top-right') : badges}
+                progress={progress}
+                className={`rounded-xl overflow-hidden border-2 ${bulkTagBorderColor ? '' : 'border-slate-300'} ${isCurrentlyPlaying ? 'ring-4 ring-red-500 ring-offset-2 ring-offset-white shadow-[0_0_40px_rgba(239,68,68,1),inset_0_0_40px_rgba(239,68,68,0.8)]' : ''}`}
+                style={bulkTagBorderColor ? { borderColor: bulkTagBorderColor, borderWidth: '2px' } : undefined}
+              />
+            </ImageHoverPreview>
+
+            {/* Star color picker overlay */}
+            {isStarHovered && !bulkTagMode && (
+              <div
+                data-star-picker="true"
+                className="absolute inset-0 flex items-start justify-center pt-2 z-30 pointer-events-none"
+                onMouseEnter={() => {
+                  if (starHoverTimeoutRef.current) {
+                    clearTimeout(starHoverTimeoutRef.current);
+                    starHoverTimeoutRef.current = null;
+                  }
+                  setIsStarHovered(true);
+                }}
+                onMouseLeave={() => {
+                  setIsStarHovered(false);
+                }}
+              >
+                <div className="pointer-events-auto">
+                  <StarColorPicker
+                    currentFolders={videoFolders}
+                    quickAssignFolder={quickAssignFolder}
+                    folderMetadata={folderMetadata}
+                    onColorLeftClick={(folderColor) => {
+                      if (onStarColorLeftClick) {
+                        onStarColorLeftClick(video, folderColor);
+                      }
+                      setIsStarHovered(false);
+                    }}
+                    onColorRightClick={(folderColor) => {
+                      if (onStarColorRightClick) {
+                        onStarColorRightClick(folderColor);
+                      }
+                      setIsStarHovered(false);
+                    }}
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Bulk tag color grid overlay */}
+            {bulkTagMode && isHovered && (
+              <div
+                onMouseEnter={() => setIsHovered(true)}
+                onMouseLeave={() => setIsHovered(false)}
+              >
+                <BulkTagColorGrid
+                  videoId={video.id}
+                  currentFolders={videoFolders}
+                  selectedFolders={bulkTagSelections}
+                  onColorClick={onBulkTagColorClick}
+                  playlistId={playlistId}
+                  folderMetadata={folderMetadata}
+                />
+              </div>
+            )}
+          </div>
+        </div>
+      </Card>
+    );
+  }
+
+  // Default YouTube style rendering
   return (
     <Card
       onClick={bulkTagMode ? undefined : onVideoClick}
@@ -431,15 +582,17 @@ const VideoCard = ({
         onMouseLeave={() => bulkTagMode && setIsHovered(false)}
         className={`relative group rounded-lg ${bulkTagMode ? 'overflow-visible' : 'overflow-hidden'}`}
       >
-        <CardThumbnail
-          src={thumbnailUrl}
-          alt={video.title || `Video ${index + 1}`}
-          overlay={playOverlay}
-          badges={bulkTagMode ? badges.filter(b => b.position !== 'top-right') : badges}
-          progress={progress}
-          className={`rounded-lg overflow-hidden border-2 ${bulkTagBorderColor ? '' : 'border-black'} ${isCurrentlyPlaying ? 'ring-4 ring-red-500 ring-offset-2 ring-offset-black shadow-[0_0_40px_rgba(239,68,68,1),inset_0_0_40px_rgba(239,68,68,0.8)]' : ''}`} // Rounding thumbnail specifically
-          style={bulkTagBorderColor ? { borderColor: bulkTagBorderColor, borderWidth: '2px' } : undefined}
-        />
+        <ImageHoverPreview src={thumbnailUrl} previewSrc={previewUrl} alt={video.title || `Video ${index + 1}`} delay={500}>
+          <CardThumbnail
+            src={thumbnailUrl}
+            alt={video.title || `Video ${index + 1}`}
+            overlay={playOverlay}
+            badges={bulkTagMode ? badges.filter(b => b.position !== 'top-right') : badges}
+            progress={progress}
+            className={`rounded-lg overflow-hidden border-2 ${bulkTagBorderColor ? '' : 'border-black'} ${isCurrentlyPlaying ? 'ring-4 ring-red-500 ring-offset-2 ring-offset-black shadow-[0_0_40px_rgba(239,68,68,1),inset_0_0_40px_rgba(239,68,68,0.8)]' : ''}`} // Rounding thumbnail specifically
+            style={bulkTagBorderColor ? { borderColor: bulkTagBorderColor, borderWidth: '2px' } : undefined}
+          />
+        </ImageHoverPreview>
 
         {/* Star color picker overlay */}
         {isStarHovered && !bulkTagMode && (

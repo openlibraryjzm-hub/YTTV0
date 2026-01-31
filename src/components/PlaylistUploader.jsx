@@ -6,7 +6,7 @@ import PlaylistFolderSelector from './PlaylistFolderSelector';
 
 const PlaylistUploader = ({ onUploadComplete, onCancel, initialPlaylistId }) => {
   // Main Tab State
-  const [activeTab, setActiveTab] = useState('add'); // 'add', 'modify', 'json'
+  const [activeTab, setActiveTab] = useState('add'); // 'add', 'modify', 'json', 'twitterJson'
 
   // General State
   const [availablePlaylists, setAvailablePlaylists] = useState([]);
@@ -37,6 +37,11 @@ const PlaylistUploader = ({ onUploadComplete, onCancel, initialPlaylistId }) => 
   // === JSON TAB STATE ===
   const [jsonInput, setJsonInput] = useState('');
   const fileInputRef = useRef(null);
+
+  // === TWITTER JSON TAB STATE ===
+  const [twitterJsonInput, setTwitterJsonInput] = useState('');
+  const [twitterTargetPlaylistId, setTwitterTargetPlaylistId] = useState(initialPlaylistId ? String(initialPlaylistId) : '');
+  const twitterFileInputRef = useRef(null);
 
   useEffect(() => {
     loadPlaylists();
@@ -452,6 +457,151 @@ const PlaylistUploader = ({ onUploadComplete, onCancel, initialPlaylistId }) => 
     }
   };
 
+  // ==========================================
+  // HANDLERS: TWITTER JSON TAB
+  // ==========================================
+
+  const handleTwitterFileSelect = async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+    if (!file.name.endsWith('.json')) { setError('Please select a JSON file'); return; }
+
+    try {
+      const text = await file.text();
+      setTwitterJsonInput(text);
+    } catch (error) {
+      setError('Failed to read file: ' + error.message);
+    }
+  };
+
+  const handleTwitterJsonSubmit = async () => {
+    if (!twitterJsonInput.trim()) { setError('Please input Twitter JSON'); return; }
+
+    try {
+      setLoading(true);
+      setError(null);
+      const tweets = JSON.parse(twitterJsonInput);
+
+      if (!Array.isArray(tweets)) throw new Error('Expected an array of tweets');
+
+      // Determine target playlist
+      let dbPlaylistId;
+      let targetName = '';
+
+      if (twitterTargetPlaylistId === '') {
+        // Check if Unsorted exists
+        const unsorted = availablePlaylists.find(p => p.name === 'Unsorted');
+        if (unsorted) {
+          dbPlaylistId = unsorted.id;
+          targetName = 'Unsorted';
+        } else {
+          targetName = 'Unsorted';
+          dbPlaylistId = await createPlaylist('Unsorted', 'Automatically created');
+        }
+      } else {
+        dbPlaylistId = parseInt(twitterTargetPlaylistId);
+        const pl = availablePlaylists.find(p => p.id === dbPlaylistId);
+        targetName = pl ? pl.name : 'Unknown';
+      }
+
+      // Filter tweets that have media (videos, photos, gifs)
+      const tweetsWithMedia = tweets.filter(tweet => tweet.media && tweet.media.length > 0);
+
+      console.log(`Twitter JSON: Total tweets: ${tweets.length}, Tweets with media: ${tweetsWithMedia.length}`);
+
+      if (tweetsWithMedia.length === 0) {
+        throw new Error('No tweets with media found in JSON');
+      }
+
+      setProgress({ current: 0, total: tweetsWithMedia.length, message: `Importing ${tweetsWithMedia.length} tweets to "${targetName}"...` });
+
+
+      let addedCount = 0;
+      for (let i = 0; i < tweetsWithMedia.length; i++) {
+        const tweet = tweetsWithMedia[i];
+
+        try {
+          // Use the first media item's original URL as the "video"
+          const media = tweet.media[0];
+          const mediaUrl = media.original || media.url;
+
+          // Create a unique ID from tweet ID
+          const tweetId = tweet.id;
+
+          // Clean tweet text by removing:
+          // - "RT @username: " at the start (retweets)
+          // - "@username " mentions (especially at start for replies)
+          // - Quoted tweet handles
+          const cleanTweetText = (text) => {
+            if (!text) return '';
+
+            let cleaned = text;
+
+            // Remove "RT @username: " pattern at the start
+            cleaned = cleaned.replace(/^RT\s+@\w+:\s*/i, '');
+
+            // Remove @mentions at the very start (replies)
+            cleaned = cleaned.replace(/^@\w+\s+/g, '');
+
+            // Remove multiple @mentions in a row at the start
+            cleaned = cleaned.replace(/^(@\w+\s+)+/g, '');
+
+            // Trim whitespace
+            cleaned = cleaned.trim();
+
+            return cleaned;
+          };
+
+          // Build title with just the cleaned tweet text
+          const title = cleanTweetText(tweet.full_text);
+
+          // Use thumbnail if available
+          const thumbnailUrl = media.thumbnail || media.original;
+
+          // Add as a "local" video since it's not YouTube
+          const itemId = await addVideoToPlaylist(
+            dbPlaylistId,
+            mediaUrl, // video_url
+            tweetId, // video_id (using tweet ID)
+            title,
+            thumbnailUrl,
+            `${tweet.name} (@${tweet.screen_name})`, // author
+            String(tweet.views_count || 0), // view_count (convert to string)
+            tweet.created_at, // published_at
+            true, // is_local (since it's Twitter media, not YouTube)
+            tweet.profile_image_url || null // profile_image_url
+          );
+
+          addedCount++;
+
+          if (i % 5 === 0) {
+            setProgress({ current: i + 1, total: tweetsWithMedia.length, message: `Adding tweets... ${i + 1}/${tweetsWithMedia.length}` });
+          }
+        } catch (e) {
+          console.error(`Failed to import tweet ${tweet.id}:`, e);
+        }
+      }
+
+      setProgress({ current: addedCount, total: addedCount, message: `Complete! Added ${addedCount} tweets.` });
+
+      // Show warning if no tweets were added
+      if (addedCount === 0) {
+        setError(`No tweets were successfully imported. Found ${tweetsWithMedia.length} tweets with media, but all failed to import. Check console for details.`);
+        setLoading(false);
+        return;
+      }
+
+      setTimeout(() => {
+        if (onUploadComplete) onUploadComplete();
+      }, 1500);
+
+    } catch (e) {
+      console.error('Twitter JSON Import failed', e);
+      setError('Twitter JSON Import Failed: ' + e.message);
+      setLoading(false);
+    }
+  };
+
 
   // ==========================================
   // RENDER
@@ -488,6 +638,12 @@ const PlaylistUploader = ({ onUploadComplete, onCancel, initialPlaylistId }) => 
               className={`px-4 py-2 font-bold rounded-lg transition-colors ${activeTab === 'json' ? 'bg-sky-500 text-white' : 'text-slate-400 hover:text-white hover:bg-slate-700'}`}
             >
               JSON
+            </button>
+            <button
+              onClick={() => setActiveTab('twitterJson')}
+              className={`px-4 py-2 font-bold rounded-lg transition-colors ${activeTab === 'twitterJson' ? 'bg-sky-500 text-white' : 'text-slate-400 hover:text-white hover:bg-slate-700'}`}
+            >
+              Twitter JSON
             </button>
           </div>
 
@@ -658,6 +814,52 @@ const PlaylistUploader = ({ onUploadComplete, onCancel, initialPlaylistId }) => 
             </div>
           )}
 
+          {/* === TWITTER JSON TAB === */}
+          {activeTab === 'twitterJson' && (
+            <div className="space-y-4 h-full flex flex-col">
+              {/* Playlist Selector */}
+              <div className="bg-slate-900/50 p-4 rounded-xl border border-slate-700">
+                <label className="text-sm font-medium text-slate-300 block mb-2">Add to Playlist:</label>
+                <select
+                  value={twitterTargetPlaylistId}
+                  onChange={(e) => setTwitterTargetPlaylistId(e.target.value)}
+                  className="w-full bg-slate-800 border border-slate-600 text-white text-sm rounded-lg focus:ring-sky-500 focus:border-sky-500 block p-2.5"
+                  disabled={loading}
+                >
+                  <option value="">Default (Unsorted)</option>
+                  {availablePlaylists.map(p => (
+                    <option key={p.id} value={p.id}>{p.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* File Upload / Paste Area */}
+              <div className="flex justify-between items-center">
+                <label className="text-sm font-medium text-slate-300">Twitter Bookmarks JSON</label>
+                <div>
+                  <input type="file" ref={twitterFileInputRef} accept=".json" onChange={handleTwitterFileSelect} className="hidden" />
+                  <button
+                    onClick={() => twitterFileInputRef.current?.click()}
+                    className="text-xs bg-slate-700 hover:bg-slate-600 text-white px-3 py-1.5 rounded-md transition-colors"
+                    disabled={loading}
+                  >
+                    Upload File
+                  </button>
+                </div>
+              </div>
+              <textarea
+                value={twitterJsonInput}
+                onChange={(e) => setTwitterJsonInput(e.target.value)}
+                className="flex-1 w-full bg-slate-900 border border-slate-700 rounded-lg p-4 font-mono text-sm text-slate-300 focus:border-sky-500 focus:outline-none resize-none"
+                placeholder='[{"id": "...", "full_text": "...", "media": [...], ...}]'
+                disabled={loading}
+              />
+              <p className="text-xs text-slate-400">
+                Upload Twitter bookmarks JSON. Only tweets with media (videos, photos, GIFs) will be imported.
+              </p>
+            </div>
+          )}
+
         </div>
 
         {/* FOOTER & STATUS */}
@@ -692,11 +894,21 @@ const PlaylistUploader = ({ onUploadComplete, onCancel, initialPlaylistId }) => 
               Cancel
             </button>
             <button
-              onClick={activeTab === 'add' ? handleAddSubmit : activeTab === 'json' ? handleJsonSubmit : () => { }}
+              onClick={
+                activeTab === 'add' ? handleAddSubmit :
+                  activeTab === 'json' ? handleJsonSubmit :
+                    activeTab === 'twitterJson' ? handleTwitterJsonSubmit :
+                      () => { }
+              }
               disabled={loading || activeTab === 'modify'}
               className={`px-6 py-2 rounded-lg font-medium text-white transition-colors ${loading || activeTab === 'modify' ? 'bg-slate-600 cursor-not-allowed opacity-50' : 'bg-sky-500 hover:bg-sky-600'}`}
             >
-              {loading ? 'Processing...' : (activeTab === 'add' ? 'Import to Playlist' : activeTab === 'json' ? 'Import JSON' : 'Save Changes')}
+              {loading ? 'Processing...' : (
+                activeTab === 'add' ? 'Import to Playlist' :
+                  activeTab === 'json' ? 'Import JSON' :
+                    activeTab === 'twitterJson' ? 'Import Twitter JSON' :
+                      'Save Changes'
+              )}
             </button>
           </div>
         </div>

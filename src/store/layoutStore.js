@@ -7,6 +7,7 @@ export const useLayoutStore = create((set) => ({
   inspectMode: false, // Inspect element mode for showing UI labels
   showRuler: false, // Ruler overlay for measurements
   showDevToolbar: true, // Visibility of the floating dev toolbar (full/half/quarter/etc buttons)
+  videoCardStyle: 'youtube', // 'youtube' | 'twitter' - Card display style
 
   setViewMode: (mode) => {
     if (['full', 'half', 'quarter'].includes(mode)) {
@@ -44,5 +45,10 @@ export const useLayoutStore = create((set) => ({
 
   // Toggle visibility of the dev toolbar
   toggleDevToolbar: () => set((state) => ({ showDevToolbar: !state.showDevToolbar })),
+
+  // Toggle video card style between YouTube and Twitter/X
+  toggleVideoCardStyle: () => set((state) => ({
+    videoCardStyle: state.videoCardStyle === 'youtube' ? 'twitter' : 'youtube'
+  })),
 }));
 

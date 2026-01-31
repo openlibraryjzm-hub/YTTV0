@@ -2,12 +2,12 @@ import React, { useState } from 'react';
 import { useNavigationStore } from '../store/navigationStore';
 import { useLayoutStore } from '../store/layoutStore';
 import { usePlaylistStore } from '../store/playlistStore';
-import { ChevronLeft, Heart, Pin, Settings, Clock, Cat, Disc, User, FileText, LayoutGrid, Folder, Play, Globe } from 'lucide-react';
+import { ChevronLeft, Heart, Pin, Settings, Clock, Cat, Disc, User, FileText, LayoutGrid, Folder, Play, Globe, Twitter } from 'lucide-react';
 import { THEMES } from '../utils/themes';
 
 const TopNavigation = () => {
     const { currentPage: currentNavPage, setCurrentPage: setCurrentNavPage, history, goBack } = useNavigationStore();
-    const { viewMode, setViewMode, inspectMode } = useLayoutStore();
+    const { viewMode, setViewMode, inspectMode, videoCardStyle, toggleVideoCardStyle } = useLayoutStore();
     const { previewPlaylistId, clearPreview } = usePlaylistStore();
 
     const [currentThemeId] = useState('blue'); // Defaulting to blue theme for consistency, could be lifted to store if fully dynamic theming is required here
@@ -84,6 +84,18 @@ const TopNavigation = () => {
 
                 {/* Right side actions */}
                 <div className="flex items-center gap-2 pl-2 border-l border-sky-300/30">
+                    {/* Twitter/X Style Toggle */}
+                    <button
+                        onClick={toggleVideoCardStyle}
+                        className={`flex items-center justify-center w-7 h-7 rounded-full shadow-sm border transition-all hover:scale-105 active:scale-90 ${videoCardStyle === 'twitter'
+                                ? 'bg-sky-500 text-white border-sky-400'
+                                : 'bg-white border-slate-400 text-slate-600 hover:bg-slate-50'
+                            }`}
+                        title={getInspectTitle(`Toggle ${videoCardStyle === 'twitter' ? 'YouTube' : 'Twitter/X'} Style`) || `Toggle ${videoCardStyle === 'twitter' ? 'YouTube' : 'Twitter/X'} Style`}
+                    >
+                        <Twitter size={14} />
+                    </button>
+
                     {/* Back Button */}
                     {(history.length > 0 || previewPlaylistId) && (
                         <button

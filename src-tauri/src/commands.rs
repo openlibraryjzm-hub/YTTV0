@@ -81,6 +81,7 @@ pub fn add_video_to_playlist(
     author: Option<String>,
     view_count: Option<String>,
     published_at: Option<String>,
+    profile_image_url: Option<String>,
 ) -> Result<i64, String> {
     let db = db.lock().map_err(|e| e.to_string())?;
     db.add_video_to_playlist(
@@ -93,6 +94,7 @@ pub fn add_video_to_playlist(
         author.as_deref(),
         view_count.as_deref(),
         published_at.as_deref(),
+        profile_image_url.as_deref(),
     )
     .map_err(|e| e.to_string())
 }
