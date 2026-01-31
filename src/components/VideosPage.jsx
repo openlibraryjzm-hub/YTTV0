@@ -22,6 +22,8 @@ import { updatePlaylist, getAllPlaylists, getFolderMetadata, setFolderMetadata }
 import { useConfigStore } from '../store/configStore';
 import { useShuffleStore } from '../store/shuffleStore';
 import { usePaginationStore } from '../store/paginationStore';
+import TweetCard from './TweetCard';
+
 
 const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
   const {
@@ -967,18 +969,29 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
     }
 
     if (sortBy === 'chronological') {
-      return baseVideos;
+      return [...baseVideos].sort((a, b) => {
+        const dateA = new Date(a.published_at || a.added_at || 0).getTime();
+        const dateB = new Date(b.published_at || b.added_at || 0).getTime();
+        return sortDirection === 'asc' ? dateA - dateB : dateB - dateA;
+      });
     }
 
     if (sortBy === 'shuffle') {
       const state = shuffleStates[activePlaylistId];
-      if (!state || !state.map) return baseVideos;
 
-      return [...baseVideos].sort((a, b) => {
-        const rankA = state.map[a.id] ?? 0;
-        const rankB = state.map[b.id] ?? 0;
-        return rankA - rankB;
-      });
+      const getStableRank = (id) => {
+        if (state?.map && state.map[id] !== undefined) return state.map[id];
+        // Deterministic hash based on ID as a stable fallback
+        let hash = 0;
+        const str = String(id);
+        for (let i = 0; i < str.length; i++) {
+          hash = ((hash << 5) - hash) + str.charCodeAt(i);
+          hash |= 0;
+        }
+        return (hash + 2147483648) / 4294967296;
+      };
+
+      return [...baseVideos].sort((a, b) => getStableRank(a.id) - getStableRank(b.id));
     }
 
     if (sortBy === 'progress') {
@@ -987,41 +1000,38 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
       // Filter: Hide Unwatched
       if (!includeUnwatched) {
         filtered = filtered.filter(video => {
-          const videoId = extractVideoId(video.video_url) || video.video_id;
+          const videoId = extractVideoId(video.video_url) || video.video_id || video.id;
           const data = videoProgress.get(videoId);
-          // Check if data exists and percentage > 0.
           const percentage = data ? (typeof data === 'number' ? data : data.percentage) : 0;
-          return percentage > 0;
+          return percentage > 0 || video.is_local; // Keep local content if we can't track it easily yet
         });
       }
 
-      // Filter: Show Only Completed (Redefined by user as "Toggle to show/hide fully watched videos")
-      // If the button is ACTIVE (state true), we HIDE completed videos.
-      // Wait, standard UI pattern:
-      // Button "Show Completed" (Active) -> Show them.
-      // But user said "I want that button to be a toggle to show/hide fully watched videos - leaving just partially watched and unwatched behind" 
-      // This implies the ACTION of the button is to REMOVE them.
-      // So if `showOnlyCompleted` is TRUE, we HIDE them.
-      // If the state is true, we HIDE them. If false, we SHOW them.
-      // Let's assume the button label should ideally change or is abstract "Toggle Completed".
       if (showOnlyCompleted) {
         filtered = filtered.filter(video => {
-          const videoId = extractVideoId(video.video_url) || video.video_id;
+          const videoId = extractVideoId(video.video_url) || video.video_id || video.id;
           const data = videoProgress.get(videoId);
           const hasFullyWatched = data ? (typeof data === 'object' ? data.hasFullyWatched : false) : false;
-          return !hasFullyWatched; // HIDE if watched
+          return !hasFullyWatched;
         });
       }
 
       const sorted = filtered.sort((a, b) => {
-        const idA = extractVideoId(a.video_url) || a.video_id;
-        const idB = extractVideoId(b.video_url) || b.video_id;
+        const idA = extractVideoId(a.video_url) || a.video_id || a.id;
+        const idB = extractVideoId(b.video_url) || b.video_id || b.id;
 
         const dataA = videoProgress.get(idA);
         const dataB = videoProgress.get(idB);
 
         const progressA = dataA ? (typeof dataA === 'number' ? dataA : dataA.percentage) : 0;
         const progressB = dataB ? (typeof dataB === 'number' ? dataB : dataB.percentage) : 0;
+
+        // If progress is equal, fallback to date
+        if (progressA === progressB) {
+          const dateA = new Date(a.published_at || a.added_at || 0).getTime();
+          const dateB = new Date(b.published_at || b.added_at || 0).getTime();
+          return sortDirection === 'asc' ? dateA - dateB : dateB - dateA;
+        }
 
         return sortDirection === 'asc'
           ? progressA - progressB
@@ -1032,22 +1042,21 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
 
     if (sortBy === 'lastViewed') {
       const sorted = [...baseVideos].sort((a, b) => {
-        const idA = extractVideoId(a.video_url) || a.video_id;
-        const idB = extractVideoId(b.video_url) || b.video_id;
+        const idA = extractVideoId(a.video_url) || a.video_id || a.id;
+        const idB = extractVideoId(b.video_url) || b.video_id || b.id;
 
         const dataA = videoProgress.get(idA);
         const dataB = videoProgress.get(idB);
 
-        // Get last_updated timestamps
-        const lastUpdatedA = dataA && typeof dataA === 'object' && dataA.last_updated
-          ? new Date(dataA.last_updated).getTime()
-          : 0; // Never viewed = 0 (will sort to end)
-        const lastUpdatedB = dataB && typeof dataB === 'object' && dataB.last_updated
-          ? new Date(dataB.last_updated).getTime()
-          : 0; // Never viewed = 0 (will sort to end)
+        const lastUpdatedA = dataA?.last_updated ? new Date(dataA.last_updated).getTime() : 0;
+        const lastUpdatedB = dataB?.last_updated ? new Date(dataB.last_updated).getTime() : 0;
 
-        // Sort descending by default (most recently viewed first)
-        // Videos without last_updated (0) will be at the end
+        if (lastUpdatedA === lastUpdatedB) {
+          const dateA = new Date(a.published_at || a.added_at || 0).getTime();
+          const dateB = new Date(b.published_at || b.added_at || 0).getTime();
+          return sortDirection === 'asc' ? dateA - dateB : dateB - dateA;
+        }
+
         return sortDirection === 'asc'
           ? lastUpdatedA - lastUpdatedB
           : lastUpdatedB - lastUpdatedA;
@@ -1590,135 +1599,89 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
                   </StickyVideoCarousel>
                 )}
 
-                {/* Horizontal Scrolling Video Grid - 2 Rows */}
+                {/* Horizontal Scrolling Video Grid - Mixed Content Grid */}
                 <div
                   ref={horizontalScrollRef}
                   className="horizontal-video-scroll"
                   style={{
                     width: '100%',
-                    overflowX: 'scroll', // Force scrollbar to always show
+                    overflowX: 'scroll',
                     overflowY: 'hidden',
-                    scrollbarWidth: 'thin', // Show scrollbar on Firefox
-                    scrollbarColor: 'rgba(148, 163, 184, 0.6) rgba(15, 23, 42, 0.3)', // Firefox scrollbar color
-                    WebkitOverflowScrolling: 'touch', // Smooth scrolling on iOS
-                    marginTop: '-32px' // Pull up to touch bottom of sticky bar (mb-8 = 32px)
+                    scrollbarWidth: 'thin',
+                    scrollbarColor: 'rgba(148, 163, 184, 0.6) rgba(15, 23, 42, 0.3)',
+                    WebkitOverflowScrolling: 'touch',
+                    marginTop: '-32px'
                   }}
                 >
                   <div
-                    className="flex flex-col gap-2 animate-fade-in"
+                    className="grid grid-rows-2 grid-flow-col gap-x-4 gap-y-2 animate-fade-in h-[440px]"
                     style={{
-                      width: 'max-content'
+                      width: 'max-content',
+                      gridTemplateRows: 'repeat(2, minmax(0, 1fr))'
                     }}
                   >
-                    {/* Row 1 */}
-                    <div className="flex gap-2" style={{ width: 'max-content' }}>
-                      {regularVideos.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).filter((_, idx) => idx % 2 === 0).map((video, rowIndex) => {
-                        const index = (currentPage - 1) * itemsPerPage + rowIndex * 2;
-                        const originalIndex = activePlaylistItems.findIndex(v => v.id === video.id);
-                        const folderKey = selectedFolder === null ? 'root' : selectedFolder;
-                        const key = `${activePlaylistId}::${folderKey}`;
-                        const isContextStickied = (allStickiedVideos[key] || []).includes(video.id);
+                    {regularVideos.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map((video, idx) => {
+                      const isTweet = video.is_local || video.video_url?.includes('twitter.com') || video.video_url?.includes('x.com') || video.thumbnail_url?.includes('twimg.com');
+                      const originalIndex = activePlaylistItems.findIndex(v => v.id === video.id);
+                      const folderKey = selectedFolder === null ? 'root' : selectedFolder;
+                      const key = `${activePlaylistId}::${folderKey}`;
+                      const isContextStickied = (allStickiedVideos[key] || []).includes(video.id);
 
+                      // Common props for both card types
+                      const commonProps = {
+                        video,
+                        index: (currentPage - 1) * itemsPerPage + idx,
+                        originalIndex,
+                        isSelected: selectedVideoIndex === originalIndex,
+                        isCurrentlyPlaying: currentVideoIndex === originalIndex,
+                        videoFolders: videoFolderAssignments[video.id] || [],
+                        selectedFolder,
+                        onVideoClick: () => handleVideoClick(video, (currentPage - 1) * itemsPerPage + idx),
+                        onStarClick: (e) => handleStarClick(e, video),
+                        onStarColorLeftClick: handleStarColorLeftClick,
+                        onStarColorRightClick: handleStarColorRightClick,
+                        onMenuOptionClick: (option) => {
+                          if (option.action === 'toggleSticky') {
+                            handleToggleSticky(activePlaylistId, video.id);
+                          } else {
+                            handleMenuOptionClick(option, video);
+                          }
+                        },
+                        onQuickAssign: handleStarClick,
+                        bulkTagMode,
+                        bulkTagSelections: bulkTagSelections[video.id] || new Set(),
+                        onBulkTagColorClick: (color) => handleBulkTagColorClick(video, color),
+                        onPinClick: () => { },
+                        isStickied: isContextStickied,
+                        playlistId: activePlaylistId,
+                        folderMetadata: allFolderMetadata,
+                        progress: (() => {
+                          const data = videoProgress.get(video.id) || videoProgress.get(extractVideoId(video.video_url));
+                          return data ? (typeof data === 'number' ? data : data.percentage) : 0;
+                        })(),
+                        isWatched: watchedVideoIds.has(extractVideoId(video.video_url) || video.video_id)
+                      };
+
+                      if (isTweet) {
                         return (
-                          <div key={video.id} style={{ width: '320px', flexShrink: 0 }}>
-                            <VideoCard
-                              video={video}
-                              index={index}
-                              originalIndex={originalIndex}
-                              isSelected={selectedVideoIndex === originalIndex}
-                              isCurrentlyPlaying={currentVideoIndex === originalIndex}
-                              videoFolders={videoFolderAssignments[video.id] || []}
-                              selectedFolder={selectedFolder}
-                              onVideoClick={() => handleVideoClick(video, index)}
-                              onStarClick={(e) => handleStarClick(e, video)}
-                              onStarColorLeftClick={handleStarColorLeftClick}
-                              onStarColorRightClick={handleStarColorRightClick}
-                              onMenuOptionClick={(option) => {
-                                if (option.action === 'toggleSticky') {
-                                  handleToggleSticky(activePlaylistId, video.id);
-                                } else {
-                                  handleMenuOptionClick(option, video);
-                                }
-                              }}
-                              onQuickAssign={handleStarClick}
-                              bulkTagMode={bulkTagMode}
-                              bulkTagSelections={bulkTagSelections[video.id] || new Set()}
-                              onBulkTagColorClick={(color) => handleBulkTagColorClick(video, color)}
-                              onPinClick={() => { }} // Handled internally in VideoCard via store
-                              isStickied={isContextStickied}
-                              playlistId={activePlaylistId}
-                              folderMetadata={allFolderMetadata}
-                              cardStyle={videoCardStyle}
-                              progress={(() => {
-                                const videoId = extractVideoId(video.video_url) || video.video_id;
-                                const data = videoProgress.get(video.id) || videoProgress.get(extractVideoId(video.video_url));
-                                return data ? (typeof data === 'number' ? data : data.percentage) : 0;
-                              })()}
-                              isWatched={(() => {
-                                const videoId = extractVideoId(video.video_url) || video.video_id;
-                                return watchedVideoIds.has(videoId);
-                              })()}
-                            />
+                          <div key={video.id} className="row-span-2 h-full">
+                            <TweetCard {...commonProps} />
                           </div>
                         );
-                      })}
-                    </div>
+                      }
 
-                    {/* Row 2 */}
-                    <div className="flex gap-2" style={{ width: 'max-content' }}>
-                      {regularVideos.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).filter((_, idx) => idx % 2 === 1).map((video, rowIndex) => {
-                        const index = (currentPage - 1) * itemsPerPage + rowIndex * 2 + 1;
-                        const originalIndex = activePlaylistItems.findIndex(v => v.id === video.id);
-                        const folderKey = selectedFolder === null ? 'root' : selectedFolder;
-                        const key = `${activePlaylistId}::${folderKey}`;
-                        const isContextStickied = (allStickiedVideos[key] || []).includes(video.id);
-
-                        return (
-                          <div key={video.id} style={{ width: '320px', flexShrink: 0 }}>
-                            <VideoCard
-                              video={video}
-                              index={index}
-                              originalIndex={originalIndex}
-                              isSelected={selectedVideoIndex === originalIndex}
-                              isCurrentlyPlaying={currentVideoIndex === originalIndex}
-                              videoFolders={videoFolderAssignments[video.id] || []}
-                              selectedFolder={selectedFolder}
-                              onVideoClick={() => handleVideoClick(video, index)}
-                              onStarClick={(e) => handleStarClick(e, video)}
-                              onStarColorLeftClick={handleStarColorLeftClick}
-                              onStarColorRightClick={handleStarColorRightClick}
-                              onMenuOptionClick={(option) => {
-                                if (option.action === 'toggleSticky') {
-                                  handleToggleSticky(activePlaylistId, video.id);
-                                } else {
-                                  handleMenuOptionClick(option, video);
-                                }
-                              }}
-                              onQuickAssign={handleStarClick}
-                              bulkTagMode={bulkTagMode}
-                              bulkTagSelections={bulkTagSelections[video.id] || new Set()}
-                              onBulkTagColorClick={(color) => handleBulkTagColorClick(video, color)}
-                              onPinClick={() => { }} // Handled internally in VideoCard via store
-                              isStickied={isContextStickied}
-                              playlistId={activePlaylistId}
-                              folderMetadata={allFolderMetadata}
-                              cardStyle={videoCardStyle}
-                              progress={(() => {
-                                const videoId = extractVideoId(video.video_url) || video.video_id;
-                                const data = videoProgress.get(video.id) || videoProgress.get(extractVideoId(video.video_url));
-                                return data ? (typeof data === 'number' ? data : data.percentage) : 0;
-                              })()}
-                              isWatched={(() => {
-                                const videoId = extractVideoId(video.video_url) || video.video_id;
-                                return watchedVideoIds.has(videoId);
-                              })()}
-                            />
-                          </div>
-                        );
-                      })}
-                    </div>
+                      return (
+                        <div key={video.id} className="w-[320px] h-full flex flex-col justify-center">
+                          <VideoCard
+                            {...commonProps}
+                            cardStyle={videoCardStyle}
+                          />
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
+
               </>
             ) : (
               <div className="text-center text-slate-400 py-8">

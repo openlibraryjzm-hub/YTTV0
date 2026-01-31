@@ -426,9 +426,15 @@ For detailed information about the application's theme system and recent color c
   - **Player Sync**: The central Orb Menu in the player controller now correctly syncs with this override, displaying the specific Orb Group image + correct scale/offset..
 - **Advanced Orb Scale Fix**: Resolved an issue where saved stored Orb scales (multiplier format) were being incorrectly treated as percentages in the Player Controller, causing images to shrink to 1px.
   - **PlayerController**: Updated to treat scale as a direct multiplier (defaulting to 1.0) with no division, matching the storage format.
-- **Image Hover Preview Performance**: Eliminated the delayed positioning jump for the image expansion.
-  - **Instant Positioning**: Calculations now occur immediately upon image load using stored cursor coordinates.
+- **Instant Positioning**: Calculations now occur immediately upon image load using stored cursor coordinates.
   - **Smooth Transitions**: Added a 0.15s opacity fade-in to hide initial loading and ensure a premium feel.
+- **Premium Twitter/X Integration**:
+  - **New TweetCard Component**: Created a high-fidelity dedicated card style for Twitter content, featuring circular avatars, bold display names, @handles, and cleaned tweet text.
+  - **Mixed-Height Grid**: Refactored the video grid to a 2-row CSS Grid (`grid-rows-2 grid-flow-col`). Twitter cards span two rows (`row-span-2`) while YouTube cards take one, creating a balanced masonry-like vertical layout.
+  - **Aesthetic Refinements**: Styled with app-matched light sky blue (`#e0f2fe`) and navy text (`#052F4A`). Removed decorative interaction bars and play buttons for a cleaner, unified look.
+  - **Media Clarity**: Upgraded grid thumbnails to `medium` resolution and framing images with `contain` to prevent blurriness or stretching.
+  - **Stable Sorting**: Implemented deterministic shuffle fallback rankings to prevent grid flickering/shuffling during background progress updates.
+  - **Seamless Mixing**: Adjusted chronological and progress sorting to interleave videos and tweets perfectly based on their actual publication dates.
 - **Thumbnail Theming**:
   - **Background Sync**: Changed `CardThumbnail` background from dark blue to light sky blue (`#e0f2fe`) to seamlessly blend with the app background when portrait/tall images are displayed.
   - **Twitter Video Hover Previews**: Enhanced the 4chanX-style image expansion to support Twitter videos and GIFs.

@@ -80,18 +80,20 @@ Twitter content appears in standard video cards with special handling:
 
 ### Card Styles
 
-**YouTube Style (Default):**
-- Standard card layout
-- Clean title (no usernames/handles)
-- Author shown in metadata
-
-**Twitter/X Style:**
-- White background with rounded corners
-- Profile picture (circular avatar with letter fallback)
-- Username and @handle in header
-- Tweet text in content area
-- Shrunken thumbnail with margins (no border for cleaner look)
-- **Border only appears**: When in bulk tag mode or video is currently playing
+**TweetCard (Premium Twitter/X Style):**
+- **Layout**: Occupies **two rows** in the grid (`row-span-2`), creating a masonry-like vertical hierarchy.
+- **Background**: Light sky blue (`#e0f2fe`) to match the application theme.
+- **Border**: Minimal `sky-200` border for separation, with `rounded-2xl` corners.
+- **Header**:
+  - **Avatar**: Circular profile picture (40x40px) with high-res fallback.
+  - **Labels**: Bold Display Name and gray @handle (Font: `#052F4A`).
+  - **Inline Actions**: 3-dot menu and pin controls appear on hover.
+- **Content**: Cleaned tweet text with professional typography (Font: `#052F4A`).
+- **Media**:
+  - **Source**: Upgraded to `medium` quality thumbnails for grid display and `large` for hovers.
+  - **Containment**: Uses `object-contain` within a sky-blue frame (`bg-[#d0eafb]/50`) to ensure media is never blurry or stretched.
+- **Interaction**: Integrated "Pin" and "Folder Star" buttons overlaid on the media section.
+- **Mixed Content Logic**: `VideosPage.jsx` automatically interleaves these cards with standard YouTube cards using a `grid-rows-2` CSS Grid, maintaining a perfectly balanced layout regardless of content height.
 
 ## Image Hover Preview
 

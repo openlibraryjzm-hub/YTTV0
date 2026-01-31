@@ -132,7 +132,7 @@ Users see a side menu panel that appears on the right side of the screen when in
 
 - **Page Content**: The main content area below navigation, showing:
   - **Playlists Page**: 2-column grid of playlist cards (see `ui-pages.md`)
-  - **Videos Page**: Horizontal scrolling layout with 2 rows of video cards (see `ui-pages.md`)
+  - **Videos Page**: Horizontal scrolling **CSS Grid** layout (`grid-rows-2 grid-flow-col`) supporting mixed content heights. Single-row YouTube videos and double-row Twitter cards (`row-span-2`) interleave seamlessly. (see `ui-pages.md`)
   - **History Page**: 3-column grid of history cards (see `ui-pages.md`)
 
 - **Layout Modes**: Side menu visibility controlled by view mode:

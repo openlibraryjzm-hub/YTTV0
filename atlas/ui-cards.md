@@ -537,3 +537,38 @@ Users see video cards built using the Card component system with video-specific 
 
 ---
 
+#### ### 4.1.2.2 Tweet Card
+
+**1: User-Perspective Description**
+
+Users see high-fidelity Twitter/X cards for local content, designed to mimic the mobile app experience while integrating with the application's folder and pin systems.
+
+- **Card Structure**:
+  - **Grid Position**: Occupies **two rows** in the video grid (`row-span-2`), making them visually distinct from YouTube videos.
+  - **Background**: Light sky blue (`#e0f2fe`) to match the application theme.
+  - **Header Section**:
+    - **Avatar**: Circular profile picture (40x40px) with fallback to colored letter icon.
+    - **Author Info**: Bold display name and gray @handle (using font color `#052F4A`).
+    - **Quick Menu**: 3-dot action menu (pinned/sticky/delete/move) appearing on hover.
+  - **Content Area**: Clean text display (font color `#052F4A`) with `line-clamp-3` for longer tweets.
+  - **Media Section**:
+    - **Clarity**: Uses `medium` resolution thumbnails for grid display and `large` for hovers.
+    - **Framing**: `contain` scaling within a slightly darker sky-blue frame (`bg-[#d0eafb]/50`) ensures no distortion or blurriness.
+    - **Expansion**: Integrated with the 4chanX-style hover preview for high-res inspection.
+  - **Interaction Badges** (Floating):
+    - **Pin Button**: Dual-action pin/priority control on thumbnail.
+    - **Star Button**: Folder assignment control with hover color picker.
+
+- **Visual States**:
+  - **Playing**: Red ring and glow effect consistent with video cards.
+  - **Selected**: Blue border highlight.
+
+**2: File Manifest**
+
+**UI/Components:**
+- `src/components/TweetCard.jsx`: Dedicated component for Twitter content.
+
+**3: Logic & State Chain**
+
+- **Content Detection**: `VideosPage.jsx` automatically switches to `TweetCard` if `video.is_local` is true or source is detected as twitter.
+- **Mixed Grid Handling**: CSS Grid (`grid-rows-2 grid-flow-col`) allows `TweetCard` to span two rows while maintaining alignment with single-row YouTube cards.
