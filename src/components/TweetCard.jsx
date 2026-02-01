@@ -34,6 +34,7 @@ const TweetCard = ({
     isStickied = false,
     playlistId = null,
     folderMetadata = {},
+    onRenameFolder,
 }) => {
     const { inspectMode } = useLayoutStore();
     const { quickAssignFolder } = useFolderStore();
@@ -137,7 +138,9 @@ const TweetCard = ({
             variant="minimal"
             style={{ gridRow: 'span 2' }}
         >
-            <div className="flex flex-col h-full bg-[#e0f2fe] rounded-2xl border border-sky-200 dark:border-sky-800/30 shadow-sm overflow-hidden hover:shadow-md transition-shadow">
+            <div
+                className="relative flex flex-col h-full bg-[#e0f2fe] rounded-2xl border border-sky-200 dark:border-sky-800/30 shadow-sm overflow-hidden hover:shadow-md transition-shadow"
+            >
 
                 {/* Profile & Content Header */}
                 <div className="flex gap-2.5 p-3 pb-2">
@@ -261,8 +264,9 @@ const TweetCard = ({
 
 
                 {/* Bulk Tag Overlay */}
+                {/* Bulk Tag Overlay */}
                 {bulkTagMode && (
-                    <div className="absolute inset-0 z-40 bg-black/10 backdrop-blur-[1px] flex items-center justify-center p-4">
+                    <div className="absolute bottom-0 left-0 right-0 h-1/4 z-40">
                         <BulkTagColorGrid
                             videoId={video.id}
                             currentFolders={videoFolders}
@@ -270,6 +274,7 @@ const TweetCard = ({
                             onColorClick={onBulkTagColorClick}
                             playlistId={playlistId}
                             folderMetadata={folderMetadata}
+                            onRenameFolder={onRenameFolder}
                         />
                     </div>
                 )}

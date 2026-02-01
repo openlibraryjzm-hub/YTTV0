@@ -572,6 +572,42 @@ impl Database {
         Ok(items)
     }
 
+    pub fn get_playlist_items_preview(
+        &self,
+        playlist_id: i64,
+        limit: i64,
+    ) -> Result<Vec<PlaylistItem>> {
+        let mut stmt = self.conn.prepare(
+            "SELECT id, playlist_id, video_url, video_id, title, thumbnail_url, position, added_at, is_local, author, view_count, published_at, profile_image_url 
+             FROM playlist_items 
+             WHERE playlist_id = ?1 
+             ORDER BY position ASC
+             LIMIT ?2"
+        )?;
+
+        let items = stmt
+            .query_map(params![playlist_id, limit], |row| {
+                Ok(PlaylistItem {
+                    id: row.get(0)?,
+                    playlist_id: row.get(1)?,
+                    video_url: row.get(2)?,
+                    video_id: row.get(3)?,
+                    title: row.get(4)?,
+                    thumbnail_url: row.get(5)?,
+                    position: row.get(6)?,
+                    added_at: row.get(7)?,
+                    is_local: row.get::<_, i32>(8)? != 0,
+                    author: row.get(9).unwrap_or(None),
+                    view_count: row.get(10).unwrap_or(None),
+                    published_at: row.get(11).unwrap_or(None),
+                    profile_image_url: row.get(12).unwrap_or(None),
+                })
+            })?
+            .collect::<Result<Vec<_>, _>>()?;
+
+        Ok(items)
+    }
+
     pub fn remove_video_from_playlist(&self, playlist_id: i64, item_id: i64) -> Result<bool> {
         // Get the position of the item being removed
         let removed_position: Option<i32> = match self.conn.query_row(

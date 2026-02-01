@@ -110,6 +110,17 @@ pub fn get_playlist_items(
 }
 
 #[tauri::command]
+pub fn get_playlist_items_preview(
+    db: State<Mutex<Database>>,
+    playlist_id: i64,
+    limit: i64,
+) -> Result<Vec<PlaylistItem>, String> {
+    let db = db.lock().map_err(|e| e.to_string())?;
+    db.get_playlist_items_preview(playlist_id, limit)
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
 pub fn get_playlists_for_video_ids(
     db: State<Mutex<Database>>,
     video_ids: Vec<String>,

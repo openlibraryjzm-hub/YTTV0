@@ -381,67 +381,15 @@ For detailed information about the application's theme system and recent color c
 3. **Use cross-references** to navigate between related topics
 
 ### Update Log (Current Session)
-- **Group View Column**: Implemented a vertical overlay column for viewing "Group Leaders" and their "Subordinates" on both `OrbPage` (Presets tab) and `PagePage` (Folders tab).
-  - **OrbPage**: Button added to preset hover menu. Shows vertical list of orbs.
-  - **PagePage**: Button added to image card hover menu. Shows leader banner and vertical list of member banners.
-- **Top Navigation Layout**: COMPLETE OVERHAUL of the top side menu navigation.
-  - **New Structure**: Tabs organized into 4 groups (Main, Personal, Config, Support) separated by dividers.
-  - **New Pages**: Added direct navigation to `Browser`, `Orbs`, `You`, `Page`, `App`.
-  - **Styling**: All tabs are now **icon-only** (including Playlists/Videos) for a cleaner, unified look.
-  - **Browser Page**: Added placeholder `BrowserPage` component and routing.
-- **App Banner Hover Popup**: Implemented a glassmorphism popup activated by hovering the rightmost 1/6th of the App Banner.
-  - **Structure**: Split into a top section (centered orb + 40x16px rectangles) and a bottom-right section (split 1/3 top, 2/3 bottom).
-  - **Interaction**: Non-blocking `onMouseMove` detection to preserve clickability of underlying controls.
-  - **Component**: New `AppBannerPopup.jsx`.
-- **Settings Page Overhaul**: Replaced the legacy settings page with a new **Settings Hub** (`MainSettingsPage.jsx`).
-  - **Layout**: Two large, equal-height elements side-by-side (`65vh` height).
-    - **Left**: A large "Square" container (`37.5%` width, max `600px`).
-    - **Right**: An enlarged version of the `AppBannerPopup` layout (`flex-1`).
-  - **Navigation**: Integrated into the main Top Navigation as a new "Settings" icon (Gear) in Group 3.
-- **Advanced Orb Cropping**: Implemented a fullscreen masking editor for the Orb.
-  - **Feature**: Free-form masking tool for each quadrant, allowing "infinite spill" or precise custom cuts.
-  - **Relaxed Bounds**: Crops can drag/extend well outside the orb container (-50% to 150%) to capture large spillover details.
-  - **Integration**: Fully synced with the main player header; custom cutouts appear instantly in the top app controller.
-- **Pins Page Refactor**:
-  - **Date Grouping**: Pins are now grouped by date (e.g., "30th January, 2026") with headers and counts.
-  - **Collapsible Priority Pins**: "Priority Pins - History" section is now collapsible and starts collapsed by default.
-  - **Consistent Styling**: Headers and text updated to use theme color `#052F4A`.
-  - **Updated**: `PinsPage.jsx`, `StickyVideoCarousel.jsx`.
-- **Manual Folder Grouping**: Implemented manual organization tools for Layer 2 images in the "Colors" tab.
-  - **Reverted Automation**: Removed automatic group migration in favor of user control.
-  - **Move to Folder**: "Folder" icon on image cards allows moving individual images or entire groups (via Leader) to specific folders.
-  - **Pull Group**: New dropdown on Folder Headers allows "pulling" complete groups (Leader + Members) from other folders into the current one with one click.
-  - **Smart References**: Moving Leaders or Members automatically updates their group relationship links (`groupLeaderId`, `groupMembers`).
-- **Playlist Theme Override**: Refined the logic for per-playlist theme overrides.
-  - **Robust Resolution**: Implemented ID-based name lookup to ensure overrides persist when navigating into sub-folders (e.g. "Red Folder").
-  - **Consistent Behavior**: Overrides now correctly block the Global Theme even when viewing colored tabs.
-- **Playlist/Folder Editing**: Re-implemented the ability to edit name, description, and ASCII art for Unsorted, Colored Folders, and Playlists.
-  - **EntryPoint**: Wired up the "Settings" cog on the **Page Banner** to trigger the Edit Modal.
-  - **Unsorted Support**: Explicitly enabled editing for the "Unsorted Videos" view.
-  - **Context-Aware**: Edits automatically apply to the correct context (specific folder vs. main playlist) based on current view.
-- **ASCII Art Priority Fix**: Resolved an issue where the global user signature was overriding custom folder ASCII art. The `PageBanner` now strictly prioritizes the passed `avatar` prop.
-- **Banner Carousel Reset**: Changed behavior so the Page Banner's media carousel (Recent/Pins/ASCII) resets to "Recent" whenever navigating between playlists or folders, rather than persisting the previous view mode.
-- **Orb Group Playlist Override**: Orb Groups can now target specific playlists (by ID or Name) to force their theme (Wallpaper + Orb Image) to display when that playlist is active.
-  - **Logic**: Orb Group assignment > Folder Assignment > Global.
-  - **Player Sync**: The central Orb Menu in the player controller now correctly syncs with this override, displaying the specific Orb Group image + correct scale/offset..
-- **Advanced Orb Scale Fix**: Resolved an issue where saved stored Orb scales (multiplier format) were being incorrectly treated as percentages in the Player Controller, causing images to shrink to 1px.
-  - **PlayerController**: Updated to treat scale as a direct multiplier (defaulting to 1.0) with no division, matching the storage format.
-- **Instant Positioning**: Calculations now occur immediately upon image load using stored cursor coordinates.
-  - **Smooth Transitions**: Added a 0.15s opacity fade-in to hide initial loading and ensure a premium feel.
-- **Premium Twitter/X Integration**:
-  - **New TweetCard Component**: Created a high-fidelity dedicated card style for Twitter content, featuring circular avatars, bold display names, @handles, and cleaned tweet text.
-  - **Mixed-Height Grid**: Refactored the video grid to a 2-row CSS Grid (`grid-rows-2 grid-flow-col`). Twitter cards span two rows (`row-span-2`) while YouTube cards take one, creating a balanced masonry-like vertical layout.
-  - **Aesthetic Refinements**: Styled with app-matched light sky blue (`#e0f2fe`) and navy text (`#052F4A`). Removed decorative interaction bars and play buttons for a cleaner, unified look.
-  - **Media Clarity**: Upgraded grid thumbnails to `medium` resolution and framing images with `contain` to prevent blurriness or stretching.
-  - **Stable Sorting**: Implemented deterministic shuffle fallback rankings to prevent grid flickering/shuffling during background progress updates.
-  - **Seamless Mixing**: Adjusted chronological and progress sorting to interleave videos and tweets perfectly based on their actual publication dates.
-- **Thumbnail Theming**:
-  - **Background Sync**: Changed `CardThumbnail` background from dark blue to light sky blue (`#e0f2fe`) to seamlessly blend with the app background when portrait/tall images are displayed.
-  - **Twitter Video Hover Previews**: Enhanced the 4chanX-style image expansion to support Twitter videos and GIFs.
-  - **Logic**: Automatically upgrades video thumbnails from `name=thumb` to high-resolution `name=large` for the preview expansion, as raw video files cannot be rendered in standard image tags.
-  - **Continuity**: Preserves existing high-res photo behavior (`name=orig`) while adding robust detection for MP4, GIF, and other video formats.
-  - **Optimization**: Integrated `useMemo` for URL calculation to ensure smooth UI performance during hover interactions.
-- **Top Menu Badges**:
-  - **Contextual Awareness**: Added sky-blue **Active Tab** and indigo **Active Preset** badges to the Top Playlist Menu in the Player Controller.
-  - **Hierarchy**: Ordered as **[Preset] [Tab] [Folder]** to reflect the filtering hierarchy.
+- **Twitter Import & Integration**: 
+  - Implemented **JSON Import** for Twitter bookmarks, allowing bulk import of tweets as "local" videos.
+  - created `TweetCard` improvements for proper rendering of MP4s and GIFs.
+  - Added **High-Res Hover Previews** for Twitter media using `ImageHoverPreview`.
+- **Performance Optimization**: 
+  - Solved major lag on the Playlists Page by implementing `get_playlist_items_preview` (Rust backend).
+  - Reduced overhead by fetching only 4 preview items per playlist instead of the entire dataset.
+- **Folder Management**: 
+  - Added **Folder Renaming** functionality directly to the sticky color grid.
+- **Pin System Fix**: 
+  - Resolved a bug causing duplicate pins in the PinStore.
 

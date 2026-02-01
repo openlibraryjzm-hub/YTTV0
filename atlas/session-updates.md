@@ -397,3 +397,26 @@
         - **Active Preset**: Indigo badge appearing to the left of the Tab badge.
    - **Context**: Helps users understand the current filter context (Tab > Preset > Folder) directly from the player header.
    - **Refinement**: Swapped position so the **Preset Badge** is the leftmost element, reflecting the highest level of hierarchy.
+
+---
+
+# Session Updates (Feb 02, 2026) -> Twitter Import & Optimizations
+**Timestamp:** 02/02/2026 7:55am
+
+## Key Changes
+1. **Twitter Integration Complete**:
+   - **Import System**: Implemented `TwitterImportModal` and `TwitterBookmarkImporter` to support importing Twitter bookmarks/tweets from a JSON file.
+   - **Video Rendering**: Refined `TweetCard.jsx` to correctly display "local" videos from Twitter (MP4/GIF), ensuring they play inline and have proper thumbnails.
+   - **Hover Preview**: Extended `ImageHoverPreview` to work for Twitter media, dynamically upgrading thumbnail URLs to high-res versions for a premium feel.
+   - **Visuals**: Standardized on a light sky blue theme (`#e0f2fe`) for Twitter cards and previews.
+
+2. **Performance Optimization (Playlist Preview)**:
+   - **Problem**: The Playlists Page was fetching *all* items for every playlist just to show 4 preview thumbnails, causing massive lag on large playlists (especially those with 10k+ tweets).
+   - **Solution**: Implemented a new backend command `get_playlist_items_preview(playlist_id, limit)` that fetches only the requested number of items (4) directly from the database.
+   - **Result**: Playlist page now loads instantly regardless of playlist size.
+
+3. **Folder Management**:
+   - **Renaming**: Added a "Pencil" edit button to the sticky folder color grid (`BulkTagColorGrid`), allowing users to rename colored folders directly. The logic persists to the database via `setFolderMetadata`.
+
+4. **Bug Fixes**:
+   - **Pins**: Fixed a bug where pins were being duplicated in the store. Added robust checks to remove existing pins before adding new ones.

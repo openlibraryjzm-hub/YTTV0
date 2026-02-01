@@ -476,6 +476,26 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
     filterVideos();
   }, [selectedFolder, activePlaylistId, activePlaylistItems, videoFolderAssignments]);
 
+  const handleRenameFolder = async (folderColor, newName) => {
+    if (!activePlaylistId) return;
+    try {
+      // Keep existing description if present
+      const currentMeta = allFolderMetadata[folderColor] || {};
+      const description = currentMeta.description || '';
+
+      await setFolderMetadata(activePlaylistId, folderColor, newName, description, null);
+
+      // Update local state
+      setAllFolderMetadata(prev => ({
+        ...prev,
+        [folderColor]: { ...prev[folderColor], name: newName }
+      }));
+    } catch (error) {
+      console.error('Failed to rename folder:', error);
+      alert('Failed to rename folder: ' + error.message);
+    }
+  };
+
   const handleMenuOptionClick = async (option, video) => {
     console.log('handleMenuOptionClick:', option.action, video.id, 'activePermission:', !!activePlaylistId);
     if (!activePlaylistId) {
@@ -1583,6 +1603,7 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
                           isStickied={true} // It is stickied in this list
                           playlistId={activePlaylistId}
                           folderMetadata={allFolderMetadata}
+                          onRenameFolder={handleRenameFolder}
                           cardStyle={videoCardStyle}
                           progress={(() => {
                             const videoId = extractVideoId(video.video_url) || video.video_id;
@@ -1627,6 +1648,28 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
                       const key = `${activePlaylistId}::${folderKey}`;
                       const isContextStickied = (allStickiedVideos[key] || []).includes(video.id);
 
+                      const handleRenameFolder = async (folderColor, newName) => {
+                        if (!activePlaylistId) return;
+                        try {
+                          // Keep existing description if present
+                          const currentMeta = allFolderMetadata[folderColor] || {};
+                          const description = currentMeta.description || '';
+
+                          await setFolderMetadata(activePlaylistId, folderColor, newName, description);
+
+                          // Update local state
+                          setAllFolderMetadata(prev => ({
+                            ...prev,
+                            [folderColor]: { ...prev[folderColor], name: newName }
+                          }));
+                        } catch (error) {
+                          console.error('Failed to rename folder:', error);
+                          alert('Failed to rename folder');
+                        }
+                      };
+
+                      // ... (render)
+
                       // Common props for both card types
                       const commonProps = {
                         video,
@@ -1655,6 +1698,7 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
                         isStickied: isContextStickied,
                         playlistId: activePlaylistId,
                         folderMetadata: allFolderMetadata,
+                        onRenameFolder: handleRenameFolder,
                         progress: (() => {
                           const data = videoProgress.get(video.id) || videoProgress.get(extractVideoId(video.video_url));
                           return data ? (typeof data === 'number' ? data : data.percentage) : 0;

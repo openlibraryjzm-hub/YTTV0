@@ -79,6 +79,16 @@ export const getPlaylistItems = async (playlistId) => {
   }
 };
 
+export const getPlaylistItemsPreview = async (playlistId, limit = 4) => {
+  try {
+    const result = await invoke('get_playlist_items_preview', { playlistId, limit });
+    return result || [];
+  } catch (error) {
+    console.error('Error in getPlaylistItemsPreview API:', error);
+    throw error;
+  }
+};
+
 export const getPlaylistsForVideoIds = async (videoIds) => {
   try {
     const result = await invoke('get_playlists_for_video_ids', { videoIds });

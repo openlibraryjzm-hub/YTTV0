@@ -41,6 +41,7 @@ const VideoCard = ({
   isStickied = false,
   playlistId = null,
   folderMetadata = {},
+  onRenameFolder,
   cardStyle = 'youtube', // 'youtube' | 'twitter'
 }) => {
   const { inspectMode } = useLayoutStore();
@@ -543,6 +544,7 @@ const VideoCard = ({
                     currentFolders={videoFolders}
                     quickAssignFolder={quickAssignFolder}
                     folderMetadata={folderMetadata}
+                    onRenameFolder={onRenameFolder}
                     onColorLeftClick={(folderColor) => {
                       if (onStarColorLeftClick) {
                         onStarColorLeftClick(video, folderColor);
@@ -573,6 +575,7 @@ const VideoCard = ({
                   onColorClick={onBulkTagColorClick}
                   playlistId={playlistId}
                   folderMetadata={folderMetadata}
+                  onRenameFolder={onRenameFolder}
                 />
               </div>
             )}

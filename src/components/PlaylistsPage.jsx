@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { createPlaylist, getAllPlaylists, getPlaylistItems, deletePlaylist, deletePlaylistByName, getAllFoldersWithVideos, exportPlaylist, getFoldersForPlaylist, toggleStuckFolder, getAllStuckFolders, getVideosInFolder, getAllVideoProgress, getAllPlaylistMetadata, addVideoToPlaylist, getFolderMetadata } from '../api/playlistApi';
+import { createPlaylist, getAllPlaylists, getPlaylistItems, deletePlaylist, deletePlaylistByName, getAllFoldersWithVideos, exportPlaylist, getFoldersForPlaylist, toggleStuckFolder, getAllStuckFolders, getVideosInFolder, getAllVideoProgress, getAllPlaylistMetadata, addVideoToPlaylist, getFolderMetadata, getPlaylistItemsPreview } from '../api/playlistApi';
 import { getThumbnailUrl } from '../utils/youtubeUtils';
 import { usePlaylistStore } from '../store/playlistStore';
 import { Play, Shuffle, Grid3x3, RotateCcw, Info, ChevronUp, List, Layers } from 'lucide-react';
@@ -364,8 +364,8 @@ const PlaylistsPage = ({ onVideoSelect }) => {
     await Promise.all(playlistsToLoad.map(async (p) => {
       try {
         if (!playlistPreviewVideos[p.id]) { // Only load if missing
-          const items = await getPlaylistItems(p.id);
-          previews[p.id] = items.slice(0, 4);
+          const items = await getPlaylistItemsPreview(p.id, 4);
+          previews[p.id] = items;
         }
       } catch (e) {
         console.error("Failed to load preview for", p.id, e);
@@ -2196,7 +2196,7 @@ const PlaylistsPage = ({ onVideoSelect }) => {
                                     title={video.title}
                                   >
                                     <img
-                                      src={getThumbnailUrl(video.video_id, 'medium')}
+                                      src={video.thumbnail_url || getThumbnailUrl(video.video_id, 'medium')}
                                       alt=""
                                       className="w-full h-full object-cover opacity-80 group-hover/mini:opacity-100 transition-opacity"
                                       onError={(e) => e.target.style.display = 'none'}
