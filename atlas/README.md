@@ -87,6 +87,7 @@ yttv2/
 │   │   ├── SettingsPage.jsx            # [DEPRECATED] Legacy settings hub
 │   │   ├── MainSettingsPage.jsx        # New Settings Hub (Left Square + Right Popup layout)
 │   │   ├── OrbPage.jsx                 # Dedicated Orb configuration page with presets grid
+│   │   ├── AssetManagerPage.jsx        # Unified Asset Manager (Orb, Page, App, Theme)
 │   │   ├── PagePage.jsx                # Dedicated Page Banner and Layer 2 configuration page
 │   │   ├── AppPage.jsx                 # Dedicated App Banner, Color Palette, and Player Borders configuration page
 │   │   ├── YouPage.jsx                 # Dedicated Signature & Profile configuration page
@@ -142,6 +143,7 @@ yttv2/
 │   ├── orb-page.md               # OrbPage configuration documentation
 │   ├── you-page.md               # YouPage configuration documentation
 │   ├── page-page.md              # PagePage configuration documentation
+│   ├── asset-manager-page.md     # Asset Manager Page documentation
 │   ├── app-page.md               # AppPage configuration documentation
 │   ├── ui-cards.md               # Card components
 │   ├── ui-modals.md              # Modal components
@@ -180,6 +182,7 @@ yttv2/
 | **Orb Configuration** | `orb-page.md` | `state-management.md` (configStore) |
 | **Profile & Signature** | `you-page.md` | `state-management.md` (configStore) |
 | **Page Banner & Layer 2** | `page-page.md` | `state-management.md` (configStore), `page-banner.md` |
+| **Asset Manager** | `asset-manager-page.md` | `orb-page.md`, `page-page.md`, `state-management.md` |
 | **App Banner & Borders** | `app-page.md` | `state-management.md` (configStore), `app-banner.md` |
 | **Support Hub** | `ui.md` | `navigation-routing.md`, `playlistStore.js` |
 | **Playlists & Tabs** | `playlist&tab.md` | `database-schema.md`, `api-bridge.md`, `state-management.md` |
@@ -261,6 +264,11 @@ yttv2/
 **Covers**: Contextual page banners on all pages (Videos, Playlists, Likes, Pins, History, PagePage, OrbPage, YouPage, AppPage) with metadata and customization
 **Key Topics**: Compact 332px transparent banner, Layer 2 image positioning, Media Carousel with hover-revealed arrow navigation (continue/pinned/ASCII), Sticky Toolbar integration, custom folder banners, animated patterns, **theme group leader system** (replaces legacy folder theme), **folder conditions (random/first)**, **image destination assignments (pages/folder colors)**, **smooth fade transitions**
 **Cross-References**: See `ui-pages.md` for page components, `ui-layout.md` for layout system, `page-page.md` for configuration
+
+#### `asset-manager-page.md`
+**Covers**: Unified Asset Manager hub (`AssetManagerPage.jsx`)
+**Key Topics**: 4-Tab Navigation (Orb, Page, App, Theme), Content Carousels, Sub-Navigation (Folder/File), Spatial Controls
+**Cross-References**: See `orb-page.md`, `page-page.md` for specific asset details
 
 #### `debug.md`
 **Covers**: Debug bounds, inspect mode, layout debugging, ruler overlay (non-functional)

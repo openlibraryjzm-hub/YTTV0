@@ -13,6 +13,7 @@ import OrbPage from './components/OrbPage';
 import YouPage from './components/YouPage';
 import PagePage from './components/PagePage';
 import AppPage from './components/AppPage';
+import AssetManagerPage from './components/AssetManagerPage';
 import BrowserPage from './components/BrowserPage';
 import MainSettingsPage from './components/MainSettingsPage';
 
@@ -599,6 +600,8 @@ function App() {
             <AppPage onVideoSelect={handleVideoSelect} />
           ) : !showPlaylists && currentPage === 'browser' ? (
             <BrowserPage />
+          ) : !showPlaylists && currentPage === 'assets' ? (
+            <AssetManagerPage />
 
           ) : !showPlaylists && currentPage === 'settings' ? (
             <MainSettingsPage

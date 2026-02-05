@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigationStore } from '../store/navigationStore';
 import { useLayoutStore } from '../store/layoutStore';
 import { usePlaylistStore } from '../store/playlistStore';
-import { ChevronLeft, Heart, Pin, Settings, Clock, Cat, Disc, User, FileText, LayoutGrid, Folder, Play, Globe, Twitter } from 'lucide-react';
+import { ChevronLeft, Heart, Pin, Settings, Clock, Cat, Disc, User, FileText, LayoutGrid, Folder, Play, Globe, Twitter, Package } from 'lucide-react';
 import { THEMES } from '../utils/themes';
 
 const TopNavigation = () => {
@@ -34,6 +34,7 @@ const TopNavigation = () => {
             { id: 'you', label: 'You', icon: <User size={16} /> },
             { id: 'pagepage', label: 'Page', icon: <FileText size={16} /> },
             { id: 'app', label: 'App', icon: <LayoutGrid size={16} /> },
+            { id: 'assets', label: 'Assets', icon: <Package size={16} /> },
             { id: 'settings', label: 'Settings', icon: <Settings size={16} /> },
         ],
         [
@@ -88,8 +89,8 @@ const TopNavigation = () => {
                     <button
                         onClick={toggleVideoCardStyle}
                         className={`flex items-center justify-center w-7 h-7 rounded-full shadow-sm border transition-all hover:scale-105 active:scale-90 ${videoCardStyle === 'twitter'
-                                ? 'bg-sky-500 text-white border-sky-400'
-                                : 'bg-white border-slate-400 text-slate-600 hover:bg-slate-50'
+                            ? 'bg-sky-500 text-white border-sky-400'
+                            : 'bg-white border-slate-400 text-slate-600 hover:bg-slate-50'
                             }`}
                         title={getInspectTitle(`Toggle ${videoCardStyle === 'twitter' ? 'YouTube' : 'Twitter/X'} Style`) || `Toggle ${videoCardStyle === 'twitter' ? 'YouTube' : 'Twitter/X'} Style`}
                     >

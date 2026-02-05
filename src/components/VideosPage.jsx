@@ -23,6 +23,7 @@ import { useConfigStore } from '../store/configStore';
 import { useShuffleStore } from '../store/shuffleStore';
 import { usePaginationStore } from '../store/paginationStore';
 import TweetCard from './TweetCard';
+import AutoTagModal from './AutoTagModal';
 
 
 const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
@@ -804,6 +805,56 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
     setBulkTagMode(false);
   };
 
+  const [showAutoTagModal, setShowAutoTagModal] = useState(false);
+  const [isAutoTagging, setIsAutoTagging] = useState(false);
+
+  const handleAutoTagConfirm = async (handle, videos, folderColor) => {
+    if (!activePlaylistId || !folderColor) return;
+
+    setIsAutoTagging(true);
+    try {
+      let successCount = 0;
+      let errorCount = 0;
+
+      // Assign each video to the folder
+      for (const video of videos) {
+        try {
+          const videoId = video.id; // Correct ID usage
+          const currentFolders = videoFolderAssignments[videoId] || [];
+
+          if (!currentFolders.includes(folderColor)) {
+            await assignVideoToFolder(activePlaylistId, videoId, folderColor);
+
+            // Update local store immediately
+            setVideoFolders(videoId, [...currentFolders, folderColor]);
+            successCount++;
+          }
+        } catch (err) {
+          console.error(`Failed to auto-tag video ${video.id}:`, err);
+          errorCount++;
+        }
+      }
+
+      // Refresh folder view if viewing the target folder
+      if (selectedFolder === folderColor) {
+        const updatedVideos = await getVideosInFolder(activePlaylistId, selectedFolder);
+        setDisplayedVideos(updatedVideos || []);
+      }
+
+      // Artificial delay to show the nice loading state if it was too fast
+      if (successCount < 5) await new Promise(r => setTimeout(r, 500));
+
+      alert(`Auto-tagged ${successCount} videos from ${handle} to folder!${errorCount > 0 ? ` (${errorCount} failed)` : ''}`);
+      setShowAutoTagModal(false);
+
+    } catch (error) {
+      console.error('Auto-tag failed:', error);
+      alert('Auto-tag process failed');
+    } finally {
+      setIsAutoTagging(false);
+    }
+  };
+
   const handlePlaylistSelect = async (playlistId) => {
     if (!selectedVideoForAction || !actionType) return;
 
@@ -1297,6 +1348,15 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
         </div>
       ) : (
         <div className="flex-1 overflow-y-hidden bg-transparent relative">
+          <AutoTagModal
+            isOpen={showAutoTagModal}
+            onClose={() => setShowAutoTagModal(false)}
+            items={activePlaylistItems}
+            videoFolderAssignments={videoFolderAssignments}
+            folderMetadata={allFolderMetadata}
+            onConfirm={handleAutoTagConfirm}
+            isProcessing={isAutoTagging}
+          />
           {/* Page Banner - Always visible for context */}
           {activePlaylistId && (
             <div className="px-4 pt-8">
@@ -1512,11 +1572,16 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
                 {/* Bulk Tag */}
                 <button
                   onClick={() => setBulkTagMode(!bulkTagMode)}
+                  onContextMenu={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setShowAutoTagModal(true);
+                  }}
                   className={`p-1.5 rounded-md transition-all ${bulkTagMode
                     ? 'bg-black text-white border-2 border-black shadow-lg'
                     : 'bg-white text-black hover:bg-gray-100 border-2 border-black'
                     }`}
-                  title={bulkTagMode ? "Exit Bulk Tagging" : "Bulk Tag"}
+                  title={bulkTagMode ? "Exit Bulk Tagging" : "Bulk Tag (Right-click for Auto-Tag)"}
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />

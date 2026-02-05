@@ -19,6 +19,7 @@ import { useConfigStore } from '../store/configStore';
  */
 const AudioVisualizer = ({
   enabled = false,
+  isActive = true, // NEW PROP: Controls audio capture separately from rendering
   orbSize = 154,
   barCount = 113,
   barWidth = 4,
@@ -66,8 +67,8 @@ const AudioVisualizer = ({
     let mounted = true;
 
     const manageCapture = async () => {
-      if (!enabled) {
-        // Stop capture
+      if (!enabled || !isActive) {
+        // Stop capture if disabled OR inactive
         if (isCapturingRef.current) {
           console.log('[AudioVisualizer] Stopping audio capture...');
           try {
@@ -138,11 +139,11 @@ const AudioVisualizer = ({
         setIsCapturing(false);
       }
     };
-  }, [enabled]);
+  }, [enabled, isActive]);
 
   // Listen to audio data events and process
   useEffect(() => {
-    if (!enabled) return;
+    if (!enabled || !isActive) return;
 
     let unlisten = null;
     let eventCount = 0;
@@ -297,7 +298,7 @@ const AudioVisualizer = ({
       }
       clearInterval(cleanupInterval);
     };
-  }, [enabled, barCount, freqMin, freqMax, sensitivity, smoothing, fftSize, updateRate, preAmpGain]);
+  }, [enabled, isActive, barCount, freqMin, freqMax, sensitivity, smoothing, fftSize, updateRate, preAmpGain]);
 
   // Rendering loop
   useEffect(() => {

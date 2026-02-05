@@ -1,8 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { FOLDER_COLORS } from '../utils/folderColors';
 import { usePlaylistStore } from '../store/playlistStore';
-import { Pen, Play, ChevronRight, ChevronLeft, RotateCcw, Clock, Pin, Sparkles, Info, Star, Search, Settings, Layers } from 'lucide-react';
+import { Pen, Play, ChevronRight, ChevronLeft, RotateCcw, Clock, Pin, Sparkles, Info, Star, Search, Settings, Layers, Upload, Grid } from 'lucide-react';
 import { getThumbnailUrl } from '../utils/youtubeUtils';
+import AudioVisualizer from './AudioVisualizer';
 
 
 import UnifiedBannerBackground from './UnifiedBannerBackground';
@@ -128,17 +129,105 @@ const PageBanner = ({ title, description, folderColor, onEdit, videoCount, count
         themeFolderId,
         themeGroupLeaderId,
         themeGroupLeaderFolderId,
-        orbFavorites
+        orbFavorites,
+        // Orb Config
+        isVisualizerEnabled,
+        orbSize,
+        orbImageScale, orbImageScaleW, orbImageScaleH, orbImageXOffset, orbImageYOffset,
+        isSpillEnabled, orbSpill, orbAdvancedMasks, orbMaskRects,
+        customOrbImage
     } = useConfigStore();
 
     const { presets, activePresetId, setActivePreset } = useTabPresetStore();
-    const activePreset = presets.find(p => p.id === activePresetId) || presets[0];
 
     // Create a page key that changes when entering a new page or folder
     // This ensures random selection is consistent for the same page but different for different pages
     const pageKey = React.useMemo(() => {
         return `${currentPlaylistId || 'no-playlist'}-${folderColor || 'no-folder'}-${title || 'no-title'}`;
     }, [currentPlaylistId, folderColor, title]);
+
+    // Orb State & Logic
+    const fileInputRef = useRef(null);
+
+    // Helper to calculate effective orb image (mirroring PlayerController logic)
+    const getEffectiveOrb = () => {
+        // 1. Identify Playlist
+        let playlistName = null;
+        if (currentPlaylistId) {
+            if (allPlaylists) {
+                const p = allPlaylists.find(p => String(p.id) === String(currentPlaylistId));
+                if (p) playlistName = p.name;
+            }
+            if (!playlistName && title && title !== 'Playlist') {
+                playlistName = title;
+            }
+        }
+
+        if (!playlistName) return null;
+
+        // 2. Check Orb Group Override
+        const orbGroup = orbFavorites?.find(f =>
+            f.playlistIds &&
+            (f.playlistIds.includes(playlistName) || (currentPlaylistId && f.playlistIds.includes(String(currentPlaylistId))))
+        );
+
+        if (orbGroup) {
+            // Collect group images
+            let images = [orbGroup];
+            if (orbGroup.groupMembers) {
+                orbGroup.groupMembers.forEach(mid => {
+                    const m = orbFavorites.find(x => x.id === mid);
+                    if (m) images.push(m);
+                });
+            }
+            // Filter by Folder Color
+            if (folderColor && folderColor !== 'all' && folderColor !== 'unsorted') {
+                images = images.filter(img => img.folderColors && img.folderColors.includes(folderColor));
+            }
+            if (images.length > 0) {
+                const seed = pageKey || String(currentPlaylistId || 'default');
+                const randomValue = seededRandom(seed);
+                const idx = Math.floor(randomValue * images.length);
+                const selected = images[idx];
+                if (selected && selected.customOrbImage) {
+                    return {
+                        image: selected.customOrbImage,
+                        scale: selected.orbImageScale || 1, // Store uses 1.0 based scale for orb
+                        xOffset: selected.orbImageXOffset || 0,
+                        yOffset: selected.orbImageYOffset || 0
+                    };
+                }
+            }
+        }
+        return null; // Fallback to global
+    };
+
+    const effectiveOrbParams = React.useMemo(() => getEffectiveOrb(), [currentPlaylistId, allPlaylists, title, orbFavorites, folderColor, pageKey]);
+
+    // Determine source
+    const orbSrc = effectiveOrbParams?.image || customOrbImage;
+    // Fallback to active video thumbnail if no orb image is set, to ensure something shows
+    const finalOrbSrc = orbSrc || (continueVideo ? (continueVideo.thumbnailUrl || getThumbnailUrl(continueVideo.video_id, 'medium')) : null);
+
+    // Determine config
+    const displayScale = effectiveOrbParams ? effectiveOrbParams.scale : (orbImageScale || 1);
+    const displayX = effectiveOrbParams ? effectiveOrbParams.xOffset : (orbImageXOffset || 0);
+    const displayY = effectiveOrbParams ? effectiveOrbParams.yOffset : (orbImageYOffset || 0);
+
+    const handleOrbImageUpload = (e) => {
+        const file = e.target.files[0];
+        if (file && orbControls?.onImageUpload) {
+            // Use passed prop if available (likely from parent page like OrbPage)
+            // But for simple upload, we might need a store action or local state if not provided
+            // If orbControls provides logic, use it.
+            // Otherwise, PageBanner doesn't have setCustomOrbImage from store exposed directly?
+            // Actually I imported setCustomOrbImage? No, I didn't add it to destructuring.
+            // If orbControls is present, use it.
+            orbControls.onImageUpload(e);
+        }
+    };
+
+    const activePreset = presets.find(p => p.id === activePresetId) || presets[0];
 
     // Determine current page type for destination matching
     const pageType = React.useMemo(() => getPageType(title), [title]);
@@ -965,17 +1054,128 @@ const PageBanner = ({ title, description, folderColor, onEdit, videoCount, count
                                             )}
                                         </div>
                                     ) : currentOption === 'ascii' ? (
-                                        <div className="h-[180px] w-[320px] flex items-center justify-center rounded-lg border-2 border-white/20 overflow-hidden">
-                                            {/* Always show Tab Presets on Playlists page, ASCII on other pages */}
-                                            {displayAvatar && displayAvatar.includes('\n') ? (
-                                                <pre className="font-mono text-[5px] leading-none whitespace-pre text-white/90 drop-shadow-md select-none max-w-full max-h-full" style={{ textShadow: '-0.5px -0.5px 0 #000, 0.5px -0.5px 0 #000, -0.5px 0.5px 0 #000, 0.5px 0.5px 0 #000, 0 1px 2px rgba(0,0,0,1)' }}>
-                                                    {displayAvatar}
-                                                </pre>
-                                            ) : (
-                                                <div className="font-mono text-xl font-bold text-white/90 drop-shadow-md whitespace-nowrap max-w-full truncate px-2" style={{ textShadow: '-2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 2px 2px 0 #000, 0 4px 8px rgba(0,0,0,0.8)' }}>
-                                                    {displayAvatar}
+                                        <div className="h-[180px] w-[320px] flex items-center justify-center relative group/orb z-0 overflow-visible">
+                                            {/* SVG ClipPath Generator for Partial Spillover */}
+                                            <svg width="0" height="0" className="absolute pointer-events-none">
+                                                <defs>
+                                                    <clipPath id="bannerOrbClipPath" clipPathUnits="objectBoundingBox">
+                                                        <circle cx="0.5" cy="0.5" r="0.5" />
+                                                        {isSpillEnabled && orbSpill.tl && (
+                                                            orbAdvancedMasks?.tl
+                                                                ? <rect x={orbMaskRects?.tl.x / 100} y={orbMaskRects?.tl.y / 100} width={orbMaskRects?.tl.w / 100} height={orbMaskRects?.tl.h / 100} />
+                                                                : <rect x="-50" y="-50" width="50.5" height="50.5" />
+                                                        )}
+                                                        {isSpillEnabled && orbSpill.tr && (
+                                                            orbAdvancedMasks?.tr
+                                                                ? <rect x={orbMaskRects?.tr.x / 100} y={orbMaskRects?.tr.y / 100} width={orbMaskRects?.tr.w / 100} height={orbMaskRects?.tr.h / 100} />
+                                                                : <rect x="0.5" y="-50" width="50.5" height="50.5" />
+                                                        )}
+                                                        {isSpillEnabled && orbSpill.bl && (
+                                                            orbAdvancedMasks?.bl
+                                                                ? <rect x={orbMaskRects?.bl.x / 100} y={orbMaskRects?.bl.y / 100} width={orbMaskRects?.bl.w / 100} height={orbMaskRects?.bl.h / 100} />
+                                                                : <rect x="-50" y="0.5" width="50.5" height="50.5" />
+                                                        )}
+                                                        {isSpillEnabled && orbSpill.br && (
+                                                            orbAdvancedMasks?.br
+                                                                ? <rect x={orbMaskRects?.br.x / 100} y={orbMaskRects?.br.y / 100} width={orbMaskRects?.br.w / 100} height={orbMaskRects?.br.h / 100} />
+                                                                : <rect x="0.5" y="0.5" width="50.5" height="50.5" />
+                                                        )}
+                                                    </clipPath>
+                                                </defs>
+                                            </svg>
+
+                                            {/* Visualizer and Orb Wrapper - Scaled down slightly to fit better if needed, but trying 1.0 first */}
+                                            <div className="flex items-center justify-center relative">
+                                                <AudioVisualizer
+                                                    enabled={isVisualizerEnabled}
+                                                    isActive={false} // Static mode
+                                                    orbSize={orbSize}
+                                                    barCount={113}
+                                                    barWidth={4}
+                                                    radius={76}
+                                                    radiusY={76}
+                                                    maxBarLength={76}
+                                                    minBarLength={7}
+                                                    colors={[255, 255, 255, 255]}
+                                                    updateRate={16}
+                                                />
+                                                <div
+                                                    className={`rounded-full bg-sky-50 backdrop-blur-3xl shadow-2xl flex items-center justify-center transition-all relative overflow-visible z-20`}
+                                                    style={{ width: `${orbSize}px`, height: `${orbSize}px` }}
+                                                >
+                                                    {/* IMAGE LAYER */}
+                                                    <div className="absolute inset-0 pointer-events-none transition-all duration-500 flex items-center justify-center z-40" style={{ clipPath: 'url(#bannerOrbClipPath)', overflow: 'visible' }}>
+                                                        <img
+                                                            src={finalOrbSrc || 'https://picsum.photos/seed/orb/200/200'}
+                                                            alt="Orb"
+                                                            className="max-w-none transition-all duration-500 bg-black/20"
+                                                            style={{
+                                                                width: isSpillEnabled ? `${orbSize * displayScale * orbImageScaleW}px` : '100%',
+                                                                height: isSpillEnabled ? `${orbSize * displayScale * orbImageScaleH}px` : '100%',
+                                                                transform: isSpillEnabled ? `translate(${displayX}px, ${displayY}px)` : 'none',
+                                                                objectFit: isSpillEnabled ? 'contain' : 'cover'
+                                                            }}
+                                                        />
+                                                    </div>
+
+                                                    {/* Glass Overlays */}
+                                                    <div className="absolute inset-0 z-10 overflow-hidden rounded-full pointer-events-none"><div className="absolute inset-0 bg-sky-200/10" /></div>
+                                                    <div className="absolute inset-0 bg-gradient-to-tr from-white/30 via-transparent to-transparent opacity-60 z-10 pointer-events-none rounded-full" />
+
+                                                    {/* Controls (visible on hover) */}
+                                                    <input type="file" ref={fileInputRef} onChange={handleOrbImageUpload} accept="image/*" className="hidden" />
+
+                                                    {/* Center Upload Button */}
+                                                    <button
+                                                        className="absolute left-1/2 top-0 -translate-x-1/2 -translate-y-1/2 rounded-full flex items-center justify-center bg-white shadow-xl hover:scale-110 active:scale-95 group/btn z-50 border-2 border-sky-100 opacity-0 group-hover/orb:opacity-100 transition-all duration-300"
+                                                        style={{ width: `28px`, height: `28px` }}
+                                                        onClick={(e) => { e.stopPropagation(); fileInputRef.current?.click(); }}
+                                                        title="Upload orb image"
+                                                    >
+                                                        <Upload size={16} className="text-sky-500" strokeWidth={3} />
+                                                    </button>
+
+                                                    {/* Top Right: Spill */}
+                                                    <button
+                                                        className="absolute rounded-full flex items-center justify-center bg-white shadow-xl hover:scale-110 active:scale-95 group/btn z-50 border-2 border-sky-50 opacity-0 group-hover/orb:opacity-100 transition-all duration-300"
+                                                        style={{ top: '15%', right: '15%', width: `28px`, height: `28px` }}
+                                                        onClick={(e) => { e.stopPropagation(); if (orbControls && orbControls.onToggleSpill) orbControls.onToggleSpill(e); }}
+                                                        title="Toggle Spill"
+                                                    >
+                                                        <Pen size={14} className="text-slate-800" strokeWidth={2.5} />
+                                                    </button>
+
+                                                    {/* Bottom Right: Settings */}
+                                                    <button
+                                                        className="absolute rounded-full flex items-center justify-center bg-white shadow-xl hover:scale-110 active:scale-95 group/btn z-50 border-2 border-sky-50 opacity-0 group-hover/orb:opacity-100 transition-all duration-300"
+                                                        style={{ bottom: '15%', right: '15%', width: `28px`, height: `28px` }}
+                                                        onClick={(e) => { e.stopPropagation(); if (onEdit) onEdit(); }}
+                                                        title="Settings"
+                                                    >
+                                                        <Settings size={14} className="text-slate-800" strokeWidth={2.5} />
+                                                    </button>
+
+                                                    {/* Bottom Left: Layers (Placeholder) */}
+                                                    <button
+                                                        className="absolute rounded-full flex items-center justify-center bg-white shadow-xl hover:scale-110 active:scale-95 group/btn z-50 border-2 border-sky-50 opacity-0 group-hover/orb:opacity-100 transition-all duration-300"
+                                                        style={{ bottom: '15%', left: '15%', width: `28px`, height: `28px` }}
+                                                        onClick={(e) => { e.stopPropagation(); /* No action */ }}
+                                                        title="Layers"
+                                                    >
+                                                        <Layers size={14} className="text-slate-800" strokeWidth={2.5} />
+                                                    </button>
+
+                                                    {/* Top Left: Menu (Placeholder) */}
+                                                    <button
+                                                        className="absolute rounded-full flex items-center justify-center bg-white shadow-xl hover:scale-110 active:scale-95 group/btn z-50 border-2 border-sky-50 opacity-0 group-hover/orb:opacity-100 transition-all duration-300"
+                                                        style={{ top: '15%', left: '15%', width: `28px`, height: `28px` }}
+                                                        onClick={(e) => { e.stopPropagation(); /* No action */ }}
+                                                        title="Menu"
+                                                    >
+                                                        <Grid size={14} className="text-slate-800" strokeWidth={2.5} />
+                                                    </button>
                                                 </div>
-                                            )}
+                                            </div>
                                         </div>
                                     ) : activeVideo && (
                                         <div className="relative h-[180px] w-[320px] rounded-lg overflow-hidden shadow-lg border-2 border-black">
