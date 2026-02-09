@@ -400,4 +400,9 @@ For detailed information about the application's theme system and recent color c
   - Added **Folder Renaming** functionality directly to the sticky color grid.
 - **Pin System Fix**: 
   - Resolved a bug causing duplicate pins in the PinStore.
+- **Asset Manager Enhancements**:
+  - **Larger Orb Carousel**: Increased Orb preset size to 200px for better visibility, matching the Orb Page design.
+  - **Layout Optimization**: Removed "Folder/File" sub-navigation to maximize vertical space.
+  - **Scrollable Interface**: Enabled vertical scrolling and minimum height for the carousel to prevent items from being cut off.
+  - **Simplified Visualizer**: Streamlined the Orb Spill Visualizer by hiding the image preview while keeping mask controls functional.
 

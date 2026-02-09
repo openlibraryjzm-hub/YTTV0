@@ -10,8 +10,10 @@ This page replaces scattered configuration screens with a cohesive **4-tab workf
 
 -   **Unified 4-Tab Navigation**: Seamlessly switch between **Orb**, **Page**, **App**, and **Theme** contexts.
 -   **Contextual Content Carousel**: Displays relevant assets (e.g., Orb Presets, Page Banners) based on the active tab.
--   **Sub-Navigation (View Modes)**: Toggle between **Folder** (Categories/Groupings) and **File** (Individual Assets) views.
+    -   **Orb Tab**: Features a horizontal carousel with **Spill Reflecting** visuals, matching the live Orb menu appearance.
+
 -   **Spatial Configuration**: Precise controls for positioning assets (Top-Left, Top-Right, etc.) and fine-tuning coordinates.
+    -   **Orb Config**: Dedicated **Spill Visualizer** and **Advanced Crop** integration.
 -   **Property Adjustments**: Global controls for **Scale**, **Opacity**, and **Offsets**.
 
 ---
@@ -22,7 +24,7 @@ The page is organized into three distinct vertical zones:
 
 ### 1. Header & Navigation (Zone 0)
 Located at the very top of the page, this zone contains the primary navigation:
--   **Orb Tab**: Manage generic and custom Orbs.
+-   **Orb Tab**: Manage generic and custom Orbs, including advanced spill and crop settings.
 -   **Page Tab**: Manage Page Banners (Layer 2 images) and their folder associations.
 -   **App Tab**: (Placeholder) Future home for application icons and window assets.
 -   **Theme Tab**: (Placeholder) Future home for global color themes and styling.
@@ -35,20 +37,31 @@ Directly below the navigation is a **visual-only** instance of the `PageBanner`.
 
 ### 3. Content Carousel (Zone 2)
 The main interactive area for browsing assets.
--   **Sub-Navigation**: A toggle bar between **Folder** view (default) and **File** view (currently visual-only).
 -   **Dynamic Content**:
-    -   **Active Tab = Orb**: Displays the **Orb Presets Carousel** (derived from `orbFavorites`). Users can click a preset to apply it.
+    -   **Active Tab = Orb**: Displays the **Orb Presets Carousel** (derived from `orbFavorites`).
+        -   **Spill Reflection**: Presets display their actual spill configuration (elements breaking the circle bounds) exactly as they appear in the top application menu.
+        -   **Hover Actions**: Quick access to **Folder Assignments**, **Playlist Overrides**, and **Delete**.
     -   **Active Tab = Page**: Displays the **Page Banners Carousel** (derived from `layer2Folders`). Flattens generic folders into a browsable image list.
     -   **App/Theme**: Displays "Coming Soon" placeholders.
 
 ### 4. Configuration Panel (Zone 3)
 A fixed-height panel at the bottom for fine-tuning the selected asset.
--   **Spatial Controls**: a 2x2 grid representing screen quadrants (TL, TR, BL, BR) for quick anchor positioning.
--   **Property Controls**: Sliders and inputs for:
-    -   **Scale**: 0.1x to 2.0x
-    -   **Opacity**: 0% to 100%
-    -   **X/Y Offsets**: Pixel-perfect adjustment.
--   **Context Selectors**: Dropdowns for "Theme" (Midnight, Daylight, etc.) and "Context" (Global vs Local).
+
+#### For Orb Tab:
+-   **Spill Visualizer**: A graphical representation of the Orb with toggleable quadrants (TL, TR, BL, BR) to enable/disable spill masked areas.
+    -   **Advanced Crop**: A button to open the **OrbCropModal** for precise mask editing per quadrant.
+    -   **Upload/Remove**: Direct controls to upload a new source image or remove the current one.
+    -   **Note**: The spill visualizer intentionally hides the image opacity to focus on the mask shape, though the clip path remains active.
+-   **Property Sliders**:
+    -   **Scale**: 0.5x to 3.0x (with store persistence).
+    -   **X-Offset**: -100px to +100px.
+    -   **Y-Offset**: -100px to +100px.
+    -   **Save Preset**: A primary action to save the current configuration as a new preset. The carousel items are now larger (200px) for better visibility.
+
+#### For Page/App/Theme Tabs:
+-   **Spatial Controls**: (Legacy/Standard) A 2x2 grid representing screen quadrants for quick anchor positioning.
+-   **Property Controls**: Sliders and inputs for Scale, Opacity, and generic Offsets.
+-   **Context Selectors**: Dropdowns for "Theme" and "Context".
 
 ---
 
@@ -59,16 +72,19 @@ The page utilizes local state for interface control and global stores for data p
 ### Local State (`AssetManagerPage.jsx`)
 -   `activeTab`: Strings `'orb' | 'page' | 'app' | 'theme'`. Determines the top-level context.
 -   `browserMode`: Strings `'folder' | 'file'`. Determines the sub-view mode for the carousel.
--   `selectedQuadrant`: Strings `'TL' | 'TR' | 'BL' | 'BR'`. Visual state for the position selector.
+-   `isCropModalOpen`: Boolean. Controls the visibility of the `OrbCropModal`.
+-   `hoveredFavoriteId`, `folderAssignmentOpenId`, `playlistAssignmentOpenId`: ID strings. Manage hover and dropdown states for Orb presets.
 
 ### Global Dependencies (`useConfigStore`)
 -   **Data Sources**:
     -   `layer2Folders`: Source for Page Banner images.
     -   `orbFavorites`: Source for Orb Presets.
+    -   `orbSpill`, `orbImageScale`, `orbImageXOffset`, `orbImageYOffset`, `orbAdvancedMasks`, `orbMaskRects`: Source for live Orb configuration.
 -   **Actions**:
     -   `applyLayer2Image(img)`: Sets the global background/banner image.
-    -   `setPageBannerBgColor(color)`: Updates the banner background color.
     -   `applyOrbFavorite(item)`: Sets the global Orb configuration.
+    -   `setOrbSpill`, `setOrbImageScale`, etc.: Direct setters for Orb properties.
+    -   `updateOrbFavoriteFolders`, `updateOrbFavoritePlaylists`: Manage associations.
 
 ---
 
@@ -77,4 +93,3 @@ The page utilizes local state for interface control and global stores for data p
 1.  **App Tab Implementation**: Add management for application dock icons, tray icons, and window decorations.
 2.  **Theme Tab Implementation**: Expose a color token editor for global theme customization.
 3.  **File View Integration**: Activate the 'File' browser mode to allow managing raw assets (uploads/deletes) independent of their logical folders.
-4.  **Advanced Spatial Controls**: Link the quadrant selector to actual store values (`orbImageXOffset`, etc.).

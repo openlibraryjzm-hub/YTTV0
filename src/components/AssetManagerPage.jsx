@@ -1,5 +1,9 @@
-import React, { useState } from 'react';
-import { ChevronLeft, Sliders, Box, Layers, Grid, Palette, Layout, FileImage, Folder, Plus, Smile, Check } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { ChevronLeft, Sliders, Box, Layers, Grid, Palette, Layout, FileImage, Folder, Plus, Smile, Check, Settings, Trash2, Music, X, ZoomIn, Move, Maximize, MousePointer2, LayoutGrid } from 'lucide-react';
+import OrbGroupColumn from './OrbGroupColumn';
+import OrbCropModal from './OrbCropModal';
+import { usePlaylistStore } from '../store/playlistStore';
+import { FOLDER_COLORS } from '../utils/folderColors';
 import { useLayoutStore } from '../store/layoutStore';
 import { useConfigStore } from '../store/configStore';
 import PageBanner from './PageBanner';
@@ -9,16 +13,132 @@ const AssetManagerPage = () => {
     const {
         layer2Folders,
         orbFavorites,
-        customPageBannerImage2,
         customOrbImage,
+        setCustomOrbImage, // Added setter
         applyLayer2Image,
         setPageBannerBgColor,
-        applyOrbFavorite
+        applyOrbFavorite,
+        // Orb Config State
+        isSpillEnabled, setIsSpillEnabled,
+        orbSpill, setOrbSpill,
+        orbImageScale, setOrbImageScale,
+        orbImageXOffset, setOrbImageXOffset,
+        orbImageYOffset, setOrbImageYOffset,
+        addOrbFavorite,
+        removeOrbFavorite,
+        updateOrbFavoriteFolders,
+        updateOrbFavoritePlaylists,
+        assignOrbToGroup,
+        orbAdvancedMasks, setOrbAdvancedMasks,
+        orbMaskRects, setOrbMaskRects,
     } = useConfigStore();
+
+    const allPlaylists = usePlaylistStore(state => state.allPlaylists);
+
     // Local state for UI toggles (visual only for now)
     const [activeTab, setActiveTab] = useState('orb'); // 'orb' | 'page' | 'app' | 'theme'
     const [browserMode, setBrowserMode] = useState('folder'); // 'folder' | 'file'
-    const [selectedQuadrant, setSelectedQuadrant] = useState(null);
+    // const [selectedQuadrant, setSelectedQuadrant] = useState(null); // Replaced by spillEditor logic
+
+    // Orb Page Specific State
+    const [hoveredFavoriteId, setHoveredFavoriteId] = useState(null);
+    const [folderAssignmentOpenId, setFolderAssignmentOpenId] = useState(null);
+    const [playlistAssignmentOpenId, setPlaylistAssignmentOpenId] = useState(null);
+    const [columnLeaderId, setColumnLeaderId] = useState(null);
+    const [isCropModalOpen, setIsCropModalOpen] = useState(false);
+
+    const horizontalScrollRef = useRef(null);
+
+    const handleOrbImageUpload = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setCustomOrbImage(reader.result);
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+
+    const handleSaveCurrentOrbAsFavorite = () => {
+        if (!customOrbImage) return;
+        addOrbFavorite({
+            customOrbImage,
+            isSpillEnabled,
+            // Ensure spill state is captured
+            orbSpill: { ...orbSpill },
+            orbImageScale,
+            orbImageXOffset,
+            orbImageYOffset,
+            // Advanced masks state
+            orbAdvancedMasks: { ...orbAdvancedMasks },
+            orbMaskRects: JSON.parse(JSON.stringify(orbMaskRects)), // Deep copy
+        });
+    };
+
+    // Close menus when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (e) => {
+            if (folderAssignmentOpenId && !e.target.closest('.folder-assignment-menu')) {
+                setFolderAssignmentOpenId(null);
+            }
+            if (playlistAssignmentOpenId && !e.target.closest('.playlist-assignment-menu')) {
+                setPlaylistAssignmentOpenId(null);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, [folderAssignmentOpenId, playlistAssignmentOpenId]);
+
+    // Horizontal Scroll Wheel Handler
+    useEffect(() => {
+        // Only attach when orb tab is active
+        if (activeTab !== 'orb') return;
+
+        const container = horizontalScrollRef.current;
+        if (!container) return;
+
+        const handleWheel = (e) => {
+            const hasHorizontalScroll = container.scrollWidth > container.clientWidth;
+            if (hasHorizontalScroll) {
+                e.preventDefault();
+                e.stopPropagation();
+                container.scrollLeft += e.deltaY;
+            }
+        };
+
+        container.addEventListener('wheel', handleWheel, { passive: false });
+        return () => container.removeEventListener('wheel', handleWheel);
+    }, [activeTab]);
+
+    const toggleSpillQuadrant = (q) => {
+        setOrbSpill({ ...orbSpill, [q]: !orbSpill[q] });
+    };
+
+    const toggleFolderAssignment = (favoriteId, folderColorId) => {
+        const favorite = orbFavorites.find(f => f.id === favoriteId);
+        if (!favorite) return;
+
+        const currentFolders = favorite.folderColors || [];
+        const newFolders = currentFolders.includes(folderColorId)
+            ? currentFolders.filter(id => id !== folderColorId)
+            : [...currentFolders, folderColorId];
+
+        updateOrbFavoriteFolders(favoriteId, newFolders);
+    };
+
+    const togglePlaylistAssignment = (favoriteId, playlistName) => {
+        const favorite = orbFavorites.find(f => f.id === favoriteId);
+        if (!favorite) return;
+
+        const currentPlaylists = favorite.playlistIds || [];
+        const newPlaylists = currentPlaylists.includes(playlistName)
+            ? currentPlaylists.filter(name => name !== playlistName)
+            : [...currentPlaylists, playlistName];
+
+        updateOrbFavoritePlaylists(favoriteId, newPlaylists);
+    };
+
 
     // Mock data for carousel (not used but kept for now)
     const folders = [
@@ -45,7 +165,7 @@ const AssetManagerPage = () => {
     ];
 
     return (
-        <div className="h-full w-full bg-[#e0f2fe] flex flex-col p-4 gap-4 overflow-hidden">
+        <div className="h-full w-full bg-[#e0f2fe] flex flex-col p-4 gap-4 overflow-y-auto custom-scrollbar">
 
             {/* Header: 4-Tab Navigation (Centered at top) */}
             <div className="flex items-center justify-center px-1">
@@ -82,27 +202,9 @@ const AssetManagerPage = () => {
             </div>
 
             {/* --- ZONE 2: CAROUSEL (Content Navigation) --- */}
-            <div className="flex-1 flex flex-col gap-3 min-h-0 relative group/carousel">
-                {/* Sub-Navigation: Folder / File (Visual Only for now) */}
-                <div className="flex items-center px-2 gap-4 border-b border-white/40 mx-2">
-                    <button
-                        onClick={() => setBrowserMode('folder')}
-                        className={`flex items-center gap-1.5 py-2 text-xs font-bold uppercase tracking-wider border-b-2 transition-all ${browserMode === 'folder'
-                            ? 'border-sky-500 text-sky-700'
-                            : 'border-transparent text-slate-400 hover:text-slate-600'
-                            }`}
-                    >
-                        <Folder size={14} className={browserMode === 'folder' ? 'fill-sky-500/20' : ''} />
-                        Folder
-                    </button>
-                    <button
-                        className="flex items-center gap-1.5 py-2 text-xs font-bold uppercase tracking-wider border-b-2 border-transparent text-slate-300 cursor-not-allowed"
-                        title="File view coming soon"
-                    >
-                        <FileImage size={14} />
-                        File
-                    </button>
-                </div>
+            <div className="flex-1 flex flex-col gap-3 min-h-[300px] shrink-0 relative group/carousel">
+                {/* Sub-Navigation: Folder / File (Removed to maximize space) */}
+                {/* <div className="flex items-center px-2 gap-4 border-b border-white/40 mx-2">...</div> */}
 
                 {/* SVG Definitions for Orb Clip Paths */}
                 {orbFavorites.length > 0 && (
@@ -142,8 +244,8 @@ const AssetManagerPage = () => {
                 )}
 
                 {/* Scrollable Viewport */}
-                <div className="flex-1 overflow-x-auto overflow-y-hidden no-scrollbar px-1">
-                    <div className="flex gap-4 h-full pb-2 w-max">
+                <div className="flex-1 overflow-x-auto overflow-y-visible px-1 custom-scrollbar">
+                    <div className="flex gap-4 h-full pb-4 w-max items-center">
                         {/* --- PAGE TAB: FOLDERS / LAYERS --- */}
                         {activeTab === 'page' && (
                             (() => {
@@ -228,7 +330,7 @@ const AssetManagerPage = () => {
                             })()
                         )}
 
-                        {/* --- ORB TAB: PRESETS --- */}
+                        {/* --- ORB TAB: PRESETS (With Horizontal Scroll & Spill Reflection) --- */}
                         {activeTab === 'orb' && (
                             (() => {
                                 if (orbFavorites.length === 0) {
@@ -241,59 +343,225 @@ const AssetManagerPage = () => {
                                     );
                                 }
 
-                                return orbFavorites.map((item) => {
-                                    const isCurrent = customOrbImage === item.customOrbImage; // Simple check
+                                return (
+                                    <div
+                                        ref={horizontalScrollRef}
+                                        className="flex gap-4 h-full pb-2 px-2 overflow-x-auto overflow-y-visible"
+                                        style={{
+                                            width: '100%',
+                                            scrollbarWidth: 'thin',
+                                            paddingTop: '12px'
+                                        }}
+                                    >
+                                        {orbFavorites.map((favorite) => {
+                                            const assignedFolders = favorite.folderColors || [];
+                                            const isCurrent = customOrbImage === favorite.customOrbImage; // Simple check
 
-                                    return (
-                                        <div key={item.id} className="relative group flex flex-col items-center gap-2" style={{ width: '120px', flexShrink: 0 }}>
-                                            <button
-                                                onClick={() => applyOrbFavorite(item)}
-                                                className={`w-24 h-24 relative rounded-full border-4 transition-all duration-300 ${isCurrent
-                                                    ? 'border-sky-500 ring-4 ring-sky-200 shadow-xl scale-110 z-10'
-                                                    : 'border-white hover:border-sky-300 shadow-lg hover:shadow-xl hover:scale-105'
-                                                    }`}
-                                                title={item.name}
-                                            >
-                                                {/* Image Layer with Spill Effect */}
+                                            return (
                                                 <div
-                                                    className="absolute inset-0 pointer-events-none flex items-center justify-center overflow-visible"
+                                                    key={favorite.id}
+                                                    className="relative group flex flex-col items-center"
                                                     style={{
-                                                        clipPath: item.isSpillEnabled && item.orbSpill ? `url(#assetOrbClipPath-${item.id})` : 'circle(50% at 50% 50%)',
+                                                        zIndex: folderAssignmentOpenId === favorite.id || playlistAssignmentOpenId === favorite.id ? 100 : 'auto',
+                                                        width: '200px',
+                                                        flexShrink: 0
+                                                    }}
+                                                    onMouseEnter={() => setHoveredFavoriteId(favorite.id)}
+                                                    onMouseLeave={() => {
+                                                        setHoveredFavoriteId(null);
+                                                        // Close menus handled by click outside listener, but helps for immediate feedback
                                                     }}
                                                 >
-                                                    <img
-                                                        src={item.customOrbImage}
-                                                        alt=""
-                                                        className="max-w-none transition-all duration-300"
-                                                        style={{
-                                                            width: item.isSpillEnabled ? `calc(100% * ${item.orbImageScale || 1})` : '100%',
-                                                            height: item.isSpillEnabled ? `calc(100% * ${item.orbImageScale || 1})` : '100%',
-                                                            transform: item.isSpillEnabled ? `translate(${(item.orbImageXOffset || 0) * 0.3}px, ${(item.orbImageYOffset || 0) * 0.3}px)` : 'none',
-                                                            objectFit: item.isSpillEnabled ? 'contain' : 'cover'
-                                                        }}
-                                                    />
-                                                </div>
+                                                    <div className="relative w-full aspect-square mx-auto overflow-visible">
+                                                        <button
+                                                            onClick={() => applyOrbFavorite(favorite)}
+                                                            className={`w-full h-full rounded-full border-4 transition-all duration-200 relative overflow-visible bg-sky-50 ${isCurrent
+                                                                ? 'border-sky-500 ring-4 ring-sky-200 shadow-xl scale-110 z-10'
+                                                                : 'border-slate-200 hover:border-sky-300 hover:shadow-lg hover:scale-105'
+                                                                }`}
+                                                            title={favorite.name}
+                                                        >
+                                                            {/* Image Layer with Spill Reflecting Effect */}
+                                                            <div
+                                                                className="absolute inset-0 pointer-events-none transition-all duration-300 flex items-center justify-center z-40"
+                                                                style={{
+                                                                    clipPath: favorite.isSpillEnabled && favorite.orbSpill ? `url(#assetOrbClipPath-${favorite.id})` : 'circle(50% at 50% 50%)',
+                                                                    overflow: 'visible'
+                                                                }}
+                                                            >
+                                                                <img
+                                                                    src={favorite.customOrbImage}
+                                                                    alt={favorite.name}
+                                                                    className="max-w-none transition-all duration-300"
+                                                                    style={{
+                                                                        width: favorite.isSpillEnabled ? `calc(100% * ${favorite.orbImageScale || 1})` : '100%',
+                                                                        height: favorite.isSpillEnabled ? `calc(100% * ${favorite.orbImageScale || 1})` : '100%',
+                                                                        transform: favorite.isSpillEnabled ? `translate(${(favorite.orbImageXOffset || 0) * 0.3}px, ${(favorite.orbImageYOffset || 0) * 0.3}px)` : 'none',
+                                                                        objectFit: favorite.isSpillEnabled ? 'contain' : 'cover'
+                                                                    }}
+                                                                />
+                                                            </div>
 
-                                                {/* Active Check */}
-                                                {isCurrent && (
-                                                    <div className="absolute inset-0 flex items-center justify-center bg-black/20 rounded-full z-20 backdrop-blur-[1px]">
-                                                        <Check size={28} className="text-white drop-shadow-xl" strokeWidth={3} />
+                                                            {/* Glass Overlay */}
+                                                            <div className="absolute inset-0 z-10 overflow-hidden rounded-full pointer-events-none">
+                                                                <div className="absolute inset-0 bg-sky-200/10" />
+                                                            </div>
+
+                                                            {/* Active Check */}
+                                                            {isCurrent && (
+                                                                <div className="absolute inset-0 flex items-center justify-center bg-black/20 rounded-full z-20 backdrop-blur-[1px]">
+                                                                    <Check size={28} className="text-white drop-shadow-xl" strokeWidth={3} />
+                                                                </div>
+                                                            )}
+                                                        </button>
+
+                                                        {/* Spill Indicator */}
+                                                        {favorite.isSpillEnabled && (
+                                                            <div className="absolute top-0 right-0 bg-sky-500 text-white text-[7px] font-bold px-1 py-0.5 rounded-full uppercase tracking-wider shadow-sm z-30">
+                                                                Spill
+                                                            </div>
+                                                        )}
+
+                                                        {/* Hover Actions (Folder, Playlist, etc.) */}
+                                                        {hoveredFavoriteId === favorite.id && (
+                                                            <div className="absolute -top-1 -left-1 flex flex-col gap-1 z-[100]">
+                                                                {/* Folder Assign */}
+                                                                <button
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        setFolderAssignmentOpenId(folderAssignmentOpenId === favorite.id ? null : favorite.id);
+                                                                    }}
+                                                                    className={`w-5 h-5 rounded-full flex items-center justify-center shadow-md transition-all ${assignedFolders.length > 0
+                                                                        ? 'bg-sky-500 hover:bg-sky-600 text-white'
+                                                                        : 'bg-slate-400 hover:bg-slate-500 text-white'
+                                                                        }`}
+                                                                    title="Assign to folders"
+                                                                >
+                                                                    <Folder size={10} />
+                                                                </button>
+
+                                                                {/* Playlist Assign */}
+                                                                <button
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        setPlaylistAssignmentOpenId(playlistAssignmentOpenId === favorite.id ? null : favorite.id);
+                                                                    }}
+                                                                    className={`w-5 h-5 rounded-full flex items-center justify-center shadow-md transition-all ${favorite.playlistIds?.length > 0
+                                                                        ? 'bg-amber-500 hover:bg-amber-600 text-white'
+                                                                        : 'bg-slate-400 hover:bg-slate-500 text-white'
+                                                                        }`}
+                                                                    title="Assign to Playlists"
+                                                                >
+                                                                    <Music size={10} />
+                                                                </button>
+
+                                                                {/* Folder Menu */}
+                                                                {folderAssignmentOpenId === favorite.id && (
+                                                                    <div className="folder-assignment-menu absolute top-6 left-0 bg-white border-2 border-slate-200 rounded-lg p-2 shadow-xl z-[100] min-w-[160px]">
+                                                                        <div className="text-[9px] font-bold uppercase text-slate-400 mb-2">Assign to Folders</div>
+                                                                        <div className="grid grid-cols-4 gap-1">
+                                                                            {FOLDER_COLORS.map((color) => {
+                                                                                const isAssigned = assignedFolders.includes(color.id);
+                                                                                return (
+                                                                                    <button
+                                                                                        key={color.id}
+                                                                                        onClick={(e) => {
+                                                                                            e.stopPropagation();
+                                                                                            toggleFolderAssignment(favorite.id, color.id);
+                                                                                        }}
+                                                                                        className={`w-6 h-6 rounded border-2 transition-all ${isAssigned
+                                                                                            ? 'border-black ring-2 ring-sky-300 scale-110'
+                                                                                            : 'border-slate-300 hover:border-slate-400'
+                                                                                            }`}
+                                                                                        style={{ backgroundColor: color.hex }}
+                                                                                    >
+                                                                                        {isAssigned && (
+                                                                                            <Check size={10} className="text-white drop-shadow-md mx-auto" />
+                                                                                        )}
+                                                                                    </button>
+                                                                                );
+                                                                            })}
+                                                                        </div>
+                                                                    </div>
+                                                                )}
+
+                                                                {/* Playlist Menu */}
+                                                                {playlistAssignmentOpenId === favorite.id && (
+                                                                    <div className="playlist-assignment-menu absolute top-6 left-6 bg-white border-2 border-slate-200 rounded-lg p-2 shadow-xl z-[100] min-w-[180px] max-h-[200px] overflow-hidden flex flex-col">
+                                                                        <div className="text-[9px] font-bold uppercase text-slate-400 mb-2 px-1">Assign to Playlists</div>
+                                                                        <div className="overflow-y-auto flex-1 space-y-1 pr-1 custom-scrollbar">
+                                                                            {allPlaylists.map((playlist) => {
+                                                                                const isAssigned = favorite.playlistIds?.includes(playlist.id);
+                                                                                return (
+                                                                                    <button
+                                                                                        key={playlist.id}
+                                                                                        onClick={(e) => {
+                                                                                            e.stopPropagation();
+                                                                                            togglePlaylistAssignment(favorite.id, playlist.id);
+                                                                                        }}
+                                                                                        className={`w-full text-left px-2 py-1 rounded-md text-[9px] font-bold transition-all flex items-center justify-between ${isAssigned
+                                                                                            ? 'bg-amber-50 text-amber-700 border border-amber-200'
+                                                                                            : 'hover:bg-slate-50 text-slate-600 border border-transparent'
+                                                                                            }`}
+                                                                                    >
+                                                                                        <span className="truncate flex-1">{playlist.name}</span>
+                                                                                        {isAssigned && <Check size={10} className="text-amber-500 ml-2" />}
+                                                                                    </button>
+                                                                                );
+                                                                            })}
+                                                                        </div>
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        )}
+
+                                                        {/* Delete Button (on hover) */}
+                                                        {hoveredFavoriteId === favorite.id && (
+                                                            <button
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    if (window.confirm('Delete this preset?')) {
+                                                                        removeOrbFavorite(favorite.id);
+                                                                    }
+                                                                }}
+                                                                className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center shadow-md transition-all z-40"
+                                                            >
+                                                                <Trash2 size={10} />
+                                                            </button>
+                                                        )}
                                                     </div>
-                                                )}
-                                            </button>
 
-                                            {/* Name Label */}
-                                            <div className="text-center px-1">
-                                                <p className={`text-xs font-bold truncate transition-colors ${isCurrent ? 'text-sky-600' : 'text-slate-600'}`}>
-                                                    {item.name || 'Untitled Orb'}
-                                                </p>
-                                                <p className="text-[9px] text-slate-400">
-                                                    {item.groupMembers?.length > 0 ? `${item.groupMembers.length + 1} variants` : 'Preset'}
-                                                </p>
-                                            </div>
-                                        </div>
-                                    );
-                                });
+                                                    {/* Name Label */}
+                                                    <div className="text-center px-1 mt-1">
+                                                        <p className={`text-[10px] font-bold truncate transition-colors ${isCurrent ? 'text-sky-600' : 'text-slate-600'}`}>
+                                                            {favorite.name || 'Untitled Orb'}
+                                                        </p>
+                                                        <p className="text-[9px] text-slate-400">
+                                                            {favorite.groupMembers?.length > 0 ? `${favorite.groupMembers.length + 1} variants` : 'Preset'}
+                                                        </p>
+                                                    </div>
+
+                                                    {/* Assigned Folder Dots */}
+                                                    {assignedFolders.length > 0 && (
+                                                        <div className="absolute bottom-5 left-0 right-0 flex items-center justify-center gap-0.5">
+                                                            {assignedFolders.slice(0, 3).map((folderId) => {
+                                                                const color = FOLDER_COLORS.find(c => c.id === folderId);
+                                                                if (!color) return null;
+                                                                return (
+                                                                    <div
+                                                                        key={folderId}
+                                                                        className="w-2 h-2 rounded-full border border-white/50 shadow-sm"
+                                                                        style={{ backgroundColor: color.hex }}
+                                                                    />
+                                                                );
+                                                            })}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                );
                             })()
                         )}
 
@@ -320,97 +588,303 @@ const AssetManagerPage = () => {
 
             {/* --- ZONE 3: CONFIGURATION (Fine-Tuning) --- */}
             <div className="h-48 shrink-0 bg-white/60 backdrop-blur-md rounded-2xl shadow-sm border border-white/60 p-4 flex gap-4">
+                {activeTab === 'orb' ? (
+                    // --- ORB CONFIG CONTENT ---
+                    <>
+                        <div className="w-40 bg-slate-100/80 rounded-xl p-3 flex flex-col gap-3 border border-slate-200/50 justify-center items-center">
+                            <div className="relative w-28 h-28 border-2 border-slate-300/50 rounded-xl overflow-visible bg-slate-200/50 select-none group">
+                                {customOrbImage ? (
+                                    <>
+                                        {/* Preview Image */}
+                                        {/* Preview Image - HIDDEN as per user request, but kept in DOM for structure if needed, or we can just remove it visually */}
+                                        {/* User explicitly asked: "no need to show orb image on the quadrant menu" */}
+                                        {/* We will hide the image opacity but keep the container layout stable */}
+                                        <div className="absolute inset-0 bg-slate-300/50" />
 
-                {/* Column 1: Spatial Controls (Quadrants) */}
-                <div className="w-40 bg-slate-100/80 rounded-xl p-3 flex flex-col gap-3 border border-slate-200/50">
-                    <div className="flex items-center justify-between">
-                        <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Position</span>
-                        <div className="w-8 h-4 bg-sky-500 rounded-full relative cursor-pointer">
-                            <div className="absolute right-0.5 top-0.5 w-3 h-3 bg-white rounded-full shadow-sm" />
+                                        {/* Hidden SVG Definitions for Clip Path */}
+                                        <svg width="0" height="0" className="absolute">
+                                            <defs>
+                                                <clipPath id="settingVisualizerClipManager" clipPathUnits="objectBoundingBox">
+                                                    <circle cx="0.5" cy="0.5" r="0.35" />
+                                                    {['tl', 'tr', 'bl', 'br'].map(q => (
+                                                        orbSpill[q] && (
+                                                            orbAdvancedMasks[q]
+                                                                ? <rect key={q} x={orbMaskRects[q].x / 100} y={orbMaskRects[q].y / 100} width={orbMaskRects[q].w / 100} height={orbMaskRects[q].h / 100} />
+                                                                : <rect key={q} x={q.includes('l') ? -0.5 : 0.5} y={q.includes('t') ? -0.5 : 0.5} width="0.505" height="0.505" />
+                                                        )
+                                                    ))}
+                                                </clipPath>
+                                            </defs>
+                                        </svg>
+
+                                        {/* Quadrant Toggles Overlay */}
+                                        <div className="absolute inset-0 z-20 grid grid-cols-2 grid-rows-2">
+                                            {['tl', 'tr', 'bl', 'br'].map((q) => (
+                                                <button
+                                                    key={q}
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        toggleSpillQuadrant(q);
+                                                    }}
+                                                    className={`
+                                                        relative border-dashed border-white/30 transition-all duration-200 hover:bg-sky-500/20 active:scale-95 flex items-center justify-center
+                                                        ${q === 'tl' ? 'border-r border-b rounded-tl-xl' : ''}
+                                                        ${q === 'tr' ? 'border-l border-b rounded-tr-xl' : ''}
+                                                        ${q === 'bl' ? 'border-r border-t rounded-bl-xl' : ''}
+                                                        ${q === 'br' ? 'border-l border-t rounded-br-xl' : ''}
+                                                        ${orbSpill[q] ? 'bg-sky-500/30' : ''}
+                                                    `}
+                                                >
+                                                    {orbSpill[q] && (
+                                                        <div className="p-0.5 bg-sky-500 rounded-full text-white shadow-sm">
+                                                            <Check size={8} strokeWidth={4} />
+                                                        </div>
+                                                    )}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </>
+                                ) : (
+                                    <div className="w-full h-full flex items-center justify-center text-slate-400 text-[9px] font-bold uppercase text-center p-2">
+                                        No Image
+                                    </div>
+                                )}
+
+                                {/* Advanced Crop Trigger */}
+                                <button
+                                    onClick={() => setIsCropModalOpen(true)}
+                                    className="absolute top-1 right-1 z-30 p-1 bg-black/40 hover:bg-sky-500 text-white rounded transition-all backdrop-blur-sm opacity-0 group-hover:opacity-100"
+                                    title="Advanced Crop"
+                                >
+                                    <Maximize size={10} />
+                                </button>
+                            </div>
+
+                            {/* Upload / Remove Controls */}
+                            <div className="flex gap-2 w-full justify-center">
+                                <label className="flex-1 py-1.5 bg-white border border-slate-200 hover:border-sky-400 hover:text-sky-600 text-slate-500 text-[10px] font-bold uppercase rounded-lg cursor-pointer transition-all flex items-center justify-center gap-1.5 shadow-sm">
+                                    <Plus size={12} />
+                                    Upload
+                                    <input
+                                        type="file"
+                                        onChange={handleOrbImageUpload}
+                                        accept="image/*"
+                                        className="hidden"
+                                    />
+                                </label>
+                                {customOrbImage && (
+                                    <button
+                                        onClick={() => setCustomOrbImage(null)}
+                                        className="w-8 py-1.5 bg-slate-100 hover:bg-red-50 text-slate-400 hover:text-red-500 border border-slate-200 hover:border-red-200 rounded-lg transition-all flex items-center justify-center"
+                                        title="Remove Image"
+                                    >
+                                        <Trash2 size={12} />
+                                    </button>
+                                )}
+                            </div>
                         </div>
-                    </div>
 
-                    <div className="flex-1 grid grid-cols-2 gap-2">
-                        {['TL', 'TR', 'BL', 'BR'].map((q, i) => (
-                            <button
-                                key={q}
-                                onClick={() => setSelectedQuadrant(q)}
-                                className={`rounded-lg border transition-all ${selectedQuadrant === q ? 'bg-sky-500 border-sky-600 text-white' : 'bg-white border-slate-200 hover:border-sky-300 text-slate-400'}`}
-                            >
+                        {/* Orb Properties (Sliders & Save) */}
+                        <div className="flex-1 flex flex-col gap-3">
+                            <div className="flex-1 grid grid-cols-2 gap-x-6 gap-y-2 content-center">
+                                <div className="flex flex-col justify-center">
+                                    <div className="flex justify-between text-xs mb-1">
+                                        <span className="font-medium text-slate-600 flex items-center gap-1"><ZoomIn size={10} /> Scale</span>
+                                        <span className="font-mono text-slate-500">{orbImageScale.toFixed(1)}x</span>
+                                    </div>
+                                    <input
+                                        type="range"
+                                        min="0.5"
+                                        max="3"
+                                        step="0.1"
+                                        value={orbImageScale}
+                                        onChange={(e) => setOrbImageScale(parseFloat(e.target.value))}
+                                        className="w-full h-1 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-sky-500"
+                                    />
+                                </div>
+                                <div className="flex flex-col justify-center opacity-50 pointer-events-none">
+                                    <div className="flex justify-between text-xs mb-1">
+                                        <span className="font-medium text-slate-600 flex items-center gap-1"><Layers size={10} /> Opacity</span>
+                                        <span className="font-mono text-slate-500">100%</span>
+                                    </div>
+                                    <input type="range" className="w-full h-1 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-sky-500" disabled />
+                                </div>
+                                <div className="flex flex-col justify-center">
+                                    <div className="flex justify-between text-xs mb-1">
+                                        <span className="font-medium text-slate-600 flex items-center gap-1"><Move size={10} /> X-Offset</span>
+                                        <span className="font-mono text-slate-500">{orbImageXOffset}px</span>
+                                    </div>
+                                    <input
+                                        type="range"
+                                        min="-100"
+                                        max="100"
+                                        value={orbImageXOffset}
+                                        onChange={(e) => setOrbImageXOffset(parseInt(e.target.value))}
+                                        className="w-full h-1 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-sky-500"
+                                    />
+                                </div>
+                                <div className="flex flex-col justify-center">
+                                    <div className="flex justify-between text-xs mb-1">
+                                        <span className="font-medium text-slate-600 flex items-center gap-1"><Move size={10} /> Y-Offset</span>
+                                        <span className="font-mono text-slate-500">{orbImageYOffset}px</span>
+                                    </div>
+                                    <input
+                                        type="range"
+                                        min="-100"
+                                        max="100"
+                                        value={orbImageYOffset}
+                                        onChange={(e) => setOrbImageYOffset(parseInt(e.target.value))}
+                                        className="w-full h-1 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-sky-500"
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Action Footer */}
+                            <div className="flex items-center justify-end gap-3 pt-2 border-t border-slate-200/50">
+                                <button
+                                    onClick={() => {
+                                        setOrbImageScale(1);
+                                        setOrbImageXOffset(0);
+                                        setOrbImageYOffset(0);
+                                    }}
+                                    className="text-[10px] font-bold uppercase text-slate-400 hover:text-slate-600 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5"
+                                >
+                                    <Trash2 size={12} /> Reset Coords
+                                </button>
+                                <button
+                                    onClick={handleSaveCurrentOrbAsFavorite}
+                                    disabled={!customOrbImage}
+                                    className={`
+                                        px-4 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider flex items-center gap-2 shadow-sm transition-all
+                                        ${customOrbImage
+                                            ? 'bg-sky-500 hover:bg-sky-600 text-white hover:shadow-md active:scale-95'
+                                            : 'bg-slate-100 text-slate-400 cursor-not-allowed'}
+                                    `}
+                                >
+                                    <Smile size={12} />
+                                    Save as Preset
+                                </button>
+                            </div>
+                        </div>
+                    </>
+                ) : (
+                    // --- EXISTING CONFIG CONTENT (For Page, App, Theme) ---
+                    <>
+                        {/* Column 1: Spatial Controls (Quadrants) - OLD (kept for Page tab) */}
+                        <div className="w-40 bg-slate-100/80 rounded-xl p-3 flex flex-col gap-3 border border-slate-200/50">
+                            <div className="flex items-center justify-between">
+                                <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Position</span>
+                                <div className="w-8 h-4 bg-sky-500 rounded-full relative cursor-pointer">
+                                    <div className="absolute right-0.5 top-0.5 w-3 h-3 bg-white rounded-full shadow-sm" />
+                                </div>
+                            </div>
+
+                            <div className="flex-1 grid grid-cols-2 gap-2">
+                                {['TL', 'TR', 'BL', 'BR'].map((q, i) => (
+                                    <button
+                                        key={q}
+                                        onClick={() => setSelectedQuadrant && setSelectedQuadrant(q)}
+                                        className={`rounded-lg border transition-all ${selectedQuadrant === q ? 'bg-sky-500 border-sky-600 text-white' : 'bg-white border-slate-200 hover:border-sky-300 text-slate-400'}`}
+                                    >
+                                    </button>
+                                ))}
+                            </div>
+
+                            <button className="w-full py-1.5 bg-slate-200 hover:bg-slate-300 text-slate-600 text-xs font-bold rounded-lg transition-colors">
+                                ADVANCED
                             </button>
-                        ))}
-                    </div>
-
-                    <button className="w-full py-1.5 bg-slate-200 hover:bg-slate-300 text-slate-600 text-xs font-bold rounded-lg transition-colors">
-                        ADVANCED
-                    </button>
-                </div>
-
-                {/* Column 2: Properties & Adjustments */}
-                <div className="flex-1 flex flex-col gap-3">
-
-                    {/* Module A: Properties Header */}
-                    <div className="flex items-start gap-4 h-1/2">
-                        {/* Color Palette */}
-                        <div className="flex-1 grid grid-cols-8 gap-1.5 content-start">
-                            {colors.map((c, i) => (
-                                <button key={i} className={`w-5 h-5 rounded-full ${c} hover:scale-110 hover:shadow-md transition-all border border-black/5 ring-1 ring-transparent hover:ring-white/50`} />
-                            ))}
                         </div>
 
-                        {/* Theme Selector */}
-                        <div className="w-32 flex flex-col gap-1">
-                            <label className="text-[10px] font-bold text-slate-400 uppercase">Theme</label>
-                            <select className="w-full bg-white border border-slate-200 text-slate-700 text-xs rounded-lg py-1.5 px-2 focus:outline-none focus:ring-2 focus:ring-sky-500/50">
-                                <option>Midnight</option>
-                                <option>Daylight</option>
-                                <option>Sunset</option>
-                            </select>
-                        </div>
+                        {/* Column 2: Properties & Adjustments - OLD (kept for Page tab) */}
+                        <div className="flex-1 flex flex-col gap-3">
 
-                        {/* Context Selector */}
-                        <div className="w-32 flex flex-col gap-1">
-                            <label className="text-[10px] font-bold text-slate-400 uppercase">Context</label>
-                            <select className="w-full bg-white border border-slate-200 text-slate-700 text-xs rounded-lg py-1.5 px-2 focus:outline-none focus:ring-2 focus:ring-sky-500/50">
-                                <option>Global</option>
-                                <option>Local</option>
-                            </select>
-                        </div>
-                    </div>
+                            {/* Module A: Properties Header */}
+                            <div className="flex items-start gap-4 h-1/2">
+                                {/* Color Palette */}
+                                <div className="flex-1 grid grid-cols-8 gap-1.5 content-start">
+                                    {colors.map((c, i) => (
+                                        <button key={i} className={`w-5 h-5 rounded-full ${c} hover:scale-110 hover:shadow-md transition-all border border-black/5 ring-1 ring-transparent hover:ring-white/50`} />
+                                    ))}
+                                </div>
 
-                    {/* Module B: Transformation Sliders */}
-                    <div className="flex-1 grid grid-cols-2 gap-x-6 gap-y-2">
-                        <div className="flex flex-col justify-center">
-                            <div className="flex justify-between text-xs mb-1">
-                                <span className="font-medium text-slate-600 flex items-center gap-1"><Box size={10} /> Scale</span>
-                                <span className="font-mono text-slate-500">1.0x</span>
+                                {/* Theme Selector */}
+                                <div className="w-32 flex flex-col gap-1">
+                                    <label className="text-[10px] font-bold text-slate-400 uppercase">Theme</label>
+                                    <select className="w-full bg-white border border-slate-200 text-slate-700 text-xs rounded-lg py-1.5 px-2 focus:outline-none focus:ring-2 focus:ring-sky-500/50">
+                                        <option>Midnight</option>
+                                        <option>Daylight</option>
+                                        <option>Sunset</option>
+                                    </select>
+                                </div>
+
+                                {/* Context Selector */}
+                                <div className="w-32 flex flex-col gap-1">
+                                    <label className="text-[10px] font-bold text-slate-400 uppercase">Context</label>
+                                    <select className="w-full bg-white border border-slate-200 text-slate-700 text-xs rounded-lg py-1.5 px-2 focus:outline-none focus:ring-2 focus:ring-sky-500/50">
+                                        <option>Global</option>
+                                        <option>Local</option>
+                                    </select>
+                                </div>
                             </div>
-                            <input type="range" className="w-full h-1 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-sky-500" />
-                        </div>
-                        <div className="flex flex-col justify-center">
-                            <div className="flex justify-between text-xs mb-1">
-                                <span className="font-medium text-slate-600 flex items-center gap-1"><Layers size={10} /> Opacity</span>
-                                <span className="font-mono text-slate-500">100%</span>
+
+                            {/* Module B: Transformation Sliders */}
+                            <div className="flex-1 grid grid-cols-2 gap-x-6 gap-y-2">
+                                <div className="flex flex-col justify-center">
+                                    <div className="flex justify-between text-xs mb-1">
+                                        <span className="font-medium text-slate-600 flex items-center gap-1"><Box size={10} /> Scale</span>
+                                        <span className="font-mono text-slate-500">1.0x</span>
+                                    </div>
+                                    <input type="range" className="w-full h-1 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-sky-500" />
+                                </div>
+                                <div className="flex flex-col justify-center">
+                                    <div className="flex justify-between text-xs mb-1">
+                                        <span className="font-medium text-slate-600 flex items-center gap-1"><Layers size={10} /> Opacity</span>
+                                        <span className="font-mono text-slate-500">100%</span>
+                                    </div>
+                                    <input type="range" className="w-full h-1 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-sky-500" />
+                                </div>
+                                <div className="flex flex-col justify-center">
+                                    <div className="flex justify-between text-xs mb-1">
+                                        <span className="font-medium text-slate-600 flex items-center gap-1">X-Offset</span>
+                                        <span className="font-mono text-slate-500">0px</span>
+                                    </div>
+                                    <input type="range" className="w-full h-1 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-sky-500" />
+                                </div>
+                                <div className="flex flex-col justify-center">
+                                    <div className="flex justify-between text-xs mb-1">
+                                        <span className="font-medium text-slate-600 flex items-center gap-1">Y-Offset</span>
+                                        <span className="font-mono text-slate-500">0px</span>
+                                    </div>
+                                    <input type="range" className="w-full h-1 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-sky-500" />
+                                </div>
                             </div>
-                            <input type="range" className="w-full h-1 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-sky-500" />
                         </div>
-                        <div className="flex flex-col justify-center">
-                            <div className="flex justify-between text-xs mb-1">
-                                <span className="font-medium text-slate-600 flex items-center gap-1">X-Offset</span>
-                                <span className="font-mono text-slate-500">0px</span>
-                            </div>
-                            <input type="range" className="w-full h-1 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-sky-500" />
-                        </div>
-                        <div className="flex flex-col justify-center">
-                            <div className="flex justify-between text-xs mb-1">
-                                <span className="font-medium text-slate-600 flex items-center gap-1">Y-Offset</span>
-                                <span className="font-mono text-slate-500">0px</span>
-                            </div>
-                            <input type="range" className="w-full h-1 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-sky-500" />
-                        </div>
-                    </div>
-                </div>
+                    </>
+                )}
             </div>
+
+            {/* Group Leader Column Overlay (Placeholder for now, if needed for Asset Manager) */}
+            {/* 
+            {columnLeaderId && (() => {
+               // ... (Similar implementation to OrbPage if full group viewing is required)
+            })()} 
+            */}
+
+            {/* Advanced Crop Modal */}
+            <OrbCropModal
+                isOpen={isCropModalOpen}
+                onClose={() => setIsCropModalOpen(false)}
+                image={customOrbImage}
+                spillConfig={orbSpill}
+                scale={orbImageScale}
+                xOffset={orbImageXOffset}
+                yOffset={orbImageYOffset}
+                // Advanced State
+                advancedMasks={orbAdvancedMasks}
+                setAdvancedMasks={setOrbAdvancedMasks}
+                maskRects={orbMaskRects}
+                setMaskRects={setOrbMaskRects}
+            />
 
         </div>
     );
