@@ -412,11 +412,14 @@ export default function PagePage({ onBack, onNavigateToOrb, onNavigateToYou, onN
                                             layer2Folders.forEach(folder => {
                                                 if (folder.images && folder.images.length > 0) {
                                                     folder.images.forEach(img => {
-                                                        allImages.push({
-                                                            ...img,
-                                                            folderId: folder.id,
-                                                            folderName: folder.name
-                                                        });
+                                                        // Only include leaders (no groupLeaderId)
+                                                        if (!img.groupLeaderId) {
+                                                            allImages.push({
+                                                                ...img,
+                                                                folderId: folder.id,
+                                                                folderName: folder.name
+                                                            });
+                                                        }
                                                     });
                                                 }
                                             });

@@ -70,9 +70,6 @@ export default function OrbPage({ onBack, onNavigateToYou, onNavigateToPage, onN
             orbImageScale,
             orbImageXOffset,
             orbImageYOffset,
-            orbImageScale,
-            orbImageXOffset,
-            orbImageYOffset,
             orbAdvancedMasks: { ...orbAdvancedMasks },
             orbMaskRects: JSON.parse(JSON.stringify(orbMaskRects)), // Deep copy
         });

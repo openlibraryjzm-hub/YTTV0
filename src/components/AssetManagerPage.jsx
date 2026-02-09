@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { ChevronLeft, Sliders, Box, Layers, Grid, Palette, Layout, FileImage, Folder, Plus, Smile, Check, Settings, Trash2, Music, X, ZoomIn, Move, Maximize, MousePointer2, LayoutGrid } from 'lucide-react';
 import OrbGroupColumn from './OrbGroupColumn';
+import PageGroupColumn from './PageGroupColumn';
 import OrbCropModal from './OrbCropModal';
 import { usePlaylistStore } from '../store/playlistStore';
 import { FOLDER_COLORS } from '../utils/folderColors';
@@ -16,7 +17,7 @@ const AssetManagerPage = () => {
         customOrbImage,
         setCustomOrbImage, // Added setter
         applyLayer2Image,
-        setPageBannerBgColor,
+        pageBannerBgColor, setPageBannerBgColor,
         applyOrbFavorite,
         // Orb Config State
         isSpillEnabled, setIsSpillEnabled,
@@ -31,21 +32,33 @@ const AssetManagerPage = () => {
         assignOrbToGroup,
         orbAdvancedMasks, setOrbAdvancedMasks,
         orbMaskRects, setOrbMaskRects,
+        // Page Banner Config State
+        customPageBannerImage2, setCustomPageBannerImage2,
+        pageBannerImage2Scale, setPageBannerImage2Scale,
+        pageBannerImage2XOffset, setPageBannerImage2XOffset,
+        pageBannerImage2YOffset, setPageBannerImage2YOffset,
+        addLayer2Image, updateLayer2Image, removeLayer2Image,
+        assignLayer2ToGroup
     } = useConfigStore();
 
     const allPlaylists = usePlaylistStore(state => state.allPlaylists);
 
-    // Local state for UI toggles (visual only for now)
-    const [activeTab, setActiveTab] = useState('orb'); // 'orb' | 'page' | 'app' | 'theme'
-    const [browserMode, setBrowserMode] = useState('folder'); // 'folder' | 'file'
-    // const [selectedQuadrant, setSelectedQuadrant] = useState(null); // Replaced by spillEditor logic
+    // Local State
+    const [activeTab, setActiveTab] = useState('orb');
 
-    // Orb Page Specific State
+    // Orb Tab State
     const [hoveredFavoriteId, setHoveredFavoriteId] = useState(null);
     const [folderAssignmentOpenId, setFolderAssignmentOpenId] = useState(null);
     const [playlistAssignmentOpenId, setPlaylistAssignmentOpenId] = useState(null);
-    const [columnLeaderId, setColumnLeaderId] = useState(null);
+    const [orbColumnLeaderId, setOrbColumnLeaderId] = useState(null); // ID of orb group leader column
+    const [selectedOrbGroupLeaderId, setSelectedOrbGroupLeaderId] = useState(''); // ID for "Save to Group" dropdown
     const [isCropModalOpen, setIsCropModalOpen] = useState(false);
+
+    // Page Tab State
+    const [pageColumnLeaderId, setPageColumnLeaderId] = useState(null); // ID of page group leader column (structure: { id, folderId })
+    const [selectedPageGroupLeaderId, setSelectedPageGroupLeaderId] = useState(''); // ID string "folderId:imageId" for dropdown
+    const [editingPageBannerId, setEditingPageBannerId] = useState(null);
+    const [editingPageBannerFolderId, setEditingPageBannerFolderId] = useState(null);
 
     const horizontalScrollRef = useRef(null);
 
@@ -60,20 +73,73 @@ const AssetManagerPage = () => {
         }
     };
 
-    const handleSaveCurrentOrbAsFavorite = () => {
+    const handleSaveCurrentOrbAsFavorite = (targetLeaderId = null) => {
         if (!customOrbImage) return;
+
+        const newId = Date.now().toString();
+
         addOrbFavorite({
+            id: newId,
             customOrbImage,
             isSpillEnabled,
-            // Ensure spill state is captured
             orbSpill: { ...orbSpill },
             orbImageScale,
             orbImageXOffset,
             orbImageYOffset,
-            // Advanced masks state
             orbAdvancedMasks: { ...orbAdvancedMasks },
             orbMaskRects: JSON.parse(JSON.stringify(orbMaskRects)), // Deep copy
         });
+
+        if (targetLeaderId) {
+            assignOrbToGroup(newId, targetLeaderId);
+        }
+    };
+
+    const handlePageBannerUpload = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setCustomPageBannerImage2(reader.result);
+                setEditingPageBannerId(null);
+                setEditingPageBannerFolderId(null);
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+
+    const handleSavePageBanner = (targetLeaderStr = null) => {
+        if (!customPageBannerImage2) return;
+
+        const newId = Date.now().toString();
+
+        const bannerData = {
+            id: editingPageBannerId || newId,
+            image: customPageBannerImage2,
+            scale: pageBannerImage2Scale,
+            xOffset: pageBannerImage2XOffset,
+            yOffset: pageBannerImage2YOffset,
+            bgColor: pageBannerBgColor
+        };
+
+        if (editingPageBannerId && editingPageBannerFolderId) {
+            updateLayer2Image(editingPageBannerFolderId, editingPageBannerId, bannerData);
+            setEditingPageBannerId(null);
+            setEditingPageBannerFolderId(null);
+            setCustomPageBannerImage2(null);
+        } else {
+            // Add to default folder or first available folder
+            const targetFolder = layer2Folders.find(f => f.id === 'default') || layer2Folders[0];
+            if (targetFolder) {
+                addLayer2Image(targetFolder.id, bannerData);
+
+                // Assign to group if requested
+                if (targetLeaderStr) {
+                    const [leaderFolderId, leaderId] = targetLeaderStr.split(':');
+                    assignLayer2ToGroup(newId, targetFolder.id, leaderId, leaderFolderId);
+                }
+            }
+        }
     };
 
     // Close menus when clicking outside
@@ -254,11 +320,14 @@ const AssetManagerPage = () => {
                                 layer2Folders.forEach(folder => {
                                     if (folder.images && folder.images.length > 0) {
                                         folder.images.forEach(img => {
-                                            allImages.push({
-                                                ...img,
-                                                folderId: folder.id,
-                                                folderName: folder.name
-                                            });
+                                            // Only include leaders (no groupLeaderId)
+                                            if (!img.groupLeaderId) {
+                                                allImages.push({
+                                                    ...img,
+                                                    folderId: folder.id,
+                                                    folderName: folder.name
+                                                });
+                                            }
                                         });
                                     }
                                 });
@@ -273,60 +342,100 @@ const AssetManagerPage = () => {
                                     );
                                 }
 
-                                return allImages.map((img) => {
-                                    const isActive = customPageBannerImage2 === img.image;
+                                return (
+                                    <div className="flex gap-4 h-full pb-4 items-center overflow-x-auto px-2 custom-scrollbar w-full">
+                                        {allImages.map((img) => {
+                                            const isActive = customPageBannerImage2 === img.image;
 
-                                    return (
-                                        <div
-                                            key={`${img.folderId}-${img.id}`}
-                                            className="relative group flex flex-col items-center"
-                                            style={{ width: '300px', flexShrink: 0 }}
-                                        >
-                                            {/* Image Thumbnail */}
-                                            <div className="relative w-full aspect-video mx-auto overflow-hidden rounded-xl border-4 transition-all duration-300 bg-slate-100 shadow-md group-hover:shadow-xl">
-                                                <button
-                                                    onClick={() => {
-                                                        applyLayer2Image(img);
-                                                        if (img.bgColor) setPageBannerBgColor(img.bgColor);
-                                                    }}
-                                                    className={`w-full h-full transition-all duration-200 relative overflow-hidden ${isActive
-                                                        ? 'border-purple-500 ring-4 ring-purple-200 scale-[1.02]'
-                                                        : 'border-slate-200 hover:border-purple-300'
-                                                        }`}
+                                            return (
+                                                <div
+                                                    key={`${img.folderId}-${img.id}`}
+                                                    className="relative group flex flex-col items-center"
+                                                    style={{ width: '300px', flexShrink: 0 }}
                                                 >
-                                                    <img
-                                                        src={img.image}
-                                                        alt="Layer 2"
-                                                        className="w-full h-full object-cover"
-                                                    />
+                                                    {/* Image Thumbnail */}
+                                                    <div className="relative w-full aspect-video mx-auto overflow-hidden rounded-xl border-4 transition-all duration-300 bg-slate-100 shadow-md group-hover:shadow-xl">
+                                                        <button
+                                                            onClick={() => {
+                                                                applyLayer2Image(img);
+                                                                if (img.bgColor) setPageBannerBgColor(img.bgColor);
+                                                                setEditingPageBannerId(img.id);
+                                                                setEditingPageBannerFolderId(img.folderId);
+                                                            }}
+                                                            className={`w-full h-full transition-all duration-200 relative overflow-hidden ${isActive
+                                                                ? 'border-purple-500 ring-4 ring-purple-200 scale-[1.02]'
+                                                                : 'border-slate-200 hover:border-purple-300'
+                                                                }`}
+                                                        >
+                                                            <img
+                                                                src={img.image}
+                                                                alt="Layer 2"
+                                                                className="w-full h-full object-cover"
+                                                            />
 
-                                                    {/* Glass Overlay on Hover */}
-                                                    <div className="absolute inset-0 bg-purple-500/0 group-hover:bg-purple-500/10 transition-colors pointer-events-none" />
+                                                            {/* Glass Overlay on Hover */}
+                                                            <div className="absolute inset-0 bg-purple-500/0 group-hover:bg-purple-500/10 transition-colors pointer-events-none" />
 
-                                                    {/* Active Indicator */}
-                                                    {isActive && (
-                                                        <div className="absolute inset-0 bg-purple-900/40 flex items-center justify-center pointer-events-none backdrop-blur-[1px]">
-                                                            <Check className="text-white drop-shadow-xl" size={32} strokeWidth={3} />
-                                                        </div>
-                                                    )}
-                                                </button>
-                                            </div>
+                                                            {/* Active Indicator */}
+                                                            {isActive && (
+                                                                <div className="absolute inset-0 bg-purple-900/40 flex items-center justify-center pointer-events-none backdrop-blur-[1px]">
+                                                                    <Check className="text-white drop-shadow-xl" size={32} strokeWidth={3} />
+                                                                </div>
+                                                            )}
+                                                        </button>
 
-                                            {/* Quick Info */}
-                                            <div className="mt-2 text-center">
-                                                <p className="text-xs font-bold text-slate-600 truncate px-2">
-                                                    {img.folderName}
-                                                </p>
-                                                {img.bgColor && (
-                                                    <div className="flex items-center justify-center gap-1 mt-0.5">
-                                                        <div className="w-2 h-2 rounded-full border border-slate-300" style={{ backgroundColor: img.bgColor }} />
-                                                        <span className="text-[10px] text-slate-400 font-mono uppercase">{img.bgColor}</span>
+                                                        {/* Group Indicator */}
+                                                        {img.groupMembers && img.groupMembers.length > 0 && (
+                                                            <button
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    setPageColumnLeaderId({ id: img.id, folderId: img.folderId });
+                                                                }}
+                                                                className="absolute bottom-1 right-1 z-30 bg-purple-500 text-white text-[9px] font-bold px-2 py-0.5 rounded-full shadow-md hover:bg-purple-600 transition-colors flex items-center gap-1 hover:scale-110"
+                                                                title="View Group"
+                                                            >
+                                                                <LayoutGrid size={8} />
+                                                                {img.groupMembers.length}
+                                                            </button>
+                                                        )}
                                                     </div>
-                                                )}
-                                            </div>
-                                        </div>
-                                    );
-                                });
+
+                                                    {/* Quick Info */}
+                                                    <div className="mt-2 text-center w-full">
+                                                        <p className="text-xs font-bold text-slate-600 truncate px-2">
+                                                            {img.folderName}
+                                                        </p>
+                                                        {img.bgColor && (
+                                                            <div className="flex items-center justify-center gap-1 mt-0.5">
+                                                                <div className="w-2 h-2 rounded-full border border-slate-300" style={{ backgroundColor: img.bgColor }} />
+                                                                <span className="text-[10px] text-slate-400 font-mono uppercase">{img.bgColor}</span>
+                                                            </div>
+                                                        )}
+                                                    </div>
+
+                                                    {/* Delete Button (on hover) */}
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            if (window.confirm('Delete this page banner?')) {
+                                                                removeLayer2Image(img.folderId, img.id);
+                                                                if (editingPageBannerId === img.id) {
+                                                                    setCustomPageBannerImage2(null);
+                                                                    setEditingPageBannerId(null);
+                                                                    setEditingPageBannerFolderId(null);
+                                                                }
+                                                            }
+                                                        }}
+                                                        className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center shadow-md transition-all z-30 opacity-0 group-hover:opacity-100 scale-90 hover:scale-100"
+                                                        title="Delete Banner"
+                                                    >
+                                                        <Trash2 size={10} />
+                                                    </button>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                );
                             })()
                         )}
 
@@ -353,7 +462,7 @@ const AssetManagerPage = () => {
                                             paddingTop: '12px'
                                         }}
                                     >
-                                        {orbFavorites.map((favorite) => {
+                                        {orbFavorites.filter(f => !f.groupLeaderId).map((favorite) => {
                                             const assignedFolders = favorite.folderColors || [];
                                             const isCurrent = customOrbImage === favorite.customOrbImage; // Simple check
 
@@ -379,6 +488,7 @@ const AssetManagerPage = () => {
                                                                 ? 'border-sky-500 ring-4 ring-sky-200 shadow-xl scale-110 z-10'
                                                                 : 'border-slate-200 hover:border-sky-300 hover:shadow-lg hover:scale-105'
                                                                 }`}
+
                                                             title={favorite.name}
                                                         >
                                                             {/* Image Layer with Spill Reflecting Effect */}
@@ -414,6 +524,21 @@ const AssetManagerPage = () => {
                                                                 </div>
                                                             )}
                                                         </button>
+
+                                                        {/* Group Indicator */}
+                                                        {favorite.groupMembers && favorite.groupMembers.length > 0 && (
+                                                            <button
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    setOrbColumnLeaderId(favorite.id);
+                                                                }}
+                                                                className="absolute -bottom-2 left-1/2 -translate-x-1/2 z-40 bg-purple-500 text-white text-[9px] font-bold px-2 py-0.5 rounded-full shadow-md hover:bg-purple-600 transition-colors flex items-center gap-1 hover:scale-110"
+                                                                title="View Group"
+                                                            >
+                                                                <LayoutGrid size={8} />
+                                                                {favorite.groupMembers.length}
+                                                            </button>
+                                                        )}
 
                                                         {/* Spill Indicator */}
                                                         {favorite.isSpillEnabled && (
@@ -542,21 +667,23 @@ const AssetManagerPage = () => {
                                                     </div>
 
                                                     {/* Assigned Folder Dots */}
-                                                    {assignedFolders.length > 0 && (
-                                                        <div className="absolute bottom-5 left-0 right-0 flex items-center justify-center gap-0.5">
-                                                            {assignedFolders.slice(0, 3).map((folderId) => {
-                                                                const color = FOLDER_COLORS.find(c => c.id === folderId);
-                                                                if (!color) return null;
-                                                                return (
-                                                                    <div
-                                                                        key={folderId}
-                                                                        className="w-2 h-2 rounded-full border border-white/50 shadow-sm"
-                                                                        style={{ backgroundColor: color.hex }}
-                                                                    />
-                                                                );
-                                                            })}
-                                                        </div>
-                                                    )}
+                                                    {
+                                                        assignedFolders.length > 0 && (
+                                                            <div className="absolute bottom-5 left-0 right-0 flex items-center justify-center gap-0.5">
+                                                                {assignedFolders.slice(0, 3).map((folderId) => {
+                                                                    const color = FOLDER_COLORS.find(c => c.id === folderId);
+                                                                    if (!color) return null;
+                                                                    return (
+                                                                        <div
+                                                                            key={folderId}
+                                                                            className="w-2 h-2 rounded-full border border-white/50 shadow-sm"
+                                                                            style={{ backgroundColor: color.hex }}
+                                                                        />
+                                                                    );
+                                                                })}
+                                                            </div>
+                                                        )
+                                                    }
                                                 </div>
                                             );
                                         })}
@@ -660,27 +787,43 @@ const AssetManagerPage = () => {
                                 </button>
                             </div>
 
-                            {/* Upload / Remove Controls */}
-                            <div className="flex gap-2 w-full justify-center">
-                                <label className="flex-1 py-1.5 bg-white border border-slate-200 hover:border-sky-400 hover:text-sky-600 text-slate-500 text-[10px] font-bold uppercase rounded-lg cursor-pointer transition-all flex items-center justify-center gap-1.5 shadow-sm">
-                                    <Plus size={12} />
-                                    Upload
-                                    <input
-                                        type="file"
-                                        onChange={handleOrbImageUpload}
-                                        accept="image/*"
-                                        className="hidden"
-                                    />
-                                </label>
-                                {customOrbImage && (
-                                    <button
-                                        onClick={() => setCustomOrbImage(null)}
-                                        className="w-8 py-1.5 bg-slate-100 hover:bg-red-50 text-slate-400 hover:text-red-500 border border-slate-200 hover:border-red-200 rounded-lg transition-all flex items-center justify-center"
-                                        title="Remove Image"
-                                    >
-                                        <Trash2 size={12} />
-                                    </button>
-                                )}
+                            {/* Spill & Upload Controls */}
+                            <div className="flex flex-col gap-2 w-full">
+                                {/* Spill Toggle */}
+                                <button
+                                    onClick={() => setIsSpillEnabled(!isSpillEnabled)}
+                                    className={`w-full py-1.5 rounded-lg text-[10px] font-bold uppercase transition-all border shadow-sm flex items-center justify-center gap-2 ${isSpillEnabled
+                                        ? 'bg-sky-500 text-white border-sky-400 hover:bg-sky-600'
+                                        : 'bg-white text-slate-500 border-slate-200 hover:border-sky-300 hover:text-sky-600'
+                                        }`}
+                                    title="Toggle Spill Effect"
+                                >
+                                    <Layers size={12} />
+                                    {isSpillEnabled ? 'Spill Enabled' : 'Spill Disabled'}
+                                </button>
+
+                                {/* Upload / Remove Row */}
+                                <div className="flex gap-2 w-full justify-center">
+                                    <label className="flex-1 py-1.5 bg-white border border-slate-200 hover:border-sky-400 hover:text-sky-600 text-slate-500 text-[10px] font-bold uppercase rounded-lg cursor-pointer transition-all flex items-center justify-center gap-1.5 shadow-sm">
+                                        <Plus size={12} />
+                                        Upload
+                                        <input
+                                            type="file"
+                                            onChange={handleOrbImageUpload}
+                                            accept="image/*"
+                                            className="hidden"
+                                        />
+                                    </label>
+                                    {customOrbImage && (
+                                        <button
+                                            onClick={() => setCustomOrbImage(null)}
+                                            className="w-8 py-1.5 bg-slate-100 hover:bg-red-50 text-slate-400 hover:text-red-500 border border-slate-200 hover:border-red-200 rounded-lg transition-all flex items-center justify-center"
+                                            title="Remove Image"
+                                        >
+                                            <Trash2 size={12} />
+                                        </button>
+                                    )}
+                                </div>
                             </div>
                         </div>
 
@@ -740,35 +883,286 @@ const AssetManagerPage = () => {
                             </div>
 
                             {/* Action Footer */}
-                            <div className="flex items-center justify-end gap-3 pt-2 border-t border-slate-200/50">
-                                <button
-                                    onClick={() => {
-                                        setOrbImageScale(1);
-                                        setOrbImageXOffset(0);
-                                        setOrbImageYOffset(0);
-                                    }}
-                                    className="text-[10px] font-bold uppercase text-slate-400 hover:text-slate-600 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5"
-                                >
-                                    <Trash2 size={12} /> Reset Coords
-                                </button>
-                                <button
-                                    onClick={handleSaveCurrentOrbAsFavorite}
-                                    disabled={!customOrbImage}
-                                    className={`
-                                        px-4 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider flex items-center gap-2 shadow-sm transition-all
-                                        ${customOrbImage
-                                            ? 'bg-sky-500 hover:bg-sky-600 text-white hover:shadow-md active:scale-95'
-                                            : 'bg-slate-100 text-slate-400 cursor-not-allowed'}
-                                    `}
-                                >
-                                    <Smile size={12} />
-                                    Save as Preset
-                                </button>
+                            <div className="flex flex-col gap-2 pt-2 border-t border-slate-200/50">
+                                <div className="flex items-center justify-between">
+                                    <button
+                                        onClick={() => {
+                                            setOrbImageScale(1);
+                                            setOrbImageXOffset(0);
+                                            setOrbImageYOffset(0);
+                                        }}
+                                        className="text-[10px] font-bold uppercase text-slate-400 hover:text-slate-600 px-2 py-1.5 rounded-lg transition-colors flex items-center gap-1.5"
+                                    >
+                                        <Trash2 size={12} /> Reset
+                                    </button>
+
+                                    <button
+                                        onClick={() => handleSaveCurrentOrbAsFavorite(null)}
+                                        disabled={!customOrbImage}
+                                        className={`
+                                            px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider flex items-center gap-2 shadow-sm transition-all
+                                            ${customOrbImage
+                                                ? 'bg-sky-500 hover:bg-sky-600 text-white hover:shadow-md active:scale-95'
+                                                : 'bg-slate-100 text-slate-400 cursor-not-allowed'}
+                                        `}
+                                    >
+                                        <Smile size={12} />
+                                        Save as New Leader
+                                    </button>
+                                </div>
+
+                                {/* Save to Existing Group */}
+                                <div className="flex items-center gap-2 bg-slate-50 p-1.5 rounded-lg border border-slate-200">
+                                    <select
+                                        value={selectedOrbGroupLeaderId}
+                                        onChange={(e) => setSelectedOrbGroupLeaderId(e.target.value)}
+                                        className="flex-1 bg-white border border-slate-200 text-slate-600 text-[10px] rounded px-2 py-1 outline-none focus:border-sky-400"
+                                    >
+                                        <option value="">Select Group Leader...</option>
+                                        {orbFavorites
+                                            .filter(f => !f.groupLeaderId) // Only show potential leaders (not subordinates)
+                                            .map(f => (
+                                                <option key={f.id} value={f.id}>{f.name}</option>
+                                            ))
+                                        }
+                                    </select>
+                                    <button
+                                        onClick={() => handleSaveCurrentOrbAsFavorite(selectedOrbGroupLeaderId)}
+                                        disabled={!customOrbImage || !selectedOrbGroupLeaderId}
+                                        className={`
+                                            px-3 py-1 text-[10px] font-bold uppercase rounded transition-all flex items-center gap-1
+                                            ${customOrbImage && selectedOrbGroupLeaderId
+                                                ? 'bg-purple-500 hover:bg-purple-600 text-white'
+                                                : 'bg-slate-200 text-slate-400 cursor-not-allowed'}
+                                        `}
+                                    >
+                                        <Plus size={10} />
+                                        Add
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </>
+                ) : activeTab === 'page' ? (
+                    // --- PAGE CONFIG CONTENT ---
+                    <>
+                        {/* Column 1: Visualizer & Actions (Mimicking Orb Tab) */}
+                        <div className="w-40 bg-slate-100/80 rounded-xl p-3 flex flex-col gap-3 border border-slate-200/50 justify-center items-center">
+                            <div className="relative w-full aspect-video border-2 border-slate-300/50 rounded-xl overflow-hidden bg-slate-200/50 select-none group">
+                                {customPageBannerImage2 ? (
+                                    <>
+                                        <img
+                                            src={customPageBannerImage2}
+                                            alt="Preview"
+                                            className="w-full h-full object-cover"
+                                            style={{
+                                                transform: `scale(${pageBannerImage2Scale}) translate(${pageBannerImage2XOffset}px, ${pageBannerImage2YOffset}px)`
+                                            }}
+                                        />
+                                    </>
+                                ) : (
+                                    <div className="w-full h-full flex items-center justify-center text-slate-400 text-[9px] font-bold uppercase text-center p-2">
+                                        No Image
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Upload / Remove Controls */}
+                            <div className="flex gap-2 w-full justify-center">
+                                <label className="flex-1 py-1.5 bg-white border border-slate-200 hover:border-sky-400 hover:text-sky-600 text-slate-500 text-[10px] font-bold uppercase rounded-lg cursor-pointer transition-all flex items-center justify-center gap-1.5 shadow-sm">
+                                    <Plus size={12} />
+                                    Upload
+                                    <input
+                                        type="file"
+                                        onChange={handlePageBannerUpload}
+                                        accept="image/*"
+                                        className="hidden"
+                                    />
+                                </label>
+                                {customPageBannerImage2 && (
+                                    <button
+                                        onClick={() => setCustomPageBannerImage2(null)}
+                                        className="w-8 py-1.5 bg-slate-100 hover:bg-red-50 text-slate-400 hover:text-red-500 border border-slate-200 hover:border-red-200 rounded-lg transition-all flex items-center justify-center"
+                                        title="Remove Image"
+                                    >
+                                        <Trash2 size={12} />
+                                    </button>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Column 2: Properties & Adjustments */}
+                        <div className="flex-1 flex flex-col gap-3">
+                            <div className="flex-1 grid grid-cols-2 gap-x-6 gap-y-2 content-center">
+                                <div className="flex flex-col justify-center">
+                                    <div className="flex justify-between text-xs mb-1">
+                                        <span className="font-medium text-slate-600 flex items-center gap-1"><ZoomIn size={10} /> Scale</span>
+                                        <span className="font-mono text-slate-500">{pageBannerImage2Scale}%</span>
+                                    </div>
+                                    <input
+                                        type="range"
+                                        min="50"
+                                        max="200"
+                                        step="1"
+                                        value={pageBannerImage2Scale}
+                                        onChange={(e) => setPageBannerImage2Scale(parseInt(e.target.value))}
+                                        className="w-full h-1 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-purple-500"
+                                    />
+                                </div>
+                                <div className="flex flex-col justify-center">
+                                    <div className="flex justify-between text-xs mb-1">
+                                        <span className="font-medium text-slate-600 flex items-center gap-1"><Palette size={10} /> BG Color</span>
+                                        <span className="font-mono text-slate-500 uppercase">{pageBannerBgColor || 'None'}</span>
+                                    </div>
+                                    <div className="flex items-center gap-1">
+                                        {colors.slice(0, 8).map((c, i) => (
+                                            <button
+                                                key={i}
+                                                onClick={() => setPageBannerBgColor(c.replace('bg-', '#').replace('-500', ''))} // Rough mapping or pass hex directly if your colors array has hex. The existing 'colors' array has classes like 'bg-red-500'. We need to be careful.
+                                                // Actually, PagePage creates hexes or uses a picker.
+                                                // Looking at AssetManagerPage, `colors` is an array of classes: 'bg-red-500'.
+                                                // Looking at PagePage, it allows hex entry or picking.
+                                                // Let's implement a simple color picker using the existing `FOLDER_COLORS` which has hexes if possible, or mapping classes.
+                                                // `AssetManagerPage` imports `FOLDER_COLORS`. Let's use that.
+                                                className={`w-4 h-4 rounded-full ${c} hover:scale-110 transition-all border border-black/5 ring-1 ring-transparent hover:ring-white/50`}
+                                            // We can't easily extract hex from class name here without a map.
+                                            // Let's just use FOLDER_COLORS instead which has hex.
+                                            />
+                                        ))}
+                                    </div>
+                                    {/* Better Color Picker using FOLDER_COLORS */}
+                                    <div className="flex items-center gap-1 mt-1 overflow-x-auto pb-1 custom-scrollbar">
+                                        {FOLDER_COLORS.map((color) => (
+                                            <button
+                                                key={color.id}
+                                                onClick={() => setPageBannerBgColor(color.hex)}
+                                                className={`flex-shrink-0 w-4 h-4 rounded-full border border-black/10 transition-transform hover:scale-110 ${pageBannerBgColor === color.hex ? 'ring-2 ring-purple-400 scale-110' : ''}`}
+                                                style={{ backgroundColor: color.hex }}
+                                                title={color.name}
+                                            />
+                                        ))}
+                                    </div>
+                                </div>
+                                <div className="flex flex-col justify-center">
+                                    <div className="flex justify-between text-xs mb-1">
+                                        <span className="font-medium text-slate-600 flex items-center gap-1"><Move size={10} /> X-Offset</span>
+                                        <span className="font-mono text-slate-500">{pageBannerImage2XOffset}%</span>
+                                    </div>
+                                    <input
+                                        type="range"
+                                        min="0"
+                                        max="100"
+                                        value={pageBannerImage2XOffset}
+                                        onChange={(e) => setPageBannerImage2XOffset(parseInt(e.target.value))}
+                                        className="w-full h-1 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-purple-500"
+                                    />
+                                </div>
+                                <div className="flex flex-col justify-center">
+                                    <div className="flex justify-between text-xs mb-1">
+                                        <span className="font-medium text-slate-600 flex items-center gap-1"><Move size={10} /> Y-Offset</span>
+                                        <span className="font-mono text-slate-500">{pageBannerImage2YOffset}%</span>
+                                    </div>
+                                    <input
+                                        type="range"
+                                        min="0"
+                                        max="100"
+                                        value={pageBannerImage2YOffset}
+                                        onChange={(e) => setPageBannerImage2YOffset(parseInt(e.target.value))}
+                                        className="w-full h-1 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-purple-500"
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Action Footer */}
+                            <div className="pt-2 border-t border-slate-200/50">
+                                {editingPageBannerId ? (
+                                    <div className="flex items-center justify-end gap-3">
+                                        <button
+                                            onClick={() => {
+                                                setEditingPageBannerId(null);
+                                                setEditingPageBannerFolderId(null);
+                                                setCustomPageBannerImage2(null);
+                                            }}
+                                            className="text-[10px] font-bold uppercase text-slate-400 hover:text-slate-600 px-3 py-1.5 rounded-lg transition-colors"
+                                        >
+                                            Cancel
+                                        </button>
+                                        <button
+                                            onClick={() => handleSavePageBanner(null)}
+                                            className="px-4 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider flex items-center gap-2 shadow-sm bg-purple-500 hover:bg-purple-600 text-white hover:shadow-md active:scale-95 transition-all"
+                                        >
+                                            <Smile size={12} />
+                                            Update Banner
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <div className="flex flex-col gap-2">
+                                        <div className="flex items-center justify-between">
+                                            <button
+                                                onClick={() => {
+                                                    setPageBannerImage2Scale(100);
+                                                    setPageBannerImage2XOffset(50);
+                                                    setPageBannerImage2YOffset(50);
+                                                }}
+                                                className="text-[10px] font-bold uppercase text-slate-400 hover:text-slate-600 px-2 py-1.5 rounded-lg transition-colors flex items-center gap-1.5"
+                                            >
+                                                <Trash2 size={12} /> Reset
+                                            </button>
+
+                                            <button
+                                                onClick={() => handleSavePageBanner(null)}
+                                                disabled={!customPageBannerImage2}
+                                                className={`
+                                                    px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider flex items-center gap-2 shadow-sm transition-all
+                                                    ${customPageBannerImage2
+                                                        ? 'bg-purple-500 hover:bg-purple-600 text-white hover:shadow-md active:scale-95'
+                                                        : 'bg-slate-100 text-slate-400 cursor-not-allowed'}
+                                                `}
+                                            >
+                                                <Smile size={12} />
+                                                Save as New Leader
+                                            </button>
+                                        </div>
+
+                                        {/* Save to Existing Group */}
+                                        <div className="flex items-center gap-2 bg-slate-50 p-1.5 rounded-lg border border-slate-200">
+                                            <select
+                                                value={selectedPageGroupLeaderId}
+                                                onChange={(e) => setSelectedPageGroupLeaderId(e.target.value)}
+                                                className="flex-1 bg-white border border-slate-200 text-slate-600 text-[10px] rounded px-2 py-1 outline-none focus:border-purple-400"
+                                            >
+                                                <option value="">Select Group Leader...</option>
+                                                {layer2Folders.flatMap(f =>
+                                                    f.images
+                                                        .filter(img => !img.groupLeaderId)
+                                                        .map(img => ({ ...img, folderName: f.name, folderId: f.id }))
+                                                ).map(img => (
+                                                    <option key={`${img.folderId}:${img.id}`} value={`${img.folderId}:${img.id}`}>
+                                                        {img.folderName} - Image {img.id.slice(-4)}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                            <button
+                                                onClick={() => handleSavePageBanner(selectedPageGroupLeaderId)}
+                                                disabled={!customPageBannerImage2 || !selectedPageGroupLeaderId}
+                                                className={`
+                                                    px-3 py-1 text-[10px] font-bold uppercase rounded transition-all flex items-center gap-1
+                                                    ${customPageBannerImage2 && selectedPageGroupLeaderId
+                                                        ? 'bg-purple-500 hover:bg-purple-600 text-white'
+                                                        : 'bg-slate-200 text-slate-400 cursor-not-allowed'}
+                                                `}
+                                            >
+                                                <Plus size={10} />
+                                                Add
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </>
                 ) : (
-                    // --- EXISTING CONFIG CONTENT (For Page, App, Theme) ---
+                    // --- EXISTING CONFIG CONTENT (For App, Theme) ---
                     <>
                         {/* Column 1: Spatial Controls (Quadrants) - OLD (kept for Page tab) */}
                         <div className="w-40 bg-slate-100/80 rounded-xl p-3 flex flex-col gap-3 border border-slate-200/50">
@@ -863,12 +1257,54 @@ const AssetManagerPage = () => {
                 )}
             </div>
 
-            {/* Group Leader Column Overlay (Placeholder for now, if needed for Asset Manager) */}
-            {/* 
-            {columnLeaderId && (() => {
-               // ... (Similar implementation to OrbPage if full group viewing is required)
-            })()} 
-            */}
+            {/* Group Leader Columns */}
+            {orbColumnLeaderId && (() => {
+                const leader = orbFavorites.find(f => f.id === orbColumnLeaderId);
+                if (!leader) return null;
+                const memeberIds = leader.groupMembers || [];
+                const members = orbFavorites.filter(f => memeberIds.includes(f.id));
+                return (
+                    <OrbGroupColumn
+                        leader={leader}
+                        members={members}
+                        onClose={() => setOrbColumnLeaderId(null)}
+                        onOrbSelect={(orb) => {
+                            applyOrbFavorite(orb);
+                        }}
+                        activeOrbId={leader.id} // Simple highlight for context
+                    />
+                );
+            })()}
+
+            {pageColumnLeaderId && (() => {
+                const folder = layer2Folders.find(f => f.id === pageColumnLeaderId.folderId);
+                const leader = folder?.images.find(img => img.id === pageColumnLeaderId.id);
+                if (!leader) return null;
+
+                const memberKeys = leader.groupMembers || [];
+                const members = memberKeys.map(key => {
+                    const [fId, iId] = key.split(':');
+                    const f = layer2Folders.find(lf => lf.id === fId);
+                    const img = f?.images.find(i => i.id === iId);
+                    if (img) return { ...img, folderName: f.name, folderId: f.id };
+                    return null;
+                }).filter(Boolean);
+
+                return (
+                    <PageGroupColumn
+                        leader={{ ...leader, folderName: folder.name }}
+                        members={members}
+                        onClose={() => setPageColumnLeaderId(null)}
+                        onSelect={(banner) => {
+                            applyLayer2Image(banner);
+                            if (banner.bgColor) setPageBannerBgColor(banner.bgColor);
+                            setEditingPageBannerId(banner.id);
+                            setEditingPageBannerFolderId(banner.folderId);
+                        }}
+                        activeId={editingPageBannerId}
+                    />
+                );
+            })()}
 
             {/* Advanced Crop Modal */}
             <OrbCropModal
@@ -886,7 +1322,7 @@ const AssetManagerPage = () => {
                 setMaskRects={setOrbMaskRects}
             />
 
-        </div>
+        </div >
     );
 };
 

@@ -38,10 +38,12 @@ Directly below the navigation is a **visual-only** instance of the `PageBanner`.
 ### 3. Content Carousel (Zone 2)
 The main interactive area for browsing assets.
 -   **Dynamic Content**:
-    -   **Active Tab = Orb**: Displays the **Orb Presets Carousel** (derived from `orbFavorites`).
+    -   **Active Tab = Orb**: Displays the **Orb Presets Carousel** containing only independent presets and Group Leaders.
         -   **Spill Reflection**: Presets display their actual spill configuration (elements breaking the circle bounds) exactly as they appear in the top application menu.
+        -   **Group Navigation**: Group Leaders feature a "View Group" button (grid icon) to open the `OrbGroupColumn`, allowing access to subordinate presets.
         -   **Hover Actions**: Quick access to **Folder Assignments**, **Playlist Overrides**, and **Delete**.
-    -   **Active Tab = Page**: Displays the **Page Banners Carousel** (derived from `layer2Folders`). Flattens generic folders into a browsable image list.
+    -   **Active Tab = Page**: Displays the **Page Banners Carousel** containing only independent banners and Group Leaders.
+        -   **Group Navigation**: Group Leaders feature a "View Group" button to open the `PageGroupColumn`, providing access to subordinate banners.
     -   **App/Theme**: Displays "Coming Soon" placeholders.
 
 ### 4. Configuration Panel (Zone 3)
@@ -56,11 +58,25 @@ A fixed-height panel at the bottom for fine-tuning the selected asset.
     -   **Scale**: 0.5x to 3.0x (with store persistence).
     -   **X-Offset**: -100px to +100px.
     -   **Y-Offset**: -100px to +100px.
-    -   **Save Preset**: A primary action to save the current configuration as a new preset. The carousel items are now larger (200px) for better visibility.
+-   **Save Actions**:
+    -   **Save as New Leader**: Saves the current configuration as a new, independent Orb preset (Group Leader).
+    -   **Save to Group**: Select an existing Group Leader from the dropdown and click "Add" to save the current configuration as a subordinate member of that group.
 
-#### For Page/App/Theme Tabs:
+#### For Page Tab:
+-   **Preview Area**: Large 16:9 preview of the current page banner image.
+    -   **Upload/Remove**: Buttons to upload a new page banner or remove the current selection.
+-   **Property Controls**:
+    -   **Scale**: 50% to 200%.
+    -   **BG Color**: Color picker to set the paired background color (Layer 1).
+    -   **X/Y Offsets**: 0-100% positioning sliders.
+-   **Save Actions**:
+    -   **Save as New Leader**: Save the new banner as an independent Group Leader.
+    -   **Save to Group**: Assign the new banner as a subordinate to an existing Group Leader.
+    -   **Update**: (When editing) Save changes to the existing banner.
+    -   **Reset**: Restore default properties.
+
+#### For App/Theme Tabs (Placeholder):
 -   **Spatial Controls**: (Legacy/Standard) A 2x2 grid representing screen quadrants for quick anchor positioning.
--   **Property Controls**: Sliders and inputs for Scale, Opacity, and generic Offsets.
 -   **Context Selectors**: Dropdowns for "Theme" and "Context".
 
 ---

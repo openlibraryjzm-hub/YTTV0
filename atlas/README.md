@@ -405,4 +405,8 @@ For detailed information about the application's theme system and recent color c
   - **Layout Optimization**: Removed "Folder/File" sub-navigation to maximize vertical space.
   - **Scrollable Interface**: Enabled vertical scrolling and minimum height for the carousel to prevent items from being cut off.
   - **Simplified Visualizer**: Streamlined the Orb Spill Visualizer by hiding the image preview while keeping mask controls functional.
+  - **Group Leader Implementation**: 
+    - **Save Options**: Added "Save as New Leader" and "Save to Group" for both Orb Presets and Page Banners.
+    - **Hierarchical Viewing**: Implemented `OrbGroupColumn` and `PageGroupColumn` to view subordinate items within a group.
+    - **Filtered Carousels**: Updated main carousels to display only Group Leaders and standalone items, reducing clutter.
 

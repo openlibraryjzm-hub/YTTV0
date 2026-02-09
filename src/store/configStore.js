@@ -1,5 +1,6 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { persist, createJSONStorage } from 'zustand/middleware';
+import idbStorage from './indexedDBStorage';
 
 export const useConfigStore = create(
     persist(
@@ -123,7 +124,7 @@ export const useConfigStore = create(
             orbFavorites: [],
             addOrbFavorite: (favorite) => set((state) => ({
                 orbFavorites: [...state.orbFavorites, {
-                    id: Date.now().toString(),
+                    id: favorite.id || Date.now().toString(),
                     name: favorite.name || `Favorite ${state.orbFavorites.length + 1}`,
                     createdAt: Date.now(),
                     customOrbImage: favorite.customOrbImage,
@@ -401,7 +402,7 @@ export const useConfigStore = create(
                         ? {
                             ...folder,
                             images: [...folder.images, {
-                                id: Date.now().toString(),
+                                id: image.id || Date.now().toString(),
                                 image: image.image,
                                 scale: image.scale ?? 100,
                                 xOffset: image.xOffset ?? 50,
@@ -782,7 +783,8 @@ export const useConfigStore = create(
             bannerBgSize: '100% auto',
             setBannerBgSize: (val) => set({ bannerBgSize: val }),
         }), {
-        name: 'config-storage-v10', // name of the item in the storage (must be unique)
+        name: 'config-storage-v11', // Bump version for clean slate with new storage
+        storage: createJSONStorage(() => idbStorage),
     }
     )
 );

@@ -36,8 +36,8 @@ PagePage is a dedicated page for Page Banner and Layer 2 image library configura
         - **"All Images" Option**: Shows all images from all folders regardless of groups
         - **Group Leader Options**: List of group leaders with at least 1 member
       - **Images Grid**: Displays images based on selection mode
-        - **All Images Mode**: Shows all images from all folders
-        - **Group Leader Mode**: Shows group leader + all members
+        - **All Images Mode**: Shows only **Group Leaders** and standalone images (subordinates hidden).
+        - **Group Leader Mode**: Shows selected Group Leader + all its members.
         - Click any image to apply it as Layer 2 (loads paired background color)
     - **Layer 2 - Overlay** (Right Column):
       - Image upload/thumbnail
