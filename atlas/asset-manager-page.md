@@ -31,22 +31,20 @@ Located at the very top of the page, this zone contains the primary navigation:
 
 The navigation is centered and provides visual feedback for the active state.
 
-### 2. Page Banner (Zone 1)
-Directly below the navigation is a **visual-only** instance of the `PageBanner`.
--   **Reduced Profile**: The banner text (Title/Description) is hidden to reduce visual clutter, serving primarily as a visual anchor and preview area for potential banner changes.
-
-### 3. Content Carousel (Zone 2)
-The main interactive area for browsing assets.
+### 2. Content Carousel (Zone 1)
+The main interactive area for browsing assets. The horizontal carousel takes up the majority of the page height.
 -   **Dynamic Content**:
     -   **Active Tab = Orb**: Displays the **Orb Presets Carousel** containing only independent presets and Group Leaders.
         -   **Spill Reflection**: Presets display their actual spill configuration (elements breaking the circle bounds) exactly as they appear in the top application menu.
-        -   **Group Navigation**: Group Leaders feature a "View Group" button (grid icon) to open the `OrbGroupColumn`, allowing access to subordinate presets.
+        -   **Group Navigation**: Group Leaders feature a "View Group" button (grid icon) to open the `OrbGroupColumn`.
+            -   **Group Member Config**: Within `OrbGroupColumn`, members now have direct sliders for **Scale**, **X-Offset**, **Y-Offset**, and **Spill Toggles**, replacing the previous folder/playlist assignment UI.
         -   **Hover Actions**: Quick access to **Folder Assignments**, **Playlist Overrides**, and **Delete**.
     -   **Active Tab = Page**: Displays the **Page Banners Carousel** containing only independent banners and Group Leaders.
-        -   **Group Navigation**: Group Leaders feature a "View Group" button to open the `PageGroupColumn`, providing access to subordinate banners.
+        -   **Group Navigation**: Group Leaders feature a "View Group" button to open the `PageGroupColumn`.
+            -   **Group Member Config**: Within `PageGroupColumn`, members now have direct sliders for **Scale**, **X-Offset**, and **Y-Offset**.
     -   **App/Theme**: Displays "Coming Soon" placeholders.
 
-### 4. Configuration Panel (Zone 3)
+### 3. Configuration Panel (Zone 2)
 A fixed-height panel at the bottom for fine-tuning the selected asset.
 
 #### For Orb Tab:

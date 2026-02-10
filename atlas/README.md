@@ -408,5 +408,7 @@ For detailed information about the application's theme system and recent color c
   - **Group Leader Implementation**: 
     - **Save Options**: Added "Save as New Leader" and "Save to Group" for both Orb Presets and Page Banners.
     - **Hierarchical Viewing**: Implemented `OrbGroupColumn` and `PageGroupColumn` to view subordinate items within a group.
-    - **Filtered Carousels**: Updated main carousels to display only Group Leaders and standalone items, reducing clutter.
-
+    -   **Filtered Carousels**: Updated main carousels to display only Group Leaders and standalone items, reducing clutter.
+  - **Group Configuration UI**:
+    -   **Direct Property Control**: Refactored `OrbGroupColumn` and `PageGroupColumn` to replace playlist/folder assignment UI with direct configuration sliders (Scale, X/Y Offsets, Spill).
+    -   **Vertical Space Optimization**: Removed the top-level Page Banner preview from the Asset Manager to expand the main content carousel area.

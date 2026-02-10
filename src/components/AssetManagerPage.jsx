@@ -7,7 +7,7 @@ import { usePlaylistStore } from '../store/playlistStore';
 import { FOLDER_COLORS } from '../utils/folderColors';
 import { useLayoutStore } from '../store/layoutStore';
 import { useConfigStore } from '../store/configStore';
-import PageBanner from './PageBanner';
+
 
 const AssetManagerPage = () => {
     // Global State
@@ -259,13 +259,7 @@ const AssetManagerPage = () => {
 
 
 
-            {/* --- ZONE 1: PAGE BANNER (Visual Only) --- */}
-            <div className="w-full">
-                <PageBanner
-                    title=""
-                    description=""
-                />
-            </div>
+
 
             {/* --- ZONE 2: CAROUSEL (Content Navigation) --- */}
             <div className="flex-1 flex flex-col gap-3 min-h-[300px] shrink-0 relative group/carousel">
@@ -1262,7 +1256,7 @@ const AssetManagerPage = () => {
                 const leader = orbFavorites.find(f => f.id === orbColumnLeaderId);
                 if (!leader) return null;
                 const memeberIds = leader.groupMembers || [];
-                const members = orbFavorites.filter(f => memeberIds.includes(f.id));
+                const members = [leader, ...orbFavorites.filter(f => memeberIds.includes(f.id))];
                 return (
                     <OrbGroupColumn
                         leader={leader}
@@ -1282,13 +1276,14 @@ const AssetManagerPage = () => {
                 if (!leader) return null;
 
                 const memberKeys = leader.groupMembers || [];
-                const members = memberKeys.map(key => {
+                const subMembers = memberKeys.map(key => {
                     const [fId, iId] = key.split(':');
                     const f = layer2Folders.find(lf => lf.id === fId);
                     const img = f?.images.find(i => i.id === iId);
                     if (img) return { ...img, folderName: f.name, folderId: f.id };
                     return null;
                 }).filter(Boolean);
+                const members = [{ ...leader, folderName: folder.name, folderId: folder.id }, ...subMembers];
 
                 return (
                     <PageGroupColumn
