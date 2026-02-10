@@ -3,7 +3,7 @@ import { usePlaylistStore } from '../store/playlistStore';
 import { useNavigationStore } from '../store/navigationStore';
 import { getAllPlaylists, getPlaylistItems, createPlaylist, getPlaylistsForVideoIds } from '../api/playlistApi';
 import VideoCard from './VideoCard';
-import PageBanner from './PageBanner';
+
 import { useLayoutStore } from '../store/layoutStore';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
@@ -40,13 +40,13 @@ const LikesPage = ({ onVideoSelect }) => {
                     setLikesPlaylistId(likesPlaylist.id);
                     const items = await getPlaylistItems(likesPlaylist.id);
                     setLikedVideos(items || []);
-                    
+
                     // Load playlist associations for all liked videos
                     if (items && items.length > 0) {
                         const videoIds = items
                             .map(item => item.video_id)
                             .filter(id => id);
-                        
+
                         if (videoIds.length > 0) {
                             try {
                                 const playlistsData = await getPlaylistsForVideoIds(videoIds);
@@ -105,7 +105,7 @@ const LikesPage = ({ onVideoSelect }) => {
     const handlePlaylistBadgeLeftClick = (e, playlistName) => {
         e.stopPropagation();
         e.preventDefault();
-        
+
         // Toggle filter: if already filtered to this playlist, clear filter; otherwise, filter to this playlist
         if (filteredPlaylist === playlistName) {
             setFilteredPlaylist(null);
@@ -117,7 +117,7 @@ const LikesPage = ({ onVideoSelect }) => {
     const handlePlaylistBadgeRightClick = async (e, playlistName) => {
         e.stopPropagation();
         e.preventDefault();
-        
+
         // Find playlist by name
         const playlist = allPlaylists.find(p => p.name === playlistName);
         if (!playlist) {
@@ -196,71 +196,7 @@ const LikesPage = ({ onVideoSelect }) => {
     return (
         <div className="w-full h-full flex flex-col bg-transparent">
             <div className="flex-1 overflow-y-auto custom-scrollbar">
-                <PageBanner
-                    title="Liked Videos"
-                    description={null}
-                    folderColor={null}
-                    playlistBadges={uniquePlaylists}
-                    onPlaylistBadgeLeftClick={handlePlaylistBadgeLeftClick}
-                    onPlaylistBadgeRightClick={handlePlaylistBadgeRightClick}
-                    allPlaylists={allPlaylists}
-                    filteredPlaylist={filteredPlaylist}
-                    seamlessBottom={true}
-                    customDescription={
-                        totalPages > 1 ? (
-                            <div className="flex items-center gap-1 px-3 py-1.5 rounded-md border transition-all"
-                                style={{
-                                    backgroundColor: 'rgba(14, 165, 233, 0.1)',
-                                    borderColor: 'rgba(14, 165, 233, 0.3)',
-                                }}
-                            >
-                                <button
-                                    onClick={() => setCurrentPage(1)}
-                                    disabled={currentPage === 1}
-                                    className="px-1 disabled:opacity-30 disabled:cursor-not-allowed hover:opacity-80 transition-opacity"
-                                    title="First page"
-                                >
-                                    <span className="text-sm md:text-base font-medium text-white/80" style={{ textShadow: '-1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0 2px 4px rgba(0,0,0,0.9)' }}>
-                                        &lt;&lt;
-                                    </span>
-                                </button>
-                                <button
-                                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                                    disabled={currentPage === 1}
-                                    className="px-1 disabled:opacity-30 disabled:cursor-not-allowed hover:opacity-80 transition-opacity"
-                                    title="Previous page"
-                                >
-                                    <span className="text-sm md:text-base font-medium text-white/80" style={{ textShadow: '-1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0 2px 4px rgba(0,0,0,0.9)' }}>
-                                        &lt;
-                                    </span>
-                                </button>
-                                <span className="px-2 text-sm md:text-base font-medium text-white/80" style={{ textShadow: '-1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0 2px 4px rgba(0,0,0,0.9)' }}>
-                                    {currentPage}/{totalPages}
-                                </span>
-                                <button
-                                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                                    disabled={currentPage === totalPages}
-                                    className="px-1 disabled:opacity-30 disabled:cursor-not-allowed hover:opacity-80 transition-opacity"
-                                    title="Next page"
-                                >
-                                    <span className="text-sm md:text-base font-medium text-white/80" style={{ textShadow: '-1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0 2px 4px rgba(0,0,0,0.9)' }}>
-                                        &gt;
-                                    </span>
-                                </button>
-                                <button
-                                    onClick={() => setCurrentPage(totalPages)}
-                                    disabled={currentPage === totalPages}
-                                    className="px-1 disabled:opacity-30 disabled:cursor-not-allowed hover:opacity-80 transition-opacity"
-                                    title="Last page"
-                                >
-                                    <span className="text-sm md:text-base font-medium text-white/80" style={{ textShadow: '-1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0 2px 4px rgba(0,0,0,0.9)' }}>
-                                        &gt;&gt;
-                                    </span>
-                                </button>
-                            </div>
-                        ) : null
-                    }
-                />
+
 
                 <div className="px-4 pb-8">
                     {renderVideos()}

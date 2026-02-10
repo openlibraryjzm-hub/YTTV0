@@ -61,7 +61,14 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
   const horizontalScrollRef = useRef(null);
 
   const scrollToTop = () => {
-    horizontalScrollRef.current?.scrollTo({ left: 0, behavior: 'smooth' });
+    // Scroll the main container to top
+    // Since we removed horizontalScrollRef from the main list, we should target the scroll container
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollTo({ top: 0, behavior: 'smooth' });
+    } else if (horizontalScrollRef.current) {
+      // Fallback for safety if refs are mixed
+      horizontalScrollRef.current.scrollTo({ top: 0, behavior: 'smooth' });
+    }
   };
 
   const tabs = [
@@ -238,32 +245,7 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
     }
   }, [currentVideoIndex, activePlaylistItems]);
 
-  // Convert vertical wheel scrolling to horizontal scrolling (optimized)
-  useEffect(() => {
-    const container = horizontalScrollRef.current;
-    if (!container) return;
 
-    const handleWheel = (e) => {
-      // Check if there's horizontal scroll available
-      const hasHorizontalScroll = container.scrollWidth > container.clientWidth;
-
-      if (hasHorizontalScroll) {
-        // Prevent default vertical scrolling
-        e.preventDefault();
-        e.stopPropagation();
-
-        // Direct scrollLeft assignment for better performance
-        container.scrollLeft += e.deltaY;
-      }
-    };
-
-    // Add listener to container
-    container.addEventListener('wheel', handleWheel, { passive: false });
-
-    return () => {
-      container.removeEventListener('wheel', handleWheel);
-    };
-  }, []); // Attach once when component mounts
 
   const { isStickied, toggleSticky, stickiedVideos: allStickiedVideos } = useStickyStore();
 
@@ -1399,7 +1381,7 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
           />
         </div>
       ) : (
-        <div className="flex-1 overflow-y-hidden bg-transparent relative">
+        <div ref={scrollContainerRef} className="flex-1 overflow-y-auto overflow-x-hidden bg-transparent relative">
           <AutoTagModal
             isOpen={showAutoTagModal}
             onClose={() => setShowAutoTagModal(false)}
@@ -1687,19 +1669,7 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
 
           </div >
 
-          <div
-            className="px-4 pb-8"
-            onWheel={(e) => {
-              // Handle wheel scrolling on the entire video area
-              const container = horizontalScrollRef.current;
-              if (container && container.scrollWidth > container.clientWidth) {
-                e.preventDefault();
-                e.stopPropagation();
-                // Direct scrollLeft assignment for better performance
-                container.scrollLeft += e.deltaY;
-              }
-            }}
-          >
+          <div className="px-4 pb-8">
             {/* Edit Playlist/Folder Modal */}
             <EditPlaylistModal
               isOpen={showEditModal}
@@ -1767,110 +1737,90 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
                   </StickyVideoCarousel>
                 )}
 
-                {/* Horizontal Scrolling Video Grid - Mixed Content Grid */}
-                <div
-                  ref={horizontalScrollRef}
-                  className="horizontal-video-scroll"
-                  style={{
-                    width: '100%',
-                    overflowX: 'scroll',
-                    overflowY: 'hidden',
-                    scrollbarWidth: 'thin',
-                    scrollbarColor: 'rgba(148, 163, 184, 0.6) rgba(15, 23, 42, 0.3)',
-                    WebkitOverflowScrolling: 'touch',
-                    marginTop: '-32px'
-                  }}
-                >
-                  <div
-                    className="grid grid-rows-2 grid-flow-col gap-x-4 gap-y-2 animate-fade-in h-[440px]"
-                    style={{
-                      width: 'max-content',
-                      gridTemplateRows: 'repeat(2, minmax(0, 1fr))'
-                    }}
-                  >
-                    {regularVideos.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map((video, idx) => {
-                      const isTweet = video.is_local || video.video_url?.includes('twitter.com') || video.video_url?.includes('x.com') || video.thumbnail_url?.includes('twimg.com');
-                      const originalIndex = activePlaylistItems.findIndex(v => v.id === video.id);
-                      const folderKey = selectedFolder === null ? 'root' : selectedFolder;
-                      const key = `${activePlaylistId}::${folderKey}`;
-                      const isContextStickied = (allStickiedVideos[key] || []).includes(video.id);
+                {/* Vertical Video Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 animate-fade-in">
+                  {regularVideos.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map((video, idx) => {
+                    const isTweet = video.is_local || video.video_url?.includes('twitter.com') || video.video_url?.includes('x.com') || video.thumbnail_url?.includes('twimg.com');
+                    const originalIndex = activePlaylistItems.findIndex(v => v.id === video.id);
+                    const folderKey = selectedFolder === null ? 'root' : selectedFolder;
+                    const key = `${activePlaylistId}::${folderKey}`;
+                    const isContextStickied = (allStickiedVideos[key] || []).includes(video.id);
 
-                      const handleRenameFolder = async (folderColor, newName) => {
-                        if (!activePlaylistId) return;
-                        try {
-                          // Keep existing description if present
-                          const currentMeta = allFolderMetadata[folderColor] || {};
-                          const description = currentMeta.description || '';
+                    const handleRenameFolder = async (folderColor, newName) => {
+                      if (!activePlaylistId) return;
+                      try {
+                        // Keep existing description if present
+                        const currentMeta = allFolderMetadata[folderColor] || {};
+                        const description = currentMeta.description || '';
 
-                          await setFolderMetadata(activePlaylistId, folderColor, newName, description);
+                        await setFolderMetadata(activePlaylistId, folderColor, newName, description);
 
-                          // Update local state
-                          setAllFolderMetadata(prev => ({
-                            ...prev,
-                            [folderColor]: { ...prev[folderColor], name: newName }
-                          }));
-                        } catch (error) {
-                          console.error('Failed to rename folder:', error);
-                          alert('Failed to rename folder');
-                        }
-                      };
-
-                      // ... (render)
-
-                      // Common props for both card types
-                      const commonProps = {
-                        video,
-                        index: (currentPage - 1) * itemsPerPage + idx,
-                        originalIndex,
-                        isSelected: selectedVideoIndex === originalIndex,
-                        isCurrentlyPlaying: currentVideoIndex === originalIndex,
-                        videoFolders: videoFolderAssignments[video.id] || [],
-                        selectedFolder,
-                        onVideoClick: () => handleVideoClick(video, (currentPage - 1) * itemsPerPage + idx),
-                        onStarClick: (e) => handleStarClick(e, video),
-                        onStarColorLeftClick: handleStarColorLeftClick,
-                        onStarColorRightClick: handleStarColorRightClick,
-                        onMenuOptionClick: (option) => {
-                          if (option.action === 'toggleSticky') {
-                            handleToggleSticky(activePlaylistId, video.id);
-                          } else {
-                            handleMenuOptionClick(option, video);
-                          }
-                        },
-                        onQuickAssign: handleStarClick,
-                        bulkTagMode,
-                        bulkTagSelections: bulkTagSelections[video.id] || new Set(),
-                        onBulkTagColorClick: (color) => handleBulkTagColorClick(video, color),
-                        onPinClick: () => { },
-                        isStickied: isContextStickied,
-                        playlistId: activePlaylistId,
-                        folderMetadata: allFolderMetadata,
-                        onRenameFolder: handleRenameFolder,
-                        progress: (() => {
-                          const data = videoProgress.get(video.id) || videoProgress.get(extractVideoId(video.video_url));
-                          return data ? (typeof data === 'number' ? data : data.percentage) : 0;
-                        })(),
-                        isWatched: watchedVideoIds.has(extractVideoId(video.video_url) || video.video_id)
-                      };
-
-                      if (isTweet) {
-                        return (
-                          <div key={video.id} className="row-span-2 h-full">
-                            <TweetCard {...commonProps} />
-                          </div>
-                        );
+                        // Update local state
+                        setAllFolderMetadata(prev => ({
+                          ...prev,
+                          [folderColor]: { ...prev[folderColor], name: newName }
+                        }));
+                      } catch (error) {
+                        console.error('Failed to rename folder:', error);
+                        alert('Failed to rename folder');
                       }
+                    };
 
+                    // ... (render)
+
+                    // Common props for both card types
+                    const commonProps = {
+                      video,
+                      index: (currentPage - 1) * itemsPerPage + idx,
+                      originalIndex,
+                      isSelected: selectedVideoIndex === originalIndex,
+                      isCurrentlyPlaying: currentVideoIndex === originalIndex,
+                      videoFolders: videoFolderAssignments[video.id] || [],
+                      selectedFolder,
+                      onVideoClick: () => handleVideoClick(video, (currentPage - 1) * itemsPerPage + idx),
+                      onStarClick: (e) => handleStarClick(e, video),
+                      onStarColorLeftClick: handleStarColorLeftClick,
+                      onStarColorRightClick: handleStarColorRightClick,
+                      onMenuOptionClick: (option) => {
+                        if (option.action === 'toggleSticky') {
+                          handleToggleSticky(activePlaylistId, video.id);
+                        } else {
+                          handleMenuOptionClick(option, video);
+                        }
+                      },
+                      onQuickAssign: handleStarClick,
+                      bulkTagMode,
+                      bulkTagSelections: bulkTagSelections[video.id] || new Set(),
+                      onBulkTagColorClick: (color) => handleBulkTagColorClick(video, color),
+                      onPinClick: () => { },
+                      isStickied: isContextStickied,
+                      playlistId: activePlaylistId,
+                      folderMetadata: allFolderMetadata,
+                      onRenameFolder: handleRenameFolder,
+                      progress: (() => {
+                        const data = videoProgress.get(video.id) || videoProgress.get(extractVideoId(video.video_url));
+                        return data ? (typeof data === 'number' ? data : data.percentage) : 0;
+                      })(),
+                      isWatched: watchedVideoIds.has(extractVideoId(video.video_url) || video.video_id)
+                    };
+
+                    if (isTweet) {
                       return (
-                        <div key={video.id} className="w-[320px] h-full flex flex-col justify-center">
-                          <VideoCard
-                            {...commonProps}
-                            cardStyle={videoCardStyle}
-                          />
+                        <div key={video.id} className="h-full">
+                          <TweetCard {...commonProps} />
                         </div>
                       );
-                    })}
-                  </div>
+                    }
+
+                    return (
+                      <div key={video.id} className="w-full h-full flex flex-col justify-center">
+                        <VideoCard
+                          {...commonProps}
+                          cardStyle={videoCardStyle}
+                        />
+                      </div>
+                    );
+                  })}
                 </div>
 
               </>

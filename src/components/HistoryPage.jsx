@@ -10,7 +10,7 @@ import { usePinStore } from '../store/pinStore';
 import Card from './Card';
 import CardThumbnail from './CardThumbnail';
 import CardContent from './CardContent';
-import PageBanner from './PageBanner';
+
 
 const HistoryPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
   const [history, setHistory] = useState([]);
@@ -37,27 +37,27 @@ const HistoryPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
   const loadAllData = async () => {
     try {
       setLoading(true);
-      
+
       // Load playlists and history in parallel
       const [playlists, historyData] = await Promise.all([
         getAllPlaylists(),
         getWatchHistory(100)
       ]);
-      
+
       setAllPlaylists(playlists || []);
       setHistory(historyData || []);
-      
+
       // Fetch playlists for all videos in history
       if (historyData && historyData.length > 0) {
         const videoIds = historyData
           .map(item => item.video_id)
           .filter(id => id); // Filter out any null/undefined video_ids
-        
+
         if (videoIds.length > 0) {
           try {
             const playlistsData = await getPlaylistsForVideoIds(videoIds);
             setPlaylistMap(playlistsData || {});
-            
+
             // Collect all unique playlists that contain history videos
             const playlistIdsSet = new Set();
             const playlistMapById = {};
@@ -70,17 +70,17 @@ const HistoryPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
                 }
               });
             });
-            
+
             // Build video_id -> item_id map for each playlist (cache playlist items)
             const playlistItemsCache = {}; // playlistId -> items array
             const videoToItemMap = {}; // playlistId -> { videoId -> itemId }
-            
+
             // Load all playlist items in parallel
             const playlistItemsPromises = Array.from(playlistIdsSet).map(async (playlistId) => {
               try {
                 const items = await getPlaylistItems(playlistId);
                 playlistItemsCache[playlistId] = items || [];
-                
+
                 // Build video_id -> item_id map for this playlist
                 const videoMap = {};
                 (items || []).forEach(item => {
@@ -95,9 +95,9 @@ const HistoryPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
                 videoToItemMap[playlistId] = {};
               }
             });
-            
+
             await Promise.all(playlistItemsPromises);
-            
+
             // Load all folder assignments in parallel using batch API
             const folderAssignmentsPromises = Array.from(playlistIdsSet).map(async (playlistId) => {
               try {
@@ -108,9 +108,9 @@ const HistoryPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
                 return { playlistId, assignments: {} };
               }
             });
-            
+
             const folderAssignmentsResults = await Promise.all(folderAssignmentsPromises);
-            
+
             // Build folder assignments map: videoId -> playlistId -> [folderColors]
             const folderAssignments = {};
             folderAssignmentsResults.forEach(({ playlistId, assignments }) => {
@@ -121,7 +121,7 @@ const HistoryPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
                 const videoId = Object.keys(videoToItemMap[playlistId] || {}).find(
                   vid => videoToItemMap[playlistId][vid] === itemId
                 );
-                
+
                 if (videoId) {
                   if (!folderAssignments[videoId]) {
                     folderAssignments[videoId] = {};
@@ -136,9 +136,9 @@ const HistoryPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
                 }
               });
             });
-            
+
             setFolderMap(folderAssignments);
-            
+
             // Collect all unique folder colors per playlist for metadata fetching
             const playlistFolderColors = {}; // playlistId -> Set of folderColors
             Object.entries(folderAssignments).forEach(([videoId, playlists]) => {
@@ -150,7 +150,7 @@ const HistoryPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
                 folderColors.forEach(color => playlistFolderColors[playlistId].add(color));
               });
             });
-            
+
             // Load all folder metadata in parallel
             const folderMetadataPromises = [];
             Object.entries(playlistFolderColors).forEach(([playlistIdStr, folderColors]) => {
@@ -166,16 +166,16 @@ const HistoryPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
                 );
               });
             });
-            
+
             const folderMetadataResults = await Promise.all(folderMetadataPromises);
-            
+
             // Build folder names map: videoId -> playlistId -> folderColor -> folderName
             const folderNames = {};
             folderMetadataResults.forEach(({ playlistId, folderColor, metadata }) => {
-              const folderName = metadata && metadata[0] 
-                ? metadata[0] 
+              const folderName = metadata && metadata[0]
+                ? metadata[0]
                 : getFolderColorById(folderColor).name;
-              
+
               // Find all videos in this playlist with this folder color
               Object.entries(folderAssignments).forEach(([videoId, playlists]) => {
                 const folderColors = playlists[playlistId];
@@ -190,7 +190,7 @@ const HistoryPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
                 }
               });
             });
-            
+
             setFolderNameMap(folderNames);
           } catch (error) {
             console.error('Failed to load playlists for history videos:', error);
@@ -209,7 +209,7 @@ const HistoryPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
   const handlePlaylistBadgeLeftClick = (e, playlistName) => {
     e.stopPropagation(); // Prevent triggering the card click
     e.preventDefault();
-    
+
     // Toggle filter: if already filtered to this playlist, clear filter; otherwise, filter to this playlist
     if (filteredPlaylist === playlistName) {
       setFilteredPlaylist(null);
@@ -221,7 +221,7 @@ const HistoryPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
   const handlePlaylistBadgeRightClick = async (e, playlistName) => {
     e.stopPropagation(); // Prevent triggering the card click
     e.preventDefault();
-    
+
     // Find playlist by name
     const playlist = allPlaylists.find(p => p.name === playlistName);
     if (!playlist) {
@@ -243,7 +243,7 @@ const HistoryPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
 
   const handleFolderBadgeClick = async (e, playlistName, folderColor) => {
     e.stopPropagation(); // Prevent triggering the card click
-    
+
     // Find playlist by name
     const playlist = allPlaylists.find(p => p.name === playlistName);
     if (!playlist || !folderColor) {
@@ -333,17 +333,9 @@ const HistoryPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
     return (
       <div className="w-full h-full flex flex-col bg-transparent">
         <div className="flex-1 overflow-y-auto p-6">
-          <PageBanner
-            title="History"
-            description={`No videos from "${filteredPlaylist}" in watch history.`}
-            folderColor={null}
-            playlistBadges={uniquePlaylists}
-            onPlaylistBadgeLeftClick={handlePlaylistBadgeLeftClick}
-            onPlaylistBadgeRightClick={handlePlaylistBadgeRightClick}
-            allPlaylists={allPlaylists}
-            filteredPlaylist={filteredPlaylist}
-            seamlessBottom={true}
-          />
+          <div className="text-center text-slate-400 py-12">
+            No videos from "{filteredPlaylist}" in watch history.
+          </div>
         </div>
       </div>
     );
@@ -352,21 +344,11 @@ const HistoryPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
   return (
     <div className="w-full h-full flex flex-col bg-transparent">
       <div className="flex-1 overflow-y-auto p-6">
-        <PageBanner
-          title="History"
-          description={filteredPlaylist ? `Videos from "${filteredPlaylist}"` : "Your recently watched videos."}
-          folderColor={null}
-          playlistBadges={uniquePlaylists}
-          onPlaylistBadgeLeftClick={handlePlaylistBadgeLeftClick}
-          onPlaylistBadgeRightClick={handlePlaylistBadgeRightClick}
-          allPlaylists={allPlaylists}
-          filteredPlaylist={filteredPlaylist}
-          seamlessBottom={true}
-        />
+
         <div className="flex flex-col space-y-3 max-w-5xl mx-auto">
           {filteredHistory.map((item) => {
             const thumbnailUrl = item.thumbnail_url || getThumbnailUrl(item.video_id, 'medium');
-            
+
             // Check if this video is currently playing
             const currentVideo = currentPlaylistItems?.[currentVideoIndex];
             const isCurrentlyPlaying = currentVideo && (
@@ -385,18 +367,16 @@ const HistoryPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
               <Card
                 key={item.id}
                 onClick={() => handleVideoClick(item)}
-                className={`flex flex-row gap-5 p-3 bg-slate-800/40 hover:bg-slate-800/80 rounded-xl transition-all group w-full border-2 ${
-                  isCurrentlyPlaying 
-                    ? 'border-red-500 ring-4 ring-red-500 ring-offset-2 ring-offset-slate-900 shadow-[0_0_40px_rgba(239,68,68,1),inset_0_0_40px_rgba(239,68,68,0.8)]' 
+                className={`flex flex-row gap-5 p-3 bg-slate-800/40 hover:bg-slate-800/80 rounded-xl transition-all group w-full border-2 ${isCurrentlyPlaying
+                    ? 'border-red-500 ring-4 ring-red-500 ring-offset-2 ring-offset-slate-900 shadow-[0_0_40px_rgba(239,68,68,1),inset_0_0_40px_rgba(239,68,68,0.8)]'
                     : 'border-slate-700/50 hover:border-slate-600/70'
-                }`}
+                  }`}
                 title={getInspectTitle(`History video: ${item.title || 'Untitled'}`)}
                 variant="minimal"
               >
                 {/* Left: Thumbnail */}
-                <div className={`w-64 shrink-0 aspect-video rounded-lg overflow-hidden border-2 border-black relative shadow-md group-hover:shadow-xl transition-all ${
-                  isCurrentlyPlaying ? 'ring-4 ring-red-500 ring-offset-2 ring-offset-black shadow-[0_0_40px_rgba(239,68,68,1),inset_0_0_40px_rgba(239,68,68,0.8)]' : ''
-                }`}>
+                <div className={`w-64 shrink-0 aspect-video rounded-lg overflow-hidden border-2 border-black relative shadow-md group-hover:shadow-xl transition-all ${isCurrentlyPlaying ? 'ring-4 ring-red-500 ring-offset-2 ring-offset-black shadow-[0_0_40px_rgba(239,68,68,1),inset_0_0_40px_rgba(239,68,68,0.8)]' : ''
+                  }`}>
                   <CardThumbnail
                     src={thumbnailUrl}
                     alt={item.title || 'Video thumbnail'}
@@ -409,11 +389,10 @@ const HistoryPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
                     {/* Pin Marker - To the right of title, slightly above */}
                     {(isPinnedVideo || isPriorityPinnedVideo) && (
                       <div className="absolute -top-1 right-0 z-10">
-                        <div className={`p-1.5 rounded-lg backdrop-blur-md shadow-lg border ${
-                          isPriorityPinnedVideo
+                        <div className={`p-1.5 rounded-lg backdrop-blur-md shadow-lg border ${isPriorityPinnedVideo
                             ? 'bg-amber-500/20 border-amber-500/50 text-amber-500'
                             : 'bg-sky-500/20 border-sky-500/50 text-sky-500'
-                        }`}>
+                          }`}>
                           <Pin
                             size={16}
                             fill={isPriorityPinnedVideo || isPinnedVideo ? "currentColor" : "none"}
@@ -437,24 +416,24 @@ const HistoryPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
                           // Find playlist to get ID
                           const playlist = allPlaylists.find(p => p.name === playlistName);
                           const playlistId = playlist?.id;
-                          
+
                           // Get folder colors for this video in this playlist
                           const folderColors = playlistId && folderMap[item.video_id]?.[playlistId] || [];
                           const firstFolderColor = folderColors.length > 0 ? folderColors[0] : null;
                           const folderColorInfo = firstFolderColor ? getFolderColorById(firstFolderColor) : null;
-                          
+
                           // Get folder name (custom name or color name)
                           const folderName = firstFolderColor && playlistId && folderNameMap[item.video_id]?.[playlistId]?.[firstFolderColor]
                             ? folderNameMap[item.video_id][playlistId][firstFolderColor]
                             : (folderColorInfo ? folderColorInfo.name : null);
-                          
+
                           // Badge text: playlist name - folder name (or just playlist name if no folder)
-                          const badgeText = folderName 
+                          const badgeText = folderName
                             ? `${playlistName} - ${folderName}`
                             : playlistName;
-                          
+
                           // Use folder color if available, otherwise default to sky
-                          const badgeBg = folderColorInfo 
+                          const badgeBg = folderColorInfo
                             ? `${folderColorInfo.hex}20` // 20 = ~12.5% opacity in hex
                             : 'rgba(14, 165, 233, 0.1)'; // sky-500/10
                           const badgeBorder = folderColorInfo
@@ -469,7 +448,7 @@ const HistoryPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
                           const badgeHoverBorder = folderColorInfo
                             ? `${folderColorInfo.hex}70` // 70 = ~44% opacity
                             : 'rgba(14, 165, 233, 0.5)'; // sky-500/50
-                          
+
                           return (
                             <div
                               key={idx}
@@ -496,14 +475,14 @@ const HistoryPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
                               >
                                 <span className="line-clamp-1">{playlistName}</span>
                               </button>
-                              
+
                               {/* Separator */}
                               {folderName && (
                                 <span className="px-0.5" style={{ color: badgeTextColor, opacity: 0.6 }}>
                                   -
                                 </span>
                               )}
-                              
+
                               {/* Folder name part */}
                               {folderName && folderColorInfo && (
                                 <button
