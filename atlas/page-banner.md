@@ -11,7 +11,26 @@ The Page Banner is a contextual banner component displayed at the top of content
 
 #### ### Page Banner Overview
 
-**1: User-Perspective Description**
+**Current Implementation: Mini Header (Active)**
+
+Due to implementation complexities, the dynamic `PageBanner` component is currently **disabled** in `VideosPage.jsx` and `PlaylistsPage.jsx`. It has been replaced by a streamlined **Mini Header**.
+
+**Mini Header Features:**
+- **Height**: Fixed `100px` height.
+- **Layout**: Flex-end alignment (`items-end`) for title positioning.
+- **Styling**:
+  - **Background**: Linear gradient fading from transparent to 30% opacity of the active folder/playlist color (`activeFolder.hex` or default blue).
+  - **Typography**: Large, bold title (`text-3xl font-bold tracking-tight`) with drop shadow (`textShadow: 0 2px 4px rgba(0,0,0,0.5)`).
+  - **Color Matching**: Title text color matches the active folder/playlist hex color (e.g., Red folder = Red text, Blue playlist = Blue text).
+- **Sticky Toolbar Relationship**: The Sticky Toolbar sits directly below (`mt-0`) with no negative margin overlap.
+
+---
+
+**Legacy Feature: Full Page Banner (Currently Disabled)**
+
+The following documentation describes the full `PageBanner` component which is currently commented out in the codebase but remains available for future reactivation.
+
+**1: User-Perspective Description (Legacy)**
 
 Users see a contextual banner (220px fixed height) at the top of scrollable content areas on various pages:
 

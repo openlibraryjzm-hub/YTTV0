@@ -255,6 +255,64 @@ const PageBanner = ({ title, description, folderColor, onEdit, videoCount, count
             return null;
         }
 
+        // Videos page case: Check for playlist-specific override (takes precedence over theme and folder assignments)
+
+        console.log('[PageBanner] Checking overrides:', {
+            folderColor,
+            currentPlaylistId,
+            compositeKey: folderColor ? `${currentPlaylistId}:${folderColor}` : null,
+            overrideAvailable: folderColor ? !!playlistLayer2Overrides[`${currentPlaylistId}:${folderColor}`] : false,
+            overrides: Object.keys(playlistLayer2Overrides)
+        });
+
+        // 1. Check for Specific Folder Override (if inside a folder)
+        if (folderColor && playlistLayer2Overrides[`${currentPlaylistId}:${folderColor}`]) {
+            const override = playlistLayer2Overrides[`${currentPlaylistId}:${folderColor}`];
+            console.log('[PageBanner] Found Specific Override:', override);
+            // Folder overrides are typically custom uploads, so we use stored values directly
+            // But we can keep the library lookup logic if we eventually support picking from library for folders too
+            return {
+                image: override.image,
+                scale: override.scale,
+                xOffset: override.xOffset,
+                yOffset: override.yOffset,
+                imageId: override.imageId,
+                folderId: override.folderId,
+                bgColor: override.bgColor
+            };
+        }
+
+        // 2. Check for General Playlist Override
+        if (playlistLayer2Overrides[currentPlaylistId]) {
+            const override = playlistLayer2Overrides[currentPlaylistId];
+            // Look up the CURRENT image from the library to get latest values
+            const folder = layer2Folders?.find(f => f.id === override.folderId);
+            const libraryImage = folder?.images?.find(img => img.id === override.imageId);
+
+            if (libraryImage) {
+                // Use latest values from library (live updates from Settings)
+                return {
+                    image: libraryImage.image,
+                    scale: libraryImage.scale,
+                    xOffset: libraryImage.xOffset,
+                    yOffset: libraryImage.yOffset,
+                    imageId: libraryImage.id,
+                    folderId: override.folderId,
+                    bgColor: libraryImage.bgColor
+                };
+            }
+            // Fallback to stored values if image was deleted from library or is a custom upload
+            return {
+                image: override.image,
+                scale: override.scale,
+                xOffset: override.xOffset,
+                yOffset: override.yOffset,
+                imageId: override.imageId,
+                folderId: override.folderId,
+                bgColor: override.bgColor
+            };
+        }
+
         // Check for Playlist Override (Orb Group or Layer 2 Folder)
         // Checks if the current playlist is assigned to a specific Orb Group or Layer 2 Folder.
         // This OVERRIDES the global theme logic.
@@ -508,36 +566,7 @@ const PageBanner = ({ title, description, folderColor, onEdit, videoCount, count
             }
         }
 
-        // Videos page case: Check for playlist-specific override (takes precedence over theme)
-        if (playlistLayer2Overrides[currentPlaylistId]) {
-            const override = playlistLayer2Overrides[currentPlaylistId];
-            // Look up the CURRENT image from the library to get latest values
-            const folder = layer2Folders?.find(f => f.id === override.folderId);
-            const libraryImage = folder?.images?.find(img => img.id === override.imageId);
 
-            if (libraryImage) {
-                // Use latest values from library (live updates from Settings)
-                return {
-                    image: libraryImage.image,
-                    scale: libraryImage.scale,
-                    xOffset: libraryImage.xOffset,
-                    yOffset: libraryImage.yOffset,
-                    imageId: libraryImage.id,
-                    folderId: override.folderId,
-                    bgColor: libraryImage.bgColor
-                };
-            }
-            // Fallback to stored values if image was deleted from library
-            return {
-                image: override.image,
-                scale: override.scale,
-                xOffset: override.xOffset,
-                yOffset: override.yOffset,
-                imageId: override.imageId,
-                folderId: override.folderId,
-                bgColor: override.bgColor
-            };
-        }
 
         // No override - use Default folder as fallback
         const defaultFolder = layer2Folders?.find(f => f.id === 'default');

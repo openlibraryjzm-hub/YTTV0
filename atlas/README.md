@@ -412,3 +412,8 @@ For detailed information about the application's theme system and recent color c
   - **Group Configuration UI**:
     -   **Direct Property Control**: Refactored `OrbGroupColumn` and `PageGroupColumn` to replace playlist/folder assignment UI with direct configuration sliders (Scale, X/Y Offsets, Spill).
     -   **Vertical Space Optimization**: Removed the top-level Page Banner preview from the Asset Manager to expand the main content carousel area.
+  - **Page Banner Disabled**: 
+    -   **Mini Header Replacement**: Replaced the complex Page Banner with a streamlined **Mini Header** (100px height) on Videos and Playlists pages.
+    -   **Adaptive Styling**: Header background and text dynamically match the active folder's color (including "All" view), using a subtle gradient for a clean, cohesive look.
+    -   **Layout Adjustment**: Removed sticky toolbar negative margins to accommodate the new header layout.
+

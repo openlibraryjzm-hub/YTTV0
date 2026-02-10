@@ -786,6 +786,8 @@ const PlaylistsPage = ({ onVideoSelect }) => {
 
               return (
                 <div className="px-8 pt-8">
+                  {/* Page Banner - DISABLED PER USER REQUEST */}
+                  {/*
                   <PageBanner
                     title={bannerTitle}
                     description={null}
@@ -799,6 +801,7 @@ const PlaylistsPage = ({ onVideoSelect }) => {
                     pinnedVideos={priorityVideo ? [priorityVideo] : []}
                     onPinnedClick={(video) => onVideoSelect && onVideoSelect(video.video_url)}
                   />
+                  */}
                 </div>
               );
             })()}
@@ -808,7 +811,7 @@ const PlaylistsPage = ({ onVideoSelect }) => {
 
             {/* Sticky Toolbar */}
             <div
-              className={`sticky top-0 z-40 transition-all duration-500 cubic-bezier(0.4, 0, 0.2, 1) overflow-visible -mt-16
+              className={`sticky top-0 z-40 transition-all duration-500 cubic-bezier(0.4, 0, 0.2, 1) overflow-visible mt-0
               ${isStuck
                   ? 'backdrop-blur-xl border-y shadow-2xl mx-0 rounded-none mb-6 pt-2 pb-2 bg-slate-900/70'
                   : 'backdrop-blur-[2px] border-b border-x border-t border-white/10 shadow-xl mx-8 rounded-b-2xl mb-8 mt-0 pt-1 pb-0 bg-transparent'

@@ -81,7 +81,16 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
       setViewMode('half');
     }
   };
-  const { userName, userAvatar, customPageBannerImage, bannerHeight, bannerBgSize } = useConfigStore();
+  const {
+    userName,
+    userAvatar,
+    customPageBannerImage,
+    bannerHeight,
+    bannerBgSize,
+    playlistLayer2Overrides,
+    setPlaylistLayer2Override,
+    clearPlaylistLayer2Override
+  } = useConfigStore();
 
   // Helper to get inspect label
   const getInspectTitle = (label) => inspectMode ? label : undefined;
@@ -1018,6 +1027,32 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
         // Update Playlist Metadata
         await updatePlaylist(activePlaylistId, data.name, data.description, data.customAscii);
 
+        // Update Page Banner Override (Layer 2)
+        // Determine the override key (playlist ID or composite "playlist:folder")
+        // If selectedFolder is set, we use composite key. Otherwise just playlist ID.
+        const overrideKey = selectedFolder
+          ? `${activePlaylistId}:${selectedFolder}`
+          : activePlaylistId;
+
+        console.log('[VideosPage] Saving Banner Override:', {
+          activePlaylistId,
+          selectedFolder,
+          overrideKey,
+          hasImage: !!data.bannerImage
+        });
+
+        if (data.bannerImage) {
+          setPlaylistLayer2Override(overrideKey, {
+            image: data.bannerImage,
+            scale: data.bannerScale ?? 100,
+            xOffset: data.bannerXOffset ?? 50,
+            yOffset: data.bannerYOffset ?? 50
+          });
+        } else {
+          // If image is removed/null, clear the override
+          clearPlaylistLayer2Override(overrideKey);
+        }
+
         // Update global state store by reloading all playlists
         const playlists = await getAllPlaylists();
         setAllPlaylists(playlists);
@@ -1226,6 +1261,13 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
 
   // Determine initial data for modal
   const modalInitialData = useMemo(() => {
+    // Determine appropriate override key
+    const overrideKey = selectedFolder
+      ? `${activePlaylistId}:${selectedFolder}`
+      : activePlaylistId;
+
+    const override = playlistLayer2Overrides[overrideKey];
+
     if (selectedFolder) {
       // Folder edit (including unsorted)
       let defaultName = 'Folder';
@@ -1240,17 +1282,27 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
       return {
         name: activeObject?.name || defaultName,
         description: activeObject?.description || '',
-        customAscii: activeObject?.customAscii || ''
+        customAscii: activeObject?.customAscii || '',
+        // Banner Override settings (Folder level)
+        bannerImage: override?.image,
+        bannerScale: override?.scale,
+        bannerXOffset: override?.xOffset,
+        bannerYOffset: override?.yOffset
       };
     } else {
       // Playlist edit
       return {
         name: activeObject?.name || '',
         description: activeObject?.description || '',
-        customAscii: activeObject?.custom_ascii || ''
+        customAscii: activeObject?.custom_ascii || '',
+        // Banner Override settings (Playlist level)
+        bannerImage: override?.image,
+        bannerScale: override?.scale,
+        bannerXOffset: override?.xOffset,
+        bannerYOffset: override?.yOffset
       };
     }
-  }, [activeObject, selectedFolder]);
+  }, [activeObject, selectedFolder, activePlaylistId, playlistLayer2Overrides]);
 
   // Find most recently watched video for "Continue" feature
   const continueVideo = useMemo(() => {
@@ -1357,7 +1409,36 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
             onConfirm={handleAutoTagConfirm}
             isProcessing={isAutoTagging}
           />
-          {/* Page Banner - Always visible for context */}
+          {/* Page Banner - DISABLED PER USER REQUEST */}
+          {/* Replacement Mini Header */}
+          {activePlaylistId && (
+            <div
+              className="w-full h-[100px] flex items-end px-8 pb-4 transition-all duration-300"
+              style={{
+                background: `linear-gradient(to bottom, transparent, ${bannerInfo.hex || '#ffffff'}30)`,
+              }}
+            >
+              <div className="flex flex-col">
+                <h1
+                  className="text-3xl font-bold tracking-tight"
+                  style={{
+                    textShadow: '0 2px 4px rgba(0,0,0,0.5)',
+                    color: bannerInfo.hex || 'rgba(255,255,255,0.9)'
+                  }}
+                >
+                  {bannerInfo.title}
+                </h1>
+                {bannerInfo.description && (
+                  <p className="text-white/50 text-xs mt-0.5 font-medium line-clamp-1 max-w-2xl">
+                    {bannerInfo.description}
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
+
+
+          {/* 
           {activePlaylistId && (
             <div className="px-4 pt-8">
               <PageBanner
@@ -1395,6 +1476,7 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
               />
             </div>
           )}
+          */}
 
           {/* Sticky Sentinel */}
           <div ref={stickySentinelRef} className="absolute h-px w-full -mt-px pointer-events-none opacity-0" />
@@ -1409,7 +1491,7 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
             `}
             style={{
               backgroundColor: isStuck ? undefined : 'transparent', // Fully transparent resting state
-              marginTop: '-19px' // 45px lower than original -64px
+              marginTop: '0px' // banner removed, no overlap needed
             }}
           >
 
