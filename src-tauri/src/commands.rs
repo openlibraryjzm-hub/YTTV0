@@ -478,3 +478,27 @@ pub fn stop_audio_capture() -> Result<(), String> {
         Err("Audio capture not running".to_string())
     }
 }
+
+// Drumstick rating commands
+#[tauri::command]
+pub fn get_drumstick_rating(
+    db: State<Mutex<Database>>,
+    playlist_id: i64,
+    item_id: i64,
+) -> Result<i32, String> {
+    let db = db.lock().map_err(|e| e.to_string())?;
+    db.get_drumstick_rating(playlist_id, item_id)
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn set_drumstick_rating(
+    db: State<Mutex<Database>>,
+    playlist_id: i64,
+    item_id: i64,
+    rating: i32,
+) -> Result<bool, String> {
+    let db = db.lock().map_err(|e| e.to_string())?;
+    db.set_drumstick_rating(playlist_id, item_id, rating)
+        .map_err(|e| e.to_string())
+}

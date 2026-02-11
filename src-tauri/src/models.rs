@@ -26,6 +26,8 @@ pub struct PlaylistItem {
     pub view_count: Option<String>,
     pub published_at: Option<String>,
     pub profile_image_url: Option<String>,
+    #[serde(default)]
+    pub drumstick_rating: i32,
 }
 
 #[derive(Debug, Serialize, Deserialize)]

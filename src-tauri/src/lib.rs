@@ -84,6 +84,8 @@ pub fn run() {
             commands::start_audio_capture,
             commands::stop_audio_capture,
             commands::test_audio_command,
+            commands::get_drumstick_rating,
+            commands::set_drumstick_rating,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

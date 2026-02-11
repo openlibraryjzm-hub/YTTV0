@@ -148,6 +148,7 @@ yttv2/
 │   ├── ui-cards.md               # Card components
 │   ├── ui-modals.md              # Modal components
 │   ├── history.md
+│   ├── drumstick-rating-system.md
 │   ├── videoplayer.md
 │   ├── local-videos.md
 │   ├── audio-visualizer.md
@@ -191,6 +192,7 @@ yttv2/
 | **UI Components** | `ui.md` | `state-management.md`, `navigation-routing.md` |
 | **Watch History** | `history.md` | `database-schema.md`, `api-bridge.md`, `state-management.md` |
 | **Video Player** | `videoplayer.md` | `database-schema.md`, `api-bridge.md`, `state-management.md` |
+| **Drumstick Rating** | `drumstick-rating-system.md` | `database-schema.md`, `api-bridge.md`, `ui-cards.md` |
 | **Local Videos** | `local-videos.md` | `videoplayer.md`, `database-schema.md`, `api-bridge.md`, `importexport.md` |
 | **Audio Visualizer** | `audio-visualizer.md` | `advanced-player-controller.md`, `api-bridge.md` |
 | **App Banner** | `app-banner.md` | `advanced-player-controller.md`, `ui-layout.md`, `state-management.md` |
@@ -234,6 +236,11 @@ yttv2/
 **Covers**: Watch history tracking, history page display
 **Key Topics**: Last 100 videos, deduplication, **list layout**, history cards
 **Cross-References**: See `database-schema.md` for watch_history table, `api-bridge.md` for history commands
+
+#### `drumstick-rating-system.md`
+**Covers**: 5-drumstick rating system, persistence, UI integration
+**Key Topics**: Database schema updates, optimistic UI, card integration (VideoCard/TweetCard), event propagation protection
+**Cross-References**: See `database-schema.md` for `playlist_items` table, `api-bridge.md` for rating commands, `ui-cards.md` for card components
 
 #### `videoplayer.md`
 **Covers**: YouTube iframe player, progress tracking, dual player system
@@ -431,4 +438,11 @@ For detailed information about the application's theme system and recent color c
     - Implementing dynamic SVG clip paths in `OrbCard` to support both rectangular and polygonal masks based on `orbMaskModes`.
     - Correcting the clip path radius to `0.5` to match the Player Controller.
     - Fixing SVG syntax errors (nested tags, closing tags) in `OrbCard`.
+- **Drumstick Rating System**:
+  - Implemented 5-drumstick rating system for playlist items.
+  - Added `drumstick_rating` column to SQLite database and updated all SELECT/INSERT queries.
+  - Developed custom `DrumstickRating` component with hover effects and stop-propagation protection.
+  - Integrated ratings into both `VideoCard` (standard) and `TweetCard` (Twitter/X style).
+  - Created backend Tauri commands and frontend API functions for persistence.
+  - Documented system in `atlas/drumstick-rating-system.md`.
 

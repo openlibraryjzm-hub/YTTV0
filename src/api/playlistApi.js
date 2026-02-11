@@ -390,3 +390,24 @@ export const getAllVideoProgress = async () => {
   }
 };
 
+
+// Drumstick rating operations
+export const getDrumstickRating = async (playlistId, itemId) => {
+  try {
+    const result = await invoke('get_drumstick_rating', { playlistId, itemId });
+    return result || 0;
+  } catch (error) {
+    console.error('Error in getDrumstickRating API:', error);
+    return 0;
+  }
+};
+
+export const setDrumstickRating = async (playlistId, itemId, rating) => {
+  try {
+    return await invoke('set_drumstick_rating', { playlistId, itemId, rating });
+  } catch (error) {
+    console.error('Error in setDrumstickRating API:', error);
+    throw error;
+  }
+};
+

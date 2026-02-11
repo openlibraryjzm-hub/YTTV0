@@ -1,4 +1,4 @@
-import React, { useState, useRef, useMemo } from 'react';
+import React, { useState, useRef, useMemo, useEffect } from 'react';
 import Card from './Card';
 import CardThumbnail from './CardThumbnail';
 import CardContent from './CardContent';
@@ -6,12 +6,14 @@ import CardActions from './CardActions';
 import BulkTagColorGrid from './BulkTagColorGrid';
 import StarColorPicker from './StarColorPicker';
 import ImageHoverPreview from './ImageHoverPreview';
+import DrumstickRating from './DrumstickRating';
 import { getThumbnailUrl } from '../utils/youtubeUtils';
 import { FOLDER_COLORS, getFolderColorById } from '../utils/folderColors';
 import { usePinStore } from '../store/pinStore';
 import { useLayoutStore } from '../store/layoutStore';
 import { useFolderStore } from '../store/folderStore';
 import { Pin } from 'lucide-react'; // Added Pin icon back
+import { getDrumstickRating, setDrumstickRating } from '../api/playlistApi';
 
 /**
  * VideoCard - Example of how easy it is to build complex cards with the new system
@@ -53,6 +55,30 @@ const VideoCard = ({
   const [isStarHovered, setIsStarHovered] = useState(false);
   const starHoverTimeoutRef = useRef(null);
   const starHoverDelayRef = useRef(null);
+
+  // Drumstick rating state
+  const [drumstickRating, setDrumstickRatingState] = useState(video.drumstick_rating || 0);
+
+  // Load drumstick rating from database
+  useEffect(() => {
+    if (playlistId && video.id) {
+      getDrumstickRating(playlistId, video.id)
+        .then(rating => setDrumstickRatingState(rating))
+        .catch(err => console.error('Failed to load drumstick rating:', err));
+    }
+  }, [playlistId, video.id]);
+
+  // Handle drumstick rating change
+  const handleDrumstickRate = async (newRating) => {
+    if (!playlistId || !video.id) return;
+
+    try {
+      await setDrumstickRating(playlistId, video.id, newRating);
+      setDrumstickRatingState(newRating);
+    } catch (error) {
+      console.error('Failed to set drumstick rating:', error);
+    }
+  };
 
   // Use stored thumbnail_url if available (for Twitter/local content), otherwise construct YouTube thumbnail
   const thumbnailUrl = video.thumbnail_url || getThumbnailUrl(video.video_id, 'medium');
@@ -423,6 +449,15 @@ const VideoCard = ({
                 />
               </svg>
             </button>
+          </div>
+
+          {/* Drumstick Rating */}
+          <div className="bg-black/70 rounded-lg px-2 py-1">
+            <DrumstickRating
+              rating={drumstickRating}
+              onRate={handleDrumstickRate}
+              disabled={false}
+            />
           </div>
         </div>
       ),

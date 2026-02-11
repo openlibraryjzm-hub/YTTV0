@@ -1,15 +1,17 @@
-import React, { useState, useRef, useMemo } from 'react';
+import React, { useState, useRef, useMemo, useEffect } from 'react';
 import Card from './Card';
 import CardThumbnail from './CardThumbnail';
 import CardActions from './CardActions';
 import BulkTagColorGrid from './BulkTagColorGrid';
 import StarColorPicker from './StarColorPicker';
 import ImageHoverPreview from './ImageHoverPreview';
+import DrumstickRating from './DrumstickRating';
 import { getFolderColorById, FOLDER_COLORS } from '../utils/folderColors';
 import { usePinStore } from '../store/pinStore';
 import { useLayoutStore } from '../store/layoutStore';
 import { useFolderStore } from '../store/folderStore';
 import { Pin, MessageCircle, Repeat2, Heart, Share, MoreHorizontal } from 'lucide-react';
+import { getDrumstickRating, setDrumstickRating } from '../api/playlistApi';
 
 const TweetCard = ({
     video,
@@ -69,6 +71,30 @@ const TweetCard = ({
     const pinLongPressTimerRef = useRef(null);
     const lastClickTimeRef = useRef(0);
     const [activePin, setActivePin] = useState(null);
+
+    // Drumstick rating state
+    const [drumstickRating, setDrumstickRatingState] = useState(video.drumstick_rating || 0);
+
+    // Load drumstick rating from database
+    useEffect(() => {
+        if (playlistId && video.id) {
+            getDrumstickRating(playlistId, video.id)
+                .then(rating => setDrumstickRatingState(rating))
+                .catch(err => console.error('Failed to load drumstick rating:', err));
+        }
+    }, [playlistId, video.id]);
+
+    // Handle drumstick rating change
+    const handleDrumstickRate = async (newRating) => {
+        if (!playlistId || !video.id) return;
+
+        try {
+            await setDrumstickRating(playlistId, video.id, newRating);
+            setDrumstickRatingState(newRating);
+        } catch (error) {
+            console.error('Failed to set drumstick rating:', error);
+        }
+    };
 
     const handlePinMouseDown = (e) => {
         e.stopPropagation();
@@ -246,6 +272,15 @@ const TweetCard = ({
                                         />
                                     </div>
                                 )}
+                            </div>
+
+                            {/* Drumstick Rating */}
+                            <div className="bg-black/40 rounded-full px-2 py-1 backdrop-blur-md shadow-lg flex items-center justify-center">
+                                <DrumstickRating
+                                    rating={drumstickRating}
+                                    onRate={handleDrumstickRate}
+                                    disabled={false}
+                                />
                             </div>
                         </div>
 
