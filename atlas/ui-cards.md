@@ -544,7 +544,7 @@ Users see video cards built using the Card component system with video-specific 
 Users see high-fidelity Twitter/X cards for local content, designed to mimic the mobile app experience while integrating with the application's folder and pin systems.
 
 - **Card Structure**:
-  - **Grid Position**: Occupies **two rows** in the video grid (`row-span-2`), making them visually distinct from YouTube videos.
+  - **Grid Position**: Occupies a **single cell** in the 2-column video grid, sitting alongside other videos or tweets.
   - **Background**: Light sky blue (`#e0f2fe`) to match the application theme.
   - **Header Section**:
     - **Avatar**: Circular profile picture (40x40px) with fallback to colored letter icon.
@@ -571,4 +571,4 @@ Users see high-fidelity Twitter/X cards for local content, designed to mimic the
 **3: Logic & State Chain**
 
 - **Content Detection**: `VideosPage.jsx` automatically switches to `TweetCard` if `video.is_local` is true or source is detected as twitter.
-- **Mixed Grid Handling**: CSS Grid (`grid-rows-2 grid-flow-col`) allows `TweetCard` to span two rows while maintaining alignment with single-row YouTube cards.
+

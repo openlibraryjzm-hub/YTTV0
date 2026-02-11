@@ -396,8 +396,9 @@ For detailed information about the application's theme system and recent color c
 - **Performance Optimization**: 
   - Solved major lag on the Playlists Page by implementing `get_playlist_items_preview` (Rust backend).
   - Reduced overhead by fetching only 4 preview items per playlist instead of the entire dataset.
-- **Folder Management**: 
-  - Added **Folder Renaming** functionality directly to the sticky color grid.
+  - **Tweet Card Layout**:
+    - **Optimized Grid**: Switched VideosPage to a 2-column layout on large screens.
+    - **Uniform Sizing**: Both TweetCards and VideoCards now occupy a single cell (50% width), creating a balanced, gap-free grid.
 - **Pin System Fix**: 
   - Resolved a bug causing duplicate pins in the PinStore.
 - **Asset Manager Enhancements**:

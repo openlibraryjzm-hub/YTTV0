@@ -134,9 +134,8 @@ const TweetCard = ({
             onClick={bulkTagMode ? undefined : onVideoClick}
             selected={isSelected}
             playing={isCurrentlyPlaying}
-            className={`h-full w-[360px] flex-shrink-0 group tweet-card transition-all duration-300 ${isCurrentlyPlaying ? 'ring-2 ring-sky-500 bg-sky-50/50' : ''}`}
+            className={`h-full w-full group tweet-card transition-all duration-300 ${isCurrentlyPlaying ? 'ring-2 ring-sky-500 bg-sky-50/50' : ''}`}
             variant="minimal"
-            style={{ gridRow: 'span 2' }}
         >
             <div
                 className="relative flex flex-col h-full bg-[#e0f2fe] rounded-2xl border border-sky-200 dark:border-sky-800/30 shadow-sm overflow-hidden hover:shadow-md transition-shadow"

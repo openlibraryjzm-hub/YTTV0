@@ -81,7 +81,7 @@ Twitter content appears in standard video cards with special handling:
 ### Card Styles
 
 **TweetCard (Premium Twitter/X Style):**
-- **Layout**: Occupies **two rows** in the grid (`row-span-2`), creating a masonry-like vertical hierarchy.
+- **Layout**: Occupies a **single cell** in the 2-column grid.
 - **Background**: Light sky blue (`#e0f2fe`) to match the application theme.
 - **Border**: Minimal `sky-200` border for separation, with `rounded-2xl` corners.
 - **Header**:
@@ -93,7 +93,7 @@ Twitter content appears in standard video cards with special handling:
   - **Source**: Upgraded to `medium` quality thumbnails for grid display and `large` for hovers.
   - **Containment**: Uses `object-contain` within a sky-blue frame (`bg-[#d0eafb]/50`) to ensure media is never blurry or stretched.
 - **Interaction**: Integrated "Pin" and "Folder Star" buttons overlaid on the media section.
-- **Mixed Content Logic**: `VideosPage.jsx` automatically interleaves these cards with standard YouTube cards using a `grid-rows-2` CSS Grid, maintaining a perfectly balanced layout regardless of content height.
+- **Mixed Content Logic**: `VideosPage.jsx` automatically interleaves these cards with standard YouTube cards, maintaining a perfectly balanced layout.
 
 ## Image Hover Preview
 

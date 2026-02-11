@@ -1738,7 +1738,7 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
                 )}
 
                 {/* Vertical Video Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 animate-fade-in">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-8 animate-fade-in">
                   {regularVideos.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map((video, idx) => {
                     const isTweet = video.is_local || video.video_url?.includes('twitter.com') || video.video_url?.includes('x.com') || video.thumbnail_url?.includes('twimg.com');
                     const originalIndex = activePlaylistItems.findIndex(v => v.id === video.id);
