@@ -23,6 +23,7 @@ import { useConfigStore } from '../store/configStore';
 import { useShuffleStore } from '../store/shuffleStore';
 import { usePaginationStore } from '../store/paginationStore';
 import TweetCard from './TweetCard';
+import OrbCard from './OrbCard';
 import AutoTagModal from './AutoTagModal';
 
 
@@ -96,7 +97,10 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
     bannerBgSize,
     playlistLayer2Overrides,
     setPlaylistLayer2Override,
-    clearPlaylistLayer2Override
+    clearPlaylistLayer2Override,
+    orbFavorites,
+    updateOrbFavoritePlaylists,
+    applyOrbFavorite
   } = useConfigStore();
 
   // Helper to get inspect label
@@ -425,7 +429,18 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
     const filterVideos = async () => {
       if (selectedFolder === null) {
         // Show all videos when no folder is selected
-        setDisplayedVideos(activePlaylistItems);
+        // Also include Orbs assigned to this playlist
+        const assignedOrbs = orbFavorites ? orbFavorites
+          .filter(orb => orb.playlistIds && orb.playlistIds.includes(activePlaylistId))
+          .map(orb => ({
+            ...orb,
+            id: `orb-${orb.id}`, // Unique ID for React key
+            originalId: orb.id,
+            isOrb: true,
+            title: orb.name // For search/sort consistency if needed
+          })) : [];
+
+        setDisplayedVideos([...assignedOrbs, ...activePlaylistItems]);
         return;
       }
 
@@ -466,7 +481,7 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
     };
 
     filterVideos();
-  }, [selectedFolder, activePlaylistId, activePlaylistItems, videoFolderAssignments]);
+  }, [selectedFolder, activePlaylistId, activePlaylistItems, videoFolderAssignments, orbFavorites]);
 
   const handleRenameFolder = async (folderColor, newName) => {
     if (!activePlaylistId) return;
@@ -1045,11 +1060,29 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
     }
   };
 
+  // Derived state for visible items (Playlists Items + Orbs OR Folder Content)
+  const visibleItems = useMemo(() => {
+    if (selectedFolder === null) {
+      // Include Orbs assigned to this playlist
+      const assignedOrbs = orbFavorites ? orbFavorites
+        .filter(orb => orb.playlistIds?.includes(activePlaylistId))
+        .map(orb => ({
+          ...orb,
+          id: `orb-${orb.id}`,
+          originalId: orb.id,
+          isOrb: true,
+          title: orb.name
+        })) : [];
+      return [...assignedOrbs, ...activePlaylistItems];
+    }
+    return displayedVideos;
+  }, [selectedFolder, displayedVideos, activePlaylistItems, orbFavorites, activePlaylistId]);
+
   // Sort videos based on selected sort option
   // IMPORTANT: This hook must be called BEFORE any early returns
   const sortedVideos = useMemo(() => {
     // Determine which videos to display (folder filtered or all)
-    const baseVideos = selectedFolder !== null ? displayedVideos : activePlaylistItems;
+    const baseVideos = visibleItems;
 
     // Handle empty arrays
     if (!baseVideos || baseVideos.length === 0) {
@@ -1156,7 +1189,7 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
   }, [selectedFolder, displayedVideos, activePlaylistItems, sortBy, sortDirection, videoProgress, includeUnwatched, showOnlyCompleted, shuffleStates, activePlaylistId]);
 
   // Determine which videos to display (for count display)
-  const videosToDisplay = selectedFolder !== null ? displayedVideos : activePlaylistItems;
+  const videosToDisplay = visibleItems;
 
   // Split sorted videos into stickied and regular
   // Use allStickiedVideos to ensure reactivity
@@ -1810,6 +1843,20 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
                       return (
                         <div key={video.id} className="h-full">
                           <TweetCard {...commonProps} />
+                        </div>
+                      );
+                    }
+
+                    if (video.isOrb) {
+                      return (
+                        <div key={video.id} className="h-full">
+                          <OrbCard
+                            orb={{ ...video, id: video.originalId || parseInt(video.id.replace('orb-', '')) }}
+                            allPlaylists={allPlaylists}
+                            onUpdatePlaylists={updateOrbFavoritePlaylists}
+                            minimal={true}
+                            onClick={() => applyOrbFavorite(video)}
+                          />
                         </div>
                       );
                     }

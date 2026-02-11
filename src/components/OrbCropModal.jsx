@@ -18,6 +18,7 @@ export default function OrbCropModal({
     // Interaction State (Local)
     const containerRef = useRef(null);
     const [interaction, setInteraction] = useState(null); // { type: 'drag'|'resize', q: string, handle?: string, startX, startY, startRect }
+    const [canvasScale, setCanvasScale] = useState(1); // New state for canvas zoom
 
     // Toggle advanced mode
     const toggleAdvanced = (q) => {
@@ -190,7 +191,7 @@ export default function OrbCropModal({
             </div>
 
             {/* Main Canvas Area */}
-            <div className="relative w-full h-full flex items-center justify-center overflow-hidden select-none bg-[#050510]">
+            <div className="relative w-full h-full grid place-items-center overflow-auto select-none bg-[#050510]">
 
                 {/* Background Grid */}
                 <div className="absolute inset-0 opacity-20"
@@ -201,10 +202,14 @@ export default function OrbCropModal({
                     }}
                 />
 
-                {/* The Reference Frame (80vmin) */}
+                {/* The Reference Frame (80vmin base) */}
                 <div
                     ref={containerRef}
-                    className="relative w-[80vmin] h-[80vmin] flex items-center justify-center group"
+                    className="relative flex-shrink-0 flex items-center justify-center group transition-all duration-200 ease-out"
+                    style={{
+                        width: `calc(80vmin * ${canvasScale})`,
+                        height: `calc(80vmin * ${canvasScale})`
+                    }}
                 >
 
                     {/* Source Image */}
@@ -321,6 +326,21 @@ export default function OrbCropModal({
                     <div className="flex items-center gap-2">
                         <Move size={14} className="text-sky-400" />
                         <span className="text-white">Pos: <span className="font-mono text-sky-400">{xOffset}, {yOffset}</span></span>
+                    </div>
+                    <div className="w-px h-4 bg-white/10" />
+                    <div className="flex items-center gap-2">
+                        <Maximize size={14} className="text-sky-400" />
+                        <span className="text-white whitespace-nowrap">Canvas:</span>
+                        <input
+                            type="range"
+                            min="0.5"
+                            max="2.0"
+                            step="0.1"
+                            value={canvasScale}
+                            onChange={(e) => setCanvasScale(parseFloat(e.target.value))}
+                            className="w-20 h-1 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-sky-500 hover:accent-sky-400"
+                        />
+                        <span className="font-mono text-sky-400 w-8 text-right">{(canvasScale * 100).toFixed(0)}%</span>
                     </div>
                     <div className="w-px h-4 bg-white/10" />
                     <div className="flex items-center gap-2">

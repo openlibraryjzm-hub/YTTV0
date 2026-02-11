@@ -13,6 +13,7 @@ A modern desktop application for managing and playing YouTube playlists, built w
 - 🎨 **Modern UI** - Grid-based interface with smooth animations
 - 💾 **Local Storage** - SQLite database for persistent data storage
 - 🎥 **Local Videos** - Support for playing local video files
+- 🔮 **Orb Customization** - Advanced visual configuration and playlist assignment for Orb themes
 
 ## Tech Stack
 

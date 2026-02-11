@@ -184,6 +184,7 @@ export const useConfigStore = create(
                     f.id === id ? { ...f, ...updates } : f
                 )
             })),
+            clearOrbFavorites: () => set({ orbFavorites: [] }),
             // Group management for orb presets
             // groupLeaderId: ID of the orb preset that is the group leader
             // groupMembers: Array of orb preset IDs that belong to this group

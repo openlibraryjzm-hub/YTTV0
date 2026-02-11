@@ -1,3 +1,27 @@
+# Session Updates: Orb Playlist Assignment & Display
+**Timestamp:** 11/02/2026 12:00pm
+
+## Key Changes
+1. **Orb Playlist Assignment**:
+   - **Feature**: Added a dropdown menu to `OrbCard` components allowing users to assign Orbs to specific playlists.
+   - **UI**: The dropdown appears on the Orb card header and shows a checklist of available playlists.
+   - **State**: Assignments are persisted via `configStore` and reflected immediately.
+
+2. **Orb Display in Videos**:
+   - **Integration**: `VideosPage.jsx` now renders assigned Orbs as content cards at the beginning of the video grid list.
+   - **Context Awareness**: Orbs only appear when the "All" folder is selected for the active playlist.
+   - **Implementation**: Refactored the video rendering logic to merge assigned Orbs with playlist items in a unified `visibleItems` list, ensuring instant rendering without effect-induced flicker.
+   - **Minimalist Mode**: Orbs on the Videos Page use a "minimal" display mode, removing the card background, borders, and text labels for a clean, integrated look. The playlist assignment button is hidden by default and appears on hover.
+   - **Interactivity**: Clicking on an Orb card in the Videos Page now immediately applies that Orb's configuration (image, spill, masks) to the global player orb.
+
+3. **Component Architecture**:
+4. **Configuration Workflow Update**:
+    - **One-at-a-time Workflow**: Removed the "Saved Orbs" grid from the config page to focus on single-orb creation.
+    - **Inline Assignment**: Added a "Save Preset" section to the Orb Config panel. This allows naming the preset and selecting playlist assignments *before* saving.
+    - **Legacy Wipe**: Implemented a one-time automatic wipe of existing Orb presets to ensure a conflict-free transition to the new system.
+
+---
+
 # Session Updates: Playlist Banner Tabs Refinement
 **Timestamp:** 14/01/2026 5:55pm
 

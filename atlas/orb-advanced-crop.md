@@ -45,6 +45,7 @@ The feature determines its state from the global `configStore` to ensure persist
 - Fullscreen modal UI with high-res image visualizer.
 - "Infinite Spill" (Global) vs "Custom Mask" (Local) toggle logic.
 - **Relaxed Bounds System**: Users can drag masks freely across quadrants or outside the container.
+- **Canvas Scale & Scroll**: Added a "Canvas Zoom" slider (0.5x - 2.0x) to the bottom toolbar. This allows users to expand the workspace beyond the viewport and scroll to access parts of the image that might be visually clipped at high zoom levels.
 - **Real-Time Visualization**: The `OrbPage` settings visualizer now supports `overflow-visible`, correctly showing masks that drift outside the standard box.
 
 ## 6. Player Controller Sync

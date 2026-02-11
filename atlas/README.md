@@ -418,4 +418,11 @@ For detailed information about the application's theme system and recent color c
     -   **Context-Aware**: Header now correctly reflects the **active browsing context** (visiting/previewing) rather than just the playing context.
     -   **Adaptive Styling**: Header background and text dynamically match the active folder's color (including "All" and "Unsorted" views), using a subtle gradient.
     -   **Code Cleanup**: Removed redundant header code from `VideosPage.jsx`, `PlaylistFolderColumn.jsx`, and `OrbConfigPlaceholderPage.jsx`.
+- **Orb Configuration Overhaul**:
+  - **One-at-a-time Workflow**: Replaced grid view with a focused single-orb editor.
+  - **Auto-Naming**: Removed manual naming; presets are now auto-named by date.
+  - **Direct Playlist Assignment**: Added inline multi-select dropdown for assigning playlists during creation.
+  - **Global Interaction**: Clicking an Orb in the video grid now instantly applies its settings to the player.
+  - **Advanced Crop**: Added **Canvas Scale & Scroll** to the modal for precise editing of large images.
+  - **Clean Slate**: Implemented one-time wipe of legacy presets.
 
