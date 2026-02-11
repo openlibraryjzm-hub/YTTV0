@@ -1392,7 +1392,8 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
             isProcessing={isAutoTagging}
           />
           {/* Page Banner - DISABLED PER USER REQUEST */}
-          {/* Replacement Mini Header */}
+          {/* Replacement Mini Header - MOVED TO TOPNAVIGATION */}
+          {/*
           {activePlaylistId && (
             <div
               className="w-full h-[100px] flex items-end px-8 pb-4 transition-all duration-300"
@@ -1418,6 +1419,7 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
               </div>
             </div>
           )}
+          */}
 
 
           {/* 

@@ -52,7 +52,7 @@ yttv2/
 │   │   ├── YouTubePlayer.jsx     # YouTube iframe player component
 │   │   ├── NativeVideoPlayer.jsx # Native mpv player for local videos
 │   │   ├── LocalVideoPlayer.jsx  # HTML5 fallback player (browser-compatible formats)
-│   │   ├── TopNavigation.jsx     # Navigation tabs + compact pagination (Videos page)
+│   │   ├── TopNavigation.jsx     # Contextual Mini Header (Playlist/Folder Info)
 │   │   ├── PlaylistsPage.jsx     # Main playlists grid view
 
 │   │   ├── VideosPage.jsx        # Videos grid view for current playlist
@@ -414,7 +414,8 @@ For detailed information about the application's theme system and recent color c
     -   **Direct Property Control**: Refactored `OrbGroupColumn` and `PageGroupColumn` to replace playlist/folder assignment UI with direct configuration sliders (Scale, X/Y Offsets, Spill).
     -   **Vertical Space Optimization**: Removed the top-level Page Banner preview from the Asset Manager to expand the main content carousel area.
   - **Page Banner Disabled**: 
-    -   **Mini Header Replacement**: Replaced the complex Page Banner with a streamlined **Mini Header** (100px height) on Videos and Playlists pages.
-    -   **Adaptive Styling**: Header background and text dynamically match the active folder's color (including "All" view), using a subtle gradient for a clean, cohesive look.
-    -   **Layout Adjustment**: Removed sticky toolbar negative margins to accommodate the new header layout.
+    -   **Mini Header Replacement**: Replaced the complex Page Banner and old Navigation Tabs with a streamlined **Mini Header** (100px height) centrally implemented in `TopNavigation.jsx`.
+    -   **Context-Aware**: Header now correctly reflects the **active browsing context** (visiting/previewing) rather than just the playing context.
+    -   **Adaptive Styling**: Header background and text dynamically match the active folder's color (including "All" and "Unsorted" views), using a subtle gradient.
+    -   **Code Cleanup**: Removed redundant header code from `VideosPage.jsx`, `PlaylistFolderColumn.jsx`, and `OrbConfigPlaceholderPage.jsx`.
 

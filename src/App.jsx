@@ -30,6 +30,8 @@ import { extractVideoId } from './utils/youtubeUtils';
 import RadialMenuStandalone from './components/RadialMenuStandalone';
 import SettingsPage from './components/SettingsPage';
 import SupportPage from './components/SupportPage';
+import OrbConfigPlaceholderPage from './components/OrbConfigPlaceholderPage';
+import SettingsPlaceholderPage from './components/SettingsPlaceholderPage';
 import { THEMES } from './utils/themes';
 import './App.css';
 
@@ -612,6 +614,10 @@ function App() {
             />
           ) : !showPlaylists && currentPage === 'support' ? (
             <SupportPage onVideoSelect={handleVideoSelect} />
+          ) : !showPlaylists && currentPage === 'orb-config' ? (
+            <OrbConfigPlaceholderPage onVideoSelect={handleVideoSelect} />
+          ) : !showPlaylists && currentPage === 'settings-new' ? (
+            <SettingsPlaceholderPage onVideoSelect={handleVideoSelect} />
           ) : null
         }
       />

@@ -13,8 +13,7 @@ import {
   CheckCircle2,
   X,
   Settings2,
-  Maximize2,
-  Minimize2,
+
   Pin,
   Share2,
   Info,
@@ -26,16 +25,13 @@ import {
   Zap,
   Radio,
   Flame,
-  Scissors,
-  Search,
-  Menu as MenuIcon,
-  Youtube,
+
   Upload,
   Palette,
-  Clock,
+
   History as HistoryIcon,
   Layout,
-  Settings,
+
   Layers,
   Compass,
   Library,
@@ -49,6 +45,7 @@ import {
   MousePointer2,
   ArrowLeftRight,
   Circle,
+  Settings,
   Move,
   LayoutGrid
 } from 'lucide-react';
@@ -903,13 +900,7 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
     }
   };
 
-  // Handle history toggle
-  const handleHistoryToggle = () => {
-    setCurrentPage('history');
-    if (viewMode === 'full') {
-      setViewMode('half');
-    }
-  };
+
 
   // Handle pin click - switch to that video
   const handlePinClick = async (pinnedVideo) => {
@@ -1662,24 +1653,7 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
     }
   }, [shouldUseMergedView, hasViewCount, hasPublishedYear, finalDisplayVideoItem?.id]);
 
-  const getOrbButtonStyle = (index) => {
-    const totalButtons = 8; const centerIndex = 3.5; const relativeIndex = index - centerIndex; const angle = 90 + (relativeIndex * orbButtonSpread); const radius = 50; const rad = (angle * Math.PI) / 180; const x = 50 + radius * Math.cos(rad); const y = 50 + radius * Math.sin(rad);
-    return { left: `${x}%`, top: `${y}%`, transform: 'translate(-50%, -50%)' };
-  };
 
-  // Note: toggleSpillQuadrant is now handled via SettingsPage and configStore
-
-
-  const orbButtons = [
-    { icon: Scissors, label: 'Editor', action: null },
-    { icon: Search, label: 'Search', action: null },
-    { icon: MenuIcon, label: 'Menu', action: () => setIsVisualizerEnabled(!isVisualizerEnabled) },
-    { icon: Maximize2, label: 'Spill', action: () => setIsSpillEnabled(!isSpillEnabled) },
-    { icon: Youtube, label: 'Channel', action: null },
-    { icon: Settings, label: 'Config', action: () => setCurrentPage('settings') },
-    { icon: Clock, label: 'History', action: handleHistoryToggle },
-    { icon: isSpillEnabled ? Minimize2 : Circle, label: 'Clipping', action: () => setIsSpillEnabled(!isSpillEnabled) }
-  ];
 
   // Get playlist/folder title (show preview if in preview mode)
   // Get playlist/folder title (show preview if in preview mode)
@@ -2030,14 +2004,17 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
               <input type="file" ref={fileInputRef} onChange={handleOrbImageUpload} accept="image/*" className="hidden" />
               <button className="absolute left-1/2 top-0 -translate-x-1/2 -translate-y-1/2 rounded-full flex items-center justify-center bg-white shadow-xl hover:scale-110 active:scale-95 group/btn z-50 border-2 border-sky-100 opacity-0 group-hover:opacity-100 transition-all duration-300" style={{ width: `28px`, height: `28px` }} onClick={() => fileInputRef.current.click()} title={getInspectTitle('Upload orb image')}><Upload size={16} className={theme.accent} strokeWidth={3} /></button>
 
-              {orbButtons.map((btn, i) => {
-                const BtnIcon = btn.icon;
-                return (
-                  <button key={i} onClick={btn.action || (() => { })} className="absolute rounded-full flex items-center justify-center bg-white shadow-xl hover:scale-110 active:scale-95 group/btn z-50 border-2 border-sky-50 opacity-0 group-hover:opacity-100 transition-all duration-300" style={{ ...getOrbButtonStyle(i), width: `28px`, height: `28px` }} title={getInspectTitle(btn.label) || btn.label}>
-                    <BtnIcon size={14} className="text-slate-800" strokeWidth={2.5} />
-                  </button>
-                );
-              })}
+              {/* Orb Config Button (Top Left) */}
+              <button onClick={() => setCurrentPage('orb-config')} className="absolute rounded-full flex items-center justify-center bg-white shadow-xl hover:scale-110 active:scale-95 group/btn z-50 border-2 border-sky-50 opacity-0 group-hover:opacity-100 transition-all duration-300" style={{ left: '15%', top: '15%', transform: 'translate(-50%, -50%)', width: `28px`, height: `28px` }} title={getInspectTitle('Orb Config') || 'Orb Config'}>
+                <Circle size={14} className="text-slate-800" strokeWidth={2.5} />
+              </button>
+
+              {/* Settings Button (Top Right) */}
+              <button onClick={() => setCurrentPage('settings-new')} className="absolute rounded-full flex items-center justify-center bg-white shadow-xl hover:scale-110 active:scale-95 group/btn z-50 border-2 border-sky-50 opacity-0 group-hover:opacity-100 transition-all duration-300" style={{ left: '85%', top: '15%', transform: 'translate(-50%, -50%)', width: `28px`, height: `28px` }} title={getInspectTitle('Settings') || 'Settings'}>
+                <Settings size={14} className="text-slate-800" strokeWidth={2.5} />
+              </button>
+
+
             </div>
           </div>
 

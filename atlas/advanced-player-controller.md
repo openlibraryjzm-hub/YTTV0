@@ -22,19 +22,9 @@ The Central Orb is a circular element (154px diameter by default) positioned at 
 - **Window Controls**: Custom Minimize/Maximize/Close buttons interactively float in the top-right corner of the banner area.
 - **Orb Image**: Displays the current video's thumbnail by default, or a custom uploaded image if set. Supports **Orb Group Overrides**: If the current playlist is assigned to an Orb Group, the central orb image (and its scale/offset) will be overridden by a random image from that group or its leader. The image is clipped to a circular shape with optional "spill" effects.
 - **Upload Button**: On hover, an upload icon appears at the top of the orb (12 o'clock position). Clicking opens a file picker to upload a custom image. The uploaded image is immediately displayed and persisted to localStorage.
-- **Orb Buttons**: Eight buttons appear around the orb on hover, positioned in a radial pattern:
-  - **Editor** (Scissors icon) - [Placeholder] Reserved for future direct pixel-editing/masking tools.
-  - **Search** (Search icon) - Currently no action
-  - **Menu** (Menu icon) - Currently no action
-  - **Spill** (Maximize2 icon) - Toggles spill/clipping mode
-  - **Channel** (Youtube icon) - Currently no action
-  - **Config** (Settings icon) - [Functional] Opens the full Settings Page, which includes the **Orb Tab** for advanced customization (Image, Spill, Scale).
-  - **History** (Clock icon) - Navigates to History page
-  - **Clipping** (Circle/Minimize2 icon) - Toggles spill/clipping mode (same as Spill)
-  - **Likes** (Heart icon) - Navigates to Likes page (Icon updated)
-  - **Support** (Cat icon) - Navigates to Support page (Icon updated)
+
 - **Spill Toggle**: When enabled, the orb image can extend beyond the circular boundary. Users can configure which quadrants allow spill via the **Settings Page > Orb** tab. The spill state is persisted to localStorage (`isSpillEnabled`).
-- **Config Panel & Orb Settings**: When Config button is clicked, users are navigated to the Settings Page.
+- **Config Panel & Orb Settings**: Users can access the Settings Page to configure the central element:
   - **Orb Tab**: A comprehensive configuration suite for the central element:
     - **Saved Orb Presets**: Save and manage multiple orb configurations (image + settings) as presets for instant switching.
     - **Image Upload**: Upload custom images (png, jpg, gif) which are automatically resized and compressed for performance.

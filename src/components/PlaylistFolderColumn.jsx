@@ -98,53 +98,7 @@ const PlaylistFolderColumn = ({
                                     style={{ background: `radial-gradient(circle at center, ${folderColor.hex}, transparent 70%)` }}
                                 />
 
-                                {/* Folder Title Bar */}
-                                <div className="mb-2 relative border-2 border-[#052F4A] rounded-md p-1 bg-slate-100/95 shadow-sm flex items-center justify-between h-[42px] overflow-hidden z-10">
-                                    <div className="flex items-center gap-3 justify-center pl-2">
-                                        {/* Colored dot indicator */}
-                                        <div
-                                            className="w-4 h-4 rounded-full flex-shrink-0 shadow-sm ring-1 ring-slate-300"
-                                            style={{ backgroundColor: folderColor.hex }}
-                                        />
-                                        <h3 className="font-bold text-lg truncate transition-colors text-[#052F4A]"
-                                            title={displayFolderName}>
-                                            {displayFolderName} Folder
-                                        </h3>
-                                    </div>
-
-                                    {/* Hover Controls */}
-                                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity absolute right-1 top-0 bottom-0 pr-1 pl-6 bg-gradient-to-l from-slate-100 via-slate-100 to-transparent">
-                                        {/* Play Button */}
-                                        <button
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                if (onFolderSelect) onFolderSelect(folder);
-                                            }}
-                                            className="p-1.5 hover:bg-sky-100 rounded text-[#052F4A] hover:text-sky-600 transition-colors"
-                                            title="Play Folder"
-                                        >
-                                            <Play size={20} fill="currentColor" />
-                                        </button>
-
-                                        {/* 3-Dot Menu */}
-                                        <div onClick={e => e.stopPropagation()}>
-                                            <CardMenu
-                                                options={[
-                                                    {
-                                                        label: isStuck ? 'Unstick Folder' : 'Stick Folder',
-                                                        icon: isStuck ? <Grid3x3 size={16} /> : <Grid3x3 size={16} />, // Simplified icon usage
-                                                        action: 'toggleStick',
-                                                    }
-                                                ]}
-                                                onOptionClick={(opt) => {
-                                                    if (opt.action === 'toggleStick' && onStickyToggle) {
-                                                        onStickyToggle(folder.playlist_id, folder.folder_color);
-                                                    }
-                                                }}
-                                            />
-                                        </div>
-                                    </div>
-                                </div>
+                                {/* Header removed as logic moved to TopNavigation */}
 
                                 {/* Thumbnail Area */}
                                 <div className="rounded-lg overflow-hidden relative group mt-auto z-10 border-2 border-[#052F4A] shadow-inner" style={{

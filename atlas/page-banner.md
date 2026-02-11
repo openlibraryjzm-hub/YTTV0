@@ -13,16 +13,20 @@ The Page Banner is a contextual banner component displayed at the top of content
 
 **Current Implementation: Mini Header (Active)**
 
-Due to implementation complexities, the dynamic `PageBanner` component is currently **disabled** in `VideosPage.jsx` and `PlaylistsPage.jsx`. It has been replaced by a streamlined **Mini Header**.
+The dynamic `PageBanner` component is currently **disabled** in `VideosPage.jsx` and `PlaylistsPage.jsx`. Its functionality has been replaced by a streamlined **Mini Header** implemented centrally in **`src/components/TopNavigation.jsx`**.
 
 **Mini Header Features:**
-- **Height**: Fixed `100px` height.
+- **Component**: `TopNavigation.jsx` (serves as the global contextual header).
+- **Height**: `min-h-[100px]`.
 - **Layout**: Flex-end alignment (`items-end`) for title positioning.
+- **Context Awareness**: 
+  - Detects **Visiting** context (previewing a playlist) vs. **Playing** context.
+  - Prioritizes "Visiting" context so the header matches what the user is looking at.
 - **Styling**:
-  - **Background**: Linear gradient fading from transparent to 30% opacity of the active folder/playlist color (`activeFolder.hex` or default blue).
-  - **Typography**: Large, bold title (`text-3xl font-bold tracking-tight`) with drop shadow (`textShadow: 0 2px 4px rgba(0,0,0,0.5)`).
-  - **Color Matching**: Title text color matches the active folder/playlist hex color (e.g., Red folder = Red text, Blue playlist = Blue text).
-- **Sticky Toolbar Relationship**: The Sticky Toolbar sits directly below (`mt-0`) with no negative margin overlap.
+  - **Background**: Linear gradient fading from transparent to 30% opacity of the active folder/playlist/unsorted color.
+  - **Typography**: Large, bold title (`text-3xl font-bold tracking-tight`) with drop shadow.
+  - **Color Matching**: Title text color matches the active folder/playlist hex color.
+- **Sticky Toolbar Relationship**: The Sticky Toolbar (in `VideosPage`/`PlaylistsPage`) sits directly below with no negative margin, creating a unified look.
 
 ---
 
