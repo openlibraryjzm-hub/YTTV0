@@ -24,6 +24,8 @@ export default function OrbPage({ onBack, onNavigateToYou, onNavigateToPage, onN
         assignOrbToGroup,
         orbAdvancedMasks, setOrbAdvancedMasks,
         orbMaskRects, setOrbMaskRects,
+        orbMaskPaths, setOrbMaskPaths,
+        orbMaskModes, setOrbMaskModes,
     } = useConfigStore();
 
     const allPlaylists = usePlaylistStore(state => state.allPlaylists);
@@ -74,6 +76,8 @@ export default function OrbPage({ onBack, onNavigateToYou, onNavigateToPage, onN
             orbImageYOffset,
             orbAdvancedMasks: { ...orbAdvancedMasks },
             orbMaskRects: JSON.parse(JSON.stringify(orbMaskRects)), // Deep copy
+            orbMaskPaths: JSON.parse(JSON.stringify(orbMaskPaths)),
+            orbMaskModes: { ...orbMaskModes },
         });
     };
 
@@ -222,26 +226,32 @@ export default function OrbPage({ onBack, onNavigateToYou, onNavigateToPage, onN
                                     <circle cx="0.5" cy="0.5" r="0.35" />
 
                                     {/* Advanced Masks */}
-                                    {/* TL */}
-                                    {orbSpill.tl && (
-                                        orbAdvancedMasks.tl ? <rect x={orbMaskRects.tl.x / 100} y={orbMaskRects.tl.y / 100} width={orbMaskRects.tl.w / 100} height={orbMaskRects.tl.h / 100} />
-                                            : <rect x="-50" y="-50" width="50.5" height="50.5" />
-                                    )}
-                                    {/* TR */}
-                                    {orbSpill.tr && (
-                                        orbAdvancedMasks.tr ? <rect x={orbMaskRects.tr.x / 100} y={orbMaskRects.tr.y / 100} width={orbMaskRects.tr.w / 100} height={orbMaskRects.tr.h / 100} />
-                                            : <rect x="0.5" y="-50" width="50.5" height="50.5" />
-                                    )}
-                                    {/* BL */}
-                                    {orbSpill.bl && (
-                                        orbAdvancedMasks.bl ? <rect x={orbMaskRects.bl.x / 100} y={orbMaskRects.bl.y / 100} width={orbMaskRects.bl.w / 100} height={orbMaskRects.bl.h / 100} />
-                                            : <rect x="-50" y="0.5" width="50.5" height="50.5" />
-                                    )}
-                                    {/* BR */}
-                                    {orbSpill.br && (
-                                        orbAdvancedMasks.br ? <rect x={orbMaskRects.br.x / 100} y={orbMaskRects.br.y / 100} width={orbMaskRects.br.w / 100} height={orbMaskRects.br.h / 100} />
-                                            : <rect x="0.5" y="0.5" width="50.5" height="50.5" />
-                                    )}
+                                    {['tl', 'tr', 'bl', 'br'].map(q => {
+                                        if (!orbSpill[q]) return null;
+
+                                        const defaults = {
+                                            tl: { x: -0.5, y: -0.5, w: 1.0, h: 1.0 },
+                                            tr: { x: 0.5, y: -0.5, w: 0.5, h: 1.0 },
+                                            bl: { x: -0.5, y: 0.5, w: 1.0, h: 0.5 },
+                                            br: { x: 0.5, y: 0.5, w: 0.5, h: 0.5 }
+                                        };
+
+                                        if (!orbAdvancedMasks[q]) {
+                                            const d = defaults[q];
+                                            return <rect key={q} x={d.x} y={d.y} width={d.w} height={d.h} />;
+                                        }
+
+                                        const mode = orbMaskModes[q] || 'rect';
+                                        if (mode === 'path') {
+                                            const points = orbMaskPaths[q] || [];
+                                            if (points.length < 3) return <rect key={q} x={defaults[q].x} y={defaults[q].y} width={defaults[q].w} height={defaults[q].h} />;
+                                            const pts = points.map(p => `${p.x / 100},${p.y / 100}`).join(' ');
+                                            return <polygon key={q} points={pts} />;
+                                        } else {
+                                            const r = orbMaskRects[q];
+                                            return <rect key={q} x={r.x / 100} y={r.y / 100} width={r.w / 100} height={r.h / 100} />;
+                                        }
+                                    })}
                                 </clipPath>
                             </defs>
                         </svg>
@@ -627,30 +637,33 @@ export default function OrbPage({ onBack, onNavigateToYou, onNavigateToPage, onN
                                 {orbFavorites.map((favorite) => (
                                     <clipPath key={favorite.id} id={`orbClipPath-${favorite.id}`} clipPathUnits="objectBoundingBox">
                                         <circle cx="0.5" cy="0.5" r="0.5" />
-                                        {/* TL */}
-                                        {favorite.isSpillEnabled && favorite.orbSpill?.tl && (
-                                            favorite.orbAdvancedMasks?.tl
-                                                ? <rect x={favorite.orbMaskRects?.tl.x / 100} y={favorite.orbMaskRects?.tl.y / 100} width={favorite.orbMaskRects?.tl.w / 100} height={favorite.orbMaskRects?.tl.h / 100} />
-                                                : <rect x="-50" y="-50" width="50.5" height="50.5" />
-                                        )}
-                                        {/* TR */}
-                                        {favorite.isSpillEnabled && favorite.orbSpill?.tr && (
-                                            favorite.orbAdvancedMasks?.tr
-                                                ? <rect x={favorite.orbMaskRects?.tr.x / 100} y={favorite.orbMaskRects?.tr.y / 100} width={favorite.orbMaskRects?.tr.w / 100} height={favorite.orbMaskRects?.tr.h / 100} />
-                                                : <rect x="0.5" y="-50" width="50.5" height="50.5" />
-                                        )}
-                                        {/* BL */}
-                                        {favorite.isSpillEnabled && favorite.orbSpill?.bl && (
-                                            favorite.orbAdvancedMasks?.bl
-                                                ? <rect x={favorite.orbMaskRects?.bl.x / 100} y={favorite.orbMaskRects?.bl.y / 100} width={favorite.orbMaskRects?.bl.w / 100} height={favorite.orbMaskRects?.bl.h / 100} />
-                                                : <rect x="-50" y="0.5" width="50.5" height="50.5" />
-                                        )}
-                                        {/* BR */}
-                                        {favorite.isSpillEnabled && favorite.orbSpill?.br && (
-                                            favorite.orbAdvancedMasks?.br
-                                                ? <rect x={favorite.orbMaskRects?.br.x / 100} y={favorite.orbMaskRects?.br.y / 100} width={favorite.orbMaskRects?.br.w / 100} height={favorite.orbMaskRects?.br.h / 100} />
-                                                : <rect x="0.5" y="0.5" width="50.5" height="50.5" />
-                                        )}
+                                        {['tl', 'tr', 'bl', 'br'].map(q => {
+                                            if (!favorite.isSpillEnabled || !favorite.orbSpill?.[q]) return null;
+
+                                            const defaults = {
+                                                tl: { x: -0.5, y: -0.5, w: 1.0, h: 1.0 },
+                                                tr: { x: 0.5, y: -0.5, w: 0.5, h: 1.0 },
+                                                bl: { x: -0.5, y: 0.5, w: 1.0, h: 0.5 },
+                                                br: { x: 0.5, y: 0.5, w: 0.5, h: 0.5 }
+                                            };
+
+                                            if (!favorite.orbAdvancedMasks?.[q]) {
+                                                const d = defaults[q];
+                                                return <rect key={q} x={d.x} y={d.y} width={d.w} height={d.h} />;
+                                            }
+
+                                            const mode = favorite.orbMaskModes?.[q] || 'rect';
+                                            if (mode === 'path') {
+                                                const points = favorite.orbMaskPaths?.[q] || [];
+                                                if (points.length < 3) return <rect key={q} x={defaults[q].x} y={defaults[q].y} width={defaults[q].w} height={defaults[q].h} />;
+                                                const pts = points.map(p => `${p.x / 100},${p.y / 100}`).join(' ');
+                                                return <polygon key={q} points={pts} />;
+                                            } else {
+                                                // Check if rect exists, fallback to default if missing (safety)
+                                                const r = favorite.orbMaskRects?.[q] || { x: 0, y: 0, w: 50, h: 50 };
+                                                return <rect key={q} x={r.x / 100} y={r.y / 100} width={r.w / 100} height={r.h / 100} />;
+                                            }
+                                        })}
                                     </clipPath>
                                 ))}
                             </defs>
@@ -1324,6 +1337,11 @@ export default function OrbPage({ onBack, onNavigateToYou, onNavigateToPage, onN
                 setAdvancedMasks={setOrbAdvancedMasks}
                 maskRects={orbMaskRects}
                 setMaskRects={setOrbMaskRects}
+                // New Path Props
+                maskPaths={orbMaskPaths}
+                setMaskPaths={setOrbMaskPaths}
+                maskModes={orbMaskModes}
+                setMaskModes={setOrbMaskModes}
             />
 
         </div >

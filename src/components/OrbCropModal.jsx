@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { X, Maximize, ZoomIn, Move, Check, MousePointer2 } from 'lucide-react';
+import { X, Maximize, ZoomIn, Move, Check, MousePointer2, BoxSelect, PenTool, Trash2, Undo2 } from 'lucide-react';
 
 export default function OrbCropModal({
     isOpen,
@@ -10,43 +10,79 @@ export default function OrbCropModal({
     xOffset = 0,
     yOffset = 0,
     // Global State Props
-    advancedMasks,
+    advancedMasks = { tl: false, tr: false, bl: false, br: false },
     setAdvancedMasks,
-    maskRects,
-    setMaskRects
+    maskRects = {
+        tl: { x: 0, y: 0, w: 50, h: 50 },
+        tr: { x: 50, y: 0, w: 50, h: 50 },
+        bl: { x: 0, y: 50, w: 50, h: 50 },
+        br: { x: 50, y: 50, w: 50, h: 50 }
+    },
+    setMaskRects,
+    // New Path Props
+    maskPaths = { tl: [], tr: [], bl: [], br: [] },
+    setMaskPaths,
+    maskModes = { tl: 'rect', tr: 'rect', bl: 'rect', br: 'rect' },
+    setMaskModes
 }) {
-    // Interaction State (Local)
+    // Interaction State
     const containerRef = useRef(null);
     const [interaction, setInteraction] = useState(null); // { type: 'drag'|'resize', q: string, handle?: string, startX, startY, startRect }
-    const [canvasScale, setCanvasScale] = useState(1); // New state for canvas zoom
+    const [canvasScale, setCanvasScale] = useState(1);
 
-    // Toggle advanced mode
+    // Selection state
+    const [selectedQ, setSelectedQ] = useState(null); // 'tl', 'tr', 'bl', 'br'
+
+    // Path Drawing State
+    const [hoverPoint, setHoverPoint] = useState(null); // Index of point being hovered
+
+    // --- Helpers ---
+
+    const getActiveMode = (q) => maskModes[q] || 'rect';
+
     const toggleAdvanced = (q) => {
-        // Use prop setter
         const newState = !advancedMasks[q];
         setAdvancedMasks({ ...advancedMasks, [q]: newState });
 
         if (newState) {
-            // Default reset on enable if needed, or keep existing
-            // If existing rect is default (0,0,50,50), maybe set a smaller one for visibility?
-            // checking if current rect is the "default" full quadrant
-            const current = maskRects[q];
-            // Simple heuristic: if width is 50, it's likely default. Let's start with a nice 40% box
-            if (current.w === 50 && current.h === 50) {
-                const defaults = {
-                    tl: { x: 5, y: 5, w: 40, h: 40 },
-                    tr: { x: 55, y: 5, w: 40, h: 40 },
-                    bl: { x: 5, y: 55, w: 40, h: 40 },
-                    br: { x: 55, y: 55, w: 40, h: 40 }
-                };
-                setMaskRects({ ...maskRects, [q]: defaults[q] });
+            // Select automatically when enabling
+            setSelectedQ(q);
+
+            // Initialization logic if empty
+            if (getActiveMode(q) === 'rect') {
+                const current = maskRects[q];
+                if (current.w === 50 && current.h === 50) {
+                    const defaults = {
+                        tl: { x: 5, y: 5, w: 40, h: 40 },
+                        tr: { x: 55, y: 5, w: 40, h: 40 },
+                        bl: { x: 5, y: 55, w: 40, h: 40 },
+                        br: { x: 55, y: 55, w: 40, h: 40 }
+                    };
+                    setMaskRects({ ...maskRects, [q]: defaults[q] });
+                }
             }
+        } else {
+            if (selectedQ === q) setSelectedQ(null);
         }
     };
 
-    // Interaction Handlers
+    const handleQuadrantSelect = (q) => {
+        if (!spillConfig[q]) return;
+
+        // If not enabled, enable it
+        if (!advancedMasks[q]) {
+            toggleAdvanced(q);
+        } else {
+            // Just select
+            setSelectedQ(q === selectedQ ? null : q);
+        }
+    };
+
+    // --- Rect Interaction ---
+
     const initDrag = (e, q) => {
-        if (e.target.dataset.handle) return; // Ignore if clicking a resize handle
+        if (getActiveMode(q) !== 'rect') return;
+        if (e.target.dataset.handle) return;
         e.preventDefault();
         e.stopPropagation();
         setInteraction({
@@ -56,6 +92,7 @@ export default function OrbCropModal({
             startY: e.clientY,
             startRect: { ...maskRects[q] }
         });
+        setSelectedQ(q);
     };
 
     const initResize = (e, q, handle) => {
@@ -69,47 +106,67 @@ export default function OrbCropModal({
             startY: e.clientY,
             startRect: { ...maskRects[q] }
         });
+        setSelectedQ(q);
     };
 
-    // Global Move/Up Listener
+    // --- Path Interaction ---
+
+    const handleCanvasClick = (e) => {
+        if (!selectedQ) return;
+        if (getActiveMode(selectedQ) !== 'path') return;
+        if (!containerRef.current) return;
+
+        // Ignore clicks on UI elements (buttons, inputs)
+        if (e.target.closest('button') || e.target.closest('input')) return;
+
+        // If clicking a point (handled by point handler), ignore here?
+        // Actually, let's calculate pos
+        const containerRect = containerRef.current.getBoundingClientRect();
+        const x = ((e.clientX - containerRect.left) / containerRect.width) * 100;
+        const y = ((e.clientY - containerRect.top) / containerRect.height) * 100;
+
+        const currentPath = maskPaths[selectedQ] || [];
+
+        // Check if we clicked near the start point to close
+        if (currentPath.length >= 3 && hoverPoint === 0) {
+            // Close path logic is implicit? 
+            // Actually, a closed path is just > 2 points. 
+            // We can just stop adding points?
+            // Maybe we deselect to "finish"?
+            setSelectedQ(null);
+            return;
+        }
+
+        const newPath = [...currentPath, { x, y }];
+        setMaskPaths({ ...maskPaths, [selectedQ]: newPath });
+    };
+
+    // Global Move/Up Listener for Rects
     useEffect(() => {
         if (!interaction || !containerRef.current) return;
 
         const handleMove = (e) => {
             const containerRect = containerRef.current.getBoundingClientRect();
-            // Calculate delta in percentages relative to container
             const deltaX = ((e.clientX - interaction.startX) / containerRect.width) * 100;
             const deltaY = ((e.clientY - interaction.startY) / containerRect.height) * 100;
 
-            // Clone the entire rects object to update
             const newMaskRects = { ...maskRects };
-
             const q = interaction.q;
             const start = interaction.startRect;
             let newR = { ...start };
 
-            // RELAXED BOUNDS: Allow moving largely outside (e.g. -50% to 150%)
-            // This supports "True Spill" where the crop is logically outside the orb box
-            const bounds = {
-                minX: -50, maxX: 150,
-                minY: -50, maxY: 150,
-            };
-            const minSize = 2; // Minimum 2%
+            const bounds = { minX: -50, maxX: 150, minY: -50, maxY: 150 };
+            const minSize = 2;
 
             if (interaction.type === 'drag') {
                 let proposedX = start.x + deltaX;
                 let proposedY = start.y + deltaY;
-
-                // Clamp to relaxed bounds
                 proposedX = Math.max(bounds.minX, Math.min(bounds.maxX - newR.w, proposedX));
                 proposedY = Math.max(bounds.minY, Math.min(bounds.maxY - newR.h, proposedY));
-
                 newR.x = proposedX;
                 newR.y = proposedY;
             } else if (interaction.type === 'resize') {
                 const h = interaction.handle;
-
-                // Horizontal Logic
                 if (h.includes('w')) {
                     const proposedX = Math.min(start.x + start.w - minSize, Math.max(bounds.minX, start.x + deltaX));
                     newR.w = start.x + start.w - proposedX;
@@ -118,8 +175,6 @@ export default function OrbCropModal({
                     const proposedW = Math.max(minSize, Math.min(bounds.maxX - start.x, start.w + deltaX));
                     newR.w = proposedW;
                 }
-
-                // Vertical Logic
                 if (h.includes('n')) {
                     const proposedY = Math.min(start.y + start.h - minSize, Math.max(bounds.minY, start.y + deltaY));
                     newR.h = start.y + start.h - proposedY;
@@ -130,7 +185,6 @@ export default function OrbCropModal({
                 }
             }
 
-            // Update the single quadrant in the rects object
             newMaskRects[q] = newR;
             setMaskRects(newMaskRects);
         };
@@ -143,27 +197,83 @@ export default function OrbCropModal({
             window.removeEventListener('mousemove', handleMove);
             window.removeEventListener('mouseup', handleUp);
         };
-    }, [interaction, maskRects, setMaskRects]); // Dependencies update
+    }, [interaction, maskRects, setMaskRects]);
 
 
     if (!isOpen || !image) return null;
 
     const visualMultiplier = 3.5;
 
-    const getMaskRectProps = (q) => {
-        if (advancedMasks[q]) {
-            const r = maskRects[q];
-            return { x: r.x, y: r.y, width: r.w, height: r.h };
-        } else {
-            switch (q) {
-                case 'tl': return { x: -5000, y: -5000, width: 5050, height: 5050 };
-                case 'tr': return { x: 50, y: -5000, width: 5050, height: 5050 };
-                case 'bl': return { x: -5000, y: 50, width: 5050, height: 5050 };
-                case 'br': return { x: 50, y: 50, width: 5050, height: 5050 };
-                default: return {};
-            }
-        }
+    // --- Render Helpers ---
+
+    const getPolygonPoints = (q) => {
+        const points = maskPaths[q] || [];
+        return points.map(p => `${p.x},${p.y}`).join(' ');
     };
+
+    const QuadrantControls = () => {
+        if (!selectedQ) return null;
+
+        const mode = getActiveMode(selectedQ);
+        const pathPoints = maskPaths[selectedQ] || [];
+
+        return (
+            <div className="absolute bottom-32 left-1/2 transform -translate-x-1/2 bg-slate-900/90 backdrop-blur-md border border-white/20 rounded-xl p-4 flex flex-col gap-3 shadow-2xl z-[60] animate-in slide-in-from-bottom-4">
+                <div className="flex items-center justify-between gap-8 border-b border-white/10 pb-2">
+                    <span className="text-sm font-black uppercase text-white tracking-widest">
+                        {selectedQ === 'tl' ? 'Top Left' : selectedQ === 'tr' ? 'Top Right' : selectedQ === 'bl' ? 'Bottom Left' : 'Bottom Right'}
+                    </span>
+                    <button onClick={() => toggleAdvanced(selectedQ)} className="text-xs text-red-400 hover:text-red-300 font-bold uppercase">
+                        Disable
+                    </button>
+                </div>
+
+                <div className="flex items-center gap-2 bg-black/40 p-1 rounded-lg">
+                    <button
+                        onClick={() => setMaskModes({ ...maskModes, [selectedQ]: 'rect' })}
+                        className={`flex-1 flex items-center justify-center gap-2 px-3 py-1.5 rounded-md text-xs font-bold uppercase transition-colors ${mode === 'rect' ? 'bg-sky-500 text-white' : 'text-slate-400 hover:bg-white/5'}`}
+                    >
+                        <BoxSelect size={14} /> Rect
+                    </button>
+                    <button
+                        onClick={() => setMaskModes({ ...maskModes, [selectedQ]: 'path' })}
+                        className={`flex-1 flex items-center justify-center gap-2 px-3 py-1.5 rounded-md text-xs font-bold uppercase transition-colors ${mode === 'path' ? 'bg-sky-500 text-white' : 'text-slate-400 hover:bg-white/5'}`}
+                    >
+                        <PenTool size={14} /> Path
+                    </button>
+                </div>
+
+                {mode === 'path' && (
+                    <div className="flex items-center gap-2 text-xs text-slate-400">
+                        <div className="flex-1">
+                            <span className="font-mono text-white">{pathPoints.length}</span> points
+                        </div>
+                        <button
+                            onClick={() => {
+                                const newPath = [...pathPoints];
+                                newPath.pop();
+                                setMaskPaths({ ...maskPaths, [selectedQ]: newPath });
+                            }}
+                            disabled={pathPoints.length === 0}
+                            className="p-1.5 hover:bg-white/10 rounded text-sky-400 disabled:opacity-30"
+                            title="Undo Last Point"
+                        >
+                            <Undo2 size={14} />
+                        </button>
+                        <button
+                            onClick={() => setMaskPaths({ ...maskPaths, [selectedQ]: [] })}
+                            disabled={pathPoints.length === 0}
+                            className="p-1.5 hover:bg-red-500/20 rounded text-red-400 disabled:opacity-30"
+                            title="Clear Path"
+                        >
+                            <Trash2 size={14} />
+                        </button>
+                    </div>
+                )}
+            </div>
+        );
+    };
+
 
     return (
         <div className={`fixed inset-0 z-[100] flex items-center justify-center bg-black animate-in fade-in duration-300 ${interaction ? 'cursor-grabbing' : ''}`}>
@@ -182,16 +292,29 @@ export default function OrbCropModal({
                     </p>
                 </div>
 
-                <button
-                    onClick={onClose}
-                    className="pointer-events-auto p-4 rounded-full bg-white/5 hover:bg-white/20 text-white/70 hover:text-white transition-all backdrop-blur-md border border-white/10 group"
-                >
-                    <X size={32} className="group-hover:scale-110 transition-transform duration-300" />
-                </button>
+                <div className="flex gap-4 pointer-events-auto">
+                    {/* Instructions */}
+                    {selectedQ && getActiveMode(selectedQ) === 'path' && (
+                        <div className="bg-sky-500/10 border border-sky-500/20 px-4 py-2 rounded-lg text-sky-300 text-xs font-medium animate-pulse">
+                            Click to add points. Close path to finish.
+                        </div>
+                    )}
+
+                    <button
+                        onClick={onClose}
+                        className="p-4 rounded-full bg-white/5 hover:bg-white/20 text-white/70 hover:text-white transition-all backdrop-blur-md border border-white/10 group"
+                    >
+                        <X size={32} className="group-hover:scale-110 transition-transform duration-300" />
+                    </button>
+                </div>
             </div>
 
             {/* Main Canvas Area */}
-            <div className="relative w-full h-full grid place-items-center overflow-auto select-none bg-[#050510]">
+            <div
+                className={`relative w-full h-full grid place-items-center overflow-auto select-none bg-[#050510] 
+                    ${selectedQ && getActiveMode(selectedQ) === 'path' ? 'cursor-crosshair' : ''}`}
+                onClick={handleCanvasClick}
+            >
 
                 {/* Background Grid */}
                 <div className="absolute inset-0 opacity-20"
@@ -224,27 +347,115 @@ export default function OrbCropModal({
                         />
                     </div>
 
-                    {/* Mask Overlay */}
+                    {/* Mask Overlay (SVG) */}
                     <div className="absolute inset-0 z-20 overflow-visible pointer-events-none">
                         <svg width="100%" height="100%" viewBox="0 0 100 100" style={{ overflow: 'visible' }}>
                             <defs>
                                 <mask id="orbMenuMask">
                                     <rect x="-5000" y="-5000" width="10000" height="10000" fill="white" />
                                     <circle cx="50" cy="50" r="50" fill="black" />
-                                    {spillConfig.tl && <rect fill="black" {...getMaskRectProps('tl')} />}
-                                    {spillConfig.tr && <rect fill="black" {...getMaskRectProps('tr')} />}
-                                    {spillConfig.bl && <rect fill="black" {...getMaskRectProps('bl')} />}
-                                    {spillConfig.br && <rect fill="black" {...getMaskRectProps('br')} />}
+                                    {['tl', 'tr', 'bl', 'br'].map(q => {
+                                        if (!spillConfig[q]) return null;
+                                        // If advanced is OFF, show infinite (or default big rects)
+                                        // Wait, the logic is: mask reveals allowed area.
+                                        // So black = hidden. white = visible.
+                                        // The mask above starts with WHITE, then draws BLACK circle (hide enter).
+                                        // The rects below are BLACK, meaning they HIDE overflow?
+                                        // No, the original code had rects fill="black" which HIDES the spill area?
+                                        // Wait, original code:
+                                        // <rect width="10000" height="10000" fill="rgba(2, 6, 23, 0.95)" mask="url(#orbMenuMask)" />
+                                        // The visualizer is a big dark overlay with HOLES punched in it.
+                                        // So the MASK defines the HOLES.
+                                        // In SVG mask, white = allow, black = block.
+                                        // If the overlay uses the mask, areas that are WHITE in the mask will be VISIBLE (dark overlay).
+                                        // Areas that are BLACK in the mask will be TRANSPARENT (reveal image).
+                                        // So...
+                                        // Background Rect (white) -> Overlay is Visible (Dark).
+                                        // Circle (black) -> Overlay is Transparent (Show center Orb).
+                                        // Spill Rects (black) -> Overlay is Transparent (Show Spill).
+
+                                        if (!advancedMasks[q]) {
+                                            // Show Default Infinite Spill
+                                            // We need big black rects covering the quadrants
+                                            const defaults = {
+                                                tl: { x: -5000, y: -5000, width: 5050, height: 5050 },
+                                                tr: { x: 50, y: -5000, width: 5050, height: 5050 },
+                                                bl: { x: -5000, y: 50, width: 5050, height: 5050 },
+                                                br: { x: 50, y: 50, width: 5050, height: 5050 }
+                                            };
+                                            const d = defaults[q];
+                                            return <rect key={q} x={d.x} y={d.y} width={d.width} height={d.height} fill="black" />;
+                                        }
+
+                                        // Advanced Mode
+                                        const mode = getActiveMode(q);
+                                        if (mode === 'path') {
+                                            const points = getPolygonPoints(q);
+                                            if (!points) return null;
+                                            return <polygon key={q} points={points} fill="black" />;
+                                        } else {
+                                            const r = maskRects[q];
+                                            return <rect key={q} x={r.x} y={r.y} width={r.w} height={r.h} fill="black" />;
+                                        }
+                                    })}
                                 </mask>
                             </defs>
+
+                            {/* The Dark Overlay */}
                             <rect x="-5000" y="-5000" width="10000" height="10000" fill="rgba(2, 6, 23, 0.95)" mask="url(#orbMenuMask)" />
 
                             {/* Visual Guides */}
                             <circle cx="50" cy="50" r="50" fill="none" stroke="rgba(56, 189, 248, 0.5)" strokeWidth="0.5" />
-                            <rect x="-120" y="10" width="110" height="80" rx="4" fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="0.5" strokeDasharray="2 2" />
-                            <rect x="110" y="10" width="110" height="80" rx="4" fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="0.5" strokeDasharray="2 2" />
                             <line x1="50" y1="-1000" x2="50" y2="1000" stroke="rgba(56, 189, 248, 0.2)" strokeWidth="0.2" />
                             <line x1="-1000" y1="50" x2="1000" y2="50" stroke="rgba(56, 189, 248, 0.2)" strokeWidth="0.2" />
+
+                            {/* Path Visualization (Active drawing lines) */}
+                            {['tl', 'tr', 'bl', 'br'].map(q => {
+                                if (!spillConfig[q] || !advancedMasks[q]) return null;
+                                if (getActiveMode(q) !== 'path') return null;
+                                const points = maskPaths[q] || [];
+                                if (points.length === 0) return null;
+
+                                const ptsString = points.map(p => `${p.x},${p.y}`).join(' ');
+
+                                const isSelected = q === selectedQ;
+
+                                return (
+                                    <g key={q}>
+                                        {/* The Polygon/Path itself (Stroke) */}
+                                        <polyline
+                                            points={ptsString}
+                                            fill="none"
+                                            stroke={isSelected ? "#38bdf8" : "rgba(56, 189, 248, 0.3)"}
+                                            strokeWidth="0.5"
+                                            strokeDasharray={isSelected ? "none" : "2 2"}
+                                        />
+                                        {/* Closing Line if not closed? No, polyline is open. Polygon is closed. */}
+                                        {/* If we have > 2 points, we can show a lighter closing line to visualise the area */}
+                                        {points.length > 2 && (
+                                            <polygon
+                                                points={ptsString}
+                                                fill="rgba(56, 189, 248, 0.1)"
+                                                stroke="none"
+                                            />
+                                        )}
+
+                                        {/* Points */}
+                                        {points.map((p, idx) => (
+                                            <circle
+                                                key={idx}
+                                                cx={p.x}
+                                                cy={p.y}
+                                                r={isSelected ? 1.5 : 1}
+                                                fill={idx === 0 && isSelected ? "#4ade80" : "#38bdf8"}
+                                                className="cursor-pointer hover:r-2 transition-all"
+                                                onMouseEnter={() => setHoverPoint(idx)}
+                                                onMouseLeave={() => setHoverPoint(null)}
+                                            />
+                                        ))}
+                                    </g>
+                                );
+                            })}
                         </svg>
                     </div>
 
@@ -254,28 +465,42 @@ export default function OrbCropModal({
                             {['tl', 'tr', 'bl', 'br'].map(q => (
                                 <button
                                     key={q}
-                                    onClick={() => toggleAdvanced(q)}
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleQuadrantSelect(q);
+                                    }}
                                     disabled={!spillConfig[q]}
-                                    className={`w-6 h-6 rounded flex items-center justify-center transition-all ${!spillConfig[q] ? 'opacity-20 cursor-not-allowed bg-slate-800' :
-                                        advancedMasks[q] ? 'bg-sky-500 text-white shadow-lg scale-110' : 'bg-slate-700 text-slate-400 hover:bg-slate-600'
+                                    className={`w-8 h-8 rounded flex items-center justify-center transition-all ${!spillConfig[q] ? 'opacity-20 cursor-not-allowed bg-slate-800' :
+                                        selectedQ === q ? 'bg-sky-500 text-white shadow-lg scale-110 ring-2 ring-sky-300' :
+                                            advancedMasks[q] ? 'bg-slate-600 text-sky-400 border border-sky-500/30' :
+                                                'bg-slate-700 text-slate-400 hover:bg-slate-600'
                                         }`}
                                 >
-                                    <MousePointer2 size={12} className={advancedMasks[q] ? "fill-current" : ""} />
+                                    {advancedMasks[q] ? (
+                                        getActiveMode(q) === 'path' ? <PenTool size={14} /> : <BoxSelect size={14} />
+                                    ) : (
+                                        <MousePointer2 size={12} />
+                                    )}
                                 </button>
                             ))}
                         </div>
                     </div>
 
-                    {/* Interactive Crop Rects */}
+                    {/* Rect Handles (Only render if Rect Mode) */}
                     <div className="absolute inset-0 pointer-events-none z-40">
                         {['tl', 'tr', 'bl', 'br'].map(q => {
                             if (!spillConfig[q] || !advancedMasks[q]) return null;
+                            if (getActiveMode(q) !== 'rect') return null;
+
                             const r = maskRects[q];
+                            const isSelected = selectedQ === q;
+
                             return (
                                 <div
                                     key={q}
                                     onMouseDown={(e) => initDrag(e, q)}
-                                    className="absolute border-2 border-sky-400 bg-sky-500/10 hover:bg-sky-500/20 pointer-events-auto transition-colors group cursor-grab active:cursor-grabbing shadow-[0_0_15px_rgba(56,189,248,0.3)]"
+                                    className={`absolute border-2 pointer-events-auto transition-all group cursor-grab active:cursor-grabbing
+                                        ${isSelected ? 'border-sky-400 bg-sky-500/10 shadow-[0_0_15px_rgba(56,189,248,0.3)] z-50' : 'border-sky-500/30 hover:border-sky-500/50'}`}
                                     style={{
                                         left: `${r.x}%`,
                                         top: `${r.y}%`,
@@ -283,38 +508,22 @@ export default function OrbCropModal({
                                         height: `${r.h}%`
                                     }}
                                 >
-                                    {/* Resize Handles */}
-                                    <div
-                                        data-handle="nw"
-                                        onMouseDown={(e) => initResize(e, q, 'nw')}
-                                        className="absolute -top-1.5 -left-1.5 w-4 h-4 bg-white border border-sky-500 rounded-sm hover:scale-125 transition-transform cursor-nwse-resize z-50"
-                                    />
-                                    <div
-                                        data-handle="ne"
-                                        onMouseDown={(e) => initResize(e, q, 'ne')}
-                                        className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-white border border-sky-500 rounded-sm hover:scale-125 transition-transform cursor-nesw-resize z-50"
-                                    />
-                                    <div
-                                        data-handle="sw"
-                                        onMouseDown={(e) => initResize(e, q, 'sw')}
-                                        className="absolute -bottom-1.5 -left-1.5 w-4 h-4 bg-white border border-sky-500 rounded-sm hover:scale-125 transition-transform cursor-nesw-resize z-50"
-                                    />
-                                    <div
-                                        data-handle="se"
-                                        onMouseDown={(e) => initResize(e, q, 'se')}
-                                        className="absolute -bottom-1.5 -right-1.5 w-4 h-4 bg-white border border-sky-500 rounded-sm hover:scale-125 transition-transform cursor-nwse-resize z-50"
-                                    />
-
-                                    {/* Label */}
-                                    <div className="absolute top-1 left-1 bg-sky-500 text-white text-[8px] font-bold px-1 rounded shadow-sm opacity-50 group-hover:opacity-100 transition-opacity pointer-events-none">
-                                        {q.toUpperCase()}
-                                    </div>
+                                    {/* Resize Handles - Only if Selected */}
+                                    {isSelected && <>
+                                        <div data-handle="nw" onMouseDown={(e) => initResize(e, q, 'nw')} className="absolute -top-1.5 -left-1.5 w-4 h-4 bg-white border border-sky-500 rounded-sm cursor-nwse-resize z-50" />
+                                        <div data-handle="ne" onMouseDown={(e) => initResize(e, q, 'ne')} className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-white border border-sky-500 rounded-sm cursor-nesw-resize z-50" />
+                                        <div data-handle="sw" onMouseDown={(e) => initResize(e, q, 'sw')} className="absolute -bottom-1.5 -left-1.5 w-4 h-4 bg-white border border-sky-500 rounded-sm cursor-nesw-resize z-50" />
+                                        <div data-handle="se" onMouseDown={(e) => initResize(e, q, 'se')} className="absolute -bottom-1.5 -right-1.5 w-4 h-4 bg-white border border-sky-500 rounded-sm cursor-nwse-resize z-50" />
+                                    </>}
                                 </div>
                             );
                         })}
                     </div>
 
                 </div>
+
+                {/* Floating Controls */}
+                <QuadrantControls />
 
                 {/* Bottom Stats Bar */}
                 <div className="absolute bottom-12 px-6 py-3 rounded-2xl bg-black/60 backdrop-blur-xl border border-white/10 flex items-center gap-6 text-xs font-medium text-white/50 z-50">
@@ -341,12 +550,6 @@ export default function OrbCropModal({
                             className="w-20 h-1 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-sky-500 hover:accent-sky-400"
                         />
                         <span className="font-mono text-sky-400 w-8 text-right">{(canvasScale * 100).toFixed(0)}%</span>
-                    </div>
-                    <div className="w-px h-4 bg-white/10" />
-                    <div className="flex items-center gap-2">
-                        <span className={Object.values(advancedMasks).some(Boolean) ? "text-sky-400" : "text-slate-500"}>
-                            {Object.values(advancedMasks).filter(Boolean).length} Custom Masks
-                        </span>
                     </div>
                 </div>
 

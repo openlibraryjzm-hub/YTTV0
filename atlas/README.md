@@ -424,5 +424,11 @@ For detailed information about the application's theme system and recent color c
   - **Direct Playlist Assignment**: Added inline multi-select dropdown for assigning playlists during creation.
   - **Global Interaction**: Clicking an Orb in the video grid now instantly applies its settings to the player.
   - **Advanced Crop**: Added **Canvas Scale & Scroll** to the modal for precise editing of large images.
-  - **Clean Slate**: Implemented one-time wipe of legacy presets.
+- **Orb Crop Fixes**:
+  - **Path Drawing**: Updated `OrbCropModal` to allow clicking anywhere on the canvas to add points for custom polygon masks, improving the freeform cropping experience.
+  - **Crash Resolution**: Fixed a `TypeError` in `OrbCropModal` by ensuring default values for `orbAdvancedMasks` and `orbMaskRects` and correcting prop passing from `OrbConfigPlaceholderPage`.
+  - **Visual Consistency**: Aligned the appearance of Orbs in `OrbCard` with (`PlayerController`) by:
+    - Implementing dynamic SVG clip paths in `OrbCard` to support both rectangular and polygonal masks based on `orbMaskModes`.
+    - Correcting the clip path radius to `0.5` to match the Player Controller.
+    - Fixing SVG syntax errors (nested tags, closing tags) in `OrbCard`.
 

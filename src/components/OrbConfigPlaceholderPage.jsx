@@ -18,6 +18,8 @@ const OrbConfigPlaceholderPage = () => {
         orbImageYOffset, setOrbImageYOffset,
         orbAdvancedMasks, setOrbAdvancedMasks,
         orbMaskRects, setOrbMaskRects,
+        orbMaskPaths, setOrbMaskPaths, // New
+        orbMaskModes, setOrbMaskModes, // New
         orbFavorites, addOrbFavorite, clearOrbFavorites // Added functions
     } = useConfigStore();
 
@@ -136,26 +138,37 @@ const OrbConfigPlaceholderPage = () => {
                                                 <circle cx="0.5" cy="0.5" r="0.35" />
 
                                                 {/* Advanced Masks Logic */}
-                                                {orbSpill.tl && (
-                                                    orbAdvancedMasks.tl
-                                                        ? <rect x={orbMaskRects.tl.x / 100} y={orbMaskRects.tl.y / 100} width={orbMaskRects.tl.w / 100} height={orbMaskRects.tl.h / 100} />
-                                                        : <rect x="-50" y="-50" width="50.5" height="50.5" />
-                                                )}
-                                                {orbSpill.tr && (
-                                                    orbAdvancedMasks.tr
-                                                        ? <rect x={orbMaskRects.tr.x / 100} y={orbMaskRects.tr.y / 100} width={orbMaskRects.tr.w / 100} height={orbMaskRects.tr.h / 100} />
-                                                        : <rect x="0.5" y="-50" width="50.5" height="50.5" />
-                                                )}
-                                                {orbSpill.bl && (
-                                                    orbAdvancedMasks.bl
-                                                        ? <rect x={orbMaskRects.bl.x / 100} y={orbMaskRects.bl.y / 100} width={orbMaskRects.bl.w / 100} height={orbMaskRects.bl.h / 100} />
-                                                        : <rect x="-50" y="0.5" width="50.5" height="50.5" />
-                                                )}
-                                                {orbSpill.br && (
-                                                    orbAdvancedMasks.br
-                                                        ? <rect x={orbMaskRects.br.x / 100} y={orbMaskRects.br.y / 100} width={orbMaskRects.br.w / 100} height={orbMaskRects.br.h / 100} />
-                                                        : <rect x="0.5" y="0.5" width="50.5" height="50.5" />
-                                                )}
+                                                {['tl', 'tr', 'bl', 'br'].map(q => {
+                                                    if (!orbSpill[q]) return null;
+
+                                                    // Default Spill Rects (Infinite Spill)
+                                                    const defaults = {
+                                                        tl: { x: -0.5, y: -0.5, w: 1.0, h: 1.0 },
+                                                        tr: { x: 0.5, y: -0.5, w: 0.5, h: 1.0 },
+                                                        bl: { x: -0.5, y: 0.5, w: 1.0, h: 0.5 },
+                                                        br: { x: 0.5, y: 0.5, w: 0.5, h: 0.5 }
+                                                    };
+
+                                                    if (!orbAdvancedMasks[q]) {
+                                                        const d = defaults[q];
+                                                        return <rect key={q} x={d.x} y={d.y} width={d.w} height={d.h} />;
+                                                    }
+
+                                                    // Custom Mask Logic
+                                                    const mode = orbMaskModes[q] || 'rect';
+
+                                                    if (mode === 'path') {
+                                                        const points = orbMaskPaths[q] || [];
+                                                        if (points.length < 3) return <rect key={q} x={defaults[q].x} y={defaults[q].y} width={defaults[q].width} height={defaults[q].height} />;
+
+                                                        // Convert 0-100 to 0-1
+                                                        const pts = points.map(p => `${p.x / 100},${p.y / 100}`).join(' ');
+                                                        return <polygon key={q} points={pts} />;
+                                                    } else {
+                                                        const r = orbMaskRects[q];
+                                                        return <rect key={q} x={r.x / 100} y={r.y / 100} width={r.w / 100} height={r.h / 100} />;
+                                                    }
+                                                })}
                                             </clipPath>
                                         </defs>
                                     </svg>
@@ -405,10 +418,16 @@ const OrbConfigPlaceholderPage = () => {
                 xOffset={orbImageXOffset}
                 yOffset={orbImageYOffset}
                 // Advanced State
+                // Advanced State
                 advancedMasks={orbAdvancedMasks}
                 setAdvancedMasks={setOrbAdvancedMasks}
                 maskRects={orbMaskRects}
                 setMaskRects={setOrbMaskRects}
+                // New Path Props
+                maskPaths={orbMaskPaths}
+                setMaskPaths={setOrbMaskPaths}
+                maskModes={orbMaskModes}
+                setMaskModes={setOrbMaskModes}
             />
         </div>
     );

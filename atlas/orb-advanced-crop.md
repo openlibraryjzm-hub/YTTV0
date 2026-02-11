@@ -53,4 +53,11 @@ The feature determines its state from the global `configStore` to ensure persist
 The main application header (`PlayerController.jsx`) has been fully integrated:
 1.  It subscribes to `orbAdvancedMasks` and `orbMaskRects`.
 2.  The central `orbClipPath` SVG immediately reflects standard vs. custom masks.
-3.  If a custom mask is used, the header orb shows *only* that specific cutout; otherwise, it shows the standard quadrant spill.
+## 7. Path Mode (Freeform Cropping)
+
+The Advanced Orb Editor now supports a "Path Mode" for creating complex, non-rectangular crop shapes:
+
+- **Freeform Selection**: Users can click anywhere on the canvas to add points, creating a custom polygonal mask.
+- **Visual Feedback**: The current path is visualized with lines connecting the points, and a live preview of the mask is updated in real-time.
+- **Integration**: Path data is stored in `orbMaskPaths` and applied alongside rectangular masks, ensuring consistent rendering across the application (PlayerController, OrbCard, etc.).
+- **Editing**: Points can be added to refine the shape, offering greater flexibility than standard rectangular crops.

@@ -119,6 +119,15 @@ export const useConfigStore = create(
                 br: { x: 50, y: 50, w: 50, h: 50 }
             },
             setOrbMaskRects: (val) => set({ orbMaskRects: val }),
+            orbMaskPaths: {
+                tl: [],
+                tr: [],
+                bl: [],
+                br: []
+            },
+            setOrbMaskPaths: (val) => set({ orbMaskPaths: val }),
+            orbMaskModes: { tl: 'rect', tr: 'rect', bl: 'rect', br: 'rect' },
+            setOrbMaskModes: (val) => set({ orbMaskModes: val }),
 
             // Orb Favorites - saved configurations
             orbFavorites: [],
@@ -141,6 +150,10 @@ export const useConfigStore = create(
                         bl: { x: 0, y: 50, w: 50, h: 50 },
                         br: { x: 50, y: 50, w: 50, h: 50 }
                     },
+                    orbMaskPaths: favorite.orbMaskPaths || {
+                        tl: [], tr: [], bl: [], br: []
+                    },
+                    orbMaskModes: favorite.orbMaskModes || { tl: 'rect', tr: 'rect', bl: 'rect', br: 'rect' },
                     folderColors: favorite.folderColors || [], // Array of folder color IDs
                     playlistIds: favorite.playlistIds || [], // Array of playlist IDs for theme overrides
                 }]
@@ -163,6 +176,10 @@ export const useConfigStore = create(
                     bl: { x: 0, y: 50, w: 50, h: 50 },
                     br: { x: 50, y: 50, w: 50, h: 50 }
                 },
+                orbMaskPaths: favorite.orbMaskPaths || {
+                    tl: [], tr: [], bl: [], br: []
+                },
+                orbMaskModes: favorite.orbMaskModes || { tl: 'rect', tr: 'rect', bl: 'rect', br: 'rect' },
             }),
             renameOrbFavorite: (id, newName) => set((state) => ({
                 orbFavorites: state.orbFavorites.map(f =>
