@@ -459,7 +459,10 @@ For detailed information about the application's theme system and recent color c
   - Added "Spill Over" feature to allow banner to extend vertically below the header area.
   - Developed "Crop Shape" functionality (`BannerCropModal`) for drawing custom SVG masks on single image tiles.
   - Implemented "Animate Scroll" toggle to enable/disable the infinite horizontal scroll animation.
-  - Updated `LayoutShell` to respect all new customization settings (scale, spill, mask, scroll).
+  - Added "Clip From Left" slider (0-100%) to hide left portion of banner, revealing theme color underneath for split-screen effects.
+  - Added "Horizontal Offset" slider (-50% to +50%) to shift the entire tiled pattern left or right for precise positioning.
+  - Updated `LayoutShell` to respect all customization settings (scale, spill, mask, scroll, clip, offset).
   - Documented in `atlas/app-banner.md`.
+
 
 

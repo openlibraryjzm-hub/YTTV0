@@ -18,7 +18,7 @@ const LayoutShell = ({
 }) => {
 
   const { viewMode, menuQuarterMode, showDebugBounds } = useLayoutStore();
-  const { customBannerImage, bannerVerticalPosition, playerBorderPattern, bannerScale, bannerSpillHeight, bannerMaskPath, bannerScrollEnabled } = useConfigStore();
+  const { customBannerImage, bannerVerticalPosition, playerBorderPattern, bannerScale, bannerSpillHeight, bannerMaskPath, bannerScrollEnabled, bannerClipLeft, bannerHorizontalOffset, playerControllerXOffset } = useConfigStore();
 
   // Debug: Log when second player should render
   React.useEffect(() => {
@@ -71,9 +71,11 @@ const LayoutShell = ({
           style={{
             ...(customBannerImage ? { backgroundImage: `url(${customBannerImage})` } : {}),
             ...(isBannerGif || !bannerScrollEnabled ? { animation: 'none' } : {}),
-            backgroundPosition: `0% ${bannerVerticalPosition ?? 0}%`,
+            backgroundPosition: `${bannerHorizontalOffset ?? 0}% ${bannerVerticalPosition ?? 0}%`,
+            backgroundRepeat: 'repeat-x',
             backgroundSize: `${bannerScale ?? 100}vw auto`,
             height: bannerSpillHeight ? `${200 + bannerSpillHeight}px` : '100%',
+            clipPath: bannerClipLeft > 0 ? `inset(0 0 0 ${bannerClipLeft}%)` : 'none',
             ...maskImageStyle
           }}
         />
@@ -81,7 +83,7 @@ const LayoutShell = ({
         <WindowControls />
 
         {!showDebugBounds && (
-          <div className="layout-shell__top-controller-wrapper">
+          <div className="layout-shell__top-controller-wrapper" style={{ transform: `translateX(${playerControllerXOffset || 0}px)` }}>
             {topController || (
               <div className="placeholder placeholder--top-controller">
                 <span className="placeholder__label">Top Controller</span>

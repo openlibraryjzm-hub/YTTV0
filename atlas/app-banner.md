@@ -44,6 +44,9 @@ Users see a full-width banner at the very top of the application (200px height) 
 - `src/store/configStore.js`:
   - `customBannerImage`: Base64 string of uploaded banner image (null = use default `/banner.PNG`)
   - `setCustomBannerImage(imageDataUrl)`: Sets custom banner image and persists to localStorage
+  - `bannerClipLeft`: Percentage (0-100) to clip from left side of banner (default: 0)
+  - `bannerHorizontalOffset`: Percentage (-50 to +50) to shift tiled pattern horizontally (default: 0)
+  - `bannerScrollEnabled`: Boolean controlling scroll animation
 
 **CSS/Styling:**
 - `src/LayoutShell.css`:
@@ -155,7 +158,13 @@ Users see a full-width banner at the very top of the application (200px height) 
   - **Image Scale**: Adjusts `background-size` (25-200% width)
   - **Spill Over**: Extends banner height (0-500px) below header
   - **Crop Shape**: Opens modal to draw custom SVG mask on single image tile
-  - **Animate Scroll**: Toggle to enable/disable horizontal scrolling
+  - **Clip From Left**: Slider to hide left portion of banner (0-100%)
+    - Reveals theme color underneath the clipped area
+    - Useful for showing banner only on right side while left shows theme color
+  - **Horizontal Offset**: Slider to shift entire tiled pattern left/right (-50% to +50%)
+    - Fine-tune positioning of tiles within the banner area
+    - Works in conjunction with Clip From Left for precise control
+  - **Animate Scroll**: Toggle to enable/disable horizontal scrolling (auto-disabled for GIFs)
 
 **File Format Support:**
 - **PNG/JPG/WEBP**: Static images that can scroll infinitely or be tiled

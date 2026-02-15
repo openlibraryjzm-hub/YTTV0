@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Image, Palette, Box, ArrowLeft, Check, Crop } from 'lucide-react';
+import { Image, Palette, Box, ArrowLeft, Check, Crop, Move, Repeat } from 'lucide-react';
 import { useConfigStore } from '../store/configStore';
 import PageBanner from './PageBanner';
 import BannerCropModal from './BannerCropModal';
@@ -23,15 +23,18 @@ export default function AppPage({ onBack, currentThemeId, onThemeChange, onNavig
         bannerSpillHeight, setBannerSpillHeight,
         bannerMaskPath, setBannerMaskPath,
         bannerScrollEnabled, setBannerScrollEnabled,
-        playerBorderPattern, setPlayerBorderPattern
+        bannerClipLeft, setBannerClipLeft,
+        bannerHorizontalOffset, setBannerHorizontalOffset,
+        playerBorderPattern, setPlayerBorderPattern,
+        playerControllerXOffset, setPlayerControllerXOffset
     } = useConfigStore();
 
     const scrollContainerRef = useRef(null);
+    const [isCropModalOpen, setIsCropModalOpen] = useState(false);
 
     // Sticky toolbar state
     const [isStuck, setIsStuck] = useState(false);
     const stickySentinelRef = useRef(null);
-    const [isCropModalOpen, setIsCropModalOpen] = useState(false);
 
     // Mock state for app banner
     const [mockAppBanner, setMockAppBanner] = useState('default');
@@ -292,6 +295,52 @@ export default function AppPage({ onBack, currentThemeId, onThemeChange, onNavig
                                 </label>
                             </div>
 
+                            {/* Clip Left Slider */}
+                            <div className="space-y-3 pt-2 pb-4 border-b border-slate-100">
+                                <div className="flex justify-between items-center px-1">
+                                    <label className="text-xs font-bold uppercase text-slate-400">Clip From Left</label>
+                                    <span className="text-[10px] font-bold text-slate-500">{bannerClipLeft ?? 0}%</span>
+                                </div>
+                                <div className="flex items-center gap-4">
+                                    <span className="text-[10px] font-bold text-slate-400">0%</span>
+                                    <input
+                                        type="range"
+                                        min="0"
+                                        max="100"
+                                        value={bannerClipLeft ?? 0}
+                                        onChange={(e) => setBannerClipLeft(parseInt(e.target.value))}
+                                        className="flex-1 h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-sky-500"
+                                    />
+                                    <span className="text-[10px] font-bold text-slate-400">100%</span>
+                                </div>
+                                <p className="text-[10px] text-slate-400 px-1">
+                                    Hides the left portion of the banner, revealing the theme color underneath.
+                                </p>
+                            </div>
+
+                            {/* Horizontal Offset Slider */}
+                            <div className="space-y-3 pt-2 pb-4 border-b border-slate-100">
+                                <div className="flex justify-between items-center px-1">
+                                    <label className="text-xs font-bold uppercase text-slate-400">Horizontal Offset</label>
+                                    <span className="text-[10px] font-bold text-slate-500">{bannerHorizontalOffset ?? 0}%</span>
+                                </div>
+                                <div className="flex items-center gap-4">
+                                    <span className="text-[10px] font-bold text-slate-400">-50%</span>
+                                    <input
+                                        type="range"
+                                        min="-50"
+                                        max="50"
+                                        value={bannerHorizontalOffset ?? 0}
+                                        onChange={(e) => setBannerHorizontalOffset(parseInt(e.target.value))}
+                                        className="flex-1 h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-sky-500"
+                                    />
+                                    <span className="text-[10px] font-bold text-slate-400">+50%</span>
+                                </div>
+                                <p className="text-[10px] text-slate-400 px-1">
+                                    Shifts the entire tiled pattern left or right to fine-tune positioning.
+                                </p>
+                            </div>
+
                             {/* Vertical Position Slider */}
                             <div className="space-y-3 pt-2 pb-4 border-b border-slate-100">
                                 <div className="flex justify-between items-center px-1">
@@ -388,6 +437,30 @@ export default function AppPage({ onBack, currentThemeId, onThemeChange, onNavig
                                 </label>
                                 <p className="text-[10px] text-slate-400 text-center mt-2">
                                     Supports PNG, JPG, WEBP. Recommended size: 1920x200px.
+                                </p>
+                            </div>
+                        </ConfigSection>
+
+                        <ConfigSection title="Player Controller" icon={Move}>
+                            <div className="space-y-3 pt-2 pb-4">
+                                <div className="flex justify-between items-center px-1">
+                                    <label className="text-xs font-bold uppercase text-slate-400">Horizontal Position (X-Offset)</label>
+                                    <span className="text-[10px] font-bold text-slate-500">{playerControllerXOffset ?? 0}px</span>
+                                </div>
+                                <div className="flex items-center gap-4">
+                                    <span className="text-[10px] font-bold text-slate-400">Left</span>
+                                    <input
+                                        type="range"
+                                        min="-500"
+                                        max="500"
+                                        value={playerControllerXOffset ?? 0}
+                                        onChange={(e) => setPlayerControllerXOffset(parseInt(e.target.value))}
+                                        className="flex-1 h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-sky-500"
+                                    />
+                                    <span className="text-[10px] font-bold text-slate-400">Right</span>
+                                </div>
+                                <p className="text-[10px] text-slate-400 px-1">
+                                    Adjusts the horizontal position of the entire player controller.
                                 </p>
                             </div>
                         </ConfigSection>

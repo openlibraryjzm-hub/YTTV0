@@ -111,6 +111,14 @@ export const useConfigStore = create(
 
             bannerScrollEnabled: true,
             setBannerScrollEnabled: (val) => set({ bannerScrollEnabled: val }),
+            bannerClipLeft: 0,
+            setBannerClipLeft: (val) => set({ bannerClipLeft: val }),
+            bannerHorizontalOffset: 0,
+            setBannerHorizontalOffset: (val) => set({ bannerHorizontalOffset: val }),
+
+            // Player Controller Positioning
+            playerControllerXOffset: 0,
+            setPlayerControllerXOffset: (val) => set({ playerControllerXOffset: val }),
 
             // Custom Orb Image & Spill
             customOrbImage: null,

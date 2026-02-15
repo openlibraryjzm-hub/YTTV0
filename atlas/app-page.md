@@ -42,6 +42,12 @@ AppPage is a dedicated page for App Banner, Color Palette, and Player Borders co
     - Recommended size: 1920x200px
     - Uploaded banner replaces default banner
 
+- **Player Controller Section**:
+  - **Layout**: Simple slider control
+  - **Horizontal Position**: Slider to adjust X-offset (-500px to +500px)
+    - Allows centering or offsetting the controller relative to the banner
+    - Useful for alignment with custom banner setups
+
 - **Player Borders Section**:
   - **Layout**: 2-column grid of border pattern options
   - **Pattern Options**: Diagonal, Dots, Mesh (waves), Solid
@@ -59,6 +65,7 @@ AppPage is a dedicated page for App Banner, Color Palette, and Player Borders co
 **State Management:**
 - `src/store/configStore.js`:
   - `customBannerImage`, `setCustomBannerImage`: Custom app banner image (Base64 string)
+  - `playerControllerXOffset`, `setPlayerControllerXOffset`: Horizontal offset for player controller (px)
   - `playerBorderPattern`, `setPlayerBorderPattern`: Player border pattern ('diagonal' | 'dots' | 'waves' | 'solid')
 - `src/utils/themes.js`: Theme definitions with color palettes
 - Theme selection managed by parent SettingsPage via `currentThemeId` and `onThemeChange` props
@@ -76,6 +83,11 @@ AppPage is a dedicated page for App Banner, Color Palette, and Player Borders co
 3. User clicks preset → Sets mock state and clears custom banner if "Default" selected
 4. User clicks "Remove Custom Banner" → `setCustomBannerImage(null)` → Default banner restored
 
+**Player Controller Position Flow:**
+1. User adjusts slider → `setPlayerControllerXOffset(val)` updates store
+2. Store persists to `localStorage` → LayoutShell detects change → Updates wrapper `transform` style
+3. Controller moves horizontally in real-time
+
 **Player Borders Flow:**
 1. User clicks border pattern → `setPlayerBorderPattern(id)` updates store
 2. Store persists to `localStorage` → Player component detects change → Updates border pattern CSS class
@@ -83,11 +95,13 @@ AppPage is a dedicated page for App Banner, Color Palette, and Player Borders co
 
 **Source of Truth:**
 - `configStore.customBannerImage`: Custom app banner image (null = use default)
+- `configStore.playerControllerXOffset`: Current x-offset
 - `configStore.playerBorderPattern`: Current border pattern
 - `currentThemeId` (from parent): Active theme ID
 - All state persisted to `localStorage` via Zustand persist middleware
 
 **State Dependencies:**
 - When `customBannerImage` changes → App banner component updates display
+- When `playerControllerXOffset` changes → LayoutShell updates wrapper transform
 - When `playerBorderPattern` changes → Player borders update CSS class
 - When theme changes → Color palette grid highlights active theme
