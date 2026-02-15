@@ -1,7 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Image, Palette, Box, ArrowLeft, Check } from 'lucide-react';
+import { Image, Palette, Box, ArrowLeft, Check, Crop } from 'lucide-react';
 import { useConfigStore } from '../store/configStore';
 import PageBanner from './PageBanner';
+import BannerCropModal from './BannerCropModal';
 import { FOLDER_COLORS } from '../utils/folderColors';
 import { THEMES } from '../utils/themes';
 
@@ -18,6 +19,10 @@ export default function AppPage({ onBack, currentThemeId, onThemeChange, onNavig
     const {
         customBannerImage, setCustomBannerImage,
         bannerVerticalPosition, setBannerVerticalPosition,
+        bannerScale, setBannerScale,
+        bannerSpillHeight, setBannerSpillHeight,
+        bannerMaskPath, setBannerMaskPath,
+        bannerScrollEnabled, setBannerScrollEnabled,
         playerBorderPattern, setPlayerBorderPattern
     } = useConfigStore();
 
@@ -26,9 +31,11 @@ export default function AppPage({ onBack, currentThemeId, onThemeChange, onNavig
     // Sticky toolbar state
     const [isStuck, setIsStuck] = useState(false);
     const stickySentinelRef = useRef(null);
+    const [isCropModalOpen, setIsCropModalOpen] = useState(false);
 
     // Mock state for app banner
     const [mockAppBanner, setMockAppBanner] = useState('default');
+
 
     const handleBannerUpload = (e) => {
         const file = e.target.files[0];
@@ -183,32 +190,106 @@ export default function AppPage({ onBack, currentThemeId, onThemeChange, onNavig
                                     <span className="text-[10px] font-bold text-sky-600 bg-sky-50 px-2 py-0.5 rounded-full uppercase tracking-wider">Active</span>
                                 </div>
                                 <div className="w-full h-32 rounded-xl overflow-hidden shadow-sm border-2 border-slate-100 relative group bg-slate-50">
-                                    <img
-                                        src={customBannerImage || "/banner.PNG"}
-                                        alt="Current Banner"
-                                        className="w-full h-full object-cover"
-                                        style={{ objectPosition: `0% ${bannerVerticalPosition ?? 0}%` }}
+                                    <div
+                                        className="w-full h-full"
+                                        style={{
+                                            backgroundImage: `url(${customBannerImage || "/banner.PNG"})`,
+                                            backgroundSize: `${bannerScale ?? 100}% auto`,
+                                            backgroundPosition: `0% ${bannerVerticalPosition ?? 0}%`,
+                                            backgroundRepeat: 'repeat-x',
+                                            ...(bannerMaskPath?.length > 2 ? {
+                                                maskImage: `url("data:image/svg+xml;utf8,${encodeURIComponent(`
+                                                    <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'>
+                                                        <polygon points='${bannerMaskPath.map(p => `${p.x},${p.y}`).join(' ')}' fill='black' />
+                                                    </svg>
+                                                `.replace(/\n/g, '').trim())}")`,
+                                                WebkitMaskImage: `url("data:image/svg+xml;utf8,${encodeURIComponent(`
+                                                    <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'>
+                                                        <polygon points='${bannerMaskPath.map(p => `${p.x},${p.y}`).join(' ')}' fill='black' />
+                                                    </svg>
+                                                `.replace(/\n/g, '').trim())}")`,
+                                                maskSize: `${bannerScale ?? 100}% auto`,
+                                                WebkitMaskSize: `${bannerScale ?? 100}% auto`,
+                                                maskPosition: `0% ${bannerVerticalPosition ?? 0}%`,
+                                                WebkitMaskPosition: `0% ${bannerVerticalPosition ?? 0}%`,
+                                                maskRepeat: 'repeat-x',
+                                                WebkitMaskRepeat: 'repeat-x'
+                                            } : {})
+                                        }}
                                     />
                                     {!customBannerImage && (
-                                        <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-60"></div>
+                                        <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-60 pointer-events-none"></div>
                                     )}
-                                    <div className="absolute bottom-3 left-3 text-white text-xs font-bold drop-shadow-md">
+                                    <div className="absolute bottom-3 left-3 text-white text-xs font-bold drop-shadow-md pointer-events-none">
                                         {customBannerImage ? "Custom Upload" : "/public/banner.PNG"}
                                     </div>
                                     {customBannerImage && (
-                                        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                                        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center gap-2 transition-opacity">
+                                            <button
+                                                onClick={() => setIsCropModalOpen(true)}
+                                                className="px-4 py-2 bg-sky-500 text-white rounded-lg text-xs font-bold uppercase tracking-wider hover:bg-sky-600 transition-colors shadow-lg flex items-center gap-2"
+                                            >
+                                                <Crop size={14} />
+                                                Crop Shape
+                                            </button>
                                             <button
                                                 onClick={() => {
                                                     setCustomBannerImage(null);
                                                     setMockAppBanner('default');
+                                                    setBannerMaskPath([]); // Clear mask when removing image
                                                 }}
                                                 className="px-4 py-2 bg-red-500 text-white rounded-lg text-xs font-bold uppercase tracking-wider hover:bg-red-600 transition-colors shadow-lg"
                                             >
-                                                Remove Custom Banner
+                                                Remove
                                             </button>
                                         </div>
                                     )}
                                 </div>
+                            </div>
+
+                            {/* Crop Modal */}
+                            <BannerCropModal
+                                isOpen={isCropModalOpen}
+                                onClose={() => setIsCropModalOpen(false)}
+                                image={customBannerImage || "/banner.PNG"}
+                                maskPath={bannerMaskPath}
+                                setMaskPath={setBannerMaskPath}
+                                scale={bannerScale}
+                                verticalPosition={bannerVerticalPosition}
+                            />
+
+                            {/* Scale Slider */}
+                            <div className="space-y-3 pt-2 pb-4 border-b border-slate-100">
+                                <div className="flex justify-between items-center px-1">
+                                    <label className="text-xs font-bold uppercase text-slate-400">Image Scale</label>
+                                    <span className="text-[10px] font-bold text-slate-500">{bannerScale ?? 100}%</span>
+                                </div>
+                                <div className="flex items-center gap-4">
+                                    <span className="text-[10px] font-bold text-slate-400">25%</span>
+                                    <input
+                                        type="range"
+                                        min="25"
+                                        max="200"
+                                        value={bannerScale ?? 100}
+                                        onChange={(e) => setBannerScale(parseInt(e.target.value))}
+                                        className="flex-1 h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-sky-500"
+                                    />
+                                    <span className="text-[10px] font-bold text-slate-400">200%</span>
+                                </div>
+                            </div>
+
+                            {/* Animation Toggle */}
+                            <div className="flex items-center justify-between py-2 border-b border-slate-100">
+                                <label className="text-xs font-bold uppercase text-slate-400">Animate Scroll</label>
+                                <label className="relative inline-flex items-center cursor-pointer">
+                                    <input
+                                        type="checkbox"
+                                        checked={bannerScrollEnabled}
+                                        onChange={(e) => setBannerScrollEnabled(e.target.checked)}
+                                        className="sr-only peer"
+                                    />
+                                    <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-sky-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-sky-500"></div>
+                                </label>
                             </div>
 
                             {/* Vertical Position Slider */}
@@ -217,14 +298,42 @@ export default function AppPage({ onBack, currentThemeId, onThemeChange, onNavig
                                     <label className="text-xs font-bold uppercase text-slate-400">Vertical Alignment</label>
                                     <span className="text-[10px] font-bold text-slate-500">{bannerVerticalPosition}%</span>
                                 </div>
-                                <input
-                                    type="range"
-                                    min="0"
-                                    max="100"
-                                    value={bannerVerticalPosition ?? 0}
-                                    onChange={(e) => setBannerVerticalPosition(parseInt(e.target.value))}
-                                    className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-sky-500"
-                                />
+                                <div className="flex items-center gap-4">
+                                    <span className="text-[10px] font-bold text-slate-400">Top</span>
+                                    <input
+                                        type="range"
+                                        min="0"
+                                        max="100"
+                                        value={bannerVerticalPosition ?? 0}
+                                        onChange={(e) => setBannerVerticalPosition(parseInt(e.target.value))}
+                                        className="flex-1 h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-sky-500"
+                                    />
+                                    <span className="text-[10px] font-bold text-slate-400">Bottom</span>
+                                </div>
+                            </div>
+
+                            {/* Spill Height Slider */}
+                            <div className="space-y-3 pt-2 pb-4 border-b border-slate-100">
+                                <div className="flex justify-between items-center px-1">
+                                    <label className="text-xs font-bold uppercase text-slate-400">Spill Over</label>
+                                    <span className="text-[10px] font-bold text-slate-500">{bannerSpillHeight ?? 0}px</span>
+                                </div>
+                                <div className="flex items-center gap-4">
+                                    <span className="text-[10px] font-bold text-slate-400">None</span>
+                                    <input
+                                        type="range"
+                                        min="0"
+                                        max="500"
+                                        step="10"
+                                        value={bannerSpillHeight ?? 0}
+                                        onChange={(e) => setBannerSpillHeight(parseInt(e.target.value))}
+                                        className="flex-1 h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-sky-500"
+                                    />
+                                    <span className="text-[10px] font-bold text-slate-400">Max</span>
+                                </div>
+                                <p className="text-[10px] text-slate-400 px-1">
+                                    Allows the banner image to "spill" out of the header area and overlay the content below.
+                                </p>
                             </div>
 
                             {/* Presets */}

@@ -108,10 +108,28 @@ Users see a full-width banner at the very top of the application (200px height) 
 - Animation is GPU-accelerated (uses `transform` properties where possible)
 
 **Image Sizing:**
-- Default banner: `background-size: 100vw auto` - Image width matches viewport width, height scales to maintain aspect ratio
-- Custom images: Same sizing applied, ensuring seamless horizontal repetition
-- Vertical Alignment: User-adjustable via "Vertical Alignment" slider (0% = top, 50% = center, 100% = bottom)
-- Height: Fixed at 200px (banner container height)
+- Image Sizing:
+  - Default: `background-size: 100vw auto` (Scale: 100%) - Image width matches viewport width
+  - Scaling: Controlled by "Image Scale" slider (25% to 200%)
+    - allows shrinking image to repeat more frequently (e.g. 50%) or zooming in (e.g. 150%)
+    - Logic: `background-size: ${scale}vw auto`
+  - Vertical Alignment: User-adjustable via "Vertical Alignment" slider (0% = top, 50% = center, 100% = bottom)
+  - Spill Over: User-adjustable "Spill Height" (0px to 500px)
+    - Allows the banner image to extend vertically beyond the 200px header area
+    - Renders *behind* the header content but naturally flows down into the player/page area
+    - Creates a "draped" or "layered" aesthetic where the banner background bleeds into the main application
+
+**Advanced Customization Logic:**
+- **Masking (Shape Cropping):**
+  - Uses CSS `mask-image` with a dynamically generated SVG data URI
+  - User draws a polygon on a single image tile via `BannerCropModal`
+  - The SVG mask is applied to the background layer, synchronized with `background-position`, `background-size`, and `background-repeat`
+  - This ensures the mask scales and repeats perfectly with the image tiles
+- **Scroll Control:**
+  - `bannerScrollEnabled` boolean toggle controls the CSS animation
+  - When disabled (or for GIFs), `animation: 'none'` is applied inline
+  - Allows users to create static, tiled patterns instead of scrolling banners
+- Height: Fixed at 200px (banner container height), but background layer can exceed this via Spill Over
 
 **Performance Considerations:**
 - Animation uses CSS transforms for GPU acceleration
@@ -130,13 +148,18 @@ Users see a full-width banner at the very top of the application (200px height) 
 **Settings Integration:**
 - **Location**: Settings → Appearance → App Banner
 - **Upload Button**: Allows selecting PNG/JPG/WEBP/GIF files
-- **Preview**: Shows current active banner (default or custom)
+- **Preview**: Shows current active banner with all customizations applied
 - **Remove Button**: Appears on hover when custom banner is active
-- **Presets**: Placeholder preset buttons (Default, Cosmic, Nature, Industrial) - currently only "Default" is functional
+- **Controls**:
+  - **Vertical Alignment**: Adjusts `background-position-y` (0-100%)
+  - **Image Scale**: Adjusts `background-size` (25-200% width)
+  - **Spill Over**: Extends banner height (0-500px) below header
+  - **Crop Shape**: Opens modal to draw custom SVG mask on single image tile
+  - **Animate Scroll**: Toggle to enable/disable horizontal scrolling
 
 **File Format Support:**
-- **PNG/JPG/WEBP**: Static images that scroll infinitely
-- **GIF**: Animated GIFs that play natively (scroll animation disabled)
+- **PNG/JPG/WEBP**: Static images that can scroll infinitely or be tiled
+- **GIF**: Animated GIFs that play natively (scroll animation disabled by default or via toggle)
 
 **Persistence:**
 - Custom banner images are stored as base64 Data URLs in localStorage

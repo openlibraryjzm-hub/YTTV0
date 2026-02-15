@@ -102,6 +102,15 @@ export const useConfigStore = create(
             setCustomBannerImage: (val) => set({ customBannerImage: val }),
             bannerVerticalPosition: 0, // 0 = top, 50 = center, 100 = bottom
             setBannerVerticalPosition: (val) => set({ bannerVerticalPosition: val }),
+            bannerScale: 100,
+            setBannerScale: (val) => set({ bannerScale: val }),
+            bannerSpillHeight: 0,
+            setBannerSpillHeight: (val) => set({ bannerSpillHeight: val }),
+            bannerMaskPath: [],
+            setBannerMaskPath: (val) => set({ bannerMaskPath: val }),
+
+            bannerScrollEnabled: true,
+            setBannerScrollEnabled: (val) => set({ bannerScrollEnabled: val }),
 
             // Custom Orb Image & Spill
             customOrbImage: null,

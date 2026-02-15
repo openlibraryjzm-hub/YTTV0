@@ -18,7 +18,7 @@ const LayoutShell = ({
 }) => {
 
   const { viewMode, menuQuarterMode, showDebugBounds } = useLayoutStore();
-  const { customBannerImage, bannerVerticalPosition, playerBorderPattern } = useConfigStore();
+  const { customBannerImage, bannerVerticalPosition, playerBorderPattern, bannerScale, bannerSpillHeight, bannerMaskPath, bannerScrollEnabled } = useConfigStore();
 
   // Debug: Log when second player should render
   React.useEffect(() => {
@@ -29,7 +29,32 @@ const LayoutShell = ({
 
   const isBannerGif = customBannerImage?.startsWith('data:image/gif');
 
+  // Generate Mask SVG Data URI if path exists
+  const maskImageStyle = React.useMemo(() => {
+    if (!bannerMaskPath || bannerMaskPath.length < 3) return {};
 
+    // Create an SVG string that defines the mask shape
+    // We use a white polygon on a transparent background (or alpha channel logic)
+    // For CSS mask-image, opaque areas (white/black) show content, transparent areas hide it.
+    const points = bannerMaskPath.map(p => `${p.x},${p.y}`).join(' ');
+    const svg = `
+      <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'>
+        <polygon points='${points}' fill='black' />
+      </svg>
+     `;
+    const encodedSvg = `data:image/svg+xml;utf8,${encodeURIComponent(svg.replace(/\n/g, '').trim())}`;
+
+    return {
+      maskImage: `url("${encodedSvg}")`,
+      WebkitMaskImage: `url("${encodedSvg}")`,
+      maskSize: `${bannerScale ?? 100}vw auto`,
+      WebkitMaskSize: `${bannerScale ?? 100}vw auto`,
+      maskPosition: `0% ${bannerVerticalPosition ?? 0}%`,
+      WebkitMaskPosition: `0% ${bannerVerticalPosition ?? 0}%`,
+      maskRepeat: 'repeat-x',
+      WebkitMaskRepeat: 'repeat-x'
+    };
+  }, [bannerMaskPath, bannerScale, bannerVerticalPosition]);
 
   return (
     <div className={`layout-shell layout-shell--${viewMode} ${menuQuarterMode ? 'layout-shell--menu-quarter' : ''} ${showDebugBounds ? 'layout-shell--debug' : ''}`}>
@@ -39,16 +64,21 @@ const LayoutShell = ({
         className={`layout-shell__top-controller ${showDebugBounds ? 'debug-bounds debug-bounds--top-controller' : ''}`}
         data-debug-label="Top Controller"
         data-tauri-drag-region
-
-        style={{
-          ...(customBannerImage ? { backgroundImage: `url(${customBannerImage})` } : {}),
-          ...(isBannerGif ? { animation: 'none' } : {}),
-          backgroundPosition: `0% ${bannerVerticalPosition ?? 0}%`
-        }}
       >
+        {/* Background Layer with Spill Support */}
+        <div
+          className="layout-shell__banner-bg"
+          style={{
+            ...(customBannerImage ? { backgroundImage: `url(${customBannerImage})` } : {}),
+            ...(isBannerGif || !bannerScrollEnabled ? { animation: 'none' } : {}),
+            backgroundPosition: `0% ${bannerVerticalPosition ?? 0}%`,
+            backgroundSize: `${bannerScale ?? 100}vw auto`,
+            height: bannerSpillHeight ? `${200 + bannerSpillHeight}px` : '100%',
+            ...maskImageStyle
+          }}
+        />
+
         <WindowControls />
-
-
 
         {!showDebugBounds && (
           <div className="layout-shell__top-controller-wrapper">

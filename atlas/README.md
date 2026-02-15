@@ -455,8 +455,11 @@ For detailed information about the application's theme system and recent color c
 - **App Banner Enhancements**:
   - Added "Vertical Alignment" slider to `AppPage` for adjusting the visible portion of the banner image.
   - Implemented `object-position` styling logic to support vertical panning of custom banner images.
-  - Updated `LayoutShell` to respect the stored vertical position setting.
+  - Added "Image Scale" slider (25-200%) for adjusting banner background size.
+  - Added "Spill Over" feature to allow banner to extend vertically below the header area.
+  - Developed "Crop Shape" functionality (`BannerCropModal`) for drawing custom SVG masks on single image tiles.
+  - Implemented "Animate Scroll" toggle to enable/disable the infinite horizontal scroll animation.
+  - Updated `LayoutShell` to respect all new customization settings (scale, spill, mask, scroll).
   - Documented in `atlas/app-banner.md`.
 
-git commit -m "feat(banner): add vertical alignment slider for app banner custom images"
 
