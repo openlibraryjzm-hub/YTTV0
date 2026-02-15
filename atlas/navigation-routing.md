@@ -30,6 +30,7 @@ The application has three main pages:
 - **Pins Page** (`currentPage === 'pins'`) - Grid of pinned video cards
 - **Settings Page** (`currentPage === 'settings'`) - Configuration and theming
 - **Support Page** (`currentPage === 'support'`) - Tabbed support hub
+- **Tweet Page** (`currentPage === 'tweet'`) - Full-screen tweet detail view
 
 ### Navigation Flow
 
@@ -75,6 +76,24 @@ The application has three main pages:
 - `setCurrentPage(page)`: Pushes current page to `history` stack before changing (unless strictly replacing).
 - `goBack()`: Restores previous page, removes from history.
 - Preview Mode: If user is previewing a playlist/video, clicking Back may also trigger `clearPreview()` if implemented to exit preview context.
+
+### Tweet View Navigation
+
+**Trigger**: User clicks a `TweetCard` in `VideosPage` or `HistoryPage`.
+
+**Flow:**
+1. User clicks `TweetCard` → `onVideoClick` intercepted in `VideosPage.jsx`.
+2. `setSelectedTweet(video)` is called → `navigationStore.selectedTweet` updated.
+3. `setCurrentPage('tweet')` is called → `navigationStore.currentPage` updated.
+4. `App.jsx` conditionally renders logic:
+   ```javascript
+   {currentPage === 'tweet' && <TweetPage />}
+   ```
+5. **Back Navigation**: User clicks the dedicated Back button in `TweetPage` → `goBack()` called → `TopNavigation` restores previous page from history.
+
+**State Management:**
+- `navigationStore.selectedTweet` - Stores the current tweet object.
+- `navigationStore.currentPage` - Set to `'tweet'`.
 
 
 ---

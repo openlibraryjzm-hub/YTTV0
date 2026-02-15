@@ -15,6 +15,7 @@ import PagePage from './components/PagePage';
 import AppPage from './components/AppPage';
 import AssetManagerPage from './components/AssetManagerPage';
 import BrowserPage from './components/BrowserPage';
+import TweetPage from './components/TweetPage';
 import MainSettingsPage from './components/MainSettingsPage';
 
 import YouTubePlayer from './components/YouTubePlayer';
@@ -604,6 +605,8 @@ function App() {
             <BrowserPage />
           ) : !showPlaylists && currentPage === 'assets' ? (
             <AssetManagerPage />
+          ) : !showPlaylists && currentPage === 'tweet' ? (
+            <TweetPage />
 
           ) : !showPlaylists && currentPage === 'settings' ? (
             <MainSettingsPage

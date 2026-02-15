@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useLayoutStore } from './store/layoutStore';
 import { useConfigStore } from './store/configStore';
 import WindowControls from './components/WindowControls';
 import ScrollbarChevrons from './components/ScrollbarChevrons';
-import AppBannerPopup from './components/AppBannerPopup';
+
 import './LayoutShell.css';
 
 const LayoutShell = ({
@@ -16,7 +16,7 @@ const LayoutShell = ({
   menuSpacerMenu,
   secondPlayer
 }) => {
-  const [showBannerHoverPopup, setShowBannerHoverPopup] = useState(false);
+
   const { viewMode, menuQuarterMode, showDebugBounds } = useLayoutStore();
   const { customBannerImage, playerBorderPattern } = useConfigStore();
 
@@ -29,19 +29,7 @@ const LayoutShell = ({
 
   const isBannerGif = customBannerImage?.startsWith('data:image/gif');
 
-  // Handle detection of right 1/6th zone without blocking clicks
-  const handleBannerMouseMove = (e) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const zoneWidth = rect.width / 6;
-    const inZone = x >= (rect.width - zoneWidth);
 
-    if (inZone && !showBannerHoverPopup) {
-      setShowBannerHoverPopup(true);
-    } else if (!inZone && showBannerHoverPopup) {
-      setShowBannerHoverPopup(false);
-    }
-  };
 
   return (
     <div className={`layout-shell layout-shell--${viewMode} ${menuQuarterMode ? 'layout-shell--menu-quarter' : ''} ${showDebugBounds ? 'layout-shell--debug' : ''}`}>
@@ -51,8 +39,7 @@ const LayoutShell = ({
         className={`layout-shell__top-controller ${showDebugBounds ? 'debug-bounds debug-bounds--top-controller' : ''}`}
         data-debug-label="Top Controller"
         data-tauri-drag-region
-        onMouseMove={handleBannerMouseMove}
-        onMouseLeave={() => setShowBannerHoverPopup(false)}
+
         style={{
           ...(customBannerImage ? { backgroundImage: `url(${customBannerImage})` } : {}),
           ...(isBannerGif ? { animation: 'none' } : {})
@@ -60,8 +47,7 @@ const LayoutShell = ({
       >
         <WindowControls />
 
-        {/* Popup Rectangle Component */}
-        <AppBannerPopup isVisible={showBannerHoverPopup} />
+
 
         {!showDebugBounds && (
           <div className="layout-shell__top-controller-wrapper">

@@ -56,6 +56,7 @@ yttv2/
 │   │   ├── PlaylistsPage.jsx     # Main playlists grid view
 
 │   │   ├── VideosPage.jsx        # Videos grid view for current playlist
+│   │   ├── TweetPage.jsx         # Full screen tweet detail view
 │   │   ├── HistoryPage.jsx       # Watch history display (last 100 videos)
 │   │   ├── LikesPage.jsx         # Liked videos grid view
 │   │   ├── PinsPage.jsx          # Pinned videos grid view
@@ -445,4 +446,10 @@ For detailed information about the application's theme system and recent color c
   - Integrated ratings into both `VideoCard` (standard) and `TweetCard` (Twitter/X style).
   - Created backend Tauri commands and frontend API functions for persistence.
   - Documented system in `atlas/drumstick-rating-system.md`.
+- **New Tweet View**:
+  - Created a dedicated `TweetPage` component for viewing high-resolution detailed views of tweets.
+  - Implemented navigation flow from `TweetCard` clicks to the new page.
+  - Supports fetching high-resolution original images (`name=orig`) for better quality.
+  - Added "Open on X" functionality for external validation.
+  - Documented in `atlas/ui-pages.md`.
 

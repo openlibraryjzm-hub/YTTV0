@@ -2,7 +2,9 @@ import { create } from 'zustand';
 
 export const useNavigationStore = create((set) => ({
   currentPage: 'playlists',
+  selectedTweet: null,
   history: [],
+  setSelectedTweet: (tweet) => set({ selectedTweet: tweet }),
   setCurrentPage: (page) => set((state) => {
     // Don't modify history if staying on same page
     if (state.currentPage === page) return state;

@@ -946,3 +946,55 @@ The **Settings Hub** is a new, visually distinct page that serves as the entry p
 - `navigationStore.js`: Handles routing via `setCurrentPage`.
 
 ---
+
+#### ### 4.1.10 Tweet View Page
+
+**1: User-Perspective Description**
+
+A dedicated full-screen view for displaying tweet content in high resolution, accessible by clicking on any **TweetCard** in the videos grid.
+
+- **Navigation**:
+  - **Entry**: Clicking a `TweetCard` in the Videos or History grid opens this page.
+  - **Exit**: Clicking the "Back" arrow button returns to the previous view (Videos/History).
+  - **External**: "Open on X" button opens the original tweet in the default browser.
+
+- **Layout & Content**:
+  - **Header**:
+    - **Back Button**: Circular arrow button for navigation.
+    - **Title**: "Tweet Details".
+    - **Action**: "Open on X" button with icon.
+  - **Scrollable Content Area**:
+    - **Author Card**: Large display of the author's profile picture, display name, and handle (@username).
+    - **Tweet Text**: Full tweet text displayed in a large, readable font with whitespace preserved.
+    - **High-Resolution Image**: If the tweet contains an image, the *original* quality version (`name=orig`) is fetched and displayed. The image scales to fit the width but allows vertical scrolling for tall images (up to 150vh max height).
+
+- **Visual Style**:
+  - **Glassmorphism**: Uses transclucent backgrounds (`bg-white/5`, `backdrop-blur-md`) to blend with the app's theme.
+  - **Animations**: Smooth transitions when entering/leaving.
+
+**2: File Manifest**
+
+**UI/Components:**
+- `src/components/TweetPage.jsx`: Main tweet detail view component.
+- `src/components/TweetCard.jsx`: Card component that triggers navigation to this page.
+- `src/App.jsx`: Main routing logic.
+
+**State Management:**
+- `src/store/navigationStore.js`:
+  - `selectedTweet`: Stores the tweet object being viewed.
+  - `setSelectedTweet(tweet)`: key action to set the active tweet.
+  - `currentPage`: Set to `'tweet'` to show this page.
+  - `goBack()`: Handles return navigation.
+
+**3: The Logic & State Chain**
+
+1. **Entry Flow**:
+   - User clicks `TweetCard` → `onVideoClick` handler in `VideosPage.jsx`.
+   - `setSelectedTweet(video)` is called with the tweet data.
+   - `setCurrentPage('tweet')` is called.
+   - `App.jsx` switches `sideMenu` content to `<TweetPage />`.
+
+2. **Data Presentation**:
+   - `TweetPage` retrieves `selectedTweet` from `navigationStore`.
+   - **High-Res Logic**: `useMemo` hook transforms the `thumbnail_url` (typically `...name=medium` or `...name=small`) to `...name=orig` to ensure maximum quality for the detail view.
+   - **Safety**: If `selectedTweet` is missing (e.g. page refresh), `useEffect` redirects back to `'videos'`.

@@ -57,7 +57,7 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
   } = useFolderStore();
   const { shuffleStates, getShuffleState } = useShuffleStore();
   const { setViewMode, inspectMode, viewMode, videoCardStyle } = useLayoutStore();
-  const { currentPage: currentNavTab, setCurrentPage: setCurrentNavTab } = useNavigationStore();
+  const { currentPage: currentNavTab, setCurrentPage: setCurrentNavTab, setSelectedTweet } = useNavigationStore();
   const scrollContainerRef = useRef(null);
   const horizontalScrollRef = useRef(null);
 
@@ -1842,7 +1842,13 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
                     if (isTweet) {
                       return (
                         <div key={video.id} className="h-full">
-                          <TweetCard {...commonProps} />
+                          <TweetCard
+                            {...commonProps}
+                            onVideoClick={() => {
+                              setSelectedTweet(video);
+                              setCurrentNavTab('tweet');
+                            }}
+                          />
                         </div>
                       );
                     }
