@@ -452,4 +452,11 @@ For detailed information about the application's theme system and recent color c
   - Supports fetching high-resolution original images (`name=orig`) for better quality.
   - Added "Open on X" functionality for external validation.
   - Documented in `atlas/ui-pages.md`.
+- **App Banner Enhancements**:
+  - Added "Vertical Alignment" slider to `AppPage` for adjusting the visible portion of the banner image.
+  - Implemented `object-position` styling logic to support vertical panning of custom banner images.
+  - Updated `LayoutShell` to respect the stored vertical position setting.
+  - Documented in `atlas/app-banner.md`.
+
+git commit -m "feat(banner): add vertical alignment slider for app banner custom images"
 

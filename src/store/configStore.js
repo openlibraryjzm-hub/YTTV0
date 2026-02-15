@@ -100,6 +100,8 @@ export const useConfigStore = create(
             // Custom Banner Image
             customBannerImage: null,
             setCustomBannerImage: (val) => set({ customBannerImage: val }),
+            bannerVerticalPosition: 0, // 0 = top, 50 = center, 100 = bottom
+            setBannerVerticalPosition: (val) => set({ bannerVerticalPosition: val }),
 
             // Custom Orb Image & Spill
             customOrbImage: null,

@@ -108,8 +108,9 @@ Users see a full-width banner at the very top of the application (200px height) 
 - Animation is GPU-accelerated (uses `transform` properties where possible)
 
 **Image Sizing:**
-- Default banner: `background-size: 100vw 100%` - Image width matches viewport width
+- Default banner: `background-size: 100vw auto` - Image width matches viewport width, height scales to maintain aspect ratio
 - Custom images: Same sizing applied, ensuring seamless horizontal repetition
+- Vertical Alignment: User-adjustable via "Vertical Alignment" slider (0% = top, 50% = center, 100% = bottom)
 - Height: Fixed at 200px (banner container height)
 
 **Performance Considerations:**

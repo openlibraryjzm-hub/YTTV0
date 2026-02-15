@@ -17,6 +17,7 @@ function ConfigSection({ title, icon: Icon, children }) {
 export default function AppPage({ onBack, currentThemeId, onThemeChange, onNavigateToOrb, onNavigateToYou, onNavigateToPage }) {
     const {
         customBannerImage, setCustomBannerImage,
+        bannerVerticalPosition, setBannerVerticalPosition,
         playerBorderPattern, setPlayerBorderPattern
     } = useConfigStore();
 
@@ -121,35 +122,35 @@ export default function AppPage({ onBack, currentThemeId, onThemeChange, onNavig
                 <div
                     className={`sticky top-0 z-50 transition-all duration-500 cubic-bezier(0.4, 0, 0.2, 1) overflow-hidden -mt-16
                     ${isStuck
-                        ? 'backdrop-blur-xl border-y shadow-2xl mx-0 rounded-none mb-6 pt-2 pb-2 bg-slate-900/70'
-                        : 'backdrop-blur-[2px] border-b border-x border-t border-white/10 shadow-xl mx-8 rounded-b-2xl mb-8 mt-0 pt-1 pb-0 bg-slate-900/40'
-                    }
+                            ? 'backdrop-blur-xl border-y shadow-2xl mx-0 rounded-none mb-6 pt-2 pb-2 bg-slate-900/70'
+                            : 'backdrop-blur-[2px] border-b border-x border-t border-white/10 shadow-xl mx-8 rounded-b-2xl mb-8 mt-0 pt-1 pb-0 bg-slate-900/40'
+                        }
                     `}
                 >
                     <div className={`px-4 flex items-center justify-between transition-all duration-300 relative z-10 ${isStuck ? 'h-[52px]' : 'py-0.5'}`}>
                         {/* Colored Prism Bar */}
-                            <div className="flex-1 flex items-center shrink-0 h-6 mr-3 border-2 border-black rounded-lg overflow-hidden">
-                                {FOLDER_COLORS.map((color, index) => {
-                                    const isFirst = index === 0;
-                                    const isLast = index === FOLDER_COLORS.length - 1;
-                                    const count = folderCounts[color.id] || 0;
+                        <div className="flex-1 flex items-center shrink-0 h-6 mr-3 border-2 border-black rounded-lg overflow-hidden">
+                            {FOLDER_COLORS.map((color, index) => {
+                                const isFirst = index === 0;
+                                const isLast = index === FOLDER_COLORS.length - 1;
+                                const count = folderCounts[color.id] || 0;
 
-                                    return (
-                                        <button
-                                            key={color.id}
-                                            className={`h-full flex-1 flex items-center justify-center transition-all opacity-60 hover:opacity-100 ${isFirst ? 'rounded-l-md' : ''} ${isLast ? 'rounded-r-md' : ''}`}
-                                            style={{ backgroundColor: color.hex }}
-                                            title={color.name}
-                                        >
-                                            {count > 0 && (
-                                                <span className="text-sm font-bold text-white/90 drop-shadow-md">
-                                                    {count}
-                                                </span>
-                                            )}
-                                        </button>
-                                    );
-                                })}
-                            </div>
+                                return (
+                                    <button
+                                        key={color.id}
+                                        className={`h-full flex-1 flex items-center justify-center transition-all opacity-60 hover:opacity-100 ${isFirst ? 'rounded-l-md' : ''} ${isLast ? 'rounded-r-md' : ''}`}
+                                        style={{ backgroundColor: color.hex }}
+                                        title={color.name}
+                                    >
+                                        {count > 0 && (
+                                            <span className="text-sm font-bold text-white/90 drop-shadow-md">
+                                                {count}
+                                            </span>
+                                        )}
+                                    </button>
+                                );
+                            })}
+                        </div>
                     </div>
                 </div>
 
@@ -186,6 +187,7 @@ export default function AppPage({ onBack, currentThemeId, onThemeChange, onNavig
                                         src={customBannerImage || "/banner.PNG"}
                                         alt="Current Banner"
                                         className="w-full h-full object-cover"
+                                        style={{ objectPosition: `0% ${bannerVerticalPosition ?? 0}%` }}
                                     />
                                     {!customBannerImage && (
                                         <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-60"></div>
@@ -207,6 +209,22 @@ export default function AppPage({ onBack, currentThemeId, onThemeChange, onNavig
                                         </div>
                                     )}
                                 </div>
+                            </div>
+
+                            {/* Vertical Position Slider */}
+                            <div className="space-y-3 pt-2 pb-4 border-b border-slate-100">
+                                <div className="flex justify-between items-center px-1">
+                                    <label className="text-xs font-bold uppercase text-slate-400">Vertical Alignment</label>
+                                    <span className="text-[10px] font-bold text-slate-500">{bannerVerticalPosition}%</span>
+                                </div>
+                                <input
+                                    type="range"
+                                    min="0"
+                                    max="100"
+                                    value={bannerVerticalPosition ?? 0}
+                                    onChange={(e) => setBannerVerticalPosition(parseInt(e.target.value))}
+                                    className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-sky-500"
+                                />
                             </div>
 
                             {/* Presets */}

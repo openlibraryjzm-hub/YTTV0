@@ -28,9 +28,9 @@
   /* Custom Banner Image */
   /* User provided: public/banner.PNG */
   background-image: url('/banner.PNG');
-  background-size: 100vw 100%;
-  /* Force width to match viewport for seamless loop */
-  background-position: 0 0;
+  background-size: 100vw auto;
+  /* Force width to match viewport for seamless loop, auto height preserves aspect ratio (showing top crop) */
+  background-position: 0 top;
   background-repeat: repeat-x;
   animation: bannerScrollRight 60s linear infinite;
 

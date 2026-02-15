@@ -2017,7 +2017,7 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
               </button>
 
               {/* Settings Button (Top Right) */}
-              <button onClick={() => setCurrentPage('settings-new')} className="absolute rounded-full flex items-center justify-center bg-white shadow-xl hover:scale-110 active:scale-95 group/btn z-50 border-2 border-sky-50 opacity-0 group-hover:opacity-100 transition-all duration-300" style={{ left: '85%', top: '15%', transform: 'translate(-50%, -50%)', width: `28px`, height: `28px` }} title={getInspectTitle('Settings') || 'Settings'}>
+              <button onClick={() => setCurrentPage('app')} className="absolute rounded-full flex items-center justify-center bg-white shadow-xl hover:scale-110 active:scale-95 group/btn z-50 border-2 border-sky-50 opacity-0 group-hover:opacity-100 transition-all duration-300" style={{ left: '85%', top: '15%', transform: 'translate(-50%, -50%)', width: `28px`, height: `28px` }} title={getInspectTitle('Settings') || 'Settings'}>
                 <Settings size={14} className="text-slate-800" strokeWidth={2.5} />
               </button>
 

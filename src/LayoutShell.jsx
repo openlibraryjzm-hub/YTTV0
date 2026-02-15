@@ -18,7 +18,7 @@ const LayoutShell = ({
 }) => {
 
   const { viewMode, menuQuarterMode, showDebugBounds } = useLayoutStore();
-  const { customBannerImage, playerBorderPattern } = useConfigStore();
+  const { customBannerImage, bannerVerticalPosition, playerBorderPattern } = useConfigStore();
 
   // Debug: Log when second player should render
   React.useEffect(() => {
@@ -42,7 +42,8 @@ const LayoutShell = ({
 
         style={{
           ...(customBannerImage ? { backgroundImage: `url(${customBannerImage})` } : {}),
-          ...(isBannerGif ? { animation: 'none' } : {})
+          ...(isBannerGif ? { animation: 'none' } : {}),
+          backgroundPosition: `0% ${bannerVerticalPosition ?? 0}%`
         }}
       >
         <WindowControls />
