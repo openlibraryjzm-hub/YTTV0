@@ -461,8 +461,10 @@ For detailed information about the application's theme system and recent color c
   - Implemented "Animate Scroll" toggle to enable/disable the infinite horizontal scroll animation.
   - Added "Clip From Left" slider (0-100%) to hide left portion of banner, revealing theme color underneath for split-screen effects.
   - Added "Horizontal Offset" slider (-50% to +50%) to shift the entire tiled pattern left or right for precise positioning.
-  - Updated `LayoutShell` to respect all customization settings (scale, spill, mask, scroll, clip, offset).
-  - Documented in `atlas/app-banner.md`.
+  - **Save as Preset**:
+    - Implemented ability to save current App Banner configurations (image, scale, clip, offset, scroll) as reusable presets.
+    - Added playlist assignment for presets, allowing different banners to be automatically applied when visiting specific playlists.
+    - Created `BannerPresetCard` for visualizing and managing saved presets in the Videos interface.
 
 
 

@@ -18,7 +18,20 @@ const LayoutShell = ({
 }) => {
 
   const { viewMode, menuQuarterMode, showDebugBounds } = useLayoutStore();
-  const { customBannerImage, bannerVerticalPosition, playerBorderPattern, bannerScale, bannerSpillHeight, bannerMaskPath, bannerScrollEnabled, bannerClipLeft, bannerHorizontalOffset, playerControllerXOffset } = useConfigStore();
+  const {
+    customBannerImage,
+    bannerVerticalPosition,
+    playerBorderPattern,
+    bannerScale,
+    bannerSpillHeight,
+    bannerMaskPath,
+    bannerScrollEnabled,
+    bannerClipLeft,
+    bannerHorizontalOffset,
+    playerControllerXOffset,
+    bannerCropModeActive,
+    bannerCropLivePreview
+  } = useConfigStore();
 
   // Debug: Log when second player should render
   React.useEffect(() => {
@@ -31,15 +44,37 @@ const LayoutShell = ({
 
   // Generate Mask SVG Data URI if path exists
   const maskImageStyle = React.useMemo(() => {
+    // Don't apply mask if:
+    // 1. No mask path exists (less than 3 points)
+    // 2. Crop mode is active AND live preview is disabled
     if (!bannerMaskPath || bannerMaskPath.length < 3) return {};
+    if (bannerCropModeActive && !bannerCropLivePreview) return {};
 
-    // Create an SVG string that defines the mask shape
-    // We use a white polygon on a transparent background (or alpha channel logic)
-    // For CSS mask-image, opaque areas (white/black) show content, transparent areas hide it.
-    const points = bannerMaskPath.map(p => `${p.x},${p.y}`).join(' ');
+    // Calculate the total height including spill
+    const totalHeight = 200 + (bannerSpillHeight || 0);
+    const bannerHeightPercent = (200 / totalHeight) * 100;
+
+    // Create a composite mask:
+    // 1. Full rectangle for banner area (0 to bannerHeightPercent) - always visible
+    // 2. User's custom path for spill area (bannerHeightPercent to 100) - selective
+
+    // The user's path points are in percentage (0-100) of the TOTAL height
+    // We need to create a combined shape that includes:
+    // - The full width banner area: (0,0) -> (100,0) -> (100,bannerHeightPercent) -> (0,bannerHeightPercent)
+    // - The user's custom spill path (only points with y > bannerHeightPercent)
+
+    const userPoints = bannerMaskPath.map(p => `${p.x},${p.y}`).join(' ');
+
+    // Create a composite path that:
+    // 1. Draws the full banner rectangle
+    // 2. Adds the user's custom path for the spill
     const svg = `
       <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'>
-        <polygon points='${points}' fill='black' />
+        <!-- Banner area: always visible (full rectangle from 0 to ${bannerHeightPercent}%) -->
+        <rect x='0' y='0' width='100' height='${bannerHeightPercent}' fill='black' />
+        
+        <!-- Spill area: user's custom path -->
+        ${bannerMaskPath.length >= 3 ? `<polygon points='${userPoints}' fill='black' />` : ''}
       </svg>
      `;
     const encodedSvg = `data:image/svg+xml;utf8,${encodeURIComponent(svg.replace(/\n/g, '').trim())}`;
@@ -47,14 +82,14 @@ const LayoutShell = ({
     return {
       maskImage: `url("${encodedSvg}")`,
       WebkitMaskImage: `url("${encodedSvg}")`,
-      maskSize: `${bannerScale ?? 100}vw auto`,
-      WebkitMaskSize: `${bannerScale ?? 100}vw auto`,
-      maskPosition: `0% ${bannerVerticalPosition ?? 0}%`,
-      WebkitMaskPosition: `0% ${bannerVerticalPosition ?? 0}%`,
-      maskRepeat: 'repeat-x',
-      WebkitMaskRepeat: 'repeat-x'
+      maskSize: '100% 100%',
+      WebkitMaskSize: '100% 100%',
+      maskPosition: '0% 0%',
+      WebkitMaskPosition: '0% 0%',
+      maskRepeat: 'no-repeat',
+      WebkitMaskRepeat: 'no-repeat'
     };
-  }, [bannerMaskPath, bannerScale, bannerVerticalPosition]);
+  }, [bannerMaskPath, bannerSpillHeight, bannerCropModeActive, bannerCropLivePreview]);
 
   return (
     <div className={`layout-shell layout-shell--${viewMode} ${menuQuarterMode ? 'layout-shell--menu-quarter' : ''} ${showDebugBounds ? 'layout-shell--debug' : ''}`}>
@@ -65,7 +100,7 @@ const LayoutShell = ({
         data-debug-label="Top Controller"
         data-tauri-drag-region
       >
-        {/* Background Layer with Spill Support */}
+        {/* Background Layer with Spill Support (spill clipped in fullscreen) */}
         <div
           className="layout-shell__banner-bg"
           style={{
@@ -74,9 +109,28 @@ const LayoutShell = ({
             backgroundPosition: `${bannerHorizontalOffset ?? 0}% ${bannerVerticalPosition ?? 0}%`,
             backgroundRepeat: 'repeat-x',
             backgroundSize: `${bannerScale ?? 100}vw auto`,
+            // Always render full height (banner + spill)
             height: bannerSpillHeight ? `${200 + bannerSpillHeight}px` : '100%',
-            clipPath: bannerClipLeft > 0 ? `inset(0 0 0 ${bannerClipLeft}%)` : 'none',
-            ...maskImageStyle
+            // Clip-path logic:
+            // - Fullscreen: clip to show only banner (200px), hide spill, AND apply left clip
+            // - Split-screen: show everything or apply left clip if configured
+            clipPath: (() => {
+              const leftClip = bannerClipLeft > 0 ? `${bannerClipLeft}%` : '0';
+
+              if (viewMode === 'full' && bannerSpillHeight) {
+                // Calculate what percentage of total height is the spill
+                const totalHeight = 200 + bannerSpillHeight;
+                const spillPercent = (bannerSpillHeight / totalHeight) * 100;
+                // Clip from bottom to hide spill AND from left if configured
+                // inset(top right bottom left)
+                return `inset(0 0 ${spillPercent}% ${leftClip})`;
+              }
+
+              // In split-screen, apply left clip if configured
+              return bannerClipLeft > 0 ? `inset(0 0 0 ${bannerClipLeft}%)` : 'none';
+            })(),
+            // Only apply mask in half/quarter modes (not in full screen)
+            ...(viewMode !== 'full' ? maskImageStyle : {})
           }}
         />
 

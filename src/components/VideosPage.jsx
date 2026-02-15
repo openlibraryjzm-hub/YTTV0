@@ -24,6 +24,7 @@ import { useShuffleStore } from '../store/shuffleStore';
 import { usePaginationStore } from '../store/paginationStore';
 import TweetCard from './TweetCard';
 import OrbCard from './OrbCard';
+import BannerPresetCard from './BannerPresetCard';
 import AutoTagModal from './AutoTagModal';
 
 
@@ -100,7 +101,11 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
     clearPlaylistLayer2Override,
     orbFavorites,
     updateOrbFavoritePlaylists,
-    applyOrbFavorite
+
+    applyOrbFavorite,
+    bannerPresets,
+    updateBannerPresetPlaylists,
+    applyBannerPreset
   } = useConfigStore();
 
   // Helper to get inspect label
@@ -440,7 +445,18 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
             title: orb.name // For search/sort consistency if needed
           })) : [];
 
-        setDisplayedVideos([...assignedOrbs, ...activePlaylistItems]);
+        const assignedBanners = bannerPresets ? bannerPresets
+          .filter(preset => preset.playlistIds && preset.playlistIds.map(String).includes(String(activePlaylistId)))
+          .map(preset => ({
+            ...preset,
+            id: `banner-${preset.id}`, // Unique ID for React key
+            originalId: preset.id,
+            isBannerPreset: true,
+            title: preset.name
+          })) : [];
+
+
+        setDisplayedVideos([...assignedOrbs, ...assignedBanners, ...activePlaylistItems]);
         return;
       }
 
@@ -481,7 +497,7 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
     };
 
     filterVideos();
-  }, [selectedFolder, activePlaylistId, activePlaylistItems, videoFolderAssignments, orbFavorites]);
+  }, [selectedFolder, activePlaylistId, activePlaylistItems, videoFolderAssignments, orbFavorites, bannerPresets]);
 
   const handleRenameFolder = async (folderColor, newName) => {
     if (!activePlaylistId) return;
@@ -1862,6 +1878,20 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
                             onUpdatePlaylists={updateOrbFavoritePlaylists}
                             minimal={true}
                             onClick={() => applyOrbFavorite(video)}
+                          />
+                        </div>
+                      );
+
+                    }
+
+                    if (video.isBannerPreset) {
+                      return (
+                        <div key={video.id} className="h-full">
+                          <BannerPresetCard
+                            preset={{ ...video, id: video.originalId || video.id.replace('banner-', '') }}
+                            allPlaylists={allPlaylists}
+                            onUpdatePlaylists={updateBannerPresetPlaylists}
+                            onClick={() => applyBannerPreset(video)}
                           />
                         </div>
                       );

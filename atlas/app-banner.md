@@ -157,7 +157,41 @@ Users see a full-width banner at the very top of the application (200px height) 
   - **Vertical Alignment**: Adjusts `background-position-y` (0-100%)
   - **Image Scale**: Adjusts `background-size` (25-200% width)
   - **Spill Over**: Extends banner height (0-500px) below header
-  - **Crop Shape**: Opens modal to draw custom SVG mask on single image tile
+    - **View Mode Dependency**: Spill visibility is controlled by view mode
+    - In **Fullscreen mode** (no pages open): Spill is clipped/hidden, only banner (200px) visible
+    - In **Split-screen mode** (pages open): Full spill is visible, SVG mask is applied
+    - Height setting is preserved across modes - only visibility changes
+    - This keeps the fullscreen experience clean while enabling advanced compositions in split-screen
+  - **Crop Shape**: Activates **inline crop mode** for drawing custom SVG masks directly on the banner
+    - **Inline Editing**: Instead of opening a modal, clicking "Crop Shape" enters a special editing mode
+    - **Direct Interaction**: Draw your mask path directly on the actual banner at the top of the screen
+    - **Spill Area Support**: The interactive area extends to include the banner spill (if enabled)
+      - **Banner Area (0-200px): ALWAYS VISIBLE** - No need to draw points here
+      - **Spill Area (200px+): SELECTIVE** - Draw points to include specific portions
+      - A dashed line with "SPILL AREA BELOW" label marks where the banner ends and spill begins
+      - The SVG path you draw only controls what parts of the spill are visible
+      - This creates a **composite mask**: full banner rectangle + your custom spill shape
+      - Perfect for selectively including parts of the spilled image (e.g., character's body extending below banner)
+    - **Real-Time Preview**: See your changes applied instantly as you draw
+    - **Contextual Controls**: Floating control panel appears in the bottom-right with:
+      - Point counter showing how many points you've placed
+      - Instructions and keyboard shortcuts
+      - **Live Preview Toggle**: Enable/disable real-time mask updates
+        - When OFF: See the full uncropped image while placing points
+        - When ON: See the mask applied in real-time as you draw
+        - Useful when the crop obscures where you need to place the next point
+      - Undo button (or Ctrl+Z) to remove the last point
+      - Clear button (or Delete/Backspace) to start over
+      - Done button (or Esc) to exit crop mode
+    - **Visual Feedback**:
+      - Cursor preview dot shows where your next point will be placed
+      - Green dot marks the starting point
+      - Blue dots mark subsequent points
+      - Dashed lines connect points as you draw
+      - Semi-transparent fill preview appears once you have 3+ points
+      - Hover near the first point to see a "close path" preview
+    - **Smart Drawing**: The system intelligently knows what is the banner image and prevents invalid placements
+    - **No Context Switching**: No need to switch between a modal and the actual banner - what you see is what you get
   - **Clip From Left**: Slider to hide left portion of banner (0-100%)
     - Reveals theme color underneath the clipped area
     - Useful for showing banner only on right side while left shows theme color
@@ -174,6 +208,17 @@ Users see a full-width banner at the very top of the application (200px height) 
 - Custom banner images are stored as base64 Data URLs in localStorage
 - Persists across app restarts
 - No database storage required
+
+---
+
+**Preset System:**
+- **Save as Preset**: Located in the App Banner configuration section.
+  - Captures the current active banner configuration (image, scale, clip, offset, scroll, spill).
+  - Allows assigning the new preset to one or more playlists immediately upon saving.
+- **Preset Management**:
+  - Saved presets appear as `BannerPresetCard` items in the Videos interface (if assigned to the current playlist).
+  - Clicking a preset card instantly applies its configuration to the App Banner.
+  - Presets can be reassigned to different playlists via a dropdown menu on the card.
 
 ---
 

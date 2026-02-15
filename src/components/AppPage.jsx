@@ -2,9 +2,10 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Image, Palette, Box, ArrowLeft, Check, Crop, Move, Repeat } from 'lucide-react';
 import { useConfigStore } from '../store/configStore';
 import PageBanner from './PageBanner';
-import BannerCropModal from './BannerCropModal';
 import { FOLDER_COLORS } from '../utils/folderColors';
 import { THEMES } from '../utils/themes';
+import { usePlaylistStore } from '../store/playlistStore';
+import { Save, ChevronDown } from 'lucide-react';
 
 function ConfigSection({ title, icon: Icon, children }) {
     return (
@@ -25,12 +26,15 @@ export default function AppPage({ onBack, currentThemeId, onThemeChange, onNavig
         bannerScrollEnabled, setBannerScrollEnabled,
         bannerClipLeft, setBannerClipLeft,
         bannerHorizontalOffset, setBannerHorizontalOffset,
+        bannerCropModeActive, setBannerCropModeActive,
         playerBorderPattern, setPlayerBorderPattern,
-        playerControllerXOffset, setPlayerControllerXOffset
+        playerControllerXOffset, setPlayerControllerXOffset,
+        bannerPresets, addBannerPreset
     } = useConfigStore();
 
+    const { allPlaylists } = usePlaylistStore();
+
     const scrollContainerRef = useRef(null);
-    const [isCropModalOpen, setIsCropModalOpen] = useState(false);
 
     // Sticky toolbar state
     const [isStuck, setIsStuck] = useState(false);
@@ -38,6 +42,48 @@ export default function AppPage({ onBack, currentThemeId, onThemeChange, onNavig
 
     // Mock state for app banner
     const [mockAppBanner, setMockAppBanner] = useState('default');
+
+    // Save Preset State
+    const [selectedPlaylistIds, setSelectedPlaylistIds] = useState([]);
+    const [isPlaylistDropdownOpen, setIsPlaylistDropdownOpen] = useState(false);
+    const dropdownRef = useRef(null);
+
+    // Close dropdown on outside click
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+                setIsPlaylistDropdownOpen(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
+    const togglePlaylistSelection = (id) => {
+        setSelectedPlaylistIds(prev =>
+            prev.includes(id) ? prev.filter(pid => pid !== id) : [...prev, id]
+        );
+    };
+
+    const handleSavePreset = () => {
+        const newPreset = {
+            id: Date.now().toString(),
+            name: `Banner ${new Date().toLocaleDateString()}`,
+            customBannerImage,
+            bannerVerticalPosition,
+            bannerScale,
+            bannerSpillHeight,
+            bannerMaskPath,
+            bannerScrollEnabled,
+            bannerClipLeft,
+            bannerHorizontalOffset,
+            playlistIds: selectedPlaylistIds
+        };
+
+        addBannerPreset(newPreset);
+        setSelectedPlaylistIds([]);
+        alert('Banner Preset Saved!');
+    };
 
 
     const handleBannerUpload = (e) => {
@@ -229,7 +275,7 @@ export default function AppPage({ onBack, currentThemeId, onThemeChange, onNavig
                                     {customBannerImage && (
                                         <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center gap-2 transition-opacity">
                                             <button
-                                                onClick={() => setIsCropModalOpen(true)}
+                                                onClick={() => setBannerCropModeActive(true)}
                                                 className="px-4 py-2 bg-sky-500 text-white rounded-lg text-xs font-bold uppercase tracking-wider hover:bg-sky-600 transition-colors shadow-lg flex items-center gap-2"
                                             >
                                                 <Crop size={14} />
@@ -249,17 +295,6 @@ export default function AppPage({ onBack, currentThemeId, onThemeChange, onNavig
                                     )}
                                 </div>
                             </div>
-
-                            {/* Crop Modal */}
-                            <BannerCropModal
-                                isOpen={isCropModalOpen}
-                                onClose={() => setIsCropModalOpen(false)}
-                                image={customBannerImage || "/banner.PNG"}
-                                maskPath={bannerMaskPath}
-                                setMaskPath={setBannerMaskPath}
-                                scale={bannerScale}
-                                verticalPosition={bannerVerticalPosition}
-                            />
 
                             {/* Scale Slider */}
                             <div className="space-y-3 pt-2 pb-4 border-b border-slate-100">
@@ -439,6 +474,64 @@ export default function AppPage({ onBack, currentThemeId, onThemeChange, onNavig
                                     Supports PNG, JPG, WEBP. Recommended size: 1920x200px.
                                 </p>
                             </div>
+
+
+
+                            <div className="pt-4 border-t border-slate-100">
+                                <label className="text-xs font-bold uppercase text-slate-400 mb-2 block">Save as Preset</label>
+
+                                <div className="space-y-3">
+                                    {/* Playlist Selector Dropdown */}
+                                    <div className="relative" ref={dropdownRef}>
+                                        <button
+                                            onClick={() => setIsPlaylistDropdownOpen(!isPlaylistDropdownOpen)}
+                                            className="w-full flex items-center justify-between bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 p-2.5 rounded-lg text-xs font-medium transition-all"
+                                        >
+                                            <span className="truncate">
+                                                {selectedPlaylistIds.length === 0
+                                                    ? "Assign to Playlists (Optional)"
+                                                    : `${selectedPlaylistIds.length} Playlists Selected`}
+                                            </span>
+                                            <ChevronDown size={14} className={`text-slate-400 transition-transform ${isPlaylistDropdownOpen ? 'rotate-180' : ''}`} />
+                                        </button>
+
+                                        {isPlaylistDropdownOpen && (
+                                            <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded-lg shadow-xl z-20 max-h-48 overflow-y-auto p-1 text-xs">
+                                                {allPlaylists.map(playlist => {
+                                                    const isSelected = selectedPlaylistIds.includes(playlist.id);
+                                                    return (
+                                                        <button
+                                                            key={playlist.id}
+                                                            onClick={() => togglePlaylistSelection(playlist.id)}
+                                                            className={`w-full text-left px-3 py-2 rounded-md flex items-center justify-between transition-colors ${isSelected
+                                                                ? 'bg-sky-50 text-sky-600'
+                                                                : 'hover:bg-slate-50 text-slate-600'
+                                                                }`}
+                                                        >
+                                                            <span className="truncate">{playlist.name}</span>
+                                                            {isSelected && <Check size={12} className="text-sky-500" />}
+                                                        </button>
+                                                    );
+                                                })}
+                                                {allPlaylists.length === 0 && (
+                                                    <div className="px-3 py-4 text-center text-slate-400 italic">
+                                                        No playlists found
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* Save Button */}
+                                    <button
+                                        onClick={handleSavePreset}
+                                        className="w-full py-2.5 bg-sky-500 hover:bg-sky-600 text-white font-bold uppercase tracking-wide rounded-lg shadow-md transition-all flex items-center justify-center gap-2 text-xs"
+                                    >
+                                        <Save size={14} />
+                                        Save Preset
+                                    </button>
+                                </div>
+                            </div>
                         </ConfigSection>
 
                         <ConfigSection title="Player Controller" icon={Move}>
@@ -494,5 +587,10 @@ export default function AppPage({ onBack, currentThemeId, onThemeChange, onNavig
                 </div>
             </div>
         </div>
+
+
+
+
+
     );
 }

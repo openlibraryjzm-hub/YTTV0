@@ -17,6 +17,7 @@ import AssetManagerPage from './components/AssetManagerPage';
 import BrowserPage from './components/BrowserPage';
 import TweetPage from './components/TweetPage';
 import MainSettingsPage from './components/MainSettingsPage';
+import InlineBannerCropMode from './components/InlineBannerCropMode';
 
 import YouTubePlayer from './components/YouTubePlayer';
 import LocalVideoPlayer from './components/LocalVideoPlayer';
@@ -25,6 +26,7 @@ import { useLayoutStore } from './store/layoutStore';
 import { usePlaylistStore } from './store/playlistStore';
 import { useNavigationStore } from './store/navigationStore';
 import { usePinStore } from './store/pinStore';
+import { useConfigStore } from './store/configStore';
 import { initializeTestData } from './utils/initDatabase';
 import { addToWatchHistory, getWatchHistory, getAllPlaylists, getPlaylistItems } from './api/playlistApi';
 import { extractVideoId } from './utils/youtubeUtils';
@@ -404,8 +406,33 @@ function App() {
     }
   };
 
+  // Get banner crop mode state from config store
+  const {
+    bannerCropModeActive,
+    setBannerCropModeActive,
+    bannerMaskPath,
+    setBannerMaskPath,
+    customBannerImage,
+    bannerScale,
+    bannerVerticalPosition,
+    bannerHorizontalOffset,
+    bannerSpillHeight
+  } = useConfigStore();
+
   return (
     <div className={`app-container bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] ${THEMES[currentThemeId].bg}`} style={{ width: '100vw', height: '100vh', overflow: 'hidden' }}>
+      {/* Inline Banner Crop Mode - Overlays the actual banner */}
+      <InlineBannerCropMode
+        isActive={bannerCropModeActive}
+        onExit={() => setBannerCropModeActive(false)}
+        maskPath={bannerMaskPath}
+        setMaskPath={setBannerMaskPath}
+        bannerImage={customBannerImage || "/banner.PNG"}
+        bannerScale={bannerScale}
+        bannerVerticalPosition={bannerVerticalPosition}
+        bannerHorizontalOffset={bannerHorizontalOffset}
+        bannerSpillHeight={bannerSpillHeight}
+      />
       {/* View Mode Toggle - Temporary for testing - Controlled by Dev Toolbar Toggle */}
       {showDevToolbar && (
         <div className="view-mode-toggle">

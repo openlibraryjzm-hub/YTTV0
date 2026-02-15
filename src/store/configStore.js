@@ -115,6 +115,40 @@ export const useConfigStore = create(
             setBannerClipLeft: (val) => set({ bannerClipLeft: val }),
             bannerHorizontalOffset: 0,
             setBannerHorizontalOffset: (val) => set({ bannerHorizontalOffset: val }),
+            bannerCropModeActive: false,
+            setBannerCropModeActive: (val) => set({ bannerCropModeActive: val }),
+            bannerCropLivePreview: true,
+            setBannerCropLivePreview: (val) => set({ bannerCropLivePreview: val }),
+
+            // Banner Presets - saved configurations
+            bannerPresets: [],
+            addBannerPreset: (preset) => set((state) => ({
+                bannerPresets: [...state.bannerPresets, {
+                    ...preset,
+                    id: preset.id || Date.now().toString(),
+                    name: preset.name || `Banner ${state.bannerPresets.length + 1}`,
+                    createdAt: Date.now(),
+                    playlistIds: preset.playlistIds || [],
+                }]
+            })),
+            removeBannerPreset: (id) => set((state) => ({
+                bannerPresets: state.bannerPresets.filter(p => p.id !== id)
+            })),
+            updateBannerPresetPlaylists: (id, playlistIds) => set((state) => ({
+                bannerPresets: state.bannerPresets.map(p =>
+                    p.id === id ? { ...p, playlistIds } : p
+                )
+            })),
+            applyBannerPreset: (preset) => set({
+                customBannerImage: preset.customBannerImage,
+                bannerVerticalPosition: preset.bannerVerticalPosition ?? 0,
+                bannerScale: preset.bannerScale ?? 100,
+                bannerSpillHeight: preset.bannerSpillHeight ?? 0,
+                bannerMaskPath: preset.bannerMaskPath || [],
+                bannerScrollEnabled: preset.bannerScrollEnabled ?? true,
+                bannerClipLeft: preset.bannerClipLeft ?? 0,
+                bannerHorizontalOffset: preset.bannerHorizontalOffset ?? 0,
+            }),
 
             // Player Controller Positioning
             playerControllerXOffset: 0,
