@@ -154,7 +154,7 @@ Users see a full-width banner at the very top of the application (200px height) 
 - **Preview**: Shows current active banner with all customizations applied
 - **Remove Button**: Appears on hover when custom banner is active
 - **Controls**:
-  - **Vertical Alignment**: Adjusts `background-position-y` (0-100%)
+  - **Vertical Alignment**: Adjusts `background-position-y` (-100% to 200%)
   - **Image Scale**: Adjusts `background-size` (25-200% width)
   - **Spill Over**: Extends banner height (0-500px) below header
     - **View Mode Dependency**: Spill visibility is controlled by view mode
@@ -195,7 +195,7 @@ Users see a full-width banner at the very top of the application (200px height) 
   - **Clip From Left**: Slider to hide left portion of banner (0-100%)
     - Reveals theme color underneath the clipped area
     - Useful for showing banner only on right side while left shows theme color
-  - **Horizontal Offset**: Slider to shift entire tiled pattern left/right (-50% to +50%)
+  - **Horizontal Offset**: Slider to shift entire tiled pattern left/right (-200% to +200%)
     - Fine-tune positioning of tiles within the banner area
     - Works in conjunction with Clip From Left for precise control
   - **Animate Scroll**: Toggle to enable/disable horizontal scrolling (auto-disabled for GIFs)
@@ -219,6 +219,7 @@ Users see a full-width banner at the very top of the application (200px height) 
   - Saved presets appear as `BannerPresetCard` items in the Videos interface (if assigned to the current playlist).
   - Clicking a preset card instantly applies its configuration to the App Banner.
   - Presets can be reassigned to different playlists via a dropdown menu on the card.
+  - **Remove from Playlist**: Users can remove a preset from the current playlist by clicking the Trash icon on the card (with confirmation). This only removes the assignment, not the preset itself.
 
 ---
 

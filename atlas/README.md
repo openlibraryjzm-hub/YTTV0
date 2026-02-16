@@ -71,6 +71,9 @@ yttv2/
 │   │   ├── CardMenu.jsx          # Enhanced 3-dot menu with submenu support
 │   │   ├── ImageHoverPreview.jsx # 4chanX-style image expansion on hover (high-res preview)
 │   │   ├── VideoCard.jsx         # Video card implementation
+│   │   ├── OrbCard.jsx           # Orb preset card component
+│   │   ├── BannerPresetCard.jsx  # App banner preset card component
+│   │   ├── TweetCard.jsx         # Tweet card component
 │   │   ├── FolderCard.jsx        # Colored folder card component
 │   │   ├── FolderSelector.jsx    # 16-color folder selector
 │   │   ├── BulkTagColorGrid.jsx  # Bulk tagging color grid
@@ -460,7 +463,7 @@ For detailed information about the application's theme system and recent color c
   - Developed "Crop Shape" functionality (`BannerCropModal`) for drawing custom SVG masks on single image tiles.
   - Implemented "Animate Scroll" toggle to enable/disable the infinite horizontal scroll animation.
   - Added "Clip From Left" slider (0-100%) to hide left portion of banner, revealing theme color underneath for split-screen effects.
-  - Added "Horizontal Offset" slider (-50% to +50%) to shift the entire tiled pattern left or right for precise positioning.
+  - Added "Horizontal Offset" slider (-200% to +200%) to shift the entire tiled pattern left or right for precise positioning.
   - **Save as Preset**:
     - Implemented ability to save current App Banner configurations (image, scale, clip, offset, scroll) as reusable presets.
     - Added playlist assignment for presets, allowing different banners to be automatically applied when visiting specific playlists.

@@ -1089,10 +1089,22 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
           isOrb: true,
           title: orb.name
         })) : [];
-      return [...assignedOrbs, ...activePlaylistItems];
+
+      // Include Banners assigned to this playlist
+      const assignedBanners = bannerPresets ? bannerPresets
+        .filter(preset => preset.playlistIds && preset.playlistIds.map(String).includes(String(activePlaylistId)))
+        .map(preset => ({
+          ...preset,
+          id: `banner-${preset.id}`, // Unique ID for React key
+          originalId: preset.id,
+          isBannerPreset: true,
+          title: preset.name
+        })) : [];
+
+      return [...assignedOrbs, ...assignedBanners, ...activePlaylistItems];
     }
     return displayedVideos;
-  }, [selectedFolder, displayedVideos, activePlaylistItems, orbFavorites, activePlaylistId]);
+  }, [selectedFolder, displayedVideos, activePlaylistItems, orbFavorites, bannerPresets, activePlaylistId]);
 
   // Sort videos based on selected sort option
   // IMPORTANT: This hook must be called BEFORE any early returns
@@ -1878,6 +1890,7 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
                             onUpdatePlaylists={updateOrbFavoritePlaylists}
                             minimal={true}
                             onClick={() => applyOrbFavorite(video)}
+                            currentPlaylistId={activePlaylistId}
                           />
                         </div>
                       );
@@ -1892,6 +1905,7 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
                             allPlaylists={allPlaylists}
                             onUpdatePlaylists={updateBannerPresetPlaylists}
                             onClick={() => applyBannerPreset(video)}
+                            currentPlaylistId={activePlaylistId}
                           />
                         </div>
                       );

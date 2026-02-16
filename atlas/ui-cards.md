@@ -572,3 +572,44 @@ Users see high-fidelity Twitter/X cards for local content, designed to mimic the
 
 - **Content Detection**: `VideosPage.jsx` automatically switches to `TweetCard` if `video.is_local` is true or source is detected as twitter.
 
+
+---
+
+#### ### 4.1.2.3 Special Content Cards
+
+**1: User-Perspective Description**
+
+These cards represent non-video content integrated into the playlist view, allowing for quick application of visual themes and configurations directly from the content grid.
+
+**4.1.2.3a Orb Card (Preset)**
+- **Purpose**: Displays a saved Orb configuration as a selectable item within playlists.
+- **Visuals**: Shows the custom Orb image with all applied masks (SVG clip-path), scale using `transform`, and position settings.
+  - **Minimal Mode**: Used in the Orb Page preset grid (hover interactions only).
+  - **Playlist Mode**: Integrated into standard playlists with a header and title.
+- **Interactions**:
+  - **Click**: Applies the saved Orb configuration to the active Player Controller.
+  - **Playlist Assignment**: 
+    - **Plus/Check Button**: Opens a dropdown to assign/unassign the preset to other playlists.
+    - **Trash Button**: Only visible in playlist context. Removes the preset from the *current* playlist (unassigns it).
+
+**4.1.2.3b Banner Preset Card**
+- **Purpose**: Displays a saved App Banner configuration alongside videos.
+- **Visuals**:
+  - **Thumbnail**: 16:9 preview of the banner image.
+  - **Overlay**: Gradient overlay on hover for better text readability.
+  - **Header**: Shows preset name and a truncated list of assigned playlist names on hover.
+- **Interactions**:
+  - **Click**: Applies the saved App Banner configuration globally (image, scale, alignment, scroll settings).
+  - **Playlist Assignment**: 
+    - **Plus/Check Button**: Dropdown to toggle playlist assignments.
+    - **Trash Button**: Removes the preset from the *current* playlist assignment.
+
+**2: File Manifest**
+
+**UI/Components:**
+- `src/components/OrbCard.jsx`: Reusable Orb preset component with minimal/standard modes.
+- `src/components/BannerPresetCard.jsx`: Banner preset card component.
+
+**State Management:**
+- `src/store/configStore.js`: Manages `orbFavorites` and `bannerPresets` arrays.
+- `src/components/VideosPage.jsx`: Renders these cards via `visibleItems` logic, merging them with video content.

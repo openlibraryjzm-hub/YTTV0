@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
-import { Plus, Check } from 'lucide-react';
+import { Plus, Check, Trash2 } from 'lucide-react';
 
-const OrbCard = ({ orb, allPlaylists, onUpdatePlaylists, minimal = false, onClick }) => {
+const OrbCard = ({ orb, allPlaylists, onUpdatePlaylists, minimal = false, onClick, currentPlaylistId }) => {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const menuRef = useRef(null);
     const buttonRef = useRef(null);
@@ -26,6 +26,18 @@ const OrbCard = ({ orb, allPlaylists, onUpdatePlaylists, minimal = false, onClic
         onUpdatePlaylists(orb.id, newIds);
     };
 
+    const handleRemoveFromCurrentPlaylist = (e) => {
+        e.stopPropagation();
+        if (!currentPlaylistId || !onUpdatePlaylists) return;
+
+        if (window.confirm(`Remove "${orb.name}" from this playlist?`)) {
+            const currentIds = orb.playlistIds || [];
+            // Filter out current playlist ID (handle string/number mismatch)
+            const newIds = currentIds.filter(id => String(id) !== String(currentPlaylistId));
+            onUpdatePlaylists(orb.id, newIds);
+        }
+    };
+
     const uniqueId = `orb-card-${orb.id}-${Math.random().toString(36).substr(2, 9)}`;
 
     // Calculate active playlist names for display
@@ -44,8 +56,20 @@ const OrbCard = ({ orb, allPlaylists, onUpdatePlaylists, minimal = false, onClic
                 className="group relative w-full h-full flex flex-col items-center justify-center cursor-pointer"
                 onClick={onClick}
             >
-                {/* Floating Playlist Button (Visible on Hover) */}
-                <div className="absolute top-2 right-2 z-50 opacity-0 group-hover:opacity-100 transition-opacity">
+                {/* Floating Action Buttons (Visible on Hover) */}
+                <div className="absolute top-2 right-2 z-50 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col gap-2">
+                    {/* Remove Button (Only if in a playlist context) */}
+                    {currentPlaylistId && (
+                        <button
+                            onClick={handleRemoveFromCurrentPlaylist}
+                            className="p-2 rounded-full transition-colors bg-red-500/80 hover:bg-red-600 backdrop-blur-md text-white border border-white/20 shadow-sm"
+                            title="Remove from this playlist"
+                        >
+                            <Trash2 size={14} />
+                        </button>
+                    )}
+
+                    {/* Playlist Assign Menu */}
                     <div className="relative">
                         <button
                             ref={buttonRef}
@@ -165,51 +189,65 @@ const OrbCard = ({ orb, allPlaylists, onUpdatePlaylists, minimal = false, onClic
                     </p>
                 </div>
 
-                {/* Playlist Dropdown */}
-                <div className="relative">
-                    <button
-                        ref={buttonRef}
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            setIsMenuOpen(!isMenuOpen);
-                        }}
-                        className={`p-2 rounded-full transition-colors ${isMenuOpen
-                            ? 'bg-sky-500 text-white'
-                            : 'text-slate-400 hover:bg-slate-100 dark:hover:bg-white/5'
-                            }`}
-                    >
-                        {orb.playlistIds?.length > 0 ? <Check size={16} /> : <Plus size={16} />}
-                    </button>
-
-                    {isMenuOpen && (
-                        <div
-                            ref={menuRef}
-                            className="absolute right-0 top-full mt-2 w-64 bg-white dark:bg-slate-900 rounded-xl shadow-xl border border-slate-200 dark:border-white/10 z-50 overflow-hidden text-sm"
-                            onClick={(e) => e.stopPropagation()}
+                {/* Actions */}
+                <div className="flex items-center gap-1">
+                    {/* Remove Button (Only if in a playlist context) */}
+                    {currentPlaylistId && (
+                        <button
+                            onClick={handleRemoveFromCurrentPlaylist}
+                            className="p-2 rounded-full transition-colors text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20"
+                            title="Remove from this playlist"
                         >
-                            <div className="p-2 border-b border-slate-100 dark:border-white/5 bg-slate-50 dark:bg-white/5">
-                                <span className="font-bold text-xs uppercase text-slate-500 pl-2">Assign to Playlists</span>
-                            </div>
-                            <div className="max-h-60 overflow-y-auto p-1">
-                                {allPlaylists.map(playlist => {
-                                    const isSelected = orb.playlistIds?.includes(playlist.id);
-                                    return (
-                                        <button
-                                            key={playlist.id}
-                                            onClick={() => togglePlaylist(playlist.id)}
-                                            className={`w-full text-left px-3 py-2 rounded-lg flex items-center justify-between transition-colors ${isSelected
-                                                ? 'bg-sky-50 dark:bg-sky-500/10 text-sky-600 dark:text-sky-400'
-                                                : 'hover:bg-slate-50 dark:hover:bg-white/5 text-slate-700 dark:text-slate-300'
-                                                }`}
-                                        >
-                                            <span className="truncate">{playlist.name}</span>
-                                            {isSelected && <Check size={14} />}
-                                        </button>
-                                    );
-                                })}
-                            </div>
-                        </div>
+                            <Trash2 size={16} />
+                        </button>
                     )}
+
+                    {/* Playlist Dropdown */}
+                    <div className="relative">
+                        <button
+                            ref={buttonRef}
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                setIsMenuOpen(!isMenuOpen);
+                            }}
+                            className={`p-2 rounded-full transition-colors ${isMenuOpen
+                                ? 'bg-sky-500 text-white'
+                                : 'text-slate-400 hover:bg-slate-100 dark:hover:bg-white/5'
+                                }`}
+                        >
+                            {orb.playlistIds?.length > 0 ? <Check size={16} /> : <Plus size={16} />}
+                        </button>
+
+                        {isMenuOpen && (
+                            <div
+                                ref={menuRef}
+                                className="absolute right-0 top-full mt-2 w-64 bg-white dark:bg-slate-900 rounded-xl shadow-xl border border-slate-200 dark:border-white/10 z-50 overflow-hidden text-sm"
+                                onClick={(e) => e.stopPropagation()}
+                            >
+                                <div className="p-2 border-b border-slate-100 dark:border-white/5 bg-slate-50 dark:bg-white/5">
+                                    <span className="font-bold text-xs uppercase text-slate-500 pl-2">Assign to Playlists</span>
+                                </div>
+                                <div className="max-h-60 overflow-y-auto p-1">
+                                    {allPlaylists.map(playlist => {
+                                        const isSelected = orb.playlistIds?.includes(playlist.id);
+                                        return (
+                                            <button
+                                                key={playlist.id}
+                                                onClick={() => togglePlaylist(playlist.id)}
+                                                className={`w-full text-left px-3 py-2 rounded-lg flex items-center justify-between transition-colors ${isSelected
+                                                    ? 'bg-sky-50 dark:bg-sky-500/10 text-sky-600 dark:text-sky-400'
+                                                    : 'hover:bg-slate-50 dark:hover:bg-white/5 text-slate-700 dark:text-slate-300'
+                                                    }`}
+                                            >
+                                                <span className="truncate">{playlist.name}</span>
+                                                {isSelected && <Check size={14} />}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        )}
+                    </div>
                 </div>
             </div>
 

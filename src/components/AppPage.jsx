@@ -360,16 +360,16 @@ export default function AppPage({ onBack, currentThemeId, onThemeChange, onNavig
                                     <span className="text-[10px] font-bold text-slate-500">{bannerHorizontalOffset ?? 0}%</span>
                                 </div>
                                 <div className="flex items-center gap-4">
-                                    <span className="text-[10px] font-bold text-slate-400">-50%</span>
+                                    <span className="text-[10px] font-bold text-slate-400">-200%</span>
                                     <input
                                         type="range"
-                                        min="-50"
-                                        max="50"
+                                        min="-200"
+                                        max="200"
                                         value={bannerHorizontalOffset ?? 0}
                                         onChange={(e) => setBannerHorizontalOffset(parseInt(e.target.value))}
                                         className="flex-1 h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-sky-500"
                                     />
-                                    <span className="text-[10px] font-bold text-slate-400">+50%</span>
+                                    <span className="text-[10px] font-bold text-slate-400">+200%</span>
                                 </div>
                                 <p className="text-[10px] text-slate-400 px-1">
                                     Shifts the entire tiled pattern left or right to fine-tune positioning.
@@ -383,16 +383,16 @@ export default function AppPage({ onBack, currentThemeId, onThemeChange, onNavig
                                     <span className="text-[10px] font-bold text-slate-500">{bannerVerticalPosition}%</span>
                                 </div>
                                 <div className="flex items-center gap-4">
-                                    <span className="text-[10px] font-bold text-slate-400">Top</span>
+                                    <span className="text-[10px] font-bold text-slate-400">-100%</span>
                                     <input
                                         type="range"
-                                        min="0"
-                                        max="100"
+                                        min="-100"
+                                        max="200"
                                         value={bannerVerticalPosition ?? 0}
                                         onChange={(e) => setBannerVerticalPosition(parseInt(e.target.value))}
                                         className="flex-1 h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-sky-500"
                                     />
-                                    <span className="text-[10px] font-bold text-slate-400">Bottom</span>
+                                    <span className="text-[10px] font-bold text-slate-400">+200%</span>
                                 </div>
                             </div>
 

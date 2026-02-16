@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
-import { Check, Plus, MoreHorizontal, Image as ImageIcon } from 'lucide-react';
+import { Check, Plus, MoreHorizontal, Image as ImageIcon, Trash2 } from 'lucide-react';
 
 /**
  * BannerPresetCard
@@ -12,7 +12,8 @@ const BannerPresetCard = ({
     onUpdatePlaylists,
     onClick,
     isSelected,
-    className = ''
+    className = '',
+    currentPlaylistId
 }) => {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const menuRef = useRef(null);
@@ -39,6 +40,18 @@ const BannerPresetCard = ({
             : [...currentIds, playlistId];
 
         onUpdatePlaylists(preset.id, newIds);
+    };
+
+    const handleRemoveFromCurrentPlaylist = (e) => {
+        e.stopPropagation();
+        if (!currentPlaylistId || !onUpdatePlaylists) return;
+
+        if (window.confirm(`Remove "${preset.name}" from this playlist?`)) {
+            const currentIds = preset.playlistIds || [];
+            // Filter out current playlist ID (handle string/number mismatch)
+            const newIds = currentIds.filter(id => String(id) !== String(currentPlaylistId));
+            onUpdatePlaylists(preset.id, newIds);
+        }
     };
 
     // Calculate active playlist names for display/tooltip
@@ -85,57 +98,71 @@ const BannerPresetCard = ({
                     </p>
                 </div>
 
-                {/* Playlist Assignment Menu */}
-                <div className="relative">
-                    <button
-                        ref={buttonRef}
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            setIsMenuOpen(!isMenuOpen);
-                        }}
-                        className={`p-1.5 rounded-full transition-colors ${isMenuOpen
+                {/* Actions */}
+                <div className="flex items-center gap-1">
+                    {/* Remove Button (Only if in a playlist context) */}
+                    {currentPlaylistId && (
+                        <button
+                            onClick={handleRemoveFromCurrentPlaylist}
+                            className="p-1.5 rounded-full transition-colors text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20"
+                            title="Remove from this playlist"
+                        >
+                            <Trash2 size={14} />
+                        </button>
+                    )}
+
+                    {/* Playlist Assignment Menu */}
+                    <div className="relative">
+                        <button
+                            ref={buttonRef}
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                setIsMenuOpen(!isMenuOpen);
+                            }}
+                            className={`p-1.5 rounded-full transition-colors ${isMenuOpen
                                 ? 'bg-sky-500 text-white'
                                 : 'text-slate-400 hover:bg-slate-100 dark:hover:bg-white/5'
-                            }`}
-                        title="Assign to Playlists"
-                    >
-                        {preset.playlistIds?.length > 0 ? <Check size={14} /> : <Plus size={14} />}
-                    </button>
-
-                    {isMenuOpen && (
-                        <div
-                            ref={menuRef}
-                            className="absolute right-0 bottom-full mb-2 w-56 bg-white dark:bg-slate-900 rounded-xl shadow-xl border border-slate-200 dark:border-white/10 z-50 overflow-hidden text-sm"
-                            onClick={(e) => e.stopPropagation()}
+                                }`}
+                            title="Assign to Playlists"
                         >
-                            <div className="p-2 border-b border-slate-100 dark:border-white/5 bg-slate-50 dark:bg-white/5">
-                                <span className="font-bold text-xs uppercase text-slate-500 pl-2">Assign to Playlists</span>
-                            </div>
-                            <div className="max-h-60 overflow-y-auto p-1">
-                                {allPlaylists.map(playlist => {
-                                    const isSelected = preset.playlistIds?.includes(playlist.id);
-                                    return (
-                                        <button
-                                            key={playlist.id}
-                                            onClick={() => togglePlaylist(playlist.id)}
-                                            className={`w-full text-left px-3 py-2 rounded-lg flex items-center justify-between transition-colors ${isSelected
+                            {preset.playlistIds?.length > 0 ? <Check size={14} /> : <Plus size={14} />}
+                        </button>
+
+                        {isMenuOpen && (
+                            <div
+                                ref={menuRef}
+                                className="absolute right-0 bottom-full mb-2 w-56 bg-white dark:bg-slate-900 rounded-xl shadow-xl border border-slate-200 dark:border-white/10 z-50 overflow-hidden text-sm"
+                                onClick={(e) => e.stopPropagation()}
+                            >
+                                <div className="p-2 border-b border-slate-100 dark:border-white/5 bg-slate-50 dark:bg-white/5">
+                                    <span className="font-bold text-xs uppercase text-slate-500 pl-2">Assign to Playlists</span>
+                                </div>
+                                <div className="max-h-60 overflow-y-auto p-1">
+                                    {allPlaylists.map(playlist => {
+                                        const isSelected = preset.playlistIds?.includes(playlist.id);
+                                        return (
+                                            <button
+                                                key={playlist.id}
+                                                onClick={() => togglePlaylist(playlist.id)}
+                                                className={`w-full text-left px-3 py-2 rounded-lg flex items-center justify-between transition-colors ${isSelected
                                                     ? 'bg-sky-50 dark:bg-sky-500/10 text-sky-600 dark:text-sky-400'
                                                     : 'hover:bg-slate-50 dark:hover:bg-white/5 text-slate-700 dark:text-slate-300'
-                                                }`}
-                                        >
-                                            <span className="truncate">{playlist.name}</span>
-                                            {isSelected && <Check size={14} />}
-                                        </button>
-                                    );
-                                })}
-                                {allPlaylists.length === 0 && (
-                                    <div className="px-3 py-4 text-center text-slate-400 italic text-xs">
-                                        No playlists found
-                                    </div>
-                                )}
+                                                    }`}
+                                            >
+                                                <span className="truncate">{playlist.name}</span>
+                                                {isSelected && <Check size={14} />}
+                                            </button>
+                                        );
+                                    })}
+                                    {allPlaylists.length === 0 && (
+                                        <div className="px-3 py-4 text-center text-slate-400 italic text-xs">
+                                            No playlists found
+                                        </div>
+                                    )}
+                                </div>
                             </div>
-                        </div>
-                    )}
+                        )}
+                    </div>
                 </div>
             </div>
         </div>
