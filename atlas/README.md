@@ -54,7 +54,6 @@ yttv2/
 │   │   ├── LocalVideoPlayer.jsx  # HTML5 fallback player (browser-compatible formats)
 │   │   ├── TopNavigation.jsx     # Contextual Mini Header (Playlist/Folder Info)
 │   │   ├── PlaylistsPage.jsx     # Main playlists grid view
-
 │   │   ├── VideosPage.jsx        # Videos grid view for current playlist
 │   │   ├── TweetPage.jsx         # Full screen tweet detail view
 │   │   ├── HistoryPage.jsx       # Watch history display (last 100 videos)
@@ -456,18 +455,17 @@ For detailed information about the application's theme system and recent color c
   - Added "Open on X" functionality for external validation.
   - Documented in `atlas/ui-pages.md`.
 - **App Banner Enhancements**:
-  - Added "Vertical Alignment" slider to `AppPage` for adjusting the visible portion of the banner image.
-  - Implemented `object-position` styling logic to support vertical panning of custom banner images.
-  - Added "Image Scale" slider (25-200%) for adjusting banner background size.
-  - Added "Spill Over" feature to allow banner to extend vertically below the header area.
-  - Developed "Crop Shape" functionality (`BannerCropModal`) for drawing custom SVG masks on single image tiles.
-  - Implemented "Animate Scroll" toggle to enable/disable the infinite horizontal scroll animation.
-  - Added "Clip From Left" slider (0-100%) to hide left portion of banner, revealing theme color underneath for split-screen effects.
-  - Added "Horizontal Offset" slider (-200% to +200%) to shift the entire tiled pattern left or right for precise positioning.
-  - **Save as Preset**:
-    - Implemented ability to save current App Banner configurations (image, scale, clip, offset, scroll) as reusable presets.
-    - Added playlist assignment for presets, allowing different banners to be automatically applied when visiting specific playlists.
-    - Created `BannerPresetCard` for visualizing and managing saved presets in the Videos interface.
-
-
-
+  - **Dual Mode Configuration**: Implemented separate banner configurations for Fullscreen and Split-screen (Half/Quarter) modes.
+    - Updated `configStore.js` to store distinct `fullscreenBanner` and `splitscreenBanner` objects with migration support.
+    - Added UI in `AppPage.jsx` to toggle between editing each mode with live visual feedback (`bannerPreviewMode`).
+    - Updated `LayoutShell.jsx` to dynamically switch configurations based on view mode (or preview override).
+  - **Independent Player Offset**: `playerControllerXOffset` is now tied to the specific banner mode, allowing different controller positions for full vs. split screen.
+  - **Vertical Alignment**: Extended vertical position slider range to -200% to +200% for better flexibility.
+  - **Modular Presets**: Updated `BannerPresetCard` and saving logic to allow saving **Specifically Fullscreen** or **Specifically Splitscreen** configurations (or both) into a preset.
+  - **Customization**:
+    - "Image Scale" slider (25-200%).
+    - "Spill Over" feature.
+    - "Crop Shape" functionality (`BannerCropModal`).
+    - "Animate Scroll" toggle.
+    - "Clip From Left" slider (0-100%).
+    - "Horizontal Offset" slider (-200% to +200%).

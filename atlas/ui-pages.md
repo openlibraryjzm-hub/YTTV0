@@ -198,7 +198,6 @@ Users see a horizontal scrolling layout with two rows of video cards showing vid
   - **Vertical Scrolling Disabled**: Page does not scroll vertically - only horizontal scrolling is active
   - **Container Padding**: `px-4` (16px) for balanced spacing
 
-
 - **Folder Filtering**: When a folder is selected (via FolderSelector), only videos in that folder are shown
 
 - **Preview Mode**: When a playlist is being previewed (not yet loaded), shows preview items with visual indicator
@@ -223,6 +222,7 @@ Users see a horizontal scrolling layout with two rows of video cards showing vid
 - `src/components/StickyVideoCarousel.jsx`: Sticky video grid/carousel component
 - `src/components/PageBanner.jsx`: Banner component for playlist/folder titles
 - `src/components/EditPlaylistModal.jsx`: Modal for editing playlist metadata
+- `src/components/BannerPresetCard.jsx`: Preset card for App Banner presets (rendered in grid)
 
 
 **State Management:**
@@ -783,7 +783,7 @@ Configuration pages are now accessed directly via the **Top Navigation Bar**, wh
     - `createdAt`: Timestamp of creation.
     - `customOrbImage`, `isSpillEnabled`, `orbSpill`, `orbImageScale`, `orbImageXOffset`, `orbImageYOffset`: Saved configuration values.
   - `addOrbFavorite(favorite)`: Adds a new preset to the array.
-  - `removeOrbFavorite(id)`: Removes a preset by ID.
+    - `removeOrbFavorite(id)`: Removes a preset by ID.
   - `applyOrbFavorite(favorite)`: Applies all settings from a preset to current state.
   - `renameOrbFavorite(id, newName)`: Updates a preset's name.
   - `visualizerGradient`: Boolean toggle for distance-based transparency.
@@ -858,9 +858,10 @@ The Settings Page navigation hub provides access to four dedicated configuration
   - Image grouping and assignment
 
 - **AppPage**: See `app-page.md` for complete App Banner & Player Borders documentation
-  - App banner customization
+  - App banner customization (Dual Mode: Fullscreen/Splitscreen)
   - Color palette/theme selection
   - Player border pattern configuration
+  - **Preset Management**: Create and manage App Banner presets, supporting separate configs for Fullscreen vs Split modes.
 
 ---
 #### ### 4.1.9 Support Page

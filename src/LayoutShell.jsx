@@ -19,19 +19,31 @@ const LayoutShell = ({
 
   const { viewMode, menuQuarterMode, showDebugBounds } = useLayoutStore();
   const {
-    customBannerImage,
-    bannerVerticalPosition,
-    playerBorderPattern,
-    bannerScale,
-    bannerSpillHeight,
-    bannerMaskPath,
-    bannerScrollEnabled,
-    bannerClipLeft,
-    bannerHorizontalOffset,
-    playerControllerXOffset,
-    bannerCropModeActive,
-    bannerCropLivePreview
+    fullscreenBanner,
+    splitscreenBanner,
+    playerBorderPattern, // Shared
+    bannerCropModeActive, // Shared
+    bannerCropLivePreview, // Shared
+    bannerPreviewMode // From AppPage (override viewMode)
   } = useConfigStore();
+
+  // Determine active banner settings based on view mode (or preview override)
+  const activeBanner = bannerPreviewMode
+    ? (bannerPreviewMode === 'fullscreen' ? fullscreenBanner : splitscreenBanner)
+    : (viewMode === 'full' ? fullscreenBanner : splitscreenBanner);
+
+  // Destructure active settings for easier usage
+  const {
+    image: customBannerImage,
+    verticalPosition: bannerVerticalPosition,
+    scale: bannerScale,
+    spillHeight: bannerSpillHeight,
+    maskPath: bannerMaskPath,
+    scrollEnabled: bannerScrollEnabled,
+    clipLeft: bannerClipLeft,
+    horizontalOffset: bannerHorizontalOffset,
+    playerControllerXOffset
+  } = activeBanner || {}; // Safety check if store not ready
 
   // Debug: Log when second player should render
   React.useEffect(() => {
@@ -117,7 +129,7 @@ const LayoutShell = ({
             clipPath: (() => {
               const leftClip = bannerClipLeft > 0 ? `${bannerClipLeft}%` : '0';
 
-              if (viewMode === 'full' && bannerSpillHeight) {
+              if ((viewMode === 'full' || bannerPreviewMode === 'fullscreen') && bannerSpillHeight) {
                 // Calculate what percentage of total height is the spill
                 const totalHeight = 200 + bannerSpillHeight;
                 const spillPercent = (bannerSpillHeight / totalHeight) * 100;
@@ -130,7 +142,8 @@ const LayoutShell = ({
               return bannerClipLeft > 0 ? `inset(0 0 0 ${bannerClipLeft}%)` : 'none';
             })(),
             // Only apply mask in half/quarter modes (not in full screen)
-            ...(viewMode !== 'full' ? maskImageStyle : {})
+            // But if previewing Fullscreen in split view, force disable mask (act like fullscreen)
+            ...((viewMode !== 'full' && bannerPreviewMode !== 'fullscreen') ? maskImageStyle : {})
           }}
         />
 

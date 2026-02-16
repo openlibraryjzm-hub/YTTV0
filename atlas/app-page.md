@@ -19,6 +19,30 @@ AppPage is a dedicated page for App Banner, Color Palette, and Player Borders co
     - **Color Bars**: Each of 16 folder colors displayed (functionality to be wired up)
   - **Scrollable Content**: Configuration sections below the banner
 
+- **App Banner Configuration (Dual Mode)**:
+  - **Mode Toggles**: Dedicated buttons to switch between **Fullscreen Area** and **Splitscreen Area** configuration.
+  - **Live Preview**: Selecting a mode forces the main app layout (background) to reflect that mode instantly, allowing you to edit the "Fullscreen" look even while the settings page is open (which would normally force a "Splitscreen" layout).
+  - **Image Upload**: Upload custom banner images per mode.
+  - **Adjustment Sliders**:
+    - **Scale**: 25% - 200%.
+    - **Vertical Position**: -200% - +200%.
+    - **Horizontal Offset**: -200% - +200%.
+    - **Spill Height**: 0px - 500px.
+    - **Clip Left**: 0% - 100%.
+  - **Crop Shape**: Interactive SVG mask editor (Inline).
+  - **Animate Scroll**: Toggle horizontal scrolling.
+
+- **Player Controller Section**:
+  - **Layout**: Simple slider control.
+  - **Horizontal Position**: Slider to adjust X-offset (-500px to +500px).
+    - **Independent Per Mode**: This offset is saved separately for Fullscreen vs Splitscreen, allowing you to center the controller in fullscreen but shift it right in splitscreen to avoid sidebars.
+
+- **Preset Management**:
+  - **Save Functionality**: Save the current configuration as a named preset.
+  - **Modular Saving**: Choose to save **Fullscreen**, **Splitscreen**, or **Both** configurations into the preset.
+  - **Playlist Assignment**: Assign presets to automatically load when visiting specific playlists.
+  - **Preset Grid**: View and manage saved presets via `BannerPresetCard` items in the Videos interface.
+
 - **Color Palette Section**:
   - **Layout**: 2-column grid of theme options
   - **Theme Cards**: Each theme displays:
@@ -27,26 +51,6 @@ AppPage is a dedicated page for App Banner, Color Palette, and Player Borders co
     - Active theme highlighted with sky-blue border and ring
   - **Selection**: Click any theme card to apply it app-wide
   - **Active Indicator**: Current theme shows "Active" badge and highlighted styling
-
-- **App Banner Section**:
-  - **Current Banner Display**: Shows the active app banner with preview
-    - Displays custom uploaded banner or default banner
-    - Shows banner source label (Custom Upload or /public/banner.PNG)
-    - Hover overlay with "Remove Custom Banner" button when custom banner is set
-  - **Presets**: Grid of preset banner options (Default, Cosmic, Nature, Industrial)
-    - Each preset shows preview thumbnail
-    - Selected preset highlighted with sky-blue border
-    - Default preset clears custom banner
-  - **Upload Action**: Upload button for custom banner images
-    - Supports PNG, JPG, WEBP formats
-    - Recommended size: 1920x200px
-    - Uploaded banner replaces default banner
-
-- **Player Controller Section**:
-  - **Layout**: Simple slider control
-  - **Horizontal Position**: Slider to adjust X-offset (-500px to +500px)
-    - Allows centering or offsetting the controller relative to the banner
-    - Useful for alignment with custom banner setups
 
 - **Player Borders Section**:
   - **Layout**: 2-column grid of border pattern options
@@ -61,47 +65,41 @@ AppPage is a dedicated page for App Banner, Color Palette, and Player Borders co
 **UI/Components:**
 - `src/components/AppPage.jsx`: Dedicated App Banner, Color Palette, and Player Borders configuration page component
 - `src/components/PageBanner.jsx`: Page banner with back button
+- `src/components/BannerPresetCard.jsx`: (Not directly on this page, but related to the preset system managed here)
 
 **State Management:**
 - `src/store/configStore.js`:
-  - `customBannerImage`, `setCustomBannerImage`: Custom app banner image (Base64 string)
-  - `playerControllerXOffset`, `setPlayerControllerXOffset`: Horizontal offset for player controller (px)
-  - `playerBorderPattern`, `setPlayerBorderPattern`: Player border pattern ('diagonal' | 'dots' | 'waves' | 'solid')
-- `src/utils/themes.js`: Theme definitions with color palettes
-- Theme selection managed by parent SettingsPage via `currentThemeId` and `onThemeChange` props
+  - `fullscreenBanner`: Configuration object for fullscreen mode.
+  - `splitscreenBanner`: Configuration object for splitscreen mode.
+  - `bannerPreviewMode`: Ephemeral state to override layout for editing.
+  - `playerBorderPattern`: Player border pattern state.
+  - `bannerPresets`: Array of saved presets.
+  - `addBannerPreset`: Action to save new preset.
+  - `activeThemeId`: Theme state.
 
 ## 3: The Logic & State Chain
+
+**App Banner Flow:**
+1. User toggles mode (Title Button) → `setActiveBannerMode('fullscreen'|'splitscreen')`
+2. `useEffect` updates `bannerPreviewMode` in store → `LayoutShell` re-renders background to match.
+3. User adjusts slider → `updateActiveBanner({ propert: value })` updates the specific config object.
+4. User clicks "Save Preset" → Modular save logic checks checkboxes (`saveConfig`) → Creates preset object → `addBannerPreset`.
+
+**Player Controller Position Flow:**
+1. User adjusts slider → `updateActiveBanner({ playerControllerXOffset: val })` updates store (inside the banner config object).
+2. Store persists to `localStorage`.
+3. `LayoutShell` detects change → Updates controller wrapper transform.
 
 **Color Palette Flow:**
 1. User clicks theme card → `onThemeChange(id)` called → Parent SettingsPage updates theme
 2. Theme change applies app-wide → All components using theme colors update
 3. Active theme highlighted in grid
 
-**App Banner Flow:**
-1. User uploads banner → `handleBannerUpload()` reads file as Data URL → `setCustomBannerImage()` updates store
-2. Store persists to `localStorage` → App banner component detects change → Updates banner display
-3. User clicks preset → Sets mock state and clears custom banner if "Default" selected
-4. User clicks "Remove Custom Banner" → `setCustomBannerImage(null)` → Default banner restored
-
-**Player Controller Position Flow:**
-1. User adjusts slider → `setPlayerControllerXOffset(val)` updates store
-2. Store persists to `localStorage` → LayoutShell detects change → Updates wrapper `transform` style
-3. Controller moves horizontally in real-time
-
-**Player Borders Flow:**
-1. User clicks border pattern → `setPlayerBorderPattern(id)` updates store
-2. Store persists to `localStorage` → Player component detects change → Updates border pattern CSS class
-3. Pattern preview shows visual representation of each option
-
 **Source of Truth:**
-- `configStore.customBannerImage`: Custom app banner image (null = use default)
-- `configStore.playerControllerXOffset`: Current x-offset
-- `configStore.playerBorderPattern`: Current border pattern
-- `currentThemeId` (from parent): Active theme ID
-- All state persisted to `localStorage` via Zustand persist middleware
+- `configStore.fullscreenBanner`: Source for Fullscreen mode (and legacy fallbacks).
+- `configStore.splitscreenBanner`: Source for Splitscreen mode.
+- `configStore.bannerPreviewMode`: Source for LayoutShell override.
 
 **State Dependencies:**
-- When `customBannerImage` changes → App banner component updates display
-- When `playerControllerXOffset` changes → LayoutShell updates wrapper transform
-- When `playerBorderPattern` changes → Player borders update CSS class
-- When theme changes → Color palette grid highlights active theme
+- When `bannerPreviewMode` changes → `LayoutShell` view mode logic is overridden.
+- When `activeBanner` properties change → Background styles update immediately.

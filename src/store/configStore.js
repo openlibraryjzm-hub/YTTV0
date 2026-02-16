@@ -97,28 +97,46 @@ export const useConfigStore = create(
             tooltipButtonX: 145,
             setTooltipButtonX: (val) => set({ tooltipButtonX: val }),
 
-            // Custom Banner Image
-            customBannerImage: null,
-            setCustomBannerImage: (val) => set({ customBannerImage: val }),
-            bannerVerticalPosition: 0, // 0 = top, 50 = center, 100 = bottom
-            setBannerVerticalPosition: (val) => set({ bannerVerticalPosition: val }),
-            bannerScale: 100,
-            setBannerScale: (val) => set({ bannerScale: val }),
-            bannerSpillHeight: 0,
-            setBannerSpillHeight: (val) => set({ bannerSpillHeight: val }),
-            bannerMaskPath: [],
-            setBannerMaskPath: (val) => set({ bannerMaskPath: val }),
+            // Dual Banner System (Fullscreen & Splitscreen)
+            fullscreenBanner: {
+                image: null,
+                verticalPosition: 0,
+                scale: 100,
+                spillHeight: 0,
+                maskPath: [],
+                scrollEnabled: true,
+                clipLeft: 0,
+                horizontalOffset: 0,
+                playerControllerXOffset: 0
+            },
+            updateFullscreenBanner: (updates) => set((state) => ({
+                fullscreenBanner: { ...state.fullscreenBanner, ...updates }
+            })),
 
-            bannerScrollEnabled: true,
-            setBannerScrollEnabled: (val) => set({ bannerScrollEnabled: val }),
-            bannerClipLeft: 0,
-            setBannerClipLeft: (val) => set({ bannerClipLeft: val }),
-            bannerHorizontalOffset: 0,
-            setBannerHorizontalOffset: (val) => set({ bannerHorizontalOffset: val }),
+            splitscreenBanner: {
+                image: null,
+                verticalPosition: 0,
+                scale: 100,
+                spillHeight: 0,
+                maskPath: [],
+                scrollEnabled: true,
+                clipLeft: 0,
+                horizontalOffset: 0,
+                playerControllerXOffset: 0
+            },
+            updateSplitscreenBanner: (updates) => set((state) => ({
+                splitscreenBanner: { ...state.splitscreenBanner, ...updates }
+            })),
+
+            // Shared UI State
             bannerCropModeActive: false,
             setBannerCropModeActive: (val) => set({ bannerCropModeActive: val }),
             bannerCropLivePreview: true,
             setBannerCropLivePreview: (val) => set({ bannerCropLivePreview: val }),
+
+            // Ephemeral Banner Preview State (override current viewMode for editing)
+            bannerPreviewMode: null, // 'fullscreen' | 'splitscreen' | null
+            setBannerPreviewMode: (val) => set({ bannerPreviewMode: val }),
 
             // Banner Presets - saved configurations
             bannerPresets: [],
@@ -129,6 +147,9 @@ export const useConfigStore = create(
                     name: preset.name || `Banner ${state.bannerPresets.length + 1}`,
                     createdAt: Date.now(),
                     playlistIds: preset.playlistIds || [],
+                    // Ensure we save both configs if present, or fallback to flat inputs if coming from legacy
+                    fullscreenBanner: preset.fullscreenBanner || state.fullscreenBanner,
+                    splitscreenBanner: preset.splitscreenBanner || state.splitscreenBanner
                 }]
             })),
             removeBannerPreset: (id) => set((state) => ({
@@ -139,15 +160,36 @@ export const useConfigStore = create(
                     p.id === id ? { ...p, playlistIds } : p
                 )
             })),
-            applyBannerPreset: (preset) => set({
-                customBannerImage: preset.customBannerImage,
-                bannerVerticalPosition: preset.bannerVerticalPosition ?? 0,
-                bannerScale: preset.bannerScale ?? 100,
-                bannerSpillHeight: preset.bannerSpillHeight ?? 0,
-                bannerMaskPath: preset.bannerMaskPath || [],
-                bannerScrollEnabled: preset.bannerScrollEnabled ?? true,
-                bannerClipLeft: preset.bannerClipLeft ?? 0,
-                bannerHorizontalOffset: preset.bannerHorizontalOffset ?? 0,
+            applyBannerPreset: (preset) => set((state) => {
+                // Determine if this is a V2 preset (has specific keys) or V1 (legacy flat)
+                const hasFullscreen = !!preset.fullscreenBanner;
+                const hasSplitscreen = !!preset.splitscreenBanner;
+                const isLegacy = !hasFullscreen && !hasSplitscreen;
+
+                // Helper to construct legacy fallback object
+                const legacyFallback = {
+                    image: preset.customBannerImage ?? null,
+                    verticalPosition: preset.bannerVerticalPosition ?? 0,
+                    scale: preset.bannerScale ?? 100,
+                    spillHeight: preset.bannerSpillHeight ?? 0,
+                    maskPath: preset.bannerMaskPath || [],
+                    scrollEnabled: preset.bannerScrollEnabled ?? true,
+                    clipLeft: preset.bannerClipLeft ?? 0,
+                    horizontalOffset: preset.bannerHorizontalOffset ?? 0,
+                    playerControllerXOffset: preset.playerControllerXOffset ?? 0,
+                };
+
+                return {
+                    // Apply Fullscreen: if present, OR if legacy (apply to both)
+                    fullscreenBanner: hasFullscreen
+                        ? preset.fullscreenBanner
+                        : (isLegacy ? legacyFallback : state.fullscreenBanner),
+
+                    // Apply Splitscreen: if present, OR if legacy (apply to both)
+                    splitscreenBanner: hasSplitscreen
+                        ? preset.splitscreenBanner
+                        : (isLegacy ? legacyFallback : state.splitscreenBanner)
+                };
             }),
 
             // Player Controller Positioning
@@ -859,8 +901,51 @@ export const useConfigStore = create(
             bannerBgSize: '100% auto',
             setBannerBgSize: (val) => set({ bannerBgSize: val }),
         }), {
-        name: 'config-storage-v11', // Bump version for clean slate with new storage
+        name: 'config-storage-v12', // Bump version for migration
         storage: createJSONStorage(() => idbStorage),
+        version: 13,
+        migrate: (persistedState, version) => {
+            let newState = persistedState;
+
+            if (version < 12) {
+                // Migrate from v<12 (flat banner) to v12 (dual banner)
+                const oldBannerState = {
+                    image: newState.customBannerImage ?? null,
+                    verticalPosition: newState.bannerVerticalPosition ?? 0,
+                    scale: newState.bannerScale ?? 100,
+                    spillHeight: newState.bannerSpillHeight ?? 0,
+                    maskPath: newState.bannerMaskPath || [],
+                    scrollEnabled: newState.bannerScrollEnabled ?? true,
+                    clipLeft: newState.bannerClipLeft ?? 0,
+                    horizontalOffset: newState.bannerHorizontalOffset ?? 0,
+                    playerControllerXOffset: newState.playerControllerXOffset ?? 0, // Include offset in migration
+                };
+
+                newState = {
+                    ...newState,
+                    fullscreenBanner: { ...oldBannerState },
+                    splitscreenBanner: { ...oldBannerState },
+                };
+            } else if (version < 13) {
+                // Migrate from v12 (dual banner check) to v13 (add playerControllerXOffset to banners)
+                // We grab the existing active offset and apply it to both as a starting point
+                const currentOffset = newState.playerControllerXOffset ?? 0;
+
+                newState = {
+                    ...newState,
+                    fullscreenBanner: {
+                        ...newState.fullscreenBanner,
+                        playerControllerXOffset: currentOffset
+                    },
+                    splitscreenBanner: {
+                        ...newState.splitscreenBanner,
+                        playerControllerXOffset: currentOffset
+                    }
+                };
+            }
+
+            return newState;
+        },
     }
     )
 );

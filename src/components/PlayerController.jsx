@@ -1452,12 +1452,11 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
       const reader = new FileReader();
       reader.onloadend = () => {
         const imageDataUrl = reader.result;
-        setCustomBannerImage(imageDataUrl);
-        // Persist to localStorage
-        try {
-          localStorage.setItem('customBannerImage', imageDataUrl);
-        } catch (error) {
-          console.error('Failed to save custom banner image to localStorage:', error);
+        // Update the banner that is currently visible
+        if (viewMode === 'full') {
+          updateFullscreenBanner({ image: imageDataUrl });
+        } else {
+          updateSplitscreenBanner({ image: imageDataUrl });
         }
       };
       reader.readAsDataURL(file);
@@ -1503,7 +1502,7 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
     playlistToggleX, playlistTabsX, playlistInfoX, playlistInfoWidth,
     videoChevronLeftX, videoChevronRightX, videoPlayButtonX,
     modeSwitcherX, shuffleButtonX, gridButtonX, starButtonX,
-    setCustomBannerImage,
+    updateFullscreenBanner, updateSplitscreenBanner, // Use new actions
     // Orb State (From Config Store now)
     customOrbImage, setCustomOrbImage,
     isSpillEnabled, setIsSpillEnabled,

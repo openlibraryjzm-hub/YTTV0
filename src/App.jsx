@@ -410,14 +410,33 @@ function App() {
   const {
     bannerCropModeActive,
     setBannerCropModeActive,
-    bannerMaskPath,
-    setBannerMaskPath,
-    customBannerImage,
-    bannerScale,
-    bannerVerticalPosition,
-    bannerHorizontalOffset,
-    bannerSpillHeight
+    fullscreenBanner,
+    splitscreenBanner,
+    updateFullscreenBanner,
+    updateSplitscreenBanner,
+    bannerPreviewMode
   } = useConfigStore();
+
+  // Determine active banner for crop mode based on view mode (or preview override)
+  const activeBanner = bannerPreviewMode
+    ? (bannerPreviewMode === 'fullscreen' ? fullscreenBanner : splitscreenBanner)
+    : (viewMode === 'full' ? fullscreenBanner : splitscreenBanner);
+  // Fallback to defaults if activeBanner is somehow undefined (e.g. during migration re-render)
+  const bannerImage = activeBanner?.image;
+  const bannerScale = activeBanner?.scale;
+  const bannerVerticalPosition = activeBanner?.verticalPosition;
+  const bannerHorizontalOffset = activeBanner?.horizontalOffset;
+  const bannerSpillHeight = activeBanner?.spillHeight;
+  const bannerMaskPath = activeBanner?.maskPath;
+
+  const handleSetMaskPath = (newPath) => {
+    const isFullscreenTarget = bannerPreviewMode ? (bannerPreviewMode === 'fullscreen') : (viewMode === 'full');
+    if (isFullscreenTarget) {
+      updateFullscreenBanner({ maskPath: newPath });
+    } else {
+      updateSplitscreenBanner({ maskPath: newPath });
+    }
+  };
 
   return (
     <div className={`app-container bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] ${THEMES[currentThemeId].bg}`} style={{ width: '100vw', height: '100vh', overflow: 'hidden' }}>
@@ -426,8 +445,8 @@ function App() {
         isActive={bannerCropModeActive}
         onExit={() => setBannerCropModeActive(false)}
         maskPath={bannerMaskPath}
-        setMaskPath={setBannerMaskPath}
-        bannerImage={customBannerImage || "/banner.PNG"}
+        setMaskPath={handleSetMaskPath}
+        bannerImage={bannerImage || "/banner.PNG"}
         bannerScale={bannerScale}
         bannerVerticalPosition={bannerVerticalPosition}
         bannerHorizontalOffset={bannerHorizontalOffset}

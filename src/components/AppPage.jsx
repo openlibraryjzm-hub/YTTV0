@@ -18,17 +18,11 @@ function ConfigSection({ title, icon: Icon, children }) {
 
 export default function AppPage({ onBack, currentThemeId, onThemeChange, onNavigateToOrb, onNavigateToYou, onNavigateToPage }) {
     const {
-        customBannerImage, setCustomBannerImage,
-        bannerVerticalPosition, setBannerVerticalPosition,
-        bannerScale, setBannerScale,
-        bannerSpillHeight, setBannerSpillHeight,
-        bannerMaskPath, setBannerMaskPath,
-        bannerScrollEnabled, setBannerScrollEnabled,
-        bannerClipLeft, setBannerClipLeft,
-        bannerHorizontalOffset, setBannerHorizontalOffset,
+        fullscreenBanner, updateFullscreenBanner,
+        splitscreenBanner, updateSplitscreenBanner,
         bannerCropModeActive, setBannerCropModeActive,
+        setBannerPreviewMode,
         playerBorderPattern, setPlayerBorderPattern,
-        playerControllerXOffset, setPlayerControllerXOffset,
         bannerPresets, addBannerPreset
     } = useConfigStore();
 
@@ -40,11 +34,23 @@ export default function AppPage({ onBack, currentThemeId, onThemeChange, onNavig
     const [isStuck, setIsStuck] = useState(false);
     const stickySentinelRef = useRef(null);
 
-    // Mock state for app banner
+    // Banner Edit Mode State
+    const [activeBannerMode, setActiveBannerMode] = useState('fullscreen'); // 'fullscreen' | 'splitscreen'
+    const activeBanner = activeBannerMode === 'fullscreen' ? fullscreenBanner : splitscreenBanner;
+    const updateActiveBanner = activeBannerMode === 'fullscreen' ? updateFullscreenBanner : updateSplitscreenBanner;
+
+    // Sync preview mode to store for LayoutShell to pick up
+    useEffect(() => {
+        setBannerPreviewMode(activeBannerMode);
+        return () => setBannerPreviewMode(null);
+    }, [activeBannerMode, setBannerPreviewMode]);
+
+    // Mock state for app banner (visual presets)
     const [mockAppBanner, setMockAppBanner] = useState('default');
 
     // Save Preset State
     const [selectedPlaylistIds, setSelectedPlaylistIds] = useState([]);
+    const [saveConfig, setSaveConfig] = useState({ fullscreen: true, splitscreen: true });
     const [isPlaylistDropdownOpen, setIsPlaylistDropdownOpen] = useState(false);
     const dropdownRef = useRef(null);
 
@@ -66,18 +72,26 @@ export default function AppPage({ onBack, currentThemeId, onThemeChange, onNavig
     };
 
     const handleSavePreset = () => {
+        // Enforce at least one selection
+        if (!saveConfig.fullscreen && !saveConfig.splitscreen) {
+            alert('Please select at least one configuration (Fullscreen or Splitscreen) to save.');
+            return;
+        }
+
         const newPreset = {
             id: Date.now().toString(),
             name: `Banner ${new Date().toLocaleDateString()}`,
-            customBannerImage,
-            bannerVerticalPosition,
-            bannerScale,
-            bannerSpillHeight,
-            bannerMaskPath,
-            bannerScrollEnabled,
-            bannerClipLeft,
-            bannerHorizontalOffset,
-            playlistIds: selectedPlaylistIds
+            // Save selected configurations (undefined keys will be ignored/merged by store)
+            fullscreenBanner: saveConfig.fullscreen ? fullscreenBanner : undefined,
+            splitscreenBanner: saveConfig.splitscreen ? splitscreenBanner : undefined,
+
+            // Legacy fallbacks: Prefer fullscreen, fallback to splitscreen
+            customBannerImage: (saveConfig.fullscreen ? fullscreenBanner.image : splitscreenBanner.image),
+            bannerVerticalPosition: (saveConfig.fullscreen ? fullscreenBanner.verticalPosition : splitscreenBanner.verticalPosition),
+            bannerScale: (saveConfig.fullscreen ? fullscreenBanner.scale : splitscreenBanner.scale),
+
+            playlistIds: selectedPlaylistIds,
+            playerControllerXOffset: (saveConfig.fullscreen ? fullscreenBanner.playerControllerXOffset : splitscreenBanner.playerControllerXOffset)
         };
 
         addBannerPreset(newPreset);
@@ -91,12 +105,13 @@ export default function AppPage({ onBack, currentThemeId, onThemeChange, onNavig
         if (file) {
             const reader = new FileReader();
             reader.onloadend = () => {
-                setCustomBannerImage(reader.result);
+                updateActiveBanner({ image: reader.result });
                 setMockAppBanner('uploaded');
             };
             reader.readAsDataURL(file);
         }
     };
+
 
     // Sticky toolbar detection
     useEffect(() => {
@@ -232,47 +247,69 @@ export default function AppPage({ onBack, currentThemeId, onThemeChange, onNavig
                         </ConfigSection>
 
                         <ConfigSection title="App Banner" icon={Image}>
+                            {/* Mode Toggle */}
+                            <div className="flex bg-slate-100 p-1 rounded-lg mb-4">
+                                <button
+                                    onClick={() => setActiveBannerMode('fullscreen')}
+                                    className={`flex-1 py-1.5 text-xs font-bold uppercase tracking-wider rounded-md transition-all ${activeBannerMode === 'fullscreen'
+                                        ? 'bg-white text-sky-600 shadow-sm'
+                                        : 'text-slate-400 hover:text-slate-600'
+                                        }`}
+                                >
+                                    Fullscreen Area
+                                </button>
+                                <button
+                                    onClick={() => setActiveBannerMode('splitscreen')}
+                                    className={`flex-1 py-1.5 text-xs font-bold uppercase tracking-wider rounded-md transition-all ${activeBannerMode === 'splitscreen'
+                                        ? 'bg-white text-sky-600 shadow-sm'
+                                        : 'text-slate-400 hover:text-slate-600'
+                                        }`}
+                                >
+                                    Splitscreen Area
+                                </button>
+                            </div>
+
                             {/* Current Banner Display */}
                             <div className="space-y-3 pb-4 border-b border-slate-100">
                                 <div className="flex justify-between items-center px-1">
-                                    <label className="text-xs font-bold uppercase text-slate-400">Current App Banner</label>
+                                    <label className="text-xs font-bold uppercase text-slate-400">Current App Banner ({activeBannerMode})</label>
                                     <span className="text-[10px] font-bold text-sky-600 bg-sky-50 px-2 py-0.5 rounded-full uppercase tracking-wider">Active</span>
                                 </div>
                                 <div className="w-full h-32 rounded-xl overflow-hidden shadow-sm border-2 border-slate-100 relative group bg-slate-50">
                                     <div
                                         className="w-full h-full"
                                         style={{
-                                            backgroundImage: `url(${customBannerImage || "/banner.PNG"})`,
-                                            backgroundSize: `${bannerScale ?? 100}% auto`,
-                                            backgroundPosition: `0% ${bannerVerticalPosition ?? 0}%`,
+                                            backgroundImage: `url(${activeBanner.image || "/banner.PNG"})`,
+                                            backgroundSize: `${activeBanner.scale ?? 100}% auto`,
+                                            backgroundPosition: `0% ${activeBanner.verticalPosition ?? 0}%`,
                                             backgroundRepeat: 'repeat-x',
-                                            ...(bannerMaskPath?.length > 2 ? {
+                                            ...(activeBanner.maskPath?.length > 2 ? {
                                                 maskImage: `url("data:image/svg+xml;utf8,${encodeURIComponent(`
                                                     <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'>
-                                                        <polygon points='${bannerMaskPath.map(p => `${p.x},${p.y}`).join(' ')}' fill='black' />
+                                                        <polygon points='${activeBanner.maskPath.map(p => `${p.x},${p.y}`).join(' ')}' fill='black' />
                                                     </svg>
                                                 `.replace(/\n/g, '').trim())}")`,
                                                 WebkitMaskImage: `url("data:image/svg+xml;utf8,${encodeURIComponent(`
                                                     <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'>
-                                                        <polygon points='${bannerMaskPath.map(p => `${p.x},${p.y}`).join(' ')}' fill='black' />
+                                                        <polygon points='${activeBanner.maskPath.map(p => `${p.x},${p.y}`).join(' ')}' fill='black' />
                                                     </svg>
                                                 `.replace(/\n/g, '').trim())}")`,
-                                                maskSize: `${bannerScale ?? 100}% auto`,
-                                                WebkitMaskSize: `${bannerScale ?? 100}% auto`,
-                                                maskPosition: `0% ${bannerVerticalPosition ?? 0}%`,
-                                                WebkitMaskPosition: `0% ${bannerVerticalPosition ?? 0}%`,
+                                                maskSize: `${activeBanner.scale ?? 100}% auto`,
+                                                WebkitMaskSize: `${activeBanner.scale ?? 100}% auto`,
+                                                maskPosition: `0% ${activeBanner.verticalPosition ?? 0}%`,
+                                                WebkitMaskPosition: `0% ${activeBanner.verticalPosition ?? 0}%`,
                                                 maskRepeat: 'repeat-x',
                                                 WebkitMaskRepeat: 'repeat-x'
                                             } : {})
                                         }}
                                     />
-                                    {!customBannerImage && (
+                                    {!activeBanner.image && (
                                         <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-60 pointer-events-none"></div>
                                     )}
                                     <div className="absolute bottom-3 left-3 text-white text-xs font-bold drop-shadow-md pointer-events-none">
-                                        {customBannerImage ? "Custom Upload" : "/public/banner.PNG"}
+                                        {activeBanner.image ? "Custom Upload" : "/public/banner.PNG"}
                                     </div>
-                                    {customBannerImage && (
+                                    {activeBanner.image && (
                                         <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center gap-2 transition-opacity">
                                             <button
                                                 onClick={() => setBannerCropModeActive(true)}
@@ -283,9 +320,8 @@ export default function AppPage({ onBack, currentThemeId, onThemeChange, onNavig
                                             </button>
                                             <button
                                                 onClick={() => {
-                                                    setCustomBannerImage(null);
+                                                    updateActiveBanner({ image: null, maskPath: [] });
                                                     setMockAppBanner('default');
-                                                    setBannerMaskPath([]); // Clear mask when removing image
                                                 }}
                                                 className="px-4 py-2 bg-red-500 text-white rounded-lg text-xs font-bold uppercase tracking-wider hover:bg-red-600 transition-colors shadow-lg"
                                             >
@@ -300,7 +336,7 @@ export default function AppPage({ onBack, currentThemeId, onThemeChange, onNavig
                             <div className="space-y-3 pt-2 pb-4 border-b border-slate-100">
                                 <div className="flex justify-between items-center px-1">
                                     <label className="text-xs font-bold uppercase text-slate-400">Image Scale</label>
-                                    <span className="text-[10px] font-bold text-slate-500">{bannerScale ?? 100}%</span>
+                                    <span className="text-[10px] font-bold text-slate-500">{activeBanner.scale ?? 100}%</span>
                                 </div>
                                 <div className="flex items-center gap-4">
                                     <span className="text-[10px] font-bold text-slate-400">25%</span>
@@ -308,8 +344,8 @@ export default function AppPage({ onBack, currentThemeId, onThemeChange, onNavig
                                         type="range"
                                         min="25"
                                         max="200"
-                                        value={bannerScale ?? 100}
-                                        onChange={(e) => setBannerScale(parseInt(e.target.value))}
+                                        value={activeBanner.scale ?? 100}
+                                        onChange={(e) => updateActiveBanner({ scale: parseInt(e.target.value) })}
                                         className="flex-1 h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-sky-500"
                                     />
                                     <span className="text-[10px] font-bold text-slate-400">200%</span>
@@ -322,8 +358,8 @@ export default function AppPage({ onBack, currentThemeId, onThemeChange, onNavig
                                 <label className="relative inline-flex items-center cursor-pointer">
                                     <input
                                         type="checkbox"
-                                        checked={bannerScrollEnabled}
-                                        onChange={(e) => setBannerScrollEnabled(e.target.checked)}
+                                        checked={activeBanner.scrollEnabled}
+                                        onChange={(e) => updateActiveBanner({ scrollEnabled: e.target.checked })}
                                         className="sr-only peer"
                                     />
                                     <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-sky-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-sky-500"></div>
@@ -334,7 +370,7 @@ export default function AppPage({ onBack, currentThemeId, onThemeChange, onNavig
                             <div className="space-y-3 pt-2 pb-4 border-b border-slate-100">
                                 <div className="flex justify-between items-center px-1">
                                     <label className="text-xs font-bold uppercase text-slate-400">Clip From Left</label>
-                                    <span className="text-[10px] font-bold text-slate-500">{bannerClipLeft ?? 0}%</span>
+                                    <span className="text-[10px] font-bold text-slate-500">{activeBanner.clipLeft ?? 0}%</span>
                                 </div>
                                 <div className="flex items-center gap-4">
                                     <span className="text-[10px] font-bold text-slate-400">0%</span>
@@ -342,8 +378,8 @@ export default function AppPage({ onBack, currentThemeId, onThemeChange, onNavig
                                         type="range"
                                         min="0"
                                         max="100"
-                                        value={bannerClipLeft ?? 0}
-                                        onChange={(e) => setBannerClipLeft(parseInt(e.target.value))}
+                                        value={activeBanner.clipLeft ?? 0}
+                                        onChange={(e) => updateActiveBanner({ clipLeft: parseInt(e.target.value) })}
                                         className="flex-1 h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-sky-500"
                                     />
                                     <span className="text-[10px] font-bold text-slate-400">100%</span>
@@ -357,7 +393,7 @@ export default function AppPage({ onBack, currentThemeId, onThemeChange, onNavig
                             <div className="space-y-3 pt-2 pb-4 border-b border-slate-100">
                                 <div className="flex justify-between items-center px-1">
                                     <label className="text-xs font-bold uppercase text-slate-400">Horizontal Offset</label>
-                                    <span className="text-[10px] font-bold text-slate-500">{bannerHorizontalOffset ?? 0}%</span>
+                                    <span className="text-[10px] font-bold text-slate-500">{activeBanner.horizontalOffset ?? 0}%</span>
                                 </div>
                                 <div className="flex items-center gap-4">
                                     <span className="text-[10px] font-bold text-slate-400">-200%</span>
@@ -365,8 +401,8 @@ export default function AppPage({ onBack, currentThemeId, onThemeChange, onNavig
                                         type="range"
                                         min="-200"
                                         max="200"
-                                        value={bannerHorizontalOffset ?? 0}
-                                        onChange={(e) => setBannerHorizontalOffset(parseInt(e.target.value))}
+                                        value={activeBanner.horizontalOffset ?? 0}
+                                        onChange={(e) => updateActiveBanner({ horizontalOffset: parseInt(e.target.value) })}
                                         className="flex-1 h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-sky-500"
                                     />
                                     <span className="text-[10px] font-bold text-slate-400">+200%</span>
@@ -380,16 +416,16 @@ export default function AppPage({ onBack, currentThemeId, onThemeChange, onNavig
                             <div className="space-y-3 pt-2 pb-4 border-b border-slate-100">
                                 <div className="flex justify-between items-center px-1">
                                     <label className="text-xs font-bold uppercase text-slate-400">Vertical Alignment</label>
-                                    <span className="text-[10px] font-bold text-slate-500">{bannerVerticalPosition}%</span>
+                                    <span className="text-[10px] font-bold text-slate-500">{activeBanner.verticalPosition}%</span>
                                 </div>
                                 <div className="flex items-center gap-4">
-                                    <span className="text-[10px] font-bold text-slate-400">-100%</span>
+                                    <span className="text-[10px] font-bold text-slate-400">-200%</span>
                                     <input
                                         type="range"
-                                        min="-100"
+                                        min="-200"
                                         max="200"
-                                        value={bannerVerticalPosition ?? 0}
-                                        onChange={(e) => setBannerVerticalPosition(parseInt(e.target.value))}
+                                        value={activeBanner.verticalPosition ?? 0}
+                                        onChange={(e) => updateActiveBanner({ verticalPosition: parseInt(e.target.value) })}
                                         className="flex-1 h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-sky-500"
                                     />
                                     <span className="text-[10px] font-bold text-slate-400">+200%</span>
@@ -400,7 +436,7 @@ export default function AppPage({ onBack, currentThemeId, onThemeChange, onNavig
                             <div className="space-y-3 pt-2 pb-4 border-b border-slate-100">
                                 <div className="flex justify-between items-center px-1">
                                     <label className="text-xs font-bold uppercase text-slate-400">Spill Over</label>
-                                    <span className="text-[10px] font-bold text-slate-500">{bannerSpillHeight ?? 0}px</span>
+                                    <span className="text-[10px] font-bold text-slate-500">{activeBanner.spillHeight ?? 0}px</span>
                                 </div>
                                 <div className="flex items-center gap-4">
                                     <span className="text-[10px] font-bold text-slate-400">None</span>
@@ -409,8 +445,8 @@ export default function AppPage({ onBack, currentThemeId, onThemeChange, onNavig
                                         min="0"
                                         max="500"
                                         step="10"
-                                        value={bannerSpillHeight ?? 0}
-                                        onChange={(e) => setBannerSpillHeight(parseInt(e.target.value))}
+                                        value={activeBanner.spillHeight ?? 0}
+                                        onChange={(e) => updateActiveBanner({ spillHeight: parseInt(e.target.value) })}
                                         className="flex-1 h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-sky-500"
                                     />
                                     <span className="text-[10px] font-bold text-slate-400">Max</span>
@@ -432,7 +468,7 @@ export default function AppPage({ onBack, currentThemeId, onThemeChange, onNavig
                                                 onClick={() => {
                                                     setMockAppBanner(id);
                                                     if (id === 'default') {
-                                                        setCustomBannerImage(null);
+                                                        updateActiveBanner({ image: null });
                                                     }
                                                     // Future: Set other presets if we have assets
                                                 }}
@@ -479,6 +515,35 @@ export default function AppPage({ onBack, currentThemeId, onThemeChange, onNavig
 
                             <div className="pt-4 border-t border-slate-100">
                                 <label className="text-xs font-bold uppercase text-slate-400 mb-2 block">Save as Preset</label>
+
+                                {/* Config Selection Checkboxes */}
+                                <div className="flex gap-4 mb-3 px-1">
+                                    <label className="flex items-center gap-2 cursor-pointer group">
+                                        <div className={`w-4 h-4 rounded border transition-colors flex items-center justify-center ${saveConfig.fullscreen ? 'bg-sky-500 border-sky-500' : 'border-slate-300 bg-white group-hover:border-sky-300'}`}>
+                                            {saveConfig.fullscreen && <Check size={12} className="text-white" />}
+                                        </div>
+                                        <input
+                                            type="checkbox"
+                                            className="hidden"
+                                            checked={saveConfig.fullscreen}
+                                            onChange={(e) => setSaveConfig(prev => ({ ...prev, fullscreen: e.target.checked }))}
+                                        />
+                                        <span className={`text-xs font-bold ${saveConfig.fullscreen ? 'text-slate-700' : 'text-slate-400'}`}>Fullscreen</span>
+                                    </label>
+
+                                    <label className="flex items-center gap-2 cursor-pointer group">
+                                        <div className={`w-4 h-4 rounded border transition-colors flex items-center justify-center ${saveConfig.splitscreen ? 'bg-sky-500 border-sky-500' : 'border-slate-300 bg-white group-hover:border-sky-300'}`}>
+                                            {saveConfig.splitscreen && <Check size={12} className="text-white" />}
+                                        </div>
+                                        <input
+                                            type="checkbox"
+                                            className="hidden"
+                                            checked={saveConfig.splitscreen}
+                                            onChange={(e) => setSaveConfig(prev => ({ ...prev, splitscreen: e.target.checked }))}
+                                        />
+                                        <span className={`text-xs font-bold ${saveConfig.splitscreen ? 'text-slate-700' : 'text-slate-400'}`}>Splitscreen</span>
+                                    </label>
+                                </div>
 
                                 <div className="space-y-3">
                                     {/* Playlist Selector Dropdown */}
@@ -538,7 +603,7 @@ export default function AppPage({ onBack, currentThemeId, onThemeChange, onNavig
                             <div className="space-y-3 pt-2 pb-4">
                                 <div className="flex justify-between items-center px-1">
                                     <label className="text-xs font-bold uppercase text-slate-400">Horizontal Position (X-Offset)</label>
-                                    <span className="text-[10px] font-bold text-slate-500">{playerControllerXOffset ?? 0}px</span>
+                                    <span className="text-[10px] font-bold text-slate-500">{activeBanner.playerControllerXOffset ?? 0}px</span>
                                 </div>
                                 <div className="flex items-center gap-4">
                                     <span className="text-[10px] font-bold text-slate-400">Left</span>
@@ -546,8 +611,8 @@ export default function AppPage({ onBack, currentThemeId, onThemeChange, onNavig
                                         type="range"
                                         min="-500"
                                         max="500"
-                                        value={playerControllerXOffset ?? 0}
-                                        onChange={(e) => setPlayerControllerXOffset(parseInt(e.target.value))}
+                                        value={activeBanner.playerControllerXOffset ?? 0}
+                                        onChange={(e) => updateActiveBanner({ playerControllerXOffset: parseInt(e.target.value) })}
                                         className="flex-1 h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-sky-500"
                                     />
                                     <span className="text-[10px] font-bold text-slate-400">Right</span>
