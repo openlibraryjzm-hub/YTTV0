@@ -33,6 +33,11 @@ The **Mission Hub** (also known as "Home Hub" or "Mission Control") is a gamifie
 - **Background**: Uses the user's configured **App Banner** (if available) with a blur effect, creating a cohesive visual experience.
 - **Animations**: Uses `framer-motion` for smooth entry/exit animations of missions, tabs, and the hub itself.
 
+### 2.5 Daily Lootbox
+- **Trigger**: "Daily Supply Drop" button (Gift icon) in the launch panel.
+- **Experience**: A gamified full-screen overlay where clicking a "Supply Crate" triggers a shake-and-open animation.
+- **Rewards**: reveals 4 randomized placeholder rewards (Credits, XP, etc.) to simulate a progression system.
+
 ## 3. Architecture
 
 ### 3.1 State Management (`missionStore.js`)
