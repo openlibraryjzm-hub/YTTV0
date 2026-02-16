@@ -200,6 +200,7 @@ yttv2/
 | **Audio Visualizer** | `audio-visualizer.md` | `advanced-player-controller.md`, `api-bridge.md` |
 | **App Banner** | `app-banner.md` | `advanced-player-controller.md`, `ui-layout.md`, `state-management.md` |
 | **Page Banner** | `page-banner.md` | `ui-pages.md`, `ui-layout.md`, `state-management.md` |
+| **Mission Hub** | `mission-hub.md` | `state-management.md`, `ui-pages.md` |
 | **Debug/Testing** | `debug.md` | `ui.md` (inspect mode, debug bounds) |
 
 ### By Technical Domain
@@ -214,6 +215,11 @@ yttv2/
 ## Document Descriptions
 
 ### Feature Documentation
+
+#### `mission-hub.md`
+**Covers**: Gamified start screen, mission system, time bank productivity, tab management
+**Key Topics**: **Home Hub**, mission creation/reset, time-gating, persistence
+**Cross-References**: See `state-management.md` (missionStore), `ui-pages.md` (UI integration)
 
 #### `advanced-player-controller.md`
 **Covers**: Central orb, menu rectangles, playlist/video navigation, preview system, folder management, dual player system, likes playlist

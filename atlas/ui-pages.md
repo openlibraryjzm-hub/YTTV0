@@ -10,6 +10,20 @@ This document covers all page components in the UI system. For card components, 
 
 ---
 
+#### ### 4.1.0 Home Hub (Mission Control)
+
+**User-Perspective Description**
+
+The **Home Hub** is the central command center for the application, designed to gamify the user experience. It serves as a lock screen where users must earn "time" by completing missions before accessing the main application.
+
+> **See Dedicated Documentation:** For comprehensive details on the Mission System, Time Bank, Tabs, and Logic flow, please refer to [`mission-hub.md`](mission-hub.md).
+
+**File Manifest**
+- `src/components/HomeHub.jsx`: Main UI component.
+- `src/store/missionStore.js`: State management.
+
+---
+
 #### ### 4.1.1 Playlists Page
 
 **1: User-Perspective Description**

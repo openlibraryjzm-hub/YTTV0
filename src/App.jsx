@@ -18,6 +18,8 @@ import BrowserPage from './components/BrowserPage';
 import TweetPage from './components/TweetPage';
 import MainSettingsPage from './components/MainSettingsPage';
 import InlineBannerCropMode from './components/InlineBannerCropMode';
+import HomeHub from './components/HomeHub';
+import { AnimatePresence } from 'framer-motion';
 
 import YouTubePlayer from './components/YouTubePlayer';
 import LocalVideoPlayer from './components/LocalVideoPlayer';
@@ -27,6 +29,7 @@ import { usePlaylistStore } from './store/playlistStore';
 import { useNavigationStore } from './store/navigationStore';
 import { usePinStore } from './store/pinStore';
 import { useConfigStore } from './store/configStore';
+import { useMissionStore } from './store/missionStore';
 import { initializeTestData } from './utils/initDatabase';
 import { addToWatchHistory, getWatchHistory, getAllPlaylists, getPlaylistItems } from './api/playlistApi';
 import { extractVideoId } from './utils/youtubeUtils';
@@ -56,6 +59,20 @@ function App() {
   const [secondPlayerPlaylistItems, setSecondPlayerPlaylistItems] = useState([]); // Track second player's playlist items
   const [activePlayer, setActivePlayer] = useState(1); // 1 = main player, 2 = mode 2 (alternative video in main player)
   const [currentThemeId, setCurrentThemeId] = useState('blue'); // Theme state lifted from PlayerController
+
+  // Gamification / Mission Store
+  const { isAppLocked, timeBank, consumeTime, unlockApp } = useMissionStore();
+
+  // Timer Effect: Consume Time when App is Unlocked
+  useEffect(() => {
+    let interval;
+    if (!isAppLocked && timeBank > 0) {
+      interval = setInterval(() => {
+        consumeTime(1);
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [isAppLocked, timeBank, consumeTime]);
 
   // Mode 1 checkpoint - saves state before entering mode 2
   const [mode1Checkpoint, setMode1Checkpoint] = useState(null); // { videoUrl, playlistId, videoIndex, playlistItems }
@@ -440,236 +457,249 @@ function App() {
 
   return (
     <div className={`app-container bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] ${THEMES[currentThemeId].bg}`} style={{ width: '100vw', height: '100vh', overflow: 'hidden' }}>
-      {/* Inline Banner Crop Mode - Overlays the actual banner */}
-      <InlineBannerCropMode
-        isActive={bannerCropModeActive}
-        onExit={() => setBannerCropModeActive(false)}
-        maskPath={bannerMaskPath}
-        setMaskPath={handleSetMaskPath}
-        bannerImage={bannerImage || "/banner.PNG"}
-        bannerScale={bannerScale}
-        bannerVerticalPosition={bannerVerticalPosition}
-        bannerHorizontalOffset={bannerHorizontalOffset}
-        bannerSpillHeight={bannerSpillHeight}
-      />
-      {/* View Mode Toggle - Temporary for testing - Controlled by Dev Toolbar Toggle */}
-      {showDevToolbar && (
-        <div className="view-mode-toggle">
-          <button
-            onClick={() => setViewMode('full')}
-            className={viewMode === 'full' ? 'active' : ''}
-            title={getInspectTitle('Full screen view')}
-          >
-            Full
-          </button>
-          <button
-            onClick={() => setViewMode('half')}
-            className={viewMode === 'half' ? 'active' : ''}
-            title={getInspectTitle('Half screen view')}
-          >
-            Half
-          </button>
-          <button
-            onClick={() => setViewMode('quarter')}
-            className={viewMode === 'quarter' ? 'active' : ''}
-            title={getInspectTitle('Quarter screen view')}
-          >
-            Quarter
-          </button>
-          {/* Menu Quarter Mode Toggle - Only visible outside full screen */}
-          {viewMode !== 'full' && (
-            <button
-              onClick={toggleMenuQuarterMode}
-              className={menuQuarterMode ? 'active' : ''}
-              title={getInspectTitle('Toggle menu quarter mode') || 'Toggle Menu Quarter Mode'}
-            >
-              Menu Q
-            </button>
+
+      {/* Home Hub / Mission Control */}
+      <AnimatePresence mode="wait">
+        {isAppLocked && (
+          <HomeHub onUnlock={unlockApp} />
+        )}
+      </AnimatePresence>
+
+      {/* Main App Content - Only render when unlocked */}
+      {!isAppLocked && (
+        <>
+          {/* Inline Banner Crop Mode - Overlays the actual banner */}
+          <InlineBannerCropMode
+            isActive={bannerCropModeActive}
+            onExit={() => setBannerCropModeActive(false)}
+            maskPath={bannerMaskPath}
+            setMaskPath={handleSetMaskPath}
+            bannerImage={bannerImage || "/banner.PNG"}
+            bannerScale={bannerScale}
+            bannerVerticalPosition={bannerVerticalPosition}
+            bannerHorizontalOffset={bannerHorizontalOffset}
+            bannerSpillHeight={bannerSpillHeight}
+          />
+          {/* View Mode Toggle - Temporary for testing - Controlled by Dev Toolbar Toggle */}
+          {showDevToolbar && (
+            <div className="view-mode-toggle">
+              <button
+                onClick={() => setViewMode('full')}
+                className={viewMode === 'full' ? 'active' : ''}
+                title={getInspectTitle('Full screen view')}
+              >
+                Full
+              </button>
+              <button
+                onClick={() => setViewMode('half')}
+                className={viewMode === 'half' ? 'active' : ''}
+                title={getInspectTitle('Half screen view')}
+              >
+                Half
+              </button>
+              <button
+                onClick={() => setViewMode('quarter')}
+                className={viewMode === 'quarter' ? 'active' : ''}
+                title={getInspectTitle('Quarter screen view')}
+              >
+                Quarter
+              </button>
+              {/* Menu Quarter Mode Toggle - Only visible outside full screen */}
+              {viewMode !== 'full' && (
+                <button
+                  onClick={toggleMenuQuarterMode}
+                  className={menuQuarterMode ? 'active' : ''}
+                  title={getInspectTitle('Toggle menu quarter mode') || 'Toggle Menu Quarter Mode'}
+                >
+                  Menu Q
+                </button>
+              )}
+              {/* Debug Bounds Toggle */}
+              <button
+                onClick={toggleDebugBounds}
+                className={showDebugBounds ? 'active' : ''}
+                title={getInspectTitle('Toggle debug bounds') || 'Toggle Debug Bounds'}
+                style={{
+                  backgroundColor: showDebugBounds ? '#3b82f6' : 'transparent',
+                  color: showDebugBounds ? 'white' : 'inherit',
+                  border: '1px solid #3b82f6',
+                  padding: '4px 8px',
+                  borderRadius: '4px',
+                  cursor: 'pointer'
+                }}
+              >
+                Debug
+              </button>
+              {/* Inspect Mode Toggle */}
+              <button
+                onClick={toggleInspectMode}
+                className={inspectMode ? 'active' : ''}
+                title={getInspectTitle('Toggle inspect mode') || 'Toggle Inspect Mode'}
+                style={{
+                  backgroundColor: inspectMode ? '#8b5cf6' : 'transparent',
+                  color: inspectMode ? 'white' : 'inherit',
+                  border: '1px solid #8b5cf6',
+                  padding: '4px 8px',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                  marginLeft: '8px'
+                }}
+              >
+                Inspect
+              </button>
+              {/* Ruler Toggle */}
+              <button
+                onClick={toggleRuler}
+                className={showRuler ? 'active' : ''}
+                title={getInspectTitle('Toggle ruler') || 'Toggle Ruler'}
+                style={{
+                  backgroundColor: showRuler ? '#ef4444' : 'transparent',
+                  color: showRuler ? 'white' : 'inherit',
+                  border: '1px solid #ef4444',
+                  padding: '4px 8px',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                  marginLeft: '8px'
+                }}
+              >
+                Ruler
+              </button>
+              {/* Radial Menu Toggle */}
+              <button
+                onClick={() => setRadialMenuVisible(!radialMenuVisible)}
+                className={radialMenuVisible ? 'active' : ''}
+                title={getInspectTitle('Toggle radial menu') || 'Toggle Radial Menu'}
+                style={{
+                  backgroundColor: radialMenuVisible ? '#10b981' : 'transparent',
+                  color: radialMenuVisible ? 'white' : 'inherit',
+                  border: '1px solid #10b981',
+                  padding: '4px 8px',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                  marginLeft: '8px'
+                }}
+              >
+                Menu
+              </button>
+            </div>
           )}
-          {/* Debug Bounds Toggle */}
-          <button
-            onClick={toggleDebugBounds}
-            className={showDebugBounds ? 'active' : ''}
-            title={getInspectTitle('Toggle debug bounds') || 'Toggle Debug Bounds'}
-            style={{
-              backgroundColor: showDebugBounds ? '#3b82f6' : 'transparent',
-              color: showDebugBounds ? 'white' : 'inherit',
-              border: '1px solid #3b82f6',
-              padding: '4px 8px',
-              borderRadius: '4px',
-              cursor: 'pointer'
-            }}
-          >
-            Debug
-          </button>
-          {/* Inspect Mode Toggle */}
-          <button
-            onClick={toggleInspectMode}
-            className={inspectMode ? 'active' : ''}
-            title={getInspectTitle('Toggle inspect mode') || 'Toggle Inspect Mode'}
-            style={{
-              backgroundColor: inspectMode ? '#8b5cf6' : 'transparent',
-              color: inspectMode ? 'white' : 'inherit',
-              border: '1px solid #8b5cf6',
-              padding: '4px 8px',
-              borderRadius: '4px',
-              cursor: 'pointer',
-              marginLeft: '8px'
-            }}
-          >
-            Inspect
-          </button>
-          {/* Ruler Toggle */}
-          <button
-            onClick={toggleRuler}
-            className={showRuler ? 'active' : ''}
-            title={getInspectTitle('Toggle ruler') || 'Toggle Ruler'}
-            style={{
-              backgroundColor: showRuler ? '#ef4444' : 'transparent',
-              color: showRuler ? 'white' : 'inherit',
-              border: '1px solid #ef4444',
-              padding: '4px 8px',
-              borderRadius: '4px',
-              cursor: 'pointer',
-              marginLeft: '8px'
-            }}
-          >
-            Ruler
-          </button>
-          {/* Radial Menu Toggle */}
-          <button
-            onClick={() => setRadialMenuVisible(!radialMenuVisible)}
-            className={radialMenuVisible ? 'active' : ''}
-            title={getInspectTitle('Toggle radial menu') || 'Toggle Radial Menu'}
-            style={{
-              backgroundColor: radialMenuVisible ? '#10b981' : 'transparent',
-              color: radialMenuVisible ? 'white' : 'inherit',
-              border: '1px solid #10b981',
-              padding: '4px 8px',
-              borderRadius: '4px',
-              cursor: 'pointer',
-              marginLeft: '8px'
-            }}
-          >
-            Menu
-          </button>
-        </div>
+
+          <LayoutShell
+            topController={<PlayerController
+              onPlaylistSelect={handlePlaylistSelect}
+              onVideoSelect={handleVideoSelect}
+              activePlayer={activePlayer}
+              onActivePlayerChange={handleActivePlayerChange}
+              secondPlayerVideoUrl={secondPlayerVideoUrl}
+
+              secondPlayerVideoIndex={secondPlayerVideoIndex}
+              onSecondPlayerVideoIndexChange={setSecondPlayerVideoIndex}
+              secondPlayerPlaylistId={secondPlayerPlaylistId}
+              secondPlayerPlaylistItems={secondPlayerPlaylistItems}
+              currentThemeId={currentThemeId}
+              onThemeChange={setCurrentThemeId}
+            />}
+            mainPlayer={
+              isCurrentVideoLocal ? (
+                <NativeVideoPlayer
+                  videoUrl={currentVideoUrl}
+                  videoId={currentVideoId}
+                  playerId="main"
+                  onEnded={() => handleVideoEnded('main')}
+                  playlistItems={currentPlaylistItems}
+                />
+              ) : (
+                <YouTubePlayer
+                  videoUrl={currentVideoUrl}
+                  playerId="main"
+                  onEnded={() => handleVideoEnded('main')}
+                  playlistItems={currentPlaylistItems}
+                />
+              )
+            }
+            secondPlayer={secondPlayerVideoUrl ? <YouTubePlayer videoUrl={secondPlayerVideoUrl} playerId="second" onEnded={() => handleVideoEnded('second')} playlistItems={secondPlayerPlaylistItems} /> : null}
+            miniHeader={
+              <div className="w-full h-full flex items-center px-4">
+                <TopNavigation />
+              </div>
+            }
+            animatedMenu={
+              radialMenuVisible && containerConfig && dictionaryConfig ? (
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  width: '100%',
+                  height: '100%',
+                  backgroundColor: 'transparent',
+                  pointerEvents: 'auto',
+                  zIndex: 10
+                }}>
+                  <RadialMenuStandalone
+                    containerConfig={containerConfig}
+                    dictionaryConfig={dictionaryConfig}
+                    backgroundColor="transparent"
+                  />
+                </div>
+              ) : null
+            }
+            spacerMenu={null}
+            menuSpacerMenu={null}
+            sideMenu={
+              showPlaylists && dbInitialized ? (
+                (() => {
+                  console.log('=== RENDERING PLAYLISTLIST IN APP ===');
+                  console.log('showPlaylists:', showPlaylists);
+                  console.log('dbInitialized:', dbInitialized);
+                  return <PlaylistList onPlaylistSelect={handlePlaylistSelect} onVideoSelect={handleVideoSelect} />;
+                })()
+              ) : showPlaylists && !dbInitialized ? (
+                <div className="flex items-center justify-center w-full h-full">
+                  <p className="text-black">Initializing database...</p>
+                </div>
+              ) : !showPlaylists && currentPage === 'playlists' ? (
+                <PlaylistsPage onVideoSelect={handleVideoSelect} />
+              ) : !showPlaylists && currentPage === 'videos' ? (
+                <VideosPage onVideoSelect={handleVideoSelect} onSecondPlayerSelect={handleSecondPlayerSelect} />
+              ) : !showPlaylists && currentPage === 'history' ? (
+                <HistoryPage onVideoSelect={handleVideoSelect} onSecondPlayerSelect={handleSecondPlayerSelect} />
+              ) : !showPlaylists && currentPage === 'likes' ? (
+                <LikesPage onVideoSelect={handleVideoSelect} />
+              ) : !showPlaylists && currentPage === 'pins' ? (
+                <PinsPage onVideoSelect={handleVideoSelect} />
+              ) : !showPlaylists && currentPage === 'orbs' ? (
+                <OrbPage onVideoSelect={handleVideoSelect} />
+              ) : !showPlaylists && currentPage === 'you' ? (
+                <YouPage onVideoSelect={handleVideoSelect} />
+              ) : !showPlaylists && currentPage === 'pagepage' ? (
+                <PagePage onVideoSelect={handleVideoSelect} />
+              ) : !showPlaylists && currentPage === 'app' ? (
+                <AppPage onVideoSelect={handleVideoSelect} />
+              ) : !showPlaylists && currentPage === 'browser' ? (
+                <BrowserPage />
+              ) : !showPlaylists && currentPage === 'assets' ? (
+                <AssetManagerPage />
+              ) : !showPlaylists && currentPage === 'tweet' ? (
+                <TweetPage />
+
+              ) : !showPlaylists && currentPage === 'settings' ? (
+                <MainSettingsPage
+                  onNavigateToOrb={() => setCurrentPage('orbs')}
+                  onNavigateToPage={() => setCurrentPage('pagepage')}
+                  onNavigateToApp={() => setCurrentPage('app')}
+                  onNavigateToYou={() => setCurrentPage('you')}
+                />
+              ) : !showPlaylists && currentPage === 'support' ? (
+                <SupportPage onVideoSelect={handleVideoSelect} />
+              ) : !showPlaylists && currentPage === 'orb-config' ? (
+                <OrbConfigPlaceholderPage onVideoSelect={handleVideoSelect} />
+              ) : !showPlaylists && currentPage === 'settings-new' ? (
+                <SettingsPlaceholderPage onVideoSelect={handleVideoSelect} />
+              ) : null
+            }
+          />
+        </>
       )}
-
-      <LayoutShell
-        topController={<PlayerController
-          onPlaylistSelect={handlePlaylistSelect}
-          onVideoSelect={handleVideoSelect}
-          activePlayer={activePlayer}
-          onActivePlayerChange={handleActivePlayerChange}
-          secondPlayerVideoUrl={secondPlayerVideoUrl}
-
-          secondPlayerVideoIndex={secondPlayerVideoIndex}
-          onSecondPlayerVideoIndexChange={setSecondPlayerVideoIndex}
-          secondPlayerPlaylistId={secondPlayerPlaylistId}
-          secondPlayerPlaylistItems={secondPlayerPlaylistItems}
-          currentThemeId={currentThemeId}
-          onThemeChange={setCurrentThemeId}
-        />}
-        mainPlayer={
-          isCurrentVideoLocal ? (
-            <NativeVideoPlayer
-              videoUrl={currentVideoUrl}
-              videoId={currentVideoId}
-              playerId="main"
-              onEnded={() => handleVideoEnded('main')}
-              playlistItems={currentPlaylistItems}
-            />
-          ) : (
-            <YouTubePlayer
-              videoUrl={currentVideoUrl}
-              playerId="main"
-              onEnded={() => handleVideoEnded('main')}
-              playlistItems={currentPlaylistItems}
-            />
-          )
-        }
-        secondPlayer={secondPlayerVideoUrl ? <YouTubePlayer videoUrl={secondPlayerVideoUrl} playerId="second" onEnded={() => handleVideoEnded('second')} playlistItems={secondPlayerPlaylistItems} /> : null}
-        miniHeader={
-          <div className="w-full h-full flex items-center px-4">
-            <TopNavigation />
-          </div>
-        }
-        animatedMenu={
-          radialMenuVisible && containerConfig && dictionaryConfig ? (
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              width: '100%',
-              height: '100%',
-              backgroundColor: 'transparent',
-              pointerEvents: 'auto',
-              zIndex: 10
-            }}>
-              <RadialMenuStandalone
-                containerConfig={containerConfig}
-                dictionaryConfig={dictionaryConfig}
-                backgroundColor="transparent"
-              />
-            </div>
-          ) : null
-        }
-        spacerMenu={null}
-        menuSpacerMenu={null}
-        sideMenu={
-          showPlaylists && dbInitialized ? (
-            (() => {
-              console.log('=== RENDERING PLAYLISTLIST IN APP ===');
-              console.log('showPlaylists:', showPlaylists);
-              console.log('dbInitialized:', dbInitialized);
-              return <PlaylistList onPlaylistSelect={handlePlaylistSelect} onVideoSelect={handleVideoSelect} />;
-            })()
-          ) : showPlaylists && !dbInitialized ? (
-            <div className="flex items-center justify-center w-full h-full">
-              <p className="text-black">Initializing database...</p>
-            </div>
-          ) : !showPlaylists && currentPage === 'playlists' ? (
-            <PlaylistsPage onVideoSelect={handleVideoSelect} />
-          ) : !showPlaylists && currentPage === 'videos' ? (
-            <VideosPage onVideoSelect={handleVideoSelect} onSecondPlayerSelect={handleSecondPlayerSelect} />
-          ) : !showPlaylists && currentPage === 'history' ? (
-            <HistoryPage onVideoSelect={handleVideoSelect} onSecondPlayerSelect={handleSecondPlayerSelect} />
-          ) : !showPlaylists && currentPage === 'likes' ? (
-            <LikesPage onVideoSelect={handleVideoSelect} />
-          ) : !showPlaylists && currentPage === 'pins' ? (
-            <PinsPage onVideoSelect={handleVideoSelect} />
-          ) : !showPlaylists && currentPage === 'orbs' ? (
-            <OrbPage onVideoSelect={handleVideoSelect} />
-          ) : !showPlaylists && currentPage === 'you' ? (
-            <YouPage onVideoSelect={handleVideoSelect} />
-          ) : !showPlaylists && currentPage === 'pagepage' ? (
-            <PagePage onVideoSelect={handleVideoSelect} />
-          ) : !showPlaylists && currentPage === 'app' ? (
-            <AppPage onVideoSelect={handleVideoSelect} />
-          ) : !showPlaylists && currentPage === 'browser' ? (
-            <BrowserPage />
-          ) : !showPlaylists && currentPage === 'assets' ? (
-            <AssetManagerPage />
-          ) : !showPlaylists && currentPage === 'tweet' ? (
-            <TweetPage />
-
-          ) : !showPlaylists && currentPage === 'settings' ? (
-            <MainSettingsPage
-              onNavigateToOrb={() => setCurrentPage('orbs')}
-              onNavigateToPage={() => setCurrentPage('pagepage')}
-              onNavigateToApp={() => setCurrentPage('app')}
-              onNavigateToYou={() => setCurrentPage('you')}
-            />
-          ) : !showPlaylists && currentPage === 'support' ? (
-            <SupportPage onVideoSelect={handleVideoSelect} />
-          ) : !showPlaylists && currentPage === 'orb-config' ? (
-            <OrbConfigPlaceholderPage onVideoSelect={handleVideoSelect} />
-          ) : !showPlaylists && currentPage === 'settings-new' ? (
-            <SettingsPlaceholderPage onVideoSelect={handleVideoSelect} />
-          ) : null
-        }
-      />
     </div>
   );
 }
