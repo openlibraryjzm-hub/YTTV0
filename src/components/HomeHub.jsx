@@ -419,12 +419,14 @@ const LootboxOverlay = ({ onClose, type = 'standard' }) => {
 };
 
 const LootboxShop = ({ onClose, onOpenCrate }) => {
+    const { coins, spendCoins, resetCoins } = useMissionStore();
+
     const items = [
         {
             id: 'mini',
             title: 'Mini Cache',
             desc: 'Contains 1 Puzzle Shard',
-            cost: 'FREE',
+            price: 5,
             color: 'green',
             icon: <Package size={40} className="text-green-400" />,
             delay: 0.1
@@ -433,7 +435,7 @@ const LootboxShop = ({ onClose, onOpenCrate }) => {
             id: 'standard',
             title: 'Standard Supply',
             desc: 'Contains 4 Puzzle Shards',
-            cost: 'FREE',
+            price: 15,
             color: 'blue',
             icon: <Package size={50} className="text-blue-400" />,
             delay: 0.2
@@ -442,12 +444,19 @@ const LootboxShop = ({ onClose, onOpenCrate }) => {
             id: 'legendary',
             title: 'Legendary Vault',
             desc: 'Unlocks a FULL Pokemon Entry',
-            cost: 'FREE',
+            price: 60,
             color: 'yellow',
             icon: <Shield size={60} className="text-yellow-400" />,
             delay: 0.3
         }
     ];
+
+    const handlePurchase = (item) => {
+        if (coins >= item.price) {
+            spendCoins(item.price);
+            onOpenCrate(item.id);
+        }
+    };
 
     return (
         <motion.div
@@ -464,7 +473,30 @@ const LootboxShop = ({ onClose, onOpenCrate }) => {
                     className="text-center mb-12"
                 >
                     <h2 className="text-5xl font-black text-white italic tracking-tighter mb-2">SUPPLY DEPOT</h2>
-                    <p className="text-white/40 font-mono tracking-widest uppercase text-sm">Select Requisition Package</p>
+                    <p className="text-white/40 font-mono tracking-widest uppercase text-sm mb-6">Select Requisition Package</p>
+
+                    <div className="inline-flex items-center gap-3 bg-yellow-900/40 border border-yellow-500/30 rounded-full px-6 py-2">
+                        <div className="w-6 h-6 rounded-full bg-yellow-500 flex items-center justify-center border border-yellow-300">
+                            <span className="text-yellow-900 font-bold text-sm">$</span>
+                        </div>
+                        <span className="text-2xl font-black text-white">{coins}</span>
+                        <span className="text-xs font-bold text-yellow-500 uppercase tracking-wider">Credits Available</span>
+
+                        {coins > 0 && (
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    if (window.confirm("Are you sure you want to discard all your Credits?")) {
+                                        resetCoins();
+                                    }
+                                }}
+                                className="ml-2 p-1.5 text-yellow-900/40 hover:text-red-500 bg-yellow-900/10 hover:bg-black/20 rounded-full transition-all"
+                                title="Discard Credits"
+                            >
+                                <Trash2 size={12} />
+                            </button>
+                        )}
+                    </div>
                 </motion.div>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-8 w-full">
@@ -474,10 +506,15 @@ const LootboxShop = ({ onClose, onOpenCrate }) => {
                             initial={{ y: 50, opacity: 0 }}
                             animate={{ y: 0, opacity: 1 }}
                             transition={{ delay: item.delay }}
-                            whileHover={{ scale: 1.05, y: -10 }}
-                            whileTap={{ scale: 0.95 }}
-                            onClick={() => onOpenCrate(item.id)}
-                            className={`group relative h-[400px] bg-slate-900/50 border border-${item.color}-500/30 rounded-2xl p-6 flex flex-col items-center justify-center gap-6 overflow-hidden hover:border-${item.color}-500 hover:bg-${item.color}-900/10 transition-all duration-300`}
+                            whileHover={coins >= item.price ? { scale: 1.05, y: -10 } : {}}
+                            whileTap={coins >= item.price ? { scale: 0.95 } : {}}
+                            onClick={() => handlePurchase(item)}
+                            disabled={coins < item.price}
+                            className={`group relative h-[400px] bg-slate-900/50 border rounded-2xl p-6 flex flex-col items-center justify-center gap-6 overflow-hidden transition-all duration-300 
+                                ${coins >= item.price
+                                    ? `border-${item.color}-500/30 hover:border-${item.color}-500 hover:bg-${item.color}-900/10 cursor-pointer`
+                                    : 'border-white/5 opacity-50 grayscale cursor-not-allowed'
+                                }`}
                         >
                             {/* Background Glow */}
                             <div className={`absolute inset-0 bg-${item.color}-500/5 group-hover:bg-${item.color}-500/20 transition-colors blur-3xl`} />
@@ -494,8 +531,12 @@ const LootboxShop = ({ onClose, onOpenCrate }) => {
                             </div>
 
                             {/* Button Fake */}
-                            <div className={`mt-auto px-8 py-3 rounded-full bg-${item.color}-600/20 border border-${item.color}-500/50 text-${item.color}-300 font-mono font-bold text-sm uppercase tracking-widest group-hover:bg-${item.color}-500 group-hover:text-white transition-all`}>
-                                {item.cost}
+                            <div className={`mt-auto px-8 py-3 rounded-full border font-mono font-bold text-sm uppercase tracking-widest transition-all flex items-center gap-2
+                                ${coins >= item.price
+                                    ? `bg-${item.color}-600/20 border-${item.color}-500/50 text-${item.color}-300 group-hover:bg-${item.color}-500 group-hover:text-white`
+                                    : 'bg-white/5 border-white/10 text-white/20'
+                                }`}>
+                                <span className={coins >= item.price ? "text-inherit" : "text-white/20"}>$</span> {item.price}
                             </div>
                         </motion.button>
                     ))}
@@ -516,6 +557,7 @@ const HomeHub = ({ onUnlock }) => {
     const { fullscreenBanner } = useConfigStore();
     const {
         timeBank,
+        coins,
         missions,
         categories,
         addCategory,
@@ -525,6 +567,7 @@ const HomeHub = ({ onUnlock }) => {
         completeMission,
         resetMission,
         resetDailyMissions,
+        resetTimeBank,
     } = useMissionStore();
 
     const [activeTab, setActiveTab] = useState(categories[0] || 'Daily');
@@ -541,6 +584,7 @@ const HomeHub = ({ onUnlock }) => {
     const [selectedCrateType, setSelectedCrateType] = useState('standard');
 
     const [isPokedexOpen, setIsPokedexOpen] = useState(false);
+    const [categoryToDelete, setCategoryToDelete] = useState(null);
 
     // Ensure active tab exists
     useEffect(() => {
@@ -637,6 +681,19 @@ const HomeHub = ({ onUnlock }) => {
                     >
                         <div className="absolute inset-0 bg-blue-500/20 blur-xl rounded-full opacity-50 group-hover:opacity-75 transition-opacity" />
                         <div className="relative border border-white/10 bg-black/40 backdrop-blur-md rounded-2xl p-6 text-center shadow-lg">
+                            {timeBank > 0 && (
+                                <button
+                                    onClick={() => {
+                                        if (window.confirm("Are you sure you want to reset your Time Bank to 0?")) {
+                                            resetTimeBank();
+                                        }
+                                    }}
+                                    className="absolute top-3 right-3 p-2 text-white/10 hover:text-red-400 transition-colors"
+                                    title="Reset Time"
+                                >
+                                    <RotateCcw size={14} />
+                                </button>
+                            )}
                             <div className="flex items-center justify-center gap-2 text-blue-400 mb-2">
                                 <Clock size={20} />
                                 <span className="text-sm font-bold uppercase tracking-widest">Time Bank</span>
@@ -646,6 +703,17 @@ const HomeHub = ({ onUnlock }) => {
                             </div>
                             <div className="mt-2 text-xs text-white/40">
                                 {timeBank > 0 ? 'System Ready' : 'Insufficient Resources'}
+                            </div>
+
+                            {/* Coin Display */}
+                            <div className="absolute -right-4 -bottom-4 bg-yellow-900/80 border border-yellow-500/50 backdrop-blur-md rounded-xl px-4 py-2 flex items-center gap-2 shadow-lg transform rotate-[-2deg]">
+                                <div className="w-8 h-8 rounded-full bg-yellow-500 flex items-center justify-center border-2 border-yellow-300 shadow-[0_0_10px_rgba(234,179,8,0.5)]">
+                                    <span className="text-yellow-900 font-bold text-lg">$</span>
+                                </div>
+                                <div className="flex flex-col items-start leading-none">
+                                    <span className="text-xl font-black text-white">{coins || 0}</span>
+                                    <span className="text-[9px] font-bold text-yellow-500 uppercase tracking-wider">Credits</span>
+                                </div>
                             </div>
                         </div>
                     </motion.div>
@@ -751,11 +819,7 @@ const HomeHub = ({ onUnlock }) => {
                                         <button
                                             onClick={(e) => {
                                                 e.stopPropagation();
-                                                if (activeTab === cat) {
-                                                    const remaining = categories.filter(c => c !== cat);
-                                                    setActiveTab(remaining[0]);
-                                                }
-                                                removeCategory(cat);
+                                                setCategoryToDelete(cat);
                                             }}
                                             className={`
                         mr-2 p-0.5 rounded-full opacity-0 group-hover:opacity-100 transition-all
@@ -800,16 +864,43 @@ const HomeHub = ({ onUnlock }) => {
                                 className="bg-blue-900/20 border border-blue-500/30 rounded-lg p-4 mb-4 space-y-4"
                             >
                                 {/* ... Mission Form ... */}
-                                <div>
-                                    <label className="text-xs text-blue-300 uppercase tracking-wider font-bold mb-1 block">Task Description</label>
-                                    <input
-                                        type="text"
-                                        value={newMissionText}
-                                        onChange={(e) => setNewMissionText(e.target.value)}
-                                        placeholder="Enter mission objective..."
-                                        className="w-full bg-black/50 border border-white/20 rounded px-3 py-2 text-white focus:border-blue-500 outline-none text-sm placeholder-white/20"
-                                        autoFocus
-                                    />
+                                <div className="space-y-4">
+                                    <div>
+                                        <label className="text-xs text-blue-300 uppercase tracking-wider font-bold mb-1 block">Task Description</label>
+                                        <input
+                                            type="text"
+                                            value={newMissionText}
+                                            onChange={(e) => setNewMissionText(e.target.value)}
+                                            placeholder="Enter mission objective..."
+                                            className="w-full bg-black/50 border border-white/20 rounded px-3 py-2 text-white focus:border-blue-500 outline-none text-sm placeholder-white/20"
+                                            autoFocus
+                                        />
+                                    </div>
+
+                                    <div>
+                                        <label className="text-xs text-blue-300 uppercase tracking-wider font-bold mb-1 block">Reward (Minutes)</label>
+                                        <div className="flex items-center gap-2">
+                                            <input
+                                                type="number"
+                                                min="1"
+                                                value={newMissionTime}
+                                                onChange={(e) => setNewMissionTime(Math.max(1, parseInt(e.target.value) || 0))}
+                                                className="w-20 bg-black/50 border border-white/20 rounded px-3 py-2 text-white focus:border-blue-500 outline-none text-sm text-center font-mono"
+                                            />
+                                            <div className="flex gap-1">
+                                                {[5, 10, 15, 30, 60].map(m => (
+                                                    <button
+                                                        key={m}
+                                                        type="button"
+                                                        onClick={() => setNewMissionTime(m)}
+                                                        className={`px-3 py-2 rounded text-xs font-bold border transition-all ${newMissionTime === m ? 'bg-blue-600 border-blue-500 text-white shadow-[0_0_10px_rgba(37,99,235,0.4)]' : 'bg-white/5 border-white/10 text-white/40 hover:text-white hover:bg-white/10'}`}
+                                                    >
+                                                        {m}m
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                                 <div className="flex justify-end gap-2 pt-2 border-t border-white/10">
                                     <button type="submit" className="bg-blue-600 text-white text-xs px-4 py-1.5 rounded font-bold uppercase">Add</button>
@@ -832,10 +923,25 @@ const HomeHub = ({ onUnlock }) => {
                                                 <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center cursor-pointer ${mission.completed ? 'border-green-500 bg-green-500/20' : 'border-white/20 group-hover:border-blue-400'}`} onClick={() => !mission.completed && completeMission(mission.id)}>
                                                     {mission.completed && <CheckCircle size={12} className="text-green-500" />}
                                                 </div>
-                                                <h3 className={`font-medium truncate ${mission.completed ? 'text-green-500/50' : 'text-white'}`}>{mission.text}</h3>
+                                                <div className="flex-1 flex items-center justify-between gap-4 min-w-0">
+                                                    <h3 className={`font-medium truncate ${mission.completed ? 'text-green-500/50' : 'text-white'}`}>{mission.text}</h3>
+                                                    <span className={`text-xs font-mono font-bold px-2 py-1 rounded border whitespace-nowrap flex items-center gap-1 ${mission.completed ? 'bg-green-500/10 border-green-500/20 text-green-500/50' : 'bg-blue-500/10 border-blue-500/30 text-blue-400'}`}>
+                                                        <Clock size={10} />
+                                                        {Math.floor(mission.reward / 60)}m
+                                                    </span>
+                                                    <span className={`text-xs font-mono font-bold px-2 py-1 rounded border whitespace-nowrap flex items-center gap-1 ${mission.completed ? 'bg-yellow-500/10 border-yellow-500/20 text-yellow-500/50' : 'bg-yellow-500/10 border-yellow-500/30 text-yellow-400'}`}>
+                                                        <span className="font-bold text-[10px]">$</span>
+                                                        {mission.coinReward || Math.floor(mission.reward / 60)}
+                                                    </span>
+                                                </div>
                                             </div>
                                         </div>
                                         <div className="flex items-center gap-2 flex-shrink-0">
+                                            {mission.completed && (
+                                                <button onClick={() => resetMission(mission.id)} className="p-1.5 text-yellow-400/50 hover:text-yellow-400" title="Reset Mission">
+                                                    <RotateCcw size={16} />
+                                                </button>
+                                            )}
                                             <button onClick={() => removeMission(mission.id)} className="p-1.5 text-white/40 hover:text-red-400"><Trash2 size={16} /></button>
                                         </div>
                                     </div>
@@ -868,6 +974,56 @@ const HomeHub = ({ onUnlock }) => {
                 )}
                 {isPokedexOpen && (
                     <PokedexModal onClose={() => setIsPokedexOpen(false)} />
+                )}
+                {categoryToDelete && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-[10001] flex items-center justify-center bg-black/80 backdrop-blur-sm"
+                        onClick={() => setCategoryToDelete(null)}
+                    >
+                        <motion.div
+                            initial={{ scale: 0.9, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            exit={{ scale: 0.9, opacity: 0 }}
+                            className="bg-slate-900 border border-red-500/30 p-8 rounded-2xl max-w-md w-full shadow-2xl relative overflow-hidden"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <div className="absolute inset-0 bg-red-500/5 pointer-events-none" />
+
+                            <h3 className="text-2xl font-bold text-white mb-2 flex items-center gap-2">
+                                <Trash2 className="text-red-500" />
+                                Delete Category?
+                            </h3>
+                            <p className="text-white/60 mb-8 leading-relaxed">
+                                Are you sure you want to delete <span className="text-red-400 font-bold">"{categoryToDelete}"</span>?
+                                <br />All missions in this category will be moved to the default "Daily" tab.
+                            </p>
+
+                            <div className="flex justify-end gap-3">
+                                <button
+                                    onClick={() => setCategoryToDelete(null)}
+                                    className="px-4 py-2 text-white/60 hover:text-white font-bold uppercase text-xs tracking-wider transition-colors"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        if (activeTab === categoryToDelete) {
+                                            const remaining = categories.filter(c => c !== categoryToDelete);
+                                            setActiveTab(remaining[0]);
+                                        }
+                                        removeCategory(categoryToDelete);
+                                        setCategoryToDelete(null);
+                                    }}
+                                    className="px-6 py-2 bg-red-600 hover:bg-red-500 text-white font-bold uppercase text-xs tracking-wider rounded-lg shadow-lg shadow-red-900/20 transition-all"
+                                >
+                                    Delete
+                                </button>
+                            </div>
+                        </motion.div>
+                    </motion.div>
                 )}
             </AnimatePresence>
         </div>

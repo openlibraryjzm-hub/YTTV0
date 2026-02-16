@@ -20,6 +20,7 @@ export const useMissionStore = create(
 
             // Actions
             addTime: (seconds) => set((state) => ({ timeBank: state.timeBank + seconds })),
+            resetTimeBank: () => set({ timeBank: 0, isAppLocked: true }),
 
             consumeTime: (seconds) => set((state) => {
                 const newTime = Math.max(0, state.timeBank - seconds);
@@ -53,6 +54,7 @@ export const useMissionStore = create(
                         id: Date.now().toString(),
                         text,
                         reward: rewardMinutes * 60,
+                        coinReward: rewardMinutes, // 1 coin per minute
                         completed: false,
                         category
                     }
@@ -70,6 +72,7 @@ export const useMissionStore = create(
                 return {
                     // Add reward to bank
                     timeBank: state.timeBank + mission.reward,
+                    coins: state.coins + (mission.coinReward || Math.floor(mission.reward / 60)),
                     missions: state.missions.map(m =>
                         m.id === id ? { ...m, completed: true } : m
                     )
@@ -95,22 +98,41 @@ export const useMissionStore = create(
                 return false;
             },
 
-            lockApp: () => set({ isAppLocked: true })
+            lockApp: () => set({ isAppLocked: true }),
+
+            // Currency
+            coins: 0,
+            addCoins: (amount) => set((state) => ({ coins: state.coins + amount })),
+            spendCoins: (amount) => set((state) => ({ coins: Math.max(0, state.coins - amount) })),
+            resetCoins: () => set({ coins: 0 }),
 
         }),
         {
             name: 'mission-storage', // unique name
-            version: 2, // version bump for migration if needed (zustand persist handles it gracefully mostly)
+            version: 3, // version bump for migration
             migrate: (persistedState, version) => {
-                if (version === 0 || !version) {
-                    // migration logic if needed, e.g. add default category to old missions
-                    return {
-                        ...persistedState,
+                let state = persistedState;
+
+                if (version < 2) {
+                    state = {
+                        ...state,
                         categories: ['Daily', 'Work', 'Health'],
-                        missions: persistedState.missions?.map(m => ({ ...m, category: 'Daily' })) || []
+                        missions: state.missions?.map(m => ({ ...m, category: 'Daily' })) || []
                     };
                 }
-                return persistedState;
+
+                if (version < 3) {
+                    state = {
+                        ...state,
+                        coins: 0,
+                        missions: state.missions.map(m => ({
+                            ...m,
+                            coinReward: Math.floor(m.reward / 60) // Backfill coins based on minutes
+                        }))
+                    };
+                }
+
+                return state;
             },
         }
     )
