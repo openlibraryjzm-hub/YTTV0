@@ -490,3 +490,9 @@ For detailed information about the application's theme system and recent color c
     - Updated **Supply Depot** pricing to use Credits (Mini: 5, Standard: 15, Legendary: 60).
     - Added "Credits Available" display in shop and hub.
   - **Tab Safety**: Implemented confirmation modal for deleting mission tabs to prevent accidental data loss.
+- **Visual System Redesign (Atlas Blue)**:
+  - **Premium Light Theme**: Overhauled **HomeHub**, **Pokédex**, and **Lootbox** systems with a "Cool Blue" aesthetic.
+  - **Aesthetics**: Replaced legacy dark backgrounds with `blue-50` gradients and `white/80` glassmorphism.
+  - **Component Styling**: Updated all mission items, tabs, and reward cards with refined slate/blue text and high-contrast accents.
+  - **Readability**: Optimized typography and spacing for better focus in gamified workflows.
+  - **Lootbox Polish**: Refined legendary reward cards and shard visualization for the light theme.

@@ -31,15 +31,15 @@ const PokemonCard = ({ pokemon }) => {
             `}
         >
             {/* Background Grid Pattern for empty slots */}
-            <div className="absolute inset-0 opacity-10"
+            <div className="absolute inset-0 opacity-5"
                 style={{
-                    backgroundImage: 'radial-gradient(circle, #fff 1px, transparent 1px)',
+                    backgroundImage: 'radial-gradient(circle, #3b82f6 1px, transparent 1px)',
                     backgroundSize: '10px 10px'
                 }}
             />
 
             {/* ID Badge */}
-            <div className="absolute top-2 left-2 text-[10px] font-mono text-white/30 font-bold z-20">
+            <div className="absolute top-2 left-2 text-[10px] font-mono text-blue-900/20 font-black z-20">
                 #{String(id).padStart(3, '0')}
             </div>
 
@@ -78,8 +78,8 @@ const PokemonCard = ({ pokemon }) => {
 
             {/* Name Label */}
             <div className={`
-                absolute bottom-0 left-0 right-0 p-2 text-center text-xs font-bold uppercase tracking-wider backdrop-blur-sm transition-colors
-                ${isFullyUnlocked ? 'bg-blue-600/80 text-white' : 'bg-black/40 text-white/30'}
+                absolute bottom-0 left-0 right-0 p-2 text-center text-xs font-black uppercase tracking-wider backdrop-blur-sm transition-colors
+                ${isFullyUnlocked ? 'bg-blue-600 text-white' : 'bg-slate-200/80 text-slate-400'}
             `}>
                 {isFullyUnlocked ? name : '???'}
             </div>
@@ -93,8 +93,8 @@ const PokemonCard = ({ pokemon }) => {
 
             {/* Completion Checkmark */}
             {isFullyUnlocked && (
-                <div className="absolute top-2 right-2 text-blue-400 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <Check size={16} strokeWidth={3} />
+                <div className="absolute top-2 right-2 text-blue-600 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Check size={16} strokeWidth={4} />
                 </div>
             )}
 
@@ -142,38 +142,38 @@ const PokedexModal = ({ onClose }) => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[10001] flex items-center justify-center bg-black/95 backdrop-blur-xl"
+            className="fixed inset-0 z-[10001] flex items-center justify-center bg-blue-50/90 backdrop-blur-xl"
             onClick={onClose}
         >
             <div
-                className="w-full max-w-[90vw] h-[90vh] bg-slate-900/50 border border-white/10 rounded-2xl flex flex-col overflow-hidden shadow-2xl relative"
+                className="w-full max-w-[90vw] h-[90vh] bg-white border border-blue-100 rounded-2xl flex flex-col overflow-hidden shadow-[0_20px_60px_rgba(59,130,246,0.15)] relative"
                 onClick={e => e.stopPropagation()}
             >
                 {/* Header */}
-                <div className="p-6 border-b border-white/10 flex items-center justify-between bg-black/40">
+                <div className="p-6 border-b border-blue-100 flex items-center justify-between bg-blue-50/20">
                     <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 rounded-full bg-red-600 border-4 border-white/10 flex items-center justify-center shadow-[0_0_20px_rgba(220,38,38,0.5)]">
-                            <div className="w-4 h-4 rounded-full bg-blue-400 animate-pulse border-2 border-white/20" />
+                        <div className="w-12 h-12 rounded-full bg-red-500 border-4 border-white flex items-center justify-center shadow-lg">
+                            <div className="w-4 h-4 rounded-full bg-blue-400 animate-pulse border-2 border-white/40" />
                         </div>
                         <div>
-                            <h2 className="text-3xl font-black italic tracking-tighter text-white">POKÉDEX <span className="text-white/20 text-xl not-italic ml-2">GEN 1</span></h2>
-                            <div className="flex items-center gap-4 text-xs font-mono text-white/40 mt-1">
+                            <h2 className="text-3xl font-black italic tracking-tighter text-slate-800">POKÉDEX <span className="text-blue-900/20 text-xl not-italic ml-2 font-mono">GEN 1</span></h2>
+                            <div className="flex items-center gap-4 text-xs font-mono text-blue-900/40 mt-1 uppercase font-black">
                                 <span>SEEN: {151}</span>
-                                <span className={totalUnlocked === 151 ? 'text-yellow-400' : ''}>OWNED: {totalUnlocked}</span>
-                                <span className="text-blue-400">PIECES: {totalPieces}/{totalPossiblePieces}</span>
+                                <span className={totalUnlocked === 151 ? 'text-yellow-600' : ''}>OWNED: {totalUnlocked}</span>
+                                <span className="text-blue-600">PIECES: {totalPieces}/{totalPossiblePieces}</span>
                             </div>
                         </div>
                     </div>
 
                     {/* Progress Bar */}
                     <div className="flex-1 max-w-md px-8">
-                        <div className="flex justify-between text-xs font-bold text-white/30 mb-2 uppercase tracking-wider">
+                        <div className="flex justify-between text-xs font-black text-blue-900/20 mb-2 uppercase tracking-widest">
                             <span>Database Completion</span>
                             <span>{Math.floor(progressPercent)}%</span>
                         </div>
-                        <div className="h-2 w-full bg-white/10 rounded-full overflow-hidden">
+                        <div className="h-3 w-full bg-blue-50 rounded-full overflow-hidden border border-blue-100/50 shadow-inner">
                             <motion.div
-                                className="h-full bg-gradient-to-r from-blue-600 to-purple-500"
+                                className="h-full bg-gradient-to-r from-blue-500 to-indigo-600"
                                 initial={{ width: 0 }}
                                 animate={{ width: `${progressPercent}%` }}
                                 transition={{ duration: 1, delay: 0.5 }}
@@ -184,13 +184,13 @@ const PokedexModal = ({ onClose }) => {
                     {/* Controls */}
                     <div className="flex items-center gap-4">
                         <div className="relative">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-white/30" size={16} />
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-blue-300" size={16} />
                             <input
                                 type="text"
                                 placeholder="Search Pokémon..."
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
-                                className="bg-black/50 border border-white/10 rounded-full py-2 pl-10 pr-4 text-sm text-white focus:border-blue-500 outline-none w-64 transition-all focus:w-80"
+                                className="bg-white border border-blue-100 rounded-full py-2 pl-10 pr-4 text-sm text-slate-800 focus:border-blue-500 outline-none w-64 transition-all focus:w-80 shadow-sm"
                             />
                         </div>
 
@@ -205,7 +205,7 @@ const PokedexModal = ({ onClose }) => {
                                 </button>
                                 <button
                                     onClick={() => setIsResetConfirming(false)}
-                                    className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white text-xs font-bold rounded-full transition-colors"
+                                    className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-black rounded-full transition-colors"
                                 >
                                     CANCEL
                                 </button>
@@ -213,7 +213,7 @@ const PokedexModal = ({ onClose }) => {
                         ) : (
                             <button
                                 onClick={() => setIsResetConfirming(true)}
-                                className="px-4 py-2 text-red-500/50 hover:text-red-400 hover:bg-red-900/20 text-xs font-bold rounded-full transition-all border border-transparent hover:border-red-500/30"
+                                className="px-4 py-2 text-red-500/50 hover:text-red-500 hover:bg-red-50 text-xs font-black rounded-full transition-all border border-transparent hover:border-red-200"
                             >
                                 RESET DATABASE
                             </button>
@@ -221,7 +221,7 @@ const PokedexModal = ({ onClose }) => {
 
                         <button
                             onClick={onClose}
-                            className="p-3 bg-white/10 hover:bg-white/20 rounded-full text-white transition-colors"
+                            className="p-3 bg-blue-50 hover:bg-blue-100 rounded-full text-blue-600 transition-colors border border-blue-100"
                         >
                             <X size={20} />
                         </button>
@@ -238,16 +238,16 @@ const PokedexModal = ({ onClose }) => {
 
                     {
                         filteredList.length === 0 && (
-                            <div className="w-full h-64 flex flex-col items-center justify-center text-white/20">
-                                <Grid size={48} className="mb-4 opacity-50" />
-                                <p>No data found matching coordinates.</p>
+                            <div className="w-full h-64 flex flex-col items-center justify-center text-blue-900/20">
+                                <Grid size={48} className="mb-4 opacity-30" />
+                                <p className="font-mono font-black uppercase tracking-widest">No data found matching coordinates.</p>
                             </div>
                         )
                     }
                 </div>
 
                 {/* Decorative Footer */}
-                <div className="h-2 bg-gradient-to-r from-red-600 via-blue-600 to-red-600 opacity-50" />
+                <div className="h-2 bg-gradient-to-r from-red-500 via-blue-500 to-indigo-600 opacity-100 shadow-[0_-4px_10px_rgba(59,130,246,0.1)]" />
             </div>
         </motion.div >
     );

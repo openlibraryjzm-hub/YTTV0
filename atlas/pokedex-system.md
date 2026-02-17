@@ -31,14 +31,14 @@ The system intelligently generates rewards:
 -   If you collect all 151 Pokémon (604 pieces), the system falls back to awarding **Credits** (Bonus Rewards).
 
 ### 3. The Pokédex Archive (`PokedexModal`)
-A visual gallery tracking collection progress.
+A visual gallery tracking collection progress, featuring the **Atlas Blue** light theme.
 -   **Status Indicators**:
     -   **???**: Name hidden until all 4 pieces are collected.
-    -   **Silhouette**: Always visible base layer.
-    -   **Shards**: Colored pieces overlay the silhouette as they are collected.
-    -   **Gold Status**: Fully unlocked entries have a premium blue/gold styling and show the name.
--   **Search**: Filter by Name or ID.
--   **Database Reset**: A confirmation-gated button to wipe all progress and start over.
+    -   **Silhouette**: Reduced opacity (`opacity-5`) silhouette with a blue-toned grid background.
+    -   **Shards**: Vivid colored shards overlay the minimal silhouette.
+    -   **Full Unlock**: Fully reconstructed entries feature a bold `blue-600` name label and a checkmark indicator.
+-   **Search**: Real-time filtering by Name or ID with a expanded focus search bar.
+-   **Database Reset**: A confirmation-gated button to wipe progress, designed with a clean white/red safety UI.
 
 ## Technical Architecture
 

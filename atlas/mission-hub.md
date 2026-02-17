@@ -35,19 +35,22 @@ The **Mission Hub** (also known as "Home Hub" or "Mission Control") is a gamifie
     - *Logic*: Deleted tabs move their missions to the default "Daily" tab. If the active tab is deleted, the view switches to the first available tab.
 
 ### 2.4 Currency System (Credits)
-- **Earning**: Users earn "Credits" (displayed as gold coins) by completing missions alongside Time rewards.
-- **Spending**: Credits are used in the **Supply Depot** to purchase Lootboxes.
-- **Display**: A gold badge next to the Time Bank shows current balance.
-- **Reset**: A subtle trash icon in the Supply Depot allows users to discard all credits (requires confirmation).
+- **Earning**: Users earn "Credits" (displayed as blue/slate currency badges) by completing missions alongside Time rewards.
+- **Spending**: Credits are used in the **Supply Depot** to purchase requisition packages (Lootboxes).
+- **Display**: A tiered credit display in the launcher panel shows the current balance with a spinning coin animation.
+- **Reset**: A "Clear Credits" option in the Supply Depot allows users to reset their balance (requires confirmation).
 
-### 2.4 Visuals
-- **Background**: Uses the user's configured **App Banner** (if available) with a blur effect, creating a cohesive visual experience.
-- **Animations**: Uses `framer-motion` for smooth entry/exit animations of missions, tabs, and the hub itself.
+### 2.4 Visuals (Atlas Blue Redesign)
+- **Theming**: The interface utilizes a **Cool Blue / Pastel Blue** aesthetic with heavy white accents, moving away from the legacy "Dark Mode" to a "Light/OS High-Security" feel.
+- **Background**: Uses a soft `blue-50` base with a sophisticated backdrop blur layer (`backdrop-blur-xl`) for overlays.
+- **Glassmorphism**: Mission logs and panels utilize semi-transparent white backgrounds (`bg-white/80`) to create depth and focus.
+- **Animations**: Uses `framer-motion` for smooth spring-based entry/exit animations of missions, tabs, and reward cards.
 
-### 2.5 Daily Lootbox
-- **Trigger**: "Daily Supply Drop" button (Gift icon) in the launch panel.
-- **Experience**: A gamified full-screen overlay where clicking a "Supply Crate" triggers a shake-and-open animation.
-- **Rewards**: reveals 4 randomized placeholder rewards (Credits, XP, etc.) to simulate a progression system.
+### 2.5 Supply Drops (Lootboxes)
+- **Trigger**: "Supply Depot" button in the launch panel.
+- **Experience**: A full-screen requisition interface where users purchase crates (Mini, Standard, Legendary).
+- **Opening Sequence**: A focused opening animation with a light-burst effect reveals high-resolution cards for puzzle shards or full entry unlocks.
+- **Mechanic**: Replaces placeholder rewards with a deep integration into the **Pokédex System**.
 
 ## 3. Architecture
 

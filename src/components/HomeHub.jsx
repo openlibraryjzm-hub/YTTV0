@@ -178,14 +178,14 @@ const LootboxOverlay = ({ onClose, type = 'standard' }) => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/90 backdrop-blur-xl"
+            className="fixed inset-0 z-[10000] flex items-center justify-center bg-blue-50/90 backdrop-blur-xl"
             onClick={(e) => e.stopPropagation()}
         >
             <div className="relative w-full max-w-5xl h-[700px] flex flex-col items-center justify-center">
                 {/* Close Button */}
                 <button
                     onClick={onClose}
-                    className="absolute top-0 right-0 p-4 text-white/40 hover:text-white transition-colors z-50"
+                    className="absolute top-0 right-0 p-4 text-blue-900/40 hover:text-blue-600 transition-colors z-50"
                 >
                     <X size={32} />
                 </button>
@@ -209,9 +209,9 @@ const LootboxOverlay = ({ onClose, type = 'standard' }) => {
                             <div className={`absolute inset-0 bg-${crateStyle.color}-500/30 blur-[60px] rounded-full scale-150 group-hover:bg-${crateStyle.color}-400/40 transition-all duration-500`} />
 
                             {/* Crate Visual */}
-                            <div className={`relative w-64 h-64 bg-slate-900 border-4 border-${crateStyle.color}-500/50 rounded-3xl flex items-center justify-center shadow-[0_0_50px_rgba(59,130,246,0.5)] group-hover:shadow-[0_0_80px_rgba(59,130,246,0.8)] group-hover:border-${crateStyle.color}-400 transition-all duration-300 transform perspective-1000 rotate-x-12`}>
-                                <div className="absolute inset-2 border-2 border-white/10 rounded-2xl border-dashed" />
-                                <div className={`text-${crateStyle.color}-400 group-hover:text-white transition-colors duration-300 drop-shadow-[0_0_15px_rgba(255,255,255,0.5)]`}>
+                            <div className={`relative w-64 h-64 bg-white border-4 border-${crateStyle.color}-400/50 rounded-3xl flex items-center justify-center shadow-[0_10px_40px_rgba(59,130,246,0.15)] group-hover:shadow-[0_20px_60px_rgba(59,130,246,0.25)] group-hover:border-${crateStyle.color}-400 transition-all duration-300 transform perspective-1000 rotate-x-12`}>
+                                <div className="absolute inset-2 border-2 border-blue-100 rounded-2xl border-dashed" />
+                                <div className={`text-${crateStyle.color}-500 group-hover:text-${crateStyle.color}-600 transition-colors duration-300 drop-shadow-[0_0_10px_rgba(59,130,246,0.2)]`}>
                                     {crateStyle.icon}
                                 </div>
                                 <div className={`absolute bottom-6 text-xs text-${crateStyle.color}-300 font-mono tracking-[0.3em] uppercase`}>
@@ -222,7 +222,7 @@ const LootboxOverlay = ({ onClose, type = 'standard' }) => {
                             <motion.div
                                 initial={{ opacity: 0, y: 20 }}
                                 animate={{ opacity: 1, y: 0 }}
-                                className="absolute -bottom-16 left-0 right-0 text-center text-white/60 font-mono text-sm tracking-wider"
+                                className="absolute -bottom-16 left-0 right-0 text-center text-blue-900/40 font-mono text-sm tracking-wider"
                             >
                                 CLICK TO OPEN
                             </motion.div>
@@ -238,7 +238,7 @@ const LootboxOverlay = ({ onClose, type = 'standard' }) => {
                                 initial={{ y: -50, opacity: 0 }}
                                 animate={{ y: 0, opacity: 1 }}
                                 transition={{ delay: 0.2 }}
-                                className="text-4xl font-black italic text-transparent bg-clip-text bg-gradient-to-r from-blue-300 to-purple-300 mb-12 tracking-tighter"
+                                className="text-4xl font-black italic text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600 mb-12 tracking-tighter"
                             >
                                 {type === 'legendary' ? 'LEGENDARY UNLOCK' : 'SHARDS ACQUIRED'}
                             </motion.h2>
@@ -248,30 +248,29 @@ const LootboxOverlay = ({ onClose, type = 'standard' }) => {
                                     if (reward.type === 'full_unlock') {
                                         return (
                                             <motion.div
-                                                key="full-unlock"
-                                                initial={{ scale: 0, rotateY: 180 }}
-                                                animate={{ scale: 1.2, rotateY: 0 }}
+                                                initial={{ scale: 0.8, rotate: -5 }}
+                                                animate={{ scale: 1, rotate: 0 }}
                                                 transition={{ type: "spring", stiffness: 100 }}
-                                                className="relative aspect-[3/4] w-64 bg-gradient-to-br from-yellow-600/30 to-amber-900/30 border-2 border-yellow-400 rounded-xl p-6 flex flex-col items-center justify-between group shadow-[0_0_50px_rgba(234,179,8,0.3)]"
+                                                className="relative aspect-[3/4] w-64 bg-gradient-to-br from-yellow-50 to-amber-100 border-4 border-yellow-400 rounded-2xl p-6 flex flex-col items-center justify-between group shadow-[0_15px_40px_rgba(234,179,8,0.2)]"
                                             >
-                                                <div className="absolute inset-0 bg-yellow-500/10 animate-pulse rounded-xl" />
-                                                <div className="text-xs font-mono text-yellow-300 uppercase tracking-widest w-full text-center border-b border-yellow-500/30 pb-2 z-10">
+                                                <div className="absolute inset-0 bg-yellow-400/5 animate-pulse rounded-xl" />
+                                                <div className="text-xs font-black font-mono text-yellow-700 uppercase tracking-widest w-full text-center border-b border-yellow-400/20 pb-2 z-10">
                                                     COMPLETE DATASET
                                                 </div>
 
-                                                <div className="flex-1 w-full relative flex items-center justify-center my-4 z-10">
+                                                <div className="flex-1 flex items-center justify-center p-4 drop-shadow-xl group-hover:scale-110 transition-transform">
                                                     <img
-                                                        src={`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${reward.pokemonId}.png`}
+                                                        src={`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${reward.pokemonId}.png`}
                                                         alt={reward.pokemonName}
-                                                        className="w-full h-full object-contain drop-shadow-[0_0_15px_rgba(234,179,8,0.8)]"
+                                                        className="w-full h-full object-contain pixel-art drop-shadow-md transition-transform group-hover:scale-110"
                                                     />
                                                 </div>
 
-                                                <div className="text-xl font-black text-white uppercase tracking-tighter z-10 text-center">
+                                                <div className="text-xl font-black text-slate-800 uppercase tracking-tighter z-10 text-center">
                                                     {reward.pokemonName}
                                                 </div>
-                                                <div className="text-xs font-mono text-yellow-400 mt-2 z-10">
-                                                    +{reward.amount} SHARDS FOUND
+                                                <div className="text-xs font-bold text-yellow-600 mt-2 z-10 tracking-widest uppercase bg-white/50 px-3 py-1 rounded-full border border-yellow-200">
+                                                    LEGENDARY
                                                 </div>
                                             </motion.div>
                                         );
@@ -281,27 +280,26 @@ const LootboxOverlay = ({ onClose, type = 'standard' }) => {
                                         return (
                                             <motion.div
                                                 key={index}
-                                                initial={{ scale: 0, rotateY: 90 }}
-                                                animate={{ scale: 1, rotateY: 0 }}
+                                                initial={{ scale: 0.8, y: 20 }}
+                                                animate={{ scale: 1, y: 0 }}
                                                 transition={{
                                                     delay: 0.4 + (index * 0.15),
                                                     type: "spring",
                                                     stiffness: 200,
                                                     damping: 15
                                                 }}
-                                                className="relative aspect-[3/4] bg-yellow-500/10 border border-yellow-500/30 rounded-xl p-4 flex flex-col items-center justify-between group hover:scale-105 transition-all duration-300"
+                                                className="relative aspect-[3/4] w-48 bg-white border-2 border-yellow-200 rounded-xl p-4 flex flex-col items-center justify-between shadow-lg"
                                             >
-                                                <div className="absolute inset-0 bg-yellow-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
-                                                <div className="text-xs font-mono text-yellow-500/60 uppercase tracking-widest w-full text-center border-b border-yellow-500/20 pb-2">
+                                                <div className="text-[10px] font-black font-mono text-yellow-700 uppercase tracking-widest w-full text-center border-b border-yellow-100 pb-2">
                                                     Bonus Reward
                                                 </div>
                                                 <div className="flex-1 flex flex-col items-center justify-center gap-4">
-                                                    <Hexagon size={48} className="text-yellow-400 drop-shadow-[0_0_15px_rgba(250,204,21,0.5)]" />
-                                                    <div className="text-3xl font-bold text-white drop-shadow-md">
+                                                    <Hexagon size={48} className="text-yellow-500 drop-shadow-[0_10px_15px_rgba(234,179,8,0.2)]" />
+                                                    <div className="text-3xl font-black text-slate-800">
                                                         {reward.amount}
                                                     </div>
                                                 </div>
-                                                <div className="text-sm font-bold text-yellow-100 uppercase tracking-wide">
+                                                <div className="text-[10px] font-black text-yellow-700 uppercase tracking-widest">
                                                     Credits
                                                 </div>
                                             </motion.div>
@@ -328,17 +326,17 @@ const LootboxOverlay = ({ onClose, type = 'standard' }) => {
                                             }}
                                             className={`relative aspect-[3/4] max-w-[200px] border rounded-xl p-4 flex flex-col items-center justify-between group transition-all duration-300 overflow-hidden 
                                                 ${reward.isTargetReward
-                                                    ? 'bg-blue-900/20 border-blue-400/50 shadow-[0_0_20px_rgba(59,130,246,0.2)]'
-                                                    : 'bg-white/5 border-white/10 hover:border-blue-500/50 hover:bg-white/10'
+                                                    ? 'bg-blue-50 border-blue-400/50 shadow-[0_10px_30px_rgba(59,130,246,0.1)]'
+                                                    : 'bg-white border-blue-100 hover:border-blue-400/50 hover:bg-blue-50/50'
                                                 }`}
                                         >
                                             {/* Background Glow */}
-                                            <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-purple-500/10 opacity-0 group-hover:opacity-100 transition-opacity" />
+                                            <div className="absolute inset-0 bg-gradient-to-br from-blue-400/5 to-indigo-600/5 opacity-0 group-hover:opacity-100 transition-opacity" />
 
                                             {/* Header */}
-                                            <div className="text-xs font-mono text-white/40 uppercase tracking-widest w-full text-center border-b border-white/10 pb-2 z-10">
+                                            <div className="text-xs font-mono text-blue-900/30 uppercase tracking-widest w-full text-center border-b border-blue-100 pb-2 z-10">
                                                 {reward.isTargetReward ? (
-                                                    <span className="text-blue-400 font-bold flex items-center justify-center gap-1">
+                                                    <span className="text-blue-600 font-bold flex items-center justify-center gap-1">
                                                         <Target size={10} /> TARGET
                                                     </span>
                                                 ) : (
@@ -353,7 +351,7 @@ const LootboxOverlay = ({ onClose, type = 'standard' }) => {
                                                     <img
                                                         src={spriteUrl}
                                                         alt={reward.pokemonName}
-                                                        className="absolute w-full h-full object-contain filter brightness-0 opacity-100 grayscale"
+                                                        className="w-full h-full brightness-0 opacity-[0.05]"
                                                     />
 
                                                     {/* Unlocked Pieces */}
@@ -385,9 +383,9 @@ const LootboxOverlay = ({ onClose, type = 'standard' }) => {
                                             </div>
 
                                             {/* Name Footer */}
-                                            <div className="text-sm font-bold text-white/90 uppercase tracking-wide z-10 text-center">
+                                            <div className="text-sm font-bold text-slate-800 uppercase tracking-wide z-10 text-center">
                                                 {reward.isFullyUnlocked ? reward.pokemonName : '???'}
-                                                <div className="text-[10px] font-mono text-blue-400 mt-1">
+                                                <div className="text-[10px] font-mono text-blue-600 mt-1">
                                                     Shard {['TL', 'TR', 'BL', 'BR'][reward.pieceIndex]}
                                                 </div>
                                             </div>
@@ -406,7 +404,7 @@ const LootboxOverlay = ({ onClose, type = 'standard' }) => {
                                 animate={{ opacity: 1, y: 0 }}
                                 transition={{ delay: 1.5 }}
                                 onClick={onClose}
-                                className="mt-12 px-10 py-4 bg-white text-black font-black text-lg uppercase tracking-widest rounded-full hover:bg-blue-400 hover:text-white transition-all shadow-[0_0_30px_rgba(255,255,255,0.3)] hover:shadow-[0_0_50px_rgba(59,130,246,0.6)]"
+                                className="mt-12 px-10 py-4 bg-blue-600 text-white font-black text-lg uppercase tracking-widest rounded-full hover:bg-blue-500 transition-all shadow-[0_10px_30px_rgba(37,99,235,0.3)] hover:shadow-[0_20px_50px_rgba(59,130,246,0.4)]"
                             >
                                 Claim All
                             </motion.button>
@@ -428,7 +426,7 @@ const LootboxShop = ({ onClose, onOpenCrate }) => {
             desc: 'Contains 1 Puzzle Shard',
             price: 5,
             color: 'green',
-            icon: <Package size={40} className="text-green-400" />,
+            icon: <Package size={40} className="text-green-600" />,
             delay: 0.1
         },
         {
@@ -437,7 +435,7 @@ const LootboxShop = ({ onClose, onOpenCrate }) => {
             desc: 'Contains 4 Puzzle Shards',
             price: 15,
             color: 'blue',
-            icon: <Package size={50} className="text-blue-400" />,
+            icon: <Package size={50} className="text-blue-600" />,
             delay: 0.2
         },
         {
@@ -446,7 +444,7 @@ const LootboxShop = ({ onClose, onOpenCrate }) => {
             desc: 'Unlocks a FULL Pokemon Entry',
             price: 60,
             color: 'yellow',
-            icon: <Shield size={60} className="text-yellow-400" />,
+            icon: <Shield size={60} className="text-yellow-600" />,
             delay: 0.3
         }
     ];
@@ -463,7 +461,7 @@ const LootboxShop = ({ onClose, onOpenCrate }) => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/95 backdrop-blur-xl"
+            className="fixed inset-0 z-[10000] flex items-center justify-center bg-blue-50/95 backdrop-blur-xl"
             onClick={onClose}
         >
             <div className="w-full max-w-6xl p-8 flex flex-col items-center" onClick={e => e.stopPropagation()}>
@@ -472,15 +470,15 @@ const LootboxShop = ({ onClose, onOpenCrate }) => {
                     animate={{ y: 0, opacity: 1 }}
                     className="text-center mb-12"
                 >
-                    <h2 className="text-5xl font-black text-white italic tracking-tighter mb-2">SUPPLY DEPOT</h2>
-                    <p className="text-white/40 font-mono tracking-widest uppercase text-sm mb-6">Select Requisition Package</p>
+                    <h2 className="text-5xl font-black text-slate-800 italic tracking-tighter mb-2">SUPPLY DEPOT</h2>
+                    <p className="text-blue-900/40 font-mono tracking-widest uppercase text-sm mb-6">Select Requisition Package</p>
 
-                    <div className="inline-flex items-center gap-3 bg-yellow-900/40 border border-yellow-500/30 rounded-full px-6 py-2">
-                        <div className="w-6 h-6 rounded-full bg-yellow-500 flex items-center justify-center border border-yellow-300">
-                            <span className="text-yellow-900 font-bold text-sm">$</span>
+                    <div className="inline-flex items-center gap-3 bg-blue-100/50 border border-blue-200 rounded-full px-6 py-2">
+                        <div className="w-6 h-6 rounded-full bg-blue-600 flex items-center justify-center border border-blue-400">
+                            <span className="text-white font-bold text-sm">$</span>
                         </div>
-                        <span className="text-2xl font-black text-white">{coins}</span>
-                        <span className="text-xs font-bold text-yellow-500 uppercase tracking-wider">Credits Available</span>
+                        <span className="text-2xl font-black text-slate-800">{coins}</span>
+                        <span className="text-xs font-bold text-blue-600 uppercase tracking-wider">Credits Available</span>
 
                         {coins > 0 && (
                             <button
@@ -510,31 +508,31 @@ const LootboxShop = ({ onClose, onOpenCrate }) => {
                             whileTap={coins >= item.price ? { scale: 0.95 } : {}}
                             onClick={() => handlePurchase(item)}
                             disabled={coins < item.price}
-                            className={`group relative h-[400px] bg-slate-900/50 border rounded-2xl p-6 flex flex-col items-center justify-center gap-6 overflow-hidden transition-all duration-300 
+                            className={`group relative h-[400px] bg-white border-2 rounded-2xl p-6 flex flex-col items-center justify-center gap-6 overflow-hidden transition-all duration-300 
                                 ${coins >= item.price
-                                    ? `border-${item.color}-500/30 hover:border-${item.color}-500 hover:bg-${item.color}-900/10 cursor-pointer`
-                                    : 'border-white/5 opacity-50 grayscale cursor-not-allowed'
+                                    ? `border-${item.color}-100 hover:border-${item.color}-500 shadow-xl hover:shadow-${item.color}-100 cursor-pointer`
+                                    : 'border-slate-50 opacity-50 grayscale cursor-not-allowed'
                                 }`}
                         >
                             {/* Background Glow */}
                             <div className={`absolute inset-0 bg-${item.color}-500/5 group-hover:bg-${item.color}-500/20 transition-colors blur-3xl`} />
 
                             {/* Icon */}
-                            <div className={`p-6 rounded-full bg-black/40 border border-${item.color}-500/20 group-hover:border-${item.color}-500 group-hover:shadow-[0_0_30px_rgba(var(--${item.color}-500),0.3)] transition-all`}>
+                            <div className={`p-6 rounded-full bg-blue-50 border border-${item.color}-100 group-hover:border-${item.color}-500 group-hover:shadow-[0_10px_30px_rgba(59,130,246,0.1)] transition-all`}>
                                 {item.icon}
                             </div>
 
                             {/* Info */}
                             <div className="text-center z-10">
-                                <h3 className={`text-2xl font-bold text-white mb-2 uppercase tracking-wide group-hover:text-${item.color}-400 transition-colors`}>{item.title}</h3>
-                                <p className="text-white/50 text-sm max-w-[200px] leading-relaxed">{item.desc}</p>
+                                <h3 className={`text-2xl font-bold text-slate-800 mb-2 uppercase tracking-wide group-hover:text-${item.color}-600 transition-colors`}>{item.title}</h3>
+                                <p className="text-slate-500 text-sm max-w-[200px] leading-relaxed">{item.desc}</p>
                             </div>
 
                             {/* Button Fake */}
-                            <div className={`mt-auto px-8 py-3 rounded-full border font-mono font-bold text-sm uppercase tracking-widest transition-all flex items-center gap-2
+                            <div className={`mt-auto px-8 py-3 rounded-full border-2 font-mono font-bold text-sm uppercase tracking-widest transition-all flex items-center gap-2
                                 ${coins >= item.price
-                                    ? `bg-${item.color}-600/20 border-${item.color}-500/50 text-${item.color}-300 group-hover:bg-${item.color}-500 group-hover:text-white`
-                                    : 'bg-white/5 border-white/10 text-white/20'
+                                    ? `bg-${item.color}-50 border-${item.color}-200 text-${item.color}-600 group-hover:bg-${item.color}-500 group-hover:text-white`
+                                    : 'bg-slate-50 border-slate-100 text-slate-300'
                                 }`}>
                                 <span className={coins >= item.price ? "text-inherit" : "text-white/20"}>$</span> {item.price}
                             </div>
@@ -544,7 +542,7 @@ const LootboxShop = ({ onClose, onOpenCrate }) => {
 
                 <button
                     onClick={onClose}
-                    className="mt-12 text-white/30 hover:text-white flex items-center gap-2 text-sm uppercase tracking-widest transition-colors"
+                    className="mt-12 text-blue-900/40 hover:text-blue-600 flex items-center gap-2 text-sm uppercase tracking-widest transition-colors"
                 >
                     <X size={16} /> Cancel Requisition
                 </button>
@@ -638,7 +636,7 @@ const HomeHub = ({ onUnlock }) => {
     const filteredMissions = missions.filter(m => m.category === activeTab || (!m.category && activeTab === 'Daily'));
 
     return (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center overflow-hidden bg-black text-white select-none">
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center overflow-hidden bg-blue-50 text-slate-800 select-none">
             {/* Background Layer */}
             <div className="absolute inset-0 z-0">
                 {bgImage ? (
@@ -647,9 +645,9 @@ const HomeHub = ({ onUnlock }) => {
                         style={{ backgroundImage: `url(${bgImage})` }}
                     />
                 ) : (
-                    <div className="w-full h-full bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-blue-900 via-slate-900 to-black opacity-80" />
+                    <div className="w-full h-full bg-gradient-to-br from-blue-100 via-white to-blue-50 opacity-100" />
                 )}
-                <div className="absolute inset-0 bg-black/60" />
+                <div className="absolute inset-0 bg-white/40" />
             </div>
 
             {/* Content Container */}
@@ -664,10 +662,10 @@ const HomeHub = ({ onUnlock }) => {
                         animate={{ opacity: 1, y: 0 }}
                         className="text-center md:text-left"
                     >
-                        <h1 className="text-6xl md:text-8xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-br from-white via-blue-200 to-slate-400">
+                        <h1 className="text-6xl md:text-8xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-br from-blue-600 via-indigo-600 to-blue-800">
                             ATLAS
                         </h1>
-                        <p className="text-xl text-blue-300/60 font-mono tracking-[0.3em] uppercase mt-2">
+                        <p className="text-xl text-blue-900/40 font-mono tracking-[0.3em] uppercase mt-2">
                             Mission Control
                         </p>
                     </motion.div>
@@ -679,8 +677,8 @@ const HomeHub = ({ onUnlock }) => {
                         transition={{ delay: 0.2 }}
                         className="relative group w-full max-w-sm"
                     >
-                        <div className="absolute inset-0 bg-blue-500/20 blur-xl rounded-full opacity-50 group-hover:opacity-75 transition-opacity" />
-                        <div className="relative border border-white/10 bg-black/40 backdrop-blur-md rounded-2xl p-6 text-center shadow-lg">
+                        <div className="absolute inset-0 bg-blue-400/20 blur-2xl rounded-full opacity-50 group-hover:opacity-100 transition-opacity" />
+                        <div className="relative border border-blue-100 bg-white/80 backdrop-blur-md rounded-2xl p-6 text-center shadow-[0_10px_40px_rgba(59,130,246,0.1)]">
                             {timeBank > 0 && (
                                 <button
                                     onClick={() => {
@@ -688,31 +686,31 @@ const HomeHub = ({ onUnlock }) => {
                                             resetTimeBank();
                                         }
                                     }}
-                                    className="absolute top-3 right-3 p-2 text-white/10 hover:text-red-400 transition-colors"
+                                    className="absolute top-3 right-3 p-2 text-blue-900/10 hover:text-red-500 transition-colors"
                                     title="Reset Time"
                                 >
                                     <RotateCcw size={14} />
                                 </button>
                             )}
-                            <div className="flex items-center justify-center gap-2 text-blue-400 mb-2">
+                            <div className="flex items-center justify-center gap-2 text-blue-600 mb-2">
                                 <Clock size={20} />
                                 <span className="text-sm font-bold uppercase tracking-widest">Time Bank</span>
                             </div>
-                            <div className={`text-5xl font-mono font-bold tracking-wider ${timeBank > 0 ? 'text-white' : 'text-red-400'}`}>
+                            <div className={`text-5xl font-mono font-bold tracking-wider ${timeBank > 0 ? 'text-slate-800' : 'text-red-500'}`}>
                                 {formatTime(timeBank)}
                             </div>
-                            <div className="mt-2 text-xs text-white/40">
+                            <div className="mt-2 text-xs text-blue-900/40">
                                 {timeBank > 0 ? 'System Ready' : 'Insufficient Resources'}
                             </div>
 
                             {/* Coin Display */}
-                            <div className="absolute -right-4 -bottom-4 bg-yellow-900/80 border border-yellow-500/50 backdrop-blur-md rounded-xl px-4 py-2 flex items-center gap-2 shadow-lg transform rotate-[-2deg]">
-                                <div className="w-8 h-8 rounded-full bg-yellow-500 flex items-center justify-center border-2 border-yellow-300 shadow-[0_0_10px_rgba(234,179,8,0.5)]">
-                                    <span className="text-yellow-900 font-bold text-lg">$</span>
+                            <div className="absolute -right-4 -bottom-4 bg-white border border-blue-100 backdrop-blur-md rounded-xl px-4 py-2 flex items-center gap-2 shadow-xl transform rotate-[-2deg]">
+                                <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center border-2 border-blue-300 shadow-[0_0_10px_rgba(59,130,246,0.2)]">
+                                    <span className="text-white font-bold text-lg">$</span>
                                 </div>
                                 <div className="flex flex-col items-start leading-none">
-                                    <span className="text-xl font-black text-white">{coins || 0}</span>
-                                    <span className="text-[9px] font-bold text-yellow-500 uppercase tracking-wider">Credits</span>
+                                    <span className="text-xl font-black text-slate-800">{coins || 0}</span>
+                                    <span className="text-[9px] font-bold text-blue-600 uppercase tracking-wider">Credits</span>
                                 </div>
                             </div>
                         </div>
@@ -729,8 +727,8 @@ const HomeHub = ({ onUnlock }) => {
                             className={`
                               relative w-full px-8 py-5 rounded-xl font-bold text-xl tracking-widest uppercase flex justify-center items-center gap-3 transition-all
                               ${timeBank > 0
-                                    ? 'bg-blue-600 hover:bg-blue-500 text-white shadow-[0_0_30px_rgba(37,99,235,0.4)] cursor-pointer border border-blue-400/30'
-                                    : 'bg-white/5 text-white/30 border border-white/10 cursor-not-allowed'}
+                                    ? 'bg-blue-600 hover:bg-blue-500 text-white shadow-[0_10px_30px_rgba(37,99,235,0.3)] cursor-pointer border border-blue-400/30'
+                                    : 'bg-blue-100 text-blue-300 border border-blue-200 cursor-not-allowed'}
                             `}
                         >
                             {timeBank > 0 ? (
@@ -748,26 +746,26 @@ const HomeHub = ({ onUnlock }) => {
 
                         {/* Pokedex Trigger */}
                         <motion.button
-                            whileHover={{ scale: 1.02, backgroundColor: "rgba(255, 255, 255, 0.1)" }}
+                            whileHover={{ scale: 1.02, backgroundColor: "rgba(255, 255, 255, 0.9)" }}
                             whileTap={{ scale: 0.98 }}
                             onClick={() => setIsPokedexOpen(true)}
-                            className="w-full px-6 py-4 rounded-xl border border-white/10 bg-black/30 backdrop-blur-sm flex items-center justify-center gap-3 group transition-all"
+                            className="w-full px-6 py-4 rounded-xl border border-blue-100 bg-white/60 backdrop-blur-sm flex items-center justify-center gap-3 group transition-all shadow-sm hover:shadow-md"
                         >
-                            <Grid size={20} className="text-red-400 group-hover:text-red-300 transition-colors" />
-                            <span className="font-mono text-sm tracking-widest uppercase text-white/70 group-hover:text-white transition-colors">Pokédex Archive</span>
-                            <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse ml-2" />
+                            <Grid size={20} className="text-blue-600 group-hover:text-blue-500 transition-colors" />
+                            <span className="font-mono text-sm tracking-widest uppercase text-slate-600 group-hover:text-slate-800 transition-colors">Pokédex Archive</span>
+                            <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse ml-2" />
                         </motion.button>
 
                         {/* Lootbox Trigger (Opened Shop) */}
                         <motion.button
-                            whileHover={{ scale: 1.02, backgroundColor: "rgba(255, 255, 255, 0.1)" }}
+                            whileHover={{ scale: 1.02, backgroundColor: "rgba(255, 255, 255, 0.9)" }}
                             whileTap={{ scale: 0.98 }}
                             onClick={() => setIsShopOpen(true)}
-                            className="w-full px-6 py-4 rounded-xl border border-white/10 bg-black/30 backdrop-blur-sm flex items-center justify-center gap-3 group transition-all"
+                            className="w-full px-6 py-4 rounded-xl border border-blue-100 bg-white/60 backdrop-blur-sm flex items-center justify-center gap-3 group transition-all shadow-sm hover:shadow-md"
                         >
-                            <Gift size={20} className="text-purple-400 group-hover:text-purple-300 transition-colors" />
-                            <span className="font-mono text-sm tracking-widest uppercase text-white/70 group-hover:text-white transition-colors">Supply Depot</span>
-                            <div className="w-2 h-2 rounded-full bg-purple-500 animate-pulse ml-2" />
+                            <Gift size={20} className="text-indigo-600 group-hover:text-indigo-500 transition-colors" />
+                            <span className="font-mono text-sm tracking-widest uppercase text-slate-600 group-hover:text-slate-800 transition-colors">Supply Depot</span>
+                            <div className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse ml-2" />
                         </motion.button>
                     </div>
 
@@ -775,19 +773,19 @@ const HomeHub = ({ onUnlock }) => {
 
                 {/* Right Column: Mission Log with Tabs */}
                 {/* ... existing right column code ... */}
-                <div className="flex-1 flex flex-col bg-black/40 border border-white/10 backdrop-blur-md rounded-xl overflow-hidden shadow-2xl">
+                <div className="flex-1 flex flex-col bg-white/80 border border-blue-100 backdrop-blur-md rounded-xl overflow-hidden shadow-[0_20px_60px_rgba(59,130,246,0.1)]">
                     {/* ... (Existing Mission Log UI) ... */}
-                    <div className="flex flex-col border-b border-white/10 bg-white/5">
+                    <div className="flex flex-col border-b border-blue-100 bg-blue-50/20">
                         <div className="flex items-center justify-between p-4 pb-2">
                             {/* ... Header ... */}
-                            <h2 className="text-xl font-bold tracking-wider text-white flex items-center gap-2">
-                                <LayoutGrid size={20} className="text-blue-400" />
+                            <h2 className="text-xl font-bold tracking-wider text-slate-800 flex items-center gap-2">
+                                <LayoutGrid size={20} className="text-blue-600" />
                                 LOGS
                             </h2>
                             <div className="flex gap-2">
                                 <button
                                     onClick={() => setIsAddingMission(!isAddingMission)}
-                                    className={`p-2 rounded-lg transition-colors flex items-center gap-2 text-xs uppercase font-bold tracking-wider ${isAddingMission ? 'bg-blue-600 text-white' : 'bg-white/5 text-white/60 hover:bg-white/10 hover:text-white'}`}
+                                    className={`p-2 rounded-lg transition-colors flex items-center gap-2 text-xs uppercase font-bold tracking-wider ${isAddingMission ? 'bg-blue-600 text-white' : 'bg-blue-50 text-blue-600 hover:bg-blue-100 hover:text-blue-700'}`}
                                     title="Add New Mission"
                                 >
                                     <Plus size={16} /> Add Task
@@ -801,17 +799,17 @@ const HomeHub = ({ onUnlock }) => {
                                     key={cat}
                                     className={`
                     group relative flex items-center border-b-2 transition-colors whitespace-nowrap
-                    ${activeTab === cat
-                                            ? 'border-blue-500 bg-white/5'
-                                            : 'border-transparent hover:bg-white/5'}
-                  `}
+                     ${activeTab === cat
+                                            ? 'border-blue-600 bg-blue-50/50'
+                                            : 'border-transparent hover:bg-blue-50/30'}
+                   `}
                                 >
                                     <button
                                         onClick={() => setActiveTab(cat)}
                                         className={`
-                      px-4 py-2 text-sm font-medium
-                      ${activeTab === cat ? 'text-blue-400' : 'text-white/40 hover:text-white'}
-                    `}
+                       px-4 py-2 text-sm font-medium transition-colors
+                       ${activeTab === cat ? 'text-blue-700' : 'text-slate-400 hover:text-slate-800'}
+                     `}
                                     >
                                         {cat}
                                     </button>
@@ -822,9 +820,9 @@ const HomeHub = ({ onUnlock }) => {
                                                 setCategoryToDelete(cat);
                                             }}
                                             className={`
-                        mr-2 p-0.5 rounded-full opacity-0 group-hover:opacity-100 transition-all
-                        ${activeTab === cat ? 'text-blue-400 hover:bg-blue-500/20' : 'text-white/40 hover:text-red-400 hover:bg-white/10'}
-                      `}
+                         mr-2 p-0.5 rounded-full opacity-0 group-hover:opacity-100 transition-all
+                         ${activeTab === cat ? 'text-blue-600 hover:bg-blue-200/50' : 'text-slate-400 hover:text-red-500 hover:bg-red-50'}
+                       `}
                                         >
                                             <X size={12} />
                                         </button>
@@ -838,7 +836,7 @@ const HomeHub = ({ onUnlock }) => {
                                         value={newCategoryText}
                                         onChange={(e) => setNewCategoryText(e.target.value)}
                                         placeholder="Tab Name"
-                                        className="bg-black/50 border border-blue-500/50 rounded px-2 py-1 text-xs text-white w-24 outline-none mr-1"
+                                        className="bg-white border border-blue-200 rounded px-2 py-1 text-xs text-slate-800 w-24 outline-none mr-1 focus:border-blue-500"
                                         autoFocus
                                         onBlur={() => !newCategoryText && setIsAddingCategory(false)}
                                     />
@@ -846,7 +844,7 @@ const HomeHub = ({ onUnlock }) => {
                             ) : (
                                 <button
                                     onClick={() => setIsAddingCategory(true)}
-                                    className="px-3 py-2 text-white/20 hover:text-blue-400 transition-colors"
+                                    className="px-3 py-2 text-blue-900/20 hover:text-blue-600 transition-colors"
                                     title="New Tab"
                                 >
                                     <Plus size={14} />
@@ -861,31 +859,31 @@ const HomeHub = ({ onUnlock }) => {
                                 initial={{ opacity: 0, height: 0 }}
                                 animate={{ opacity: 1, height: 'auto' }}
                                 onSubmit={handleAddMission}
-                                className="bg-blue-900/20 border border-blue-500/30 rounded-lg p-4 mb-4 space-y-4"
+                                className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4 space-y-4 shadow-inner"
                             >
                                 {/* ... Mission Form ... */}
                                 <div className="space-y-4">
                                     <div>
-                                        <label className="text-xs text-blue-300 uppercase tracking-wider font-bold mb-1 block">Task Description</label>
+                                        <label className="text-xs text-blue-800 uppercase tracking-wider font-extrabold mb-1 block">Task Description</label>
                                         <input
                                             type="text"
                                             value={newMissionText}
                                             onChange={(e) => setNewMissionText(e.target.value)}
                                             placeholder="Enter mission objective..."
-                                            className="w-full bg-black/50 border border-white/20 rounded px-3 py-2 text-white focus:border-blue-500 outline-none text-sm placeholder-white/20"
+                                            className="w-full bg-white border border-blue-200 rounded px-3 py-2 text-slate-800 focus:border-blue-500 outline-none text-sm placeholder-slate-300 shadow-sm"
                                             autoFocus
                                         />
                                     </div>
 
                                     <div>
-                                        <label className="text-xs text-blue-300 uppercase tracking-wider font-bold mb-1 block">Reward (Minutes)</label>
+                                        <label className="text-xs text-blue-800 uppercase tracking-wider font-extrabold mb-1 block">Reward (Minutes)</label>
                                         <div className="flex items-center gap-2">
                                             <input
                                                 type="number"
                                                 min="1"
                                                 value={newMissionTime}
                                                 onChange={(e) => setNewMissionTime(Math.max(1, parseInt(e.target.value) || 0))}
-                                                className="w-20 bg-black/50 border border-white/20 rounded px-3 py-2 text-white focus:border-blue-500 outline-none text-sm text-center font-mono"
+                                                className="w-20 bg-white border border-blue-200 rounded px-3 py-2 text-slate-800 focus:border-blue-500 outline-none text-sm text-center font-mono shadow-sm"
                                             />
                                             <div className="flex gap-1">
                                                 {[5, 10, 15, 30, 60].map(m => (
@@ -893,7 +891,7 @@ const HomeHub = ({ onUnlock }) => {
                                                         key={m}
                                                         type="button"
                                                         onClick={() => setNewMissionTime(m)}
-                                                        className={`px-3 py-2 rounded text-xs font-bold border transition-all ${newMissionTime === m ? 'bg-blue-600 border-blue-500 text-white shadow-[0_0_10px_rgba(37,99,235,0.4)]' : 'bg-white/5 border-white/10 text-white/40 hover:text-white hover:bg-white/10'}`}
+                                                        className={`px-3 py-2 rounded text-xs font-bold border transition-all ${newMissionTime === m ? 'bg-blue-600 border-blue-500 text-white shadow-md' : 'bg-white border-blue-100 text-slate-400 hover:bg-blue-50 hover:text-blue-600'}`}
                                                     >
                                                         {m}m
                                                     </button>
@@ -902,8 +900,8 @@ const HomeHub = ({ onUnlock }) => {
                                         </div>
                                     </div>
                                 </div>
-                                <div className="flex justify-end gap-2 pt-2 border-t border-white/10">
-                                    <button type="submit" className="bg-blue-600 text-white text-xs px-4 py-1.5 rounded font-bold uppercase">Add</button>
+                                <div className="flex justify-end gap-2 pt-2 border-t border-blue-100">
+                                    <button type="submit" className="bg-blue-600 text-white text-xs px-4 py-1.5 rounded font-black uppercase tracking-widest shadow-md hover:bg-blue-500 transition-colors">Add Mission</button>
                                 </div>
                             </motion.form>
                         )}
@@ -913,23 +911,23 @@ const HomeHub = ({ onUnlock }) => {
                                 <motion.div
                                     key={mission.id}
                                     layout
-                                    className={`relative group p-4 rounded-lg border transition-all duration-300 ${mission.completed ? 'bg-black/40 border-green-500/20 opacity-60' : 'bg-white/5 border-white/10 hover:border-blue-500/50 hover:bg-white/10'}`}
+                                    className={`relative group p-4 rounded-xl border-2 transition-all duration-300 ${mission.completed ? 'bg-blue-50/50 border-blue-100 opacity-60' : 'bg-white border-blue-50 hover:border-blue-300 hover:shadow-lg shadow-sm'}`}
                                     onMouseEnter={() => setHoveredMission(mission.id)}
                                     onMouseLeave={() => setHoveredMission(null)}
                                 >
                                     <div className="flex justify-between items-center gap-4">
                                         <div className="flex-1 min-w-0">
                                             <div className="flex items-center gap-3">
-                                                <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center cursor-pointer ${mission.completed ? 'border-green-500 bg-green-500/20' : 'border-white/20 group-hover:border-blue-400'}`} onClick={() => !mission.completed && completeMission(mission.id)}>
-                                                    {mission.completed && <CheckCircle size={12} className="text-green-500" />}
+                                                <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center cursor-pointer transition-all ${mission.completed ? 'border-blue-500 bg-blue-500 text-white' : 'border-blue-100 bg-blue-50 group-hover:border-blue-400 group-hover:bg-white'}`} onClick={() => !mission.completed && completeMission(mission.id)}>
+                                                    {mission.completed && <CheckCircle size={14} />}
                                                 </div>
                                                 <div className="flex-1 flex items-center justify-between gap-4 min-w-0">
-                                                    <h3 className={`font-medium truncate ${mission.completed ? 'text-green-500/50' : 'text-white'}`}>{mission.text}</h3>
-                                                    <span className={`text-xs font-mono font-bold px-2 py-1 rounded border whitespace-nowrap flex items-center gap-1 ${mission.completed ? 'bg-green-500/10 border-green-500/20 text-green-500/50' : 'bg-blue-500/10 border-blue-500/30 text-blue-400'}`}>
+                                                    <h3 className={`font-bold truncate ${mission.completed ? 'text-slate-400 line-through' : 'text-slate-800'}`}>{mission.text}</h3>
+                                                    <span className={`text-[10px] font-mono font-black px-2 py-1 rounded-full border-2 whitespace-nowrap flex items-center gap-1 ${mission.completed ? 'bg-blue-100 border-blue-200 text-blue-400' : 'bg-blue-50 border-blue-100 text-blue-600'}`}>
                                                         <Clock size={10} />
-                                                        {Math.floor(mission.reward / 60)}m
+                                                        {Math.floor(mission.reward / 60)}M
                                                     </span>
-                                                    <span className={`text-xs font-mono font-bold px-2 py-1 rounded border whitespace-nowrap flex items-center gap-1 ${mission.completed ? 'bg-yellow-500/10 border-yellow-500/20 text-yellow-500/50' : 'bg-yellow-500/10 border-yellow-500/30 text-yellow-400'}`}>
+                                                    <span className={`text-[10px] font-mono font-black px-2 py-1 rounded-full border-2 whitespace-nowrap flex items-center gap-1 ${mission.completed ? 'bg-slate-100 border-slate-200 text-slate-400' : 'bg-yellow-50 border-yellow-200 text-yellow-700'}`}>
                                                         <span className="font-bold text-[10px]">$</span>
                                                         {mission.coinReward || Math.floor(mission.reward / 60)}
                                                     </span>
@@ -938,11 +936,11 @@ const HomeHub = ({ onUnlock }) => {
                                         </div>
                                         <div className="flex items-center gap-2 flex-shrink-0">
                                             {mission.completed && (
-                                                <button onClick={() => resetMission(mission.id)} className="p-1.5 text-yellow-400/50 hover:text-yellow-400" title="Reset Mission">
+                                                <button onClick={() => resetMission(mission.id)} className="p-1.5 text-blue-400 hover:text-blue-600 transition-colors" title="Reset Mission">
                                                     <RotateCcw size={16} />
                                                 </button>
                                             )}
-                                            <button onClick={() => removeMission(mission.id)} className="p-1.5 text-white/40 hover:text-red-400"><Trash2 size={16} /></button>
+                                            <button onClick={() => removeMission(mission.id)} className="p-1.5 text-blue-900/20 hover:text-red-500 transition-colors"><Trash2 size={16} /></button>
                                         </div>
                                     </div>
                                 </motion.div>
@@ -957,7 +955,7 @@ const HomeHub = ({ onUnlock }) => {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 1, duration: 1 }}
-                className="absolute bottom-8 text-xs text-white/30 font-mono tracking-wider flex items-center gap-4 hidden md:flex"
+                className="absolute bottom-8 text-xs text-blue-900/40 font-mono tracking-widest flex items-center gap-4 hidden md:flex"
             >
                 <span>ATLAS OS v2.1</span>
                 <span>•</span>
@@ -980,31 +978,31 @@ const HomeHub = ({ onUnlock }) => {
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        className="fixed inset-0 z-[10001] flex items-center justify-center bg-black/80 backdrop-blur-sm"
+                        className="fixed inset-0 z-[10001] flex items-center justify-center bg-blue-900/10 backdrop-blur-sm"
                         onClick={() => setCategoryToDelete(null)}
                     >
                         <motion.div
                             initial={{ scale: 0.9, opacity: 0 }}
                             animate={{ scale: 1, opacity: 1 }}
                             exit={{ scale: 0.9, opacity: 0 }}
-                            className="bg-slate-900 border border-red-500/30 p-8 rounded-2xl max-w-md w-full shadow-2xl relative overflow-hidden"
+                            className="bg-white border-2 border-red-100 p-8 rounded-2xl max-w-md w-full shadow-2xl relative overflow-hidden"
                             onClick={(e) => e.stopPropagation()}
                         >
                             <div className="absolute inset-0 bg-red-500/5 pointer-events-none" />
 
-                            <h3 className="text-2xl font-bold text-white mb-2 flex items-center gap-2">
+                            <h3 className="text-2xl font-bold text-slate-800 mb-2 flex items-center gap-2">
                                 <Trash2 className="text-red-500" />
                                 Delete Category?
                             </h3>
-                            <p className="text-white/60 mb-8 leading-relaxed">
-                                Are you sure you want to delete <span className="text-red-400 font-bold">"{categoryToDelete}"</span>?
+                            <p className="text-slate-500 mb-8 leading-relaxed">
+                                Are you sure you want to delete <span className="text-red-500 font-extrabold">"{categoryToDelete}"</span>?
                                 <br />All missions in this category will be moved to the default "Daily" tab.
                             </p>
 
                             <div className="flex justify-end gap-3">
                                 <button
                                     onClick={() => setCategoryToDelete(null)}
-                                    className="px-4 py-2 text-white/60 hover:text-white font-bold uppercase text-xs tracking-wider transition-colors"
+                                    className="px-4 py-2 text-slate-400 hover:text-slate-600 font-black uppercase text-xs tracking-wider transition-colors"
                                 >
                                     Cancel
                                 </button>
