@@ -14,11 +14,15 @@ The **Mission Hub** (also known as "Home Hub" or "Mission Control") is a gamifie
 - Displays the current available time in `HH:MM:SS` format.
 - Time is consumed at a rate of 1 second per second when the main application is unlocked and active.
 - **Auto-Lock**: When the time bank reaches `00:00:00`, the application automatically locks and returns the user to the Mission Hub.
+- **Reset**: A refresh button (visible only when time > 0) allows users to manually reset the Time Bank to 0 securely using a browser confirmation prompt.
 
 ### 2.2 Mission System
 - Users can create custom missions (tasks) with specific time rewards (e.g., "Do 10 Pushups" for 10 minutes).
-- **Completion**: Clicking a mission's checkbox marks it as complete and immediately adds the reward to the Time Bank.
-- **Reset**: Completed missions can be individually reset (via a yellow refresh icon). This allows users to repeat a habit or task to earn more time without deleting and recreating the mission.
+- **Rewards**: 
+  - **Time**: Adds the specified minutes to the Time Bank.
+  - **Credits (Coins)**: Awards 1 Credit per minute of the task (e.g., 15m task = 15 Credits).
+- **Completion**: Clicking a mission's checkbox marks it as complete and immediately grants both rewards.
+- **Reset**: Completed missions can be individually reset (via a yellow refresh icon). This allows users to repeat a habit or task to earn more time and credits without deleting and recreating the mission.
 
 ### 2.3 Tabbed Organization
 - Missions are organized into customizable **Categories (Tabs)**.
@@ -26,8 +30,15 @@ The **Mission Hub** (also known as "Home Hub" or "Mission Control") is a gamifie
 - **Management**:
   - **Create**: Users can add new tabs (e.g., "Work", "Health", "Chores") using the `+` button.
   - **Delete**: Hovering over a tab reveals an `X` button to delete it.
+    - *Safety*: Deletion requires confirmation via a sleek modal warning that missions will be moved.
     - *Constraint*: The last remaining tab cannot be deleted to ensure the UI always has a valid state.
-    - *Logic*: Deleting the active tab automatically switches view to the first available tab.
+    - *Logic*: Deleted tabs move their missions to the default "Daily" tab. If the active tab is deleted, the view switches to the first available tab.
+
+### 2.4 Currency System (Credits)
+- **Earning**: Users earn "Credits" (displayed as gold coins) by completing missions alongside Time rewards.
+- **Spending**: Credits are used in the **Supply Depot** to purchase Lootboxes.
+- **Display**: A gold badge next to the Time Bank shows current balance.
+- **Reset**: A subtle trash icon in the Supply Depot allows users to discard all credits (requires confirmation).
 
 ### 2.4 Visuals
 - **Background**: Uses the user's configured **App Banner** (if available) with a blur effect, creating a cohesive visual experience.

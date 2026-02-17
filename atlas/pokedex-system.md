@@ -12,9 +12,9 @@ Accessed via the Mission Hub, the Supply Depot offers three distinct tiers of re
 
 | Crate Tier | Cost | Rewards | Mechanic |
 | :--- | :--- | :--- | :--- |
-| **Mini Cache** | Free | 1 Shard | Quick, single-piece reward. |
-| **Standard Supply** | Free | 4 Shards | Standard progression. Includes **Target Priority** (see below). |
-| **Legendary Vault** | Free | Full Unlock | Instantly unlocks *all* missing pieces for a random incomplete Pokémon. |
+| **Mini Cache** | 5 Credits | 1 Shard | Quick, single-piece reward. |
+| **Standard Supply** | 15 Credits | 4 Shards | Standard progression. Includes **Target Priority** (see below). |
+| **Legendary Vault** | 60 Credits | Full Unlock | Instantly unlocks *all* missing pieces for a random incomplete Pokémon. |
 
 ### 2. Smart Progression Mechanics
 

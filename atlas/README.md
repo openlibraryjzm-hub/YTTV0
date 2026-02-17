@@ -475,4 +475,15 @@ For detailed information about the application's theme system and recent color c
     - "Crop Shape" functionality (`BannerCropModal`).
     - "Animate Scroll" toggle.
     - "Clip From Left" slider (0-100%).
+    - "Clip From Left" slider (0-100%).
     - "Horizontal Offset" slider (-200% to +200%).
+- **Gamification & Mission Hub**:
+  - **Mission Rewards**: Added support for **Time Rewards** (minutes) and **Currency Rewards** (Credits/Coins).
+  - **Reset Functionality**:
+    - **Mission Reset**: Completed missions can be reset to run again (habit loop).
+    - **Time Bank Reset**: Added secure button to clear accumulated time.
+    - **Coin Reset**: Added secure button to discard all credits in the shop.
+  - **Lootbox Economy**: 
+    - Updated **Supply Depot** pricing to use Credits (Mini: 5, Standard: 15, Legendary: 60).
+    - Added "Credits Available" display in shop and hub.
+  - **Tab Safety**: Implemented confirmation modal for deleting mission tabs to prevent accidental data loss.
