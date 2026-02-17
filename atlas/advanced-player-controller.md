@@ -21,9 +21,12 @@ The Central Orb is a circular element (154px diameter by default) positioned at 
 - **Audio Visualizer Border**: The static blue border has been removed. The Audio Visualizer now acts as the dynamic, reactive border for the orb, starting exactly where the image ends (Radius 77px).
 - **Window Controls**: Custom Minimize/Maximize/Close buttons interactively float in the top-right corner of the banner area.
 - **Orb Image**: Displays the current video's thumbnail by default, or a custom uploaded image if set. Supports **Orb Group Overrides**: If the current playlist is assigned to an Orb Group, the central orb image (and its scale/offset) will be overridden by a random image from that group or its leader. The image is clipped to a circular shape with optional "spill" effects.
-- **Upload Button**: On hover, an upload icon appears at the top of the orb (12 o'clock position). Clicking opens a file picker to upload a custom image. The uploaded image is immediately displayed and persisted to localStorage.
-
-- **Spill Toggle**: When enabled, the orb image can extend beyond the circular boundary. Users can configure which quadrants allow spill via the **Settings Page > Orb** tab. The spill state is persisted to localStorage (`isSpillEnabled`).
+- **Upload Button**: On hover, an upload icon appears at the top of the orb (12 o'clock position). Clicking opens a file picker to upload a custom image.
+- **Orb Config Button**: (Top-Left) Opens the Orb Tab in Settings.
+- **Settings Button**: (Top-Right) Opens the Settings Page.
+- **Home Hub Button**: (Bottom-Center) Locks the app and returns to the gamified Home Hub dashboard.
+- **Pop-out Browser (Twitter)**: (Bottom-Left) Opens a standalone Twitter/X window in a time-limited session based on current `timeBank`. See `popout-browser.md` for details.
+- **Spill Toggle**: When enabled, the orb image can extend beyond the circular boundary. Users can configure which quadrants allow spill via the **Settings Page > Orb** tab.
 - **Config Panel & Orb Settings**: Users can access the Settings Page to configure the central element:
   - **Orb Tab**: A comprehensive configuration suite for the central element:
     - **Saved Orb Presets**: Save and manage multiple orb configurations (image + settings) as presets for instant switching.

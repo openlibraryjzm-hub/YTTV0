@@ -1,6 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import {
   Play,
+  Home,
+  Twitter,
   List,
   Shuffle,
   Grid3X3,
@@ -56,6 +58,8 @@ import { useLayoutStore } from '../store/layoutStore';
 import { useFolderStore } from '../store/folderStore';
 import { useTabStore } from '../store/tabStore';
 import { useConfigStore } from '../store/configStore';
+import { useMissionStore } from '../store/missionStore';
+import { WebviewWindow } from '@tauri-apps/api/webviewWindow';
 import { useTabPresetStore } from '../store/tabPresetStore';
 import { useInspectLabel } from '../utils/inspectLabels';
 import { getAllPlaylists, getPlaylistItems, getAllFoldersWithVideos, getVideosInFolder, getAllStuckFolders, assignVideoToFolder, unassignVideoFromFolder, getVideoFolderAssignments, createPlaylist, addVideoToPlaylist, removeVideoFromPlaylist, getFolderMetadata } from '../api/playlistApi';
@@ -1446,6 +1450,92 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
     }
   };
 
+  const openTwitter = async () => {
+    try {
+      const label = 'twitter-popup';
+      // Check if window already exists
+      const existing = await WebviewWindow.getByLabel(label);
+      if (existing) {
+        console.log('Twitter window already exists, focusing...');
+        await existing.setFocus();
+        return;
+      }
+
+      // Get current timeBank (in seconds) without subscribing to updates (avoids re-renders)
+      const startingTime = useMissionStore.getState().timeBank;
+      let remainingTime = startingTime;
+
+      console.log(`Creating new Twitter window with TTL: ${startingTime}s`);
+
+      const getTitle = (timeLeft) => {
+        const mins = Math.floor(timeLeft / 60);
+        const secs = timeLeft % 60;
+        return `X / Twitter (${mins}:${secs.toString().padStart(2, '0')})`;
+      };
+
+      const webview = new WebviewWindow(label, {
+        url: 'https://x.com',
+        title: getTitle(remainingTime),
+        width: 1200,
+        height: 800,
+        resizable: true,
+        focus: true,
+      });
+
+      webview.once('tauri://created', function () {
+        console.log('Twitter window created successfully');
+
+        // Start live countdown timer
+        if (remainingTime > 0) {
+          // Update title immediately
+          webview.setTitle(getTitle(remainingTime)).catch(() => { });
+
+          const timerId = setInterval(async () => {
+            remainingTime--;
+
+            // Fetch handle every tick - safest approach
+            let currentWebview = null;
+            try {
+              currentWebview = await WebviewWindow.getByLabel(label);
+            } catch (ignore) { }
+
+            if (!currentWebview) {
+              console.log('Twitter popup window not found, stopping timer');
+              clearInterval(timerId);
+              return;
+            }
+
+            if (remainingTime <= 0) {
+              // Time up!
+              clearInterval(timerId);
+              console.log('Twitter popup time limit reached');
+              try {
+                await currentWebview.close();
+                console.log('Twitter popup closed successfully');
+              } catch (err) {
+                console.warn('Failed to close Twitter popup', err);
+              }
+            } else {
+              // Update title
+              try {
+                await currentWebview.setTitle(getTitle(remainingTime));
+              } catch (err) {
+                console.warn('Failed to update title (window maybe closing?)', err);
+              }
+            }
+          }, 1000);
+        }
+      });
+
+      webview.once('tauri://error', function (e) {
+        console.error('Twitter window creation error:', e);
+      });
+
+    } catch (e) {
+      console.error('Failed to open Twitter:', e);
+    }
+  };
+
   const handleBannerUpload = (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -1516,6 +1606,8 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
     // Orb Favorites for Overrides
     orbFavorites
   } = useConfigStore();
+
+  const { lockApp } = useMissionStore();
 
 
 
@@ -2018,6 +2110,16 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
               {/* Settings Button (Top Right) */}
               <button onClick={() => setCurrentPage('app')} className="absolute rounded-full flex items-center justify-center bg-white shadow-xl hover:scale-110 active:scale-95 group/btn z-50 border-2 border-sky-50 opacity-0 group-hover:opacity-100 transition-all duration-300" style={{ left: '85%', top: '15%', transform: 'translate(-50%, -50%)', width: `28px`, height: `28px` }} title={getInspectTitle('Settings') || 'Settings'}>
                 <Settings size={14} className="text-slate-800" strokeWidth={2.5} />
+              </button>
+
+              {/* Home Hub Button (Bottom Center) */}
+              <button onClick={lockApp} className="absolute rounded-full flex items-center justify-center bg-white shadow-xl hover:scale-110 active:scale-95 group/btn z-50 border-2 border-sky-50 opacity-0 group-hover:opacity-100 transition-all duration-300" style={{ left: '50%', top: '85%', transform: 'translate(-50%, -50%)', width: `28px`, height: `28px` }} title="Home Hub">
+                <Home size={14} className="text-slate-800" strokeWidth={2.5} />
+              </button>
+
+              {/* Twitter Button (Bottom Left) */}
+              <button onClick={openTwitter} className="absolute rounded-full flex items-center justify-center bg-white shadow-xl hover:scale-110 active:scale-95 group/btn z-50 border-2 border-sky-50 opacity-0 group-hover:opacity-100 transition-all duration-300" style={{ left: '15%', top: '85%', transform: 'translate(-50%, -50%)', width: `28px`, height: `28px` }} title="Open X (Twitter)">
+                <Twitter size={14} className="text-slate-800" strokeWidth={2.5} />
               </button>
 
 

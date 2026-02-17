@@ -160,6 +160,7 @@ yttv2/
 │   ├── database-schema.md
 │   ├── api-bridge.md
 │   ├── navigation-routing.md
+│   ├── popout-browser.md         # Documentation for standalone webview windows (e.g. Twitter)
 │   └── session-updates.md        # Development session logs
 │
 ├── dev-logs/                     # Development change logs
@@ -198,6 +199,8 @@ yttv2/
 | **Drumstick Rating** | `drumstick-rating-system.md` | `database-schema.md`, `api-bridge.md`, `ui-cards.md` |
 | **Local Videos** | `local-videos.md` | `videoplayer.md`, `database-schema.md`, `api-bridge.md`, `importexport.md` |
 | **Audio Visualizer** | `audio-visualizer.md` | `advanced-player-controller.md`, `api-bridge.md` |
+| **Mission Hub** | `mission-hub.md` | `player-controller.md`, `state-management.md` |
+| **Pop-out Browser** | `popout-browser.md` | `advanced-player-controller.md` |
 | **App Banner** | `app-banner.md` | `advanced-player-controller.md`, `ui-layout.md`, `state-management.md` |
 | **Page Banner** | `page-banner.md` | `ui-pages.md`, `ui-layout.md`, `state-management.md` |
 | **Mission Hub** | `mission-hub.md` | `state-management.md`, `ui-pages.md` |

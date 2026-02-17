@@ -12,6 +12,16 @@
     "mpv:allow-init",
     "mpv:allow-command",
     "mpv:allow-destroy",
-    "mpv:allow-set-video-margin-ratio"
+    "mpv:allow-set-video-margin-ratio",
+    "core:webview:allow-create-webview-window",
+    "core:window:allow-close",
+    "core:window:allow-center",
+    "core:window:allow-maximize",
+    "core:window:allow-minimize",
+    "core:window:allow-set-focus",
+    "core:window:allow-set-size",
+    "core:window:allow-set-title",
+    "core:window:allow-show",
+    "core:window:allow-hide"
   ]
 }
