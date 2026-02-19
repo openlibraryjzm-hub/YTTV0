@@ -144,6 +144,7 @@ yttv2/
 │   ├── ui-layout.md              # Layout & Side Menu
 │   ├── ui-pages.md               # Page components (main pages)
 │   ├── orb-page.md               # OrbPage configuration documentation
+   ├── orb-navigation.md         # Orb Navigation System documentation
 │   ├── you-page.md               # YouPage configuration documentation
 │   ├── page-page.md              # PagePage configuration documentation
 │   ├── asset-manager-page.md     # Asset Manager Page documentation
@@ -184,7 +185,7 @@ yttv2/
 |---------|-----------------|-------------------|
 | **Player Controller** | `advanced-player-controller.md` | `navigation-routing.md`, `state-management.md` |
 | **Settings Hub** | `ui-pages.md` (Section 4.1.9) | `state-management.md` (configStore) |
-| **Orb Configuration** | `orb-page.md` | `state-management.md` (configStore) |
+| **Orb Configuration** | `orb-page.md` | `state-management.md` (configStore), `orb-navigation.md` |
 | **Profile & Signature** | `you-page.md` | `state-management.md` (configStore) |
 | **Page Banner & Layer 2** | `page-page.md` | `state-management.md` (configStore), `page-banner.md` |
 | **Asset Manager** | `asset-manager-page.md` | `orb-page.md`, `page-page.md`, `state-management.md` |
@@ -219,6 +220,11 @@ yttv2/
 
 ### Feature Documentation
 
+#### `orb-navigation.md`
+**Covers**: Independent Orb navigation system within the Player Controller
+**Key Topics**: **Orb Context**, **Live Preview**, **Playlist Filtering**, **Direct Selection**
+**Cross-References**: See `advanced-player-controller.md`, `state-management.md` (`configStore`)
+
 #### `mission-hub.md`
 **Covers**: Gamified start screen, mission system, time bank productivity, tab management
 **Key Topics**: **Home Hub**, mission creation/reset, time-gating, persistence
@@ -227,7 +233,7 @@ yttv2/
 #### `advanced-player-controller.md`
 **Covers**: Central orb, menu rectangles, playlist/video navigation, preview system, folder management, dual player system, likes playlist
 **Key Topics**: Orb customization, **orb presets**, preview navigation, colored shuffle, quick assign, pin system
-**Cross-References**: See `navigation-routing.md` for navigation flows, `state-management.md` for store usage
+**Cross-References**: See `navigation-routing.md` for navigation flows, `state-management.md` for store usage, `orb-navigation.md` for dedicated controls
 
 #### `playlist&tab.md`
 **Covers**: Playlist management, tab system, tab presets, colored folders, sticky folders
@@ -500,3 +506,10 @@ For detailed information about the application's theme system and recent color c
   - **Layout Alignment**: Switched mission items to `items-start` for consistent alignment of controls with multi-line text.
   - **Enhanced Input**: Upgraded task creation to use a `textarea` for easier entry of detailed mission objectives.
   - **Tooltips**: Added full-text tooltips on hover for all mission items.
+- **Orb Navigation System**:
+  - **Independent Browsing**: Added dedicated browsing controls to `PlayerController.jsx` for navigating Orbs separately from video playlists.
+  - **Live Preview**: Added "Live Preview" toggle to `OrbConfigPlaceholderPage.jsx` to test configurations directly on the main player.
+  - **Direct Selection**: Clicking an Orb card in `VideosPage.jsx` now updates the global navigation state (`orbNavPlaylistId`, `orbNavOrbId`) in `configStore.js`.
+  - **Split-Screen Fix**: Orb Config shortcut button now correctly switches to split-screen mode if clicked while in full-screen.
+  - **Auto-Disable**: Live Preview mode automatically turns off when navigating away from the config page.
+  - **Documentation**: Created `atlas/orb-navigation.md`.

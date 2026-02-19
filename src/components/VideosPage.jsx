@@ -105,7 +105,10 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
     applyOrbFavorite,
     bannerPresets,
     updateBannerPresetPlaylists,
-    applyBannerPreset
+    applyBannerPreset,
+    //orb navigation state setters
+    setOrbNavPlaylistId,
+    setOrbNavOrbId
   } = useConfigStore();
 
   // Helper to get inspect label
@@ -1889,7 +1892,14 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
                             allPlaylists={allPlaylists}
                             onUpdatePlaylists={updateOrbFavoritePlaylists}
                             minimal={true}
-                            onClick={() => applyOrbFavorite(video)}
+                            onClick={() => {
+                              applyOrbFavorite(video);
+                              // Sync Navigation
+                              if (activePlaylistId) {
+                                setOrbNavPlaylistId(activePlaylistId);
+                              }
+                              setOrbNavOrbId(video.originalId || parseInt(video.id.replace('orb-', '')));
+                            }}
                             currentPlaylistId={activePlaylistId}
                           />
                         </div>

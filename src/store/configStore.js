@@ -224,6 +224,16 @@ export const useConfigStore = create(
             orbMaskModes: { tl: 'rect', tr: 'rect', bl: 'rect', br: 'rect' },
             setOrbMaskModes: (val) => set({ orbMaskModes: val }),
 
+            // Orb Preview Mode (Overrides everything for configuration)
+            isOrbPreviewMode: false,
+            setIsOrbPreviewMode: (val) => set({ isOrbPreviewMode: val }),
+
+            // Shared Orb Navigation State
+            orbNavPlaylistId: null,
+            setOrbNavPlaylistId: (val) => set({ orbNavPlaylistId: val }),
+            orbNavOrbId: null,
+            setOrbNavOrbId: (val) => set({ orbNavOrbId: val }),
+
             // Orb Favorites - saved configurations
             orbFavorites: [],
             addOrbFavorite: (favorite) => set((state) => ({

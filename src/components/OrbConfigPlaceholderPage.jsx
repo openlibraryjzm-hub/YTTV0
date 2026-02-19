@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
-import { Settings, Plus, Trash2, ZoomIn, Move, Maximize, X, Check, ChevronDown, Save, MoreHorizontal } from 'lucide-react';
+import { Settings, Plus, Trash2, ZoomIn, Move, Maximize, X, Check, ChevronDown, Save, MoreHorizontal, Eye } from 'lucide-react';
 import { useConfigStore } from '../store/configStore';
 import { usePlaylistStore } from '../store/playlistStore';
 import OrbCropModal from './OrbCropModal';
@@ -20,7 +20,8 @@ const OrbConfigPlaceholderPage = () => {
         orbMaskRects, setOrbMaskRects,
         orbMaskPaths, setOrbMaskPaths, // New
         orbMaskModes, setOrbMaskModes, // New
-        orbFavorites, addOrbFavorite, clearOrbFavorites // Added functions
+        orbFavorites, addOrbFavorite, clearOrbFavorites,
+        isOrbPreviewMode, setIsOrbPreviewMode // New
     } = useConfigStore();
 
     // Playlist Store
@@ -56,6 +57,13 @@ const OrbConfigPlaceholderPage = () => {
         document.addEventListener('mousedown', handleClickOutside);
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
+
+    // Cleanup: Turn off live preview when leaving the page
+    useEffect(() => {
+        return () => {
+            setIsOrbPreviewMode(false);
+        };
+    }, [setIsOrbPreviewMode]);
 
     const togglePlaylistSelection = (id) => {
         setSelectedPlaylistIds(prev =>
@@ -107,15 +115,7 @@ const OrbConfigPlaceholderPage = () => {
                     {/* Visualizer Section */}
                     <div className="bg-slate-800/50 rounded-2xl p-6 border border-white/10 flex flex-col items-center">
                         {/* Toggle Spill Switch */}
-                        <div className="w-full flex items-center justify-between mb-4">
-                            <label className="text-xs font-bold uppercase text-slate-400">Enable Spill</label>
-                            <button
-                                onClick={() => setIsSpillEnabled(!isSpillEnabled)}
-                                className={`w-12 h-6 rounded-full p-1 transition-colors ${isSpillEnabled ? 'bg-sky-500' : 'bg-slate-600'}`}
-                            >
-                                <div className={`w-4 h-4 rounded-full bg-white shadow-sm transition-transform ${isSpillEnabled ? 'translate-x-6' : 'translate-x-0'}`} />
-                            </button>
-                        </div>
+
 
                         {/* Visualizer Container */}
                         <div className="relative w-64 h-64 border-2 border-white/20 rounded-3xl overflow-visible bg-black/20 select-none group backdrop-blur-sm shadow-xl">
@@ -253,6 +253,35 @@ const OrbConfigPlaceholderPage = () => {
                 {/* Right Column: Sliders & Config */}
                 <div className="space-y-6">
                     <div className="bg-slate-800/50 rounded-2xl p-6 border border-white/10 h-full flex flex-col gap-8">
+                        {/* Toggles Section */}
+                        <div className="space-y-4 border-b border-white/5 pb-2">
+                            {/* Toggle Spill Switch */}
+                            <div className="w-full flex items-center justify-between">
+                                <label className="text-xs font-bold uppercase text-slate-400">Enable Spill</label>
+                                <button
+                                    onClick={() => setIsSpillEnabled(!isSpillEnabled)}
+                                    className={`w-12 h-6 rounded-full p-1 transition-colors ${isSpillEnabled ? 'bg-sky-500' : 'bg-slate-600'}`}
+                                >
+                                    <div className={`w-4 h-4 rounded-full bg-white shadow-sm transition-transform ${isSpillEnabled ? 'translate-x-6' : 'translate-x-0'}`} />
+                                </button>
+                            </div>
+
+                            {/* Toggle Live Preview Switch */}
+                            <div className="w-full flex items-center justify-between">
+                                <label className="text-xs font-bold uppercase text-slate-400 flex items-center gap-2">
+                                    <Eye size={14} className={isOrbPreviewMode ? "text-sky-400" : "text-slate-500"} />
+                                    Live Preview
+                                </label>
+                                <button
+                                    onClick={() => setIsOrbPreviewMode(!isOrbPreviewMode)}
+                                    className={`w-12 h-6 rounded-full p-1 transition-colors ${isOrbPreviewMode ? 'bg-emerald-500' : 'bg-slate-600'}`}
+                                    title="Show this configuration on the main Orb"
+                                >
+                                    <div className={`w-4 h-4 rounded-full bg-white shadow-sm transition-transform ${isOrbPreviewMode ? 'translate-x-6' : 'translate-x-0'}`} />
+                                </button>
+                            </div>
+                        </div>
+
                         {/* Adjustments Section */}
                         <div>
                             <h3 className="text-xs font-black uppercase text-slate-400 tracking-widest mb-6 flex items-center gap-2 border-b border-white/5 pb-2">
@@ -429,7 +458,7 @@ const OrbConfigPlaceholderPage = () => {
                 maskModes={orbMaskModes}
                 setMaskModes={setOrbMaskModes}
             />
-        </div>
+        </div >
     );
 };
 

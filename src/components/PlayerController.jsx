@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import {
   Play,
   Home,
@@ -27,6 +27,8 @@ import {
   Zap,
   Radio,
   Flame,
+  ChevronsLeft,
+  ChevronsRight,
 
   Upload,
   Palette,
@@ -1604,7 +1606,11 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
     orbAdvancedMasks, orbMaskRects,
     orbMaskPaths, orbMaskModes, // New Path Props
     // Orb Favorites for Overrides
-    orbFavorites
+    orbFavorites,
+    isOrbPreviewMode,
+    // Orb Navigation State (Shared)
+    orbNavPlaylistId, setOrbNavPlaylistId,
+    orbNavOrbId, setOrbNavOrbId
   } = useConfigStore();
 
   const { lockApp } = useMissionStore();
@@ -1626,7 +1632,122 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
   };
 
   // --- Orb Image Override Logic ---
+  // New Orb Navigation State (Now derived from Store)
+
+  // Computed: Playlists that have at least one Orb assigned
+  const availableOrbPlaylists = useMemo(() => {
+    if (!allPlaylists || !orbFavorites) return [];
+    // Get all playlist IDs that have at least one orb assigned
+    const playlistIdsWithOrbs = new Set();
+    orbFavorites.forEach(orb => {
+      if (orb.playlistIds && orb.playlistIds.length > 0) {
+        orb.playlistIds.forEach(id => playlistIdsWithOrbs.add(String(id)));
+      }
+    });
+    // Filter allPlaylists
+    return allPlaylists.filter(p => playlistIdsWithOrbs.has(String(p.id)));
+  }, [allPlaylists, orbFavorites]);
+
+  // Computed: Orbs in the currently selected Orb-Nav playlist
+  const availableOrbsInPlaylist = useMemo(() => {
+    if (!orbNavPlaylistId || !orbFavorites) return [];
+    return orbFavorites.filter(orb =>
+      orb.playlistIds && orb.playlistIds.map(String).includes(String(orbNavPlaylistId))
+    );
+  }, [orbNavPlaylistId, orbFavorites]);
+
+  // Handler: Navigate Orb Playlists
+  const navigateOrbPlaylist = (direction) => {
+    if (availableOrbPlaylists.length === 0) return;
+
+    let nextIndex = 0;
+    const currentIndex = orbNavPlaylistId
+      ? availableOrbPlaylists.findIndex(p => String(p.id) === String(orbNavPlaylistId))
+      : -1;
+
+    if (direction === 'next') {
+      nextIndex = (currentIndex + 1) % availableOrbPlaylists.length;
+    } else {
+      nextIndex = (currentIndex - 1 + availableOrbPlaylists.length) % availableOrbPlaylists.length;
+    }
+
+    const nextPlaylist = availableOrbPlaylists[nextIndex];
+    if (nextPlaylist) {
+      setOrbNavPlaylistId(nextPlaylist.id);
+
+      // Auto-select first orb in new playlist
+      const orbsInNext = orbFavorites.filter(orb =>
+        orb.playlistIds && orb.playlistIds.map(String).includes(String(nextPlaylist.id))
+      );
+      if (orbsInNext.length > 0) {
+        setOrbNavOrbId(orbsInNext[0].id);
+      } else {
+        setOrbNavOrbId(null);
+      }
+    }
+  };
+
+  // Handler: Navigate Orbs in current Orb-Nav Playlist
+  const navigateOrb = (direction) => {
+    if (availableOrbsInPlaylist.length === 0) return;
+
+    let nextIndex = 0;
+    const currentIndex = orbNavOrbId
+      ? availableOrbsInPlaylist.findIndex(o => o.id === orbNavOrbId)
+      : -1;
+
+    if (direction === 'next') {
+      nextIndex = (currentIndex + 1) % availableOrbsInPlaylist.length;
+    } else {
+      nextIndex = (currentIndex - 1 + availableOrbsInPlaylist.length) % availableOrbsInPlaylist.length;
+    }
+
+    const nextOrb = availableOrbsInPlaylist[nextIndex];
+    if (nextOrb) {
+      setOrbNavOrbId(nextOrb.id);
+    }
+  };
+
   const getEffectiveOrbImage = () => {
+    // -1. CHECK LIVE PREVIEW MODE (Highest Priority)
+    if (isOrbPreviewMode) {
+      // Return the current store state as the "effective orb"
+      // This forces the render 
+      return {
+        image: customOrbImage,
+        scale: orbImageScale,
+        xOffset: orbImageXOffset,
+        yOffset: orbImageYOffset,
+        isSpillEnabled: isSpillEnabled, // Use Store State
+        orbSpill: orbSpill,
+        orbAdvancedMasks: orbAdvancedMasks,
+        orbMaskRects: orbMaskRects,
+        orbMaskPaths: orbMaskPaths,
+        orbMaskModes: orbMaskModes
+      };
+    }
+
+    // 0. Check Orb Navigation Override (Next Priority)
+    if (orbNavOrbId && orbNavPlaylistId) {
+      const selectedOrb = orbFavorites.find(f => f.id === orbNavOrbId);
+      if (selectedOrb && selectedOrb.customOrbImage) {
+        return {
+          image: selectedOrb.customOrbImage,
+          scale: selectedOrb.orbImageScale || 1,
+          xOffset: selectedOrb.orbImageXOffset || 0,
+          yOffset: selectedOrb.orbImageYOffset || 0,
+          // Pass full config for spill logic if needed, but current usage only extracts these 4
+          // We might need to expose spill/masks too?
+          // PlayerController usages:
+          // orbImageSrc, displayScale, displayX, displayY
+          // AND spill logic in the render...
+          // The render logic uses `isSpillEnabled` and `orbSpill` from STORE directly (lines 1787-1819)
+          // To fully override, we need to return these and update the render variables
+          ...selectedOrb
+        };
+      }
+    }
+
     // 1. Identify Playlist
     let playlistName = null;
     if (currentPlaylistId) {
@@ -1670,7 +1791,8 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
             image: selected.customOrbImage,
             scale: selected.orbImageScale || 1, // Use raw multiplier (e.g. 1.0), do NOT divide by 100
             xOffset: selected.orbImageXOffset || 0,
-            yOffset: selected.orbImageYOffset || 0
+            yOffset: selected.orbImageYOffset || 0,
+            ...selected
           };
         }
       }
@@ -1683,6 +1805,14 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
   const displayScale = effectiveOrb ? effectiveOrb.scale : orbImageScale;
   const displayX = effectiveOrb ? effectiveOrb.xOffset : orbImageXOffset;
   const displayY = effectiveOrb ? effectiveOrb.yOffset : orbImageYOffset;
+
+  // Derive effective spill/mask settings (Override Store if Orb is selected)
+  const displayIsSpillEnabled = effectiveOrb?.isSpillEnabled ?? isSpillEnabled;
+  const displayOrbSpill = effectiveOrb?.orbSpill ?? orbSpill;
+  const displayOrbAdvancedMasks = effectiveOrb?.orbAdvancedMasks ?? orbAdvancedMasks;
+  const displayOrbMaskModes = effectiveOrb?.orbMaskModes ?? orbMaskModes;
+  const displayOrbMaskPaths = effectiveOrb?.orbMaskPaths ?? orbMaskPaths;
+  const displayOrbMaskRects = effectiveOrb?.orbMaskRects ?? orbMaskRects;
 
   // Get video display info (use preview if in preview mode)
   // Fallback to activeVideoItem if displayVideoItem is not set
@@ -1789,7 +1919,7 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
             <clipPath id="orbClipPath" clipPathUnits="objectBoundingBox">
               <circle cx="0.5" cy="0.5" r="0.5" />
               {['tl', 'tr', 'bl', 'br'].map(q => {
-                if (!isSpillEnabled || !orbSpill[q]) return null;
+                if (!displayIsSpillEnabled || !displayOrbSpill[q]) return null;
 
                 const defaults = {
                   tl: { x: -0.5, y: -0.5, w: 1.0, h: 1.0 },
@@ -1798,19 +1928,19 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
                   br: { x: 0.5, y: 0.5, w: 0.5, h: 0.5 }
                 };
 
-                if (!orbAdvancedMasks?.[q]) {
+                if (!displayOrbAdvancedMasks?.[q]) {
                   const d = defaults[q];
                   return <rect key={q} x={d.x} y={d.y} width={d.w} height={d.h} />;
                 }
 
-                const mode = orbMaskModes?.[q] || 'rect';
+                const mode = displayOrbMaskModes?.[q] || 'rect';
                 if (mode === 'path') {
-                  const points = orbMaskPaths?.[q] || [];
+                  const points = displayOrbMaskPaths?.[q] || [];
                   if (points.length < 3) return <rect key={q} x={defaults[q].x} y={defaults[q].y} width={defaults[q].w} height={defaults[q].h} />;
                   const pts = points.map(p => `${p.x / 100},${p.y / 100}`).join(' ');
                   return <polygon key={q} points={pts} />;
                 } else {
-                  const r = orbMaskRects?.[q] || { x: 0, y: 0, w: 50, h: 50 };
+                  const r = displayOrbMaskRects?.[q] || { x: 0, y: 0, w: 50, h: 50 };
                   return <rect key={q} x={r.x / 100} y={r.y / 100} width={r.w / 100} height={r.h / 100} />;
                 }
               })}
@@ -2051,6 +2181,48 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
 
           {/* THE ORB SECTION - Centered */}
           <div className="flex items-center justify-center relative group z-30 flex-shrink-0" style={{ marginLeft: `${orbMenuGap}px`, marginRight: `${orbMenuGap}px` }}>
+            {/* Orb Navigation Controls (Flanking the Orb) */}
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-50 overflow-visible">
+              {/* Left Controls: Prev Playlist / Prev Orb */}
+              <div className="absolute left-0 -translate-x-full h-full flex flex-col items-end justify-center gap-1 pr-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-auto">
+                {/* Prev Playlist */}
+                <button
+                  onClick={() => navigateOrbPlaylist('prev')}
+                  className="p-1 rounded-full bg-slate-800/80 text-sky-400 hover:bg-sky-500 hover:text-white transition-colors border border-slate-600 shadow-lg"
+                  title="Previous Orb Playlist"
+                >
+                  <ChevronsLeft size={20} />
+                </button>
+                {/* Prev Orb */}
+                <button
+                  onClick={() => navigateOrb('prev')}
+                  className="p-1 rounded-full bg-slate-800/80 text-white hover:bg-sky-500 transition-colors border border-slate-600 shadow-lg"
+                  title="Previous Orb"
+                >
+                  <ChevronLeft size={16} />
+                </button>
+              </div>
+
+              {/* Right Controls: Next Playlist / Next Orb */}
+              <div className="absolute right-0 translate-x-full h-full flex flex-col items-start justify-center gap-1 pl-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-auto">
+                {/* Next Playlist */}
+                <button
+                  onClick={() => navigateOrbPlaylist('next')}
+                  className="p-1 rounded-full bg-slate-800/80 text-sky-400 hover:bg-sky-500 hover:text-white transition-colors border border-slate-600 shadow-lg"
+                  title="Next Orb Playlist"
+                >
+                  <ChevronsRight size={20} />
+                </button>
+                {/* Next Orb */}
+                <button
+                  onClick={() => navigateOrb('next')}
+                  className="p-1 rounded-full bg-slate-800/80 text-white hover:bg-sky-500 transition-colors border border-slate-600 shadow-lg"
+                  title="Next Orb"
+                >
+                  <ChevronRight size={16} />
+                </button>
+              </div>
+            </div>
             {/* Audio Visualizer - Around Orb */}
             {/* Audio Visualizer - Around Orb */}
             <AudioVisualizer
@@ -2086,10 +2258,10 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
                   alt=""
                   className="max-w-none transition-all duration-500"
                   style={{
-                    width: isSpillEnabled ? `${orbSize * displayScale * orbImageScaleW}px` : '100%',
-                    height: isSpillEnabled ? `${orbSize * displayScale * orbImageScaleH}px` : '100%',
-                    transform: isSpillEnabled ? `translate(${displayX}px, ${displayY}px)` : 'none',
-                    objectFit: isSpillEnabled ? 'contain' : 'cover'
+                    width: displayIsSpillEnabled ? `${orbSize * displayScale * orbImageScaleW}px` : '100%',
+                    height: displayIsSpillEnabled ? `${orbSize * displayScale * orbImageScaleH}px` : '100%',
+                    transform: displayIsSpillEnabled ? `translate(${displayX}px, ${displayY}px)` : 'none',
+                    objectFit: displayIsSpillEnabled ? 'contain' : 'cover'
                   }}
                 />
               </div>
@@ -2103,7 +2275,15 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
               <button className="absolute left-1/2 top-0 -translate-x-1/2 -translate-y-1/2 rounded-full flex items-center justify-center bg-white shadow-xl hover:scale-110 active:scale-95 group/btn z-50 border-2 border-sky-100 opacity-0 group-hover:opacity-100 transition-all duration-300" style={{ width: `28px`, height: `28px` }} onClick={() => fileInputRef.current.click()} title={getInspectTitle('Upload orb image')}><Upload size={16} className={theme.accent} strokeWidth={3} /></button>
 
               {/* Orb Config Button (Top Left) */}
-              <button onClick={() => setCurrentPage('orb-config')} className="absolute rounded-full flex items-center justify-center bg-white shadow-xl hover:scale-110 active:scale-95 group/btn z-50 border-2 border-sky-50 opacity-0 group-hover:opacity-100 transition-all duration-300" style={{ left: '15%', top: '15%', transform: 'translate(-50%, -50%)', width: `28px`, height: `28px` }} title={getInspectTitle('Orb Config') || 'Orb Config'}>
+              <button
+                onClick={() => {
+                  if (viewMode === 'full') setViewMode('half');
+                  setCurrentPage('orb-config');
+                }}
+                className="absolute rounded-full flex items-center justify-center bg-white shadow-xl hover:scale-110 active:scale-95 group/btn z-50 border-2 border-sky-50 opacity-0 group-hover:opacity-100 transition-all duration-300"
+                style={{ left: '15%', top: '15%', transform: 'translate(-50%, -50%)', width: `28px`, height: `28px` }}
+                title={getInspectTitle('Orb Config') || 'Orb Config'}
+              >
                 <Circle size={14} className="text-slate-800" strokeWidth={2.5} />
               </button>
 
