@@ -22,6 +22,7 @@ The **Mission Hub** (also known as "Home Hub" or "Mission Control") is a gamifie
   - **Time**: Adds the specified minutes to the Time Bank.
   - **Credits (Coins)**: Awards 1 Credit per minute of the task (e.g., 15m task = 15 Credits).
 - **Completion**: Clicking a mission's checkbox marks it as complete and immediately grants both rewards.
+- **Readability**: Mission descriptions support multi-line wrapping and top-aligned layouts, ensuring "quite long" tasks are fully legible without being cut off. Hovering over a mission displays the full text as a tooltip.
 - **Reset**: Completed missions can be individually reset (via a yellow refresh icon). This allows users to repeat a habit or task to earn more time and credits without deleting and recreating the mission.
 
 ### 2.3 Tabbed Organization
@@ -101,7 +102,7 @@ The `App.jsx` component acts as the enforcer of the Mission Hub's rules.
 2.  **Add Mission**: 
     - Select or create a Tab.
     - Click "Add Task".
-    - Type a description and select a time reward (e.g., 15m).
+    - Type a description (supports multi-line entry via textarea) and select a time reward (e.g., 15m).
 3.  **Earn Time**: Complete the task in real life, then click the circle in the UI. Your Time Bank will increase.
 4.  **Launch System**: Click the large "Launch System" button.
 5.  **Use App**: Enjoy the app. The timer runs in the background.

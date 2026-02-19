@@ -203,7 +203,6 @@ yttv2/
 | **Pop-out Browser** | `popout-browser.md` | `advanced-player-controller.md` |
 | **App Banner** | `app-banner.md` | `advanced-player-controller.md`, `ui-layout.md`, `state-management.md` |
 | **Page Banner** | `page-banner.md` | `ui-pages.md`, `ui-layout.md`, `state-management.md` |
-| **Mission Hub** | `mission-hub.md` | `state-management.md`, `ui-pages.md` |
 | **Pokedex System** | `pokedex-system.md` | `state-management.md`, `ui-pages.md`, `database-schema.md` |
 | **Debug/Testing** | `debug.md` | `ui.md` (inspect mode, debug bounds) |
 
@@ -496,3 +495,8 @@ For detailed information about the application's theme system and recent color c
   - **Component Styling**: Updated all mission items, tabs, and reward cards with refined slate/blue text and high-contrast accents.
   - **Readability**: Optimized typography and spacing for better focus in gamified workflows.
   - **Lootbox Polish**: Refined legendary reward cards and shard visualization for the light theme.
+- **Mission Hub UI Fixes**:
+  - **Text Wrapping**: Removed truncation from mission descriptions, enabling multi-line support for long tasks.
+  - **Layout Alignment**: Switched mission items to `items-start` for consistent alignment of controls with multi-line text.
+  - **Enhanced Input**: Upgraded task creation to use a `textarea` for easier entry of detailed mission objectives.
+  - **Tooltips**: Added full-text tooltips on hover for all mission items.

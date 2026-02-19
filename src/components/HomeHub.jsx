@@ -865,13 +865,18 @@ const HomeHub = ({ onUnlock }) => {
                                 <div className="space-y-4">
                                     <div>
                                         <label className="text-xs text-blue-800 uppercase tracking-wider font-extrabold mb-1 block">Task Description</label>
-                                        <input
-                                            type="text"
+                                        <textarea
                                             value={newMissionText}
                                             onChange={(e) => setNewMissionText(e.target.value)}
                                             placeholder="Enter mission objective..."
-                                            className="w-full bg-white border border-blue-200 rounded px-3 py-2 text-slate-800 focus:border-blue-500 outline-none text-sm placeholder-slate-300 shadow-sm"
+                                            className="w-full bg-white border border-blue-200 rounded px-3 py-2 text-slate-800 focus:border-blue-500 outline-none text-sm placeholder-slate-300 shadow-sm min-h-[80px] resize-none"
                                             autoFocus
+                                            onKeyDown={(e) => {
+                                                if (e.key === 'Enter' && !e.shiftKey) {
+                                                    e.preventDefault();
+                                                    handleAddMission(e);
+                                                }
+                                            }}
                                         />
                                     </div>
 
@@ -915,26 +920,28 @@ const HomeHub = ({ onUnlock }) => {
                                     onMouseEnter={() => setHoveredMission(mission.id)}
                                     onMouseLeave={() => setHoveredMission(null)}
                                 >
-                                    <div className="flex justify-between items-center gap-4">
+                                    <div className="flex justify-between items-start gap-4">
                                         <div className="flex-1 min-w-0">
-                                            <div className="flex items-center gap-3">
-                                                <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center cursor-pointer transition-all ${mission.completed ? 'border-blue-500 bg-blue-500 text-white' : 'border-blue-100 bg-blue-50 group-hover:border-blue-400 group-hover:bg-white'}`} onClick={() => !mission.completed && completeMission(mission.id)}>
+                                            <div className="flex items-start gap-3">
+                                                <div className={`w-6 h-6 mt-0.5 rounded-full border-2 flex items-center justify-center cursor-pointer transition-all ${mission.completed ? 'border-blue-500 bg-blue-500 text-white' : 'border-blue-100 bg-blue-50 group-hover:border-blue-400 group-hover:bg-white'}`} onClick={() => !mission.completed && completeMission(mission.id)}>
                                                     {mission.completed && <CheckCircle size={14} />}
                                                 </div>
-                                                <div className="flex-1 flex items-center justify-between gap-4 min-w-0">
-                                                    <h3 className={`font-bold truncate ${mission.completed ? 'text-slate-400 line-through' : 'text-slate-800'}`}>{mission.text}</h3>
-                                                    <span className={`text-[10px] font-mono font-black px-2 py-1 rounded-full border-2 whitespace-nowrap flex items-center gap-1 ${mission.completed ? 'bg-blue-100 border-blue-200 text-blue-400' : 'bg-blue-50 border-blue-100 text-blue-600'}`}>
-                                                        <Clock size={10} />
-                                                        {Math.floor(mission.reward / 60)}M
-                                                    </span>
-                                                    <span className={`text-[10px] font-mono font-black px-2 py-1 rounded-full border-2 whitespace-nowrap flex items-center gap-1 ${mission.completed ? 'bg-slate-100 border-slate-200 text-slate-400' : 'bg-yellow-50 border-yellow-200 text-yellow-700'}`}>
-                                                        <span className="font-bold text-[10px]">$</span>
-                                                        {mission.coinReward || Math.floor(mission.reward / 60)}
-                                                    </span>
+                                                <div className="flex-1 flex items-start justify-between gap-4 min-w-0">
+                                                    <h3 className={`font-bold flex-1 break-words leading-tight ${mission.completed ? 'text-slate-400 line-through' : 'text-slate-800'}`} title={mission.text}>{mission.text}</h3>
+                                                    <div className="flex flex-col sm:flex-row items-end sm:items-center gap-2 flex-shrink-0 mt-0.5">
+                                                        <span className={`text-[10px] font-mono font-black px-2 py-1 rounded-full border-2 whitespace-nowrap flex items-center gap-1 ${mission.completed ? 'bg-blue-100 border-blue-200 text-blue-400' : 'bg-blue-50 border-blue-100 text-blue-600'}`}>
+                                                            <Clock size={10} />
+                                                            {Math.floor(mission.reward / 60)}M
+                                                        </span>
+                                                        <span className={`text-[10px] font-mono font-black px-2 py-1 rounded-full border-2 whitespace-nowrap flex items-center gap-1 ${mission.completed ? 'bg-slate-100 border-slate-200 text-slate-400' : 'bg-yellow-50 border-yellow-200 text-yellow-700'}`}>
+                                                            <span className="font-bold text-[10px]">$</span>
+                                                            {mission.coinReward || Math.floor(mission.reward / 60)}
+                                                        </span>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
-                                        <div className="flex items-center gap-2 flex-shrink-0">
+                                        <div className="flex items-center gap-2 flex-shrink-0 mt-0.5">
                                             {mission.completed && (
                                                 <button onClick={() => resetMission(mission.id)} className="p-1.5 text-blue-400 hover:text-blue-600 transition-colors" title="Reset Mission">
                                                     <RotateCcw size={16} />
