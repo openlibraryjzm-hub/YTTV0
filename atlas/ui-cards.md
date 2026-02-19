@@ -338,7 +338,7 @@ Users see video cards built using the Card component system with video-specific 
   - **Hover**: Lighter background, top-right controls (Pin/Star), bottom-right menu, and subtitle appear
 
 - **Interactive Elements**:
-  - **Card Click**: Plays video in main player
+  - **Card Click**: Plays video in main player (No detailed preview expansion on hover).
 
   - **Pin Button** (top-right):
     - **Click unpinned**: Adds normal pin (filled blue icon).
@@ -357,11 +357,11 @@ Users see video cards built using the Card component system with video-specific 
     - Star outline color reflects the current quick assign folder color (when video has no folder assignments)
 
   - **3-Dot Menu** (bottom-right on thumbnail):
-    - **Move to Playlist**: Opens modal to move video to another playlist (removes from current)
-    - **Copy to Playlist**: Opens modal to copy video to another playlist (keeps in current)
-    - **Assign to Folder**: Opens submenu to assign video to color folder
-    - **Quick Assign**: Sets specific folder color as quick assign preference
-    - **Delete**: Removes video from playlist
+    - **Modern Menu**: Uses `ModernVideoMenu` with floating glassmorphism design.
+    - **Move to Playlist**: Opens modal to move video to another playlist (removes from current).
+    - **Copy to Playlist**: Opens modal to copy video to another playlist (keeps in current).
+    - **Delete**: Removes video from playlist (context-aware removal).
+    - *Note: "Assign to Folder" and "Quick Assign" removed to streamline UI.*
   - **Bulk Tag Grid** (hover in bulk mode): 
     - 16-color grid (4x4 pattern) that perfectly covers the entire thumbnail with no gaps
     - Each square fills its grid cell completely (`w-full h-full`)

@@ -66,10 +66,11 @@ yttv2/
 │   │   ├── Card.jsx              # Base card component
 │   │   ├── CardThumbnail.jsx     # Thumbnail display component
 │   │   ├── CardContent.jsx       # Card content (title, subtitle, metadata)
-│   │   ├── CardActions.jsx       # Quick actions and menu management
-│   │   ├── CardMenu.jsx          # Enhanced 3-dot menu with submenu support
-│   │   ├── ImageHoverPreview.jsx # 4chanX-style image expansion on hover (high-res preview)
-│   │   ├── VideoCard.jsx         # Video card implementation
+│   │   ├── CardActions.jsx       # Quick actions management
+│   │   ├── CardMenu.jsx          # Legacy 3-dot menu
+│   │   ├── ModernVideoMenu.jsx   # New floating glassmorphism menu system
+│   │   ├── ImageHoverPreview.jsx # High-res image expansion (used for Tweets)
+│   │   ├── VideoCard.jsx         # Video card implementation (uses ModernVideoMenu)
 │   │   ├── OrbCard.jsx           # Orb preset card component
 │   │   ├── BannerPresetCard.jsx  # App banner preset card component
 │   │   ├── TweetCard.jsx         # Tweet card component
@@ -469,6 +470,12 @@ For detailed information about the application's theme system and recent color c
   - Supports fetching high-resolution original images (`name=orig`) for better quality.
   - Added "Open on X" functionality for external validation.
   - Documented in `atlas/ui-pages.md`.
+- **Video Card Modernization**:
+  - **Modern Context Menu**: Replaced legacy system with `ModernVideoMenu.jsx`, featuring a floating glassmorphism design, backdrop blur, and smooth animations.
+  - **Menu Actions**: 
+    - Added **Delete from Playlist** functionality (removes video from current context).
+    - Streamlined options by removing "Assign to Folder" and "Quick Assign" to declutter the UI (folder actions remain accessible via Star/Keyboard shortcuts).
+  - **Visual Polish**: Removed `ImageHoverPreview` (thumbnail expansion) from standard Video Cards for a cleaner, more stable grid experience.
 - **App Banner Enhancements**:
   - **Dual Mode Configuration**: Implemented separate banner configurations for Fullscreen and Split-screen (Half/Quarter) modes.
     - Updated `configStore.js` to store distinct `fullscreenBanner` and `splitscreenBanner` objects with migration support.
