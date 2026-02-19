@@ -1610,7 +1610,13 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
     isOrbPreviewMode,
     // Orb Navigation State (Shared)
     orbNavPlaylistId, setOrbNavPlaylistId,
-    orbNavOrbId, setOrbNavOrbId
+    orbNavOrbId, setOrbNavOrbId,
+
+    // Banner Navigation State (Shared)
+    activeNavigationMode, setActiveNavigationMode,
+    bannerNavPlaylistId, setBannerNavPlaylistId,
+    bannerNavBannerId, setBannerNavBannerId,
+    bannerPresets
   } = useConfigStore();
 
   const { lockApp } = useMissionStore();
@@ -1705,6 +1711,97 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
     const nextOrb = availableOrbsInPlaylist[nextIndex];
     if (nextOrb) {
       setOrbNavOrbId(nextOrb.id);
+    }
+  };
+
+  // --- Banner Navigation Logic ---
+
+  // Computed: Playlists that have at least one Banner assigned
+  const availableBannerPlaylists = useMemo(() => {
+    if (!allPlaylists || !bannerPresets) return [];
+    const playlistIdsWithBanners = new Set();
+    bannerPresets.forEach(preset => {
+      if (preset.playlistIds && preset.playlistIds.length > 0) {
+        preset.playlistIds.forEach(id => playlistIdsWithBanners.add(String(id)));
+      }
+    });
+    return allPlaylists.filter(p => playlistIdsWithBanners.has(String(p.id)));
+  }, [allPlaylists, bannerPresets]);
+
+  // Computed: Banners in the currently selected Banner-Nav playlist
+  const availableBannersInPlaylist = useMemo(() => {
+    if (!bannerNavPlaylistId || !bannerPresets) return [];
+    return bannerPresets.filter(preset =>
+      preset.playlistIds && preset.playlistIds.map(String).includes(String(bannerNavPlaylistId))
+    );
+  }, [bannerNavPlaylistId, bannerPresets]);
+
+  // Handler: Navigate Banner Playlists
+  const navigateBannerPlaylist = (direction) => {
+    if (availableBannerPlaylists.length === 0) return;
+
+    let nextIndex = 0;
+    const currentIndex = bannerNavPlaylistId
+      ? availableBannerPlaylists.findIndex(p => String(p.id) === String(bannerNavPlaylistId))
+      : -1;
+
+    if (direction === 'next') {
+      nextIndex = (currentIndex + 1) % availableBannerPlaylists.length;
+    } else {
+      nextIndex = (currentIndex - 1 + availableBannerPlaylists.length) % availableBannerPlaylists.length;
+    }
+
+    const nextPlaylist = availableBannerPlaylists[nextIndex];
+    if (nextPlaylist) {
+      setBannerNavPlaylistId(nextPlaylist.id);
+
+      // Auto-select first banner in new playlist
+      const bannersInNext = bannerPresets.filter(preset =>
+        preset.playlistIds && preset.playlistIds.map(String).includes(String(nextPlaylist.id))
+      );
+      if (bannersInNext.length > 0) {
+        setBannerNavBannerId(bannersInNext[0].id);
+      } else {
+        setBannerNavBannerId(null);
+      }
+    }
+  };
+
+  // Handler: Navigate Banners in current Banner-Nav Playlist
+  const navigateBanner = (direction) => {
+    if (availableBannersInPlaylist.length === 0) return;
+
+    let nextIndex = 0;
+    const currentIndex = bannerNavBannerId
+      ? availableBannersInPlaylist.findIndex(b => b.id === bannerNavBannerId)
+      : -1;
+
+    if (direction === 'next') {
+      nextIndex = (currentIndex + 1) % availableBannersInPlaylist.length;
+    } else {
+      nextIndex = (currentIndex - 1 + availableBannersInPlaylist.length) % availableBannersInPlaylist.length;
+    }
+
+    const nextBanner = availableBannersInPlaylist[nextIndex];
+    if (nextBanner) {
+      setBannerNavBannerId(nextBanner.id);
+    }
+  };
+
+  // --- Unified Navigation Handlers ---
+  const handlePlaylistNav = (direction) => { // direction: 'prev' | 'next'
+    if (activeNavigationMode === 'orb') {
+      navigateOrbPlaylist(direction);
+    } else {
+      navigateBannerPlaylist(direction);
+    }
+  };
+
+  const handleItemNav = (direction) => { // direction: 'prev' | 'next'
+    if (activeNavigationMode === 'orb') {
+      navigateOrb(direction);
+    } else {
+      navigateBanner(direction);
     }
   };
 
@@ -2187,7 +2284,7 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
               <div className="absolute left-0 -translate-x-full h-full flex flex-col items-end justify-center gap-1 pr-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-auto">
                 {/* Prev Playlist */}
                 <button
-                  onClick={() => navigateOrbPlaylist('prev')}
+                  onClick={() => handlePlaylistNav('prev')}
                   className="p-1 rounded-full bg-slate-800/80 text-sky-400 hover:bg-sky-500 hover:text-white transition-colors border border-slate-600 shadow-lg"
                   title="Previous Orb Playlist"
                 >
@@ -2195,7 +2292,7 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
                 </button>
                 {/* Prev Orb */}
                 <button
-                  onClick={() => navigateOrb('prev')}
+                  onClick={() => handleItemNav('prev')}
                   className="p-1 rounded-full bg-slate-800/80 text-white hover:bg-sky-500 transition-colors border border-slate-600 shadow-lg"
                   title="Previous Orb"
                 >
@@ -2207,7 +2304,7 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
               <div className="absolute right-0 translate-x-full h-full flex flex-col items-start justify-center gap-1 pl-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-auto">
                 {/* Next Playlist */}
                 <button
-                  onClick={() => navigateOrbPlaylist('next')}
+                  onClick={() => handlePlaylistNav('next')}
                   className="p-1 rounded-full bg-slate-800/80 text-sky-400 hover:bg-sky-500 hover:text-white transition-colors border border-slate-600 shadow-lg"
                   title="Next Orb Playlist"
                 >
@@ -2215,7 +2312,7 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
                 </button>
                 {/* Next Orb */}
                 <button
-                  onClick={() => navigateOrb('next')}
+                  onClick={() => handleItemNav('next')}
                   className="p-1 rounded-full bg-slate-800/80 text-white hover:bg-sky-500 transition-colors border border-slate-600 shadow-lg"
                   title="Next Orb"
                 >
@@ -2300,6 +2397,20 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
               {/* Twitter Button (Bottom Left) */}
               <button onClick={openTwitter} className="absolute rounded-full flex items-center justify-center bg-white shadow-xl hover:scale-110 active:scale-95 group/btn z-50 border-2 border-sky-50 opacity-0 group-hover:opacity-100 transition-all duration-300" style={{ left: '15%', top: '85%', transform: 'translate(-50%, -50%)', width: `28px`, height: `28px` }} title="Open X (Twitter)">
                 <Twitter size={14} className="text-slate-800" strokeWidth={2.5} />
+              </button>
+
+              {/* Navigation Mode Toggle (Bottom Right) */}
+              <button
+                onClick={() => setActiveNavigationMode(activeNavigationMode === 'orb' ? 'banner' : 'orb')}
+                className={`absolute rounded-full flex items-center justify-center bg-white shadow-xl hover:scale-110 active:scale-95 group/btn z-50 border-2 ${activeNavigationMode === 'banner' ? 'border-sky-400 text-sky-600' : 'border-sky-50 text-slate-800'} opacity-0 group-hover:opacity-100 transition-all duration-300`}
+                style={{ left: '85%', top: '85%', transform: 'translate(-50%, -50%)', width: `28px`, height: `28px` }}
+                title={activeNavigationMode === 'orb' ? "Switch to Banner Navigation" : "Switch to Orb Navigation"}
+              >
+                {activeNavigationMode === 'orb' ? (
+                  <Circle size={14} className="text-slate-800" strokeWidth={2.5} />
+                ) : (
+                  <Layout size={14} className="text-sky-600" strokeWidth={2.5} />
+                )}
               </button>
 
 

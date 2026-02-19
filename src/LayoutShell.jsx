@@ -24,26 +24,44 @@ const LayoutShell = ({
     playerBorderPattern, // Shared
     bannerCropModeActive, // Shared
     bannerCropLivePreview, // Shared
-    bannerPreviewMode // From AppPage (override viewMode)
+    bannerPreviewMode, // From AppPage (override viewMode)
+    bannerNavBannerId,
+    bannerPresets
   } = useConfigStore();
 
   // Determine active banner settings based on view mode (or preview override)
-  const activeBanner = bannerPreviewMode
-    ? (bannerPreviewMode === 'fullscreen' ? fullscreenBanner : splitscreenBanner)
-    : (viewMode === 'full' ? fullscreenBanner : splitscreenBanner);
+  // detailed logic:
+  // 1. If bannerPreviewMode is set, that dictates the "Primary" (interactive) banner.
+  // 2. Otherwise, viewMode dictates it ('full' -> fullscreen, 'half'/'quarter' -> splitscreen).
+  const isSplitscreenMode = bannerPreviewMode
+    ? bannerPreviewMode === 'splitscreen'
+    : viewMode !== 'full';
 
-  // Destructure active settings for easier usage
+  // Resolve Effective Banners (Normal vs Nav Mode)
+  let effectiveFullscreenBanner = fullscreenBanner;
+  let effectiveSplitscreenBanner = splitscreenBanner;
+
+  // Only apply navigation override if NOT in preview/edit mode from AppPage
+  if (bannerNavBannerId && !bannerPreviewMode) {
+    const preset = bannerPresets.find(p => p.id === bannerNavBannerId);
+    if (preset) {
+      // Use preset configs if available, falling back to current global if specific slot missing in preset
+      // (Though usually a preset should define what it wants to show)
+      if (preset.fullscreenBanner) effectiveFullscreenBanner = preset.fullscreenBanner;
+      if (preset.splitscreenBanner) effectiveSplitscreenBanner = preset.splitscreenBanner;
+    }
+  }
+
+  const activeBanner = isSplitscreenMode ? effectiveSplitscreenBanner : effectiveFullscreenBanner;
+
+  // Background Banner: In Splitscreen Mode, we also render the Fullscreen Banner behind.
+  // In Fullscreen Mode, we only render the Fullscreen Banner (which is active).
+  const backgroundBanner = isSplitscreenMode ? effectiveFullscreenBanner : null;
+
+  // Destructure active settings for easier usage (for legacy reference in component if needed)
   const {
-    image: customBannerImage,
-    verticalPosition: bannerVerticalPosition,
-    scale: bannerScale,
-    spillHeight: bannerSpillHeight,
-    maskPath: bannerMaskPath,
-    scrollEnabled: bannerScrollEnabled,
-    clipLeft: bannerClipLeft,
-    horizontalOffset: bannerHorizontalOffset,
     playerControllerXOffset
-  } = activeBanner || {}; // Safety check if store not ready
+  } = activeBanner || {};
 
   // Spill Over Interaction Logic
   const [isHoveringSpill, setIsHoveringSpill] = React.useState(false);
@@ -65,11 +83,18 @@ const LayoutShell = ({
   };
 
   React.useEffect(() => {
-    // Only track if there is actually a spill
+    // Only track if there is actually a spill on the ACTIVE banner
     // AND we are NOT in fullscreen mode (where spill is clipped)
-    const isFullscreen = viewMode === 'full' || bannerPreviewMode === 'fullscreen';
+    // Actually, if activeBanner IS fullscreen banner (in fullscreen mode), it is clipped, so logic holds.
 
-    if (!bannerSpillHeight || bannerSpillHeight <= 0 || isFullscreen) {
+    // We only care about interacting with the Active Banner
+    const banner = activeBanner;
+    if (!banner) return;
+
+    const { spillHeight, maskPath, clipLeft } = banner;
+    const isFullscreenPreview = bannerPreviewMode === 'fullscreen' || (!bannerPreviewMode && viewMode === 'full');
+
+    if (!spillHeight || spillHeight <= 0 || isFullscreenPreview) {
       if (isHoveringSpill) setIsHoveringSpill(false);
       return;
     }
@@ -82,29 +107,29 @@ const LayoutShell = ({
       }
 
       // 2. Check if beyond total banner height
-      const totalHeight = 200 + bannerSpillHeight;
+      const totalHeight = 200 + spillHeight;
       if (e.clientY > totalHeight) {
         if (isHoveringSpill) setIsHoveringSpill(false);
         return;
       }
 
       // 3. Check Left Clip - if hovering clipped area, don't trigger
-      if (bannerClipLeft > 0) {
+      if (clipLeft > 0) {
         const clientXPercent = (e.clientX / window.innerWidth) * 100;
-        if (clientXPercent < bannerClipLeft) {
+        if (clientXPercent < clipLeft) {
           if (isHoveringSpill) setIsHoveringSpill(false);
           return;
         }
       }
 
       // 4. Check Shape Mask (if exists)
-      if (bannerMaskPath && bannerMaskPath.length >= 3) {
+      if (maskPath && maskPath.length >= 3) {
         // Calculate percentages
         const xPercent = (e.clientX / window.innerWidth) * 100;
         const yPercent = (e.clientY / totalHeight) * 100;
 
         // Perform point-in-polygon check
-        const isInside = isPointInPolygon([xPercent, yPercent], bannerMaskPath);
+        const isInside = isPointInPolygon([xPercent, yPercent], maskPath);
         setIsHoveringSpill(isInside);
       } else {
         // Default Rectangular Spill - if we are here, we are in the zone (200 < y < totalHeight)
@@ -115,7 +140,7 @@ const LayoutShell = ({
 
     window.addEventListener('mousemove', handleMouseMove);
     return () => window.removeEventListener('mousemove', handleMouseMove);
-  }, [bannerSpillHeight, viewMode, bannerPreviewMode, bannerMaskPath, bannerClipLeft]);
+  }, [activeBanner, viewMode, bannerPreviewMode]); // Dep on activeBanner object ref
 
   // Debug: Log when second player should render
   React.useEffect(() => {
@@ -124,43 +149,29 @@ const LayoutShell = ({
     }
   }, [viewMode, showDebugBounds]);
 
-  const isBannerGif = customBannerImage?.startsWith('data:image/gif');
 
-  // Generate Mask SVG Data URI if path exists
-  const maskImageStyle = React.useMemo(() => {
+  // Helper: Generate Mask SVG Data URI
+  const getMaskStyle = (config, isPrimary) => {
+    const { maskPath, spillHeight } = config;
+
     // Don't apply mask if:
-    // 1. No mask path exists (less than 3 points)
-    // 2. Crop mode is active AND live preview is disabled
-    if (!bannerMaskPath || bannerMaskPath.length < 3) return {};
-    if (bannerCropModeActive && !bannerCropLivePreview) return {};
+    // 1. No mask path
+    if (!maskPath || maskPath.length < 3) return {};
+    // 2. If Primary (Active) and Crop Mode Active but NOT Live Preview -> don't show mask
+    if (isPrimary && bannerCropModeActive && !bannerCropLivePreview) return {};
 
-    // Calculate the total height including spill
-    const totalHeight = 200 + (bannerSpillHeight || 0);
+    // Calculate total height
+    const totalHeight = 200 + (spillHeight || 0);
     const bannerHeightPercent = (200 / totalHeight) * 100;
 
-    // Create a composite mask:
-    // 1. Full rectangle for banner area (0 to bannerHeightPercent) - always visible
-    // 2. User's custom path for spill area (bannerHeightPercent to 100) - selective
+    const userPoints = maskPath.map(p => `${p.x},${p.y}`).join(' ');
 
-    // The user's path points are in percentage (0-100) of the TOTAL height
-    // We need to create a combined shape that includes:
-    // - The full width banner area: (0,0) -> (100,0) -> (100,bannerHeightPercent) -> (0,bannerHeightPercent)
-    // - The user's custom spill path (only points with y > bannerHeightPercent)
-
-    const userPoints = bannerMaskPath.map(p => `${p.x},${p.y}`).join(' ');
-
-    // Create a composite path that:
-    // 1. Draws the full banner rectangle
-    // 2. Adds the user's custom path for the spill
     const svg = `
-      <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'>
-        <!-- Banner area: always visible (full rectangle from 0 to ${bannerHeightPercent}%) -->
-        <rect x='0' y='0' width='100' height='${bannerHeightPercent}' fill='black' />
-        
-        <!-- Spill area: user's custom path -->
-        ${bannerMaskPath.length >= 3 ? `<polygon points='${userPoints}' fill='black' />` : ''}
-      </svg>
-     `;
+        <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'>
+          <rect x='0' y='0' width='100' height='${bannerHeightPercent}' fill='black' />
+          ${maskPath.length >= 3 ? `<polygon points='${userPoints}' fill='black' />` : ''}
+        </svg>
+       `;
     const encodedSvg = `data:image/svg+xml;utf8,${encodeURIComponent(svg.replace(/\n/g, '').trim())}`;
 
     return {
@@ -173,7 +184,71 @@ const LayoutShell = ({
       maskRepeat: 'no-repeat',
       WebkitMaskRepeat: 'no-repeat'
     };
-  }, [bannerMaskPath, bannerSpillHeight, bannerCropModeActive, bannerCropLivePreview]);
+  };
+
+  // Helper: Generate Banner Style
+  const renderBanner = (config, isPrimary) => {
+    if (!config) return null;
+
+    const {
+      image: bannerImage,
+      verticalPosition,
+      scale,
+      spillHeight,
+      scrollEnabled,
+      clipLeft,
+      horizontalOffset
+    } = config;
+
+    const isGif = bannerImage?.startsWith('data:image/gif');
+
+    // Determine if we should force clip the spill (for Fullscreen mode/bg)
+    // Primary: Force clip if checks depend on viewmode (Fullscreen Mode)
+    // Background: ALWAYS force clip (Layer 0 is just the header strip)
+    const isFullscreenPreview = bannerPreviewMode === 'fullscreen' || (!bannerPreviewMode && viewMode === 'full');
+    const forceClip = isPrimary ? isFullscreenPreview : true;
+
+    return (
+      <div
+        key={isPrimary ? 'primary-banner' : 'bg-banner'}
+        className="layout-shell__banner-bg"
+        style={{
+          ...(bannerImage ? { backgroundImage: `url(${bannerImage})` } : {}),
+          ...(isGif || !scrollEnabled ? { animation: 'none' } : {}),
+          backgroundPosition: `${horizontalOffset ?? 0}% ${verticalPosition ?? 0}%`,
+          backgroundRepeat: 'repeat-x',
+          backgroundSize: `${scale ?? 100}vw auto`,
+          // Always render full height (banner + spill)
+          height: spillHeight ? `${200 + spillHeight}px` : '100%',
+
+          // Clip Path Logic
+          clipPath: (() => {
+            const left = clipLeft > 0 ? `${clipLeft}%` : '0';
+            if (forceClip && spillHeight) {
+              const totalHeight = 200 + spillHeight;
+              const spillPercent = (spillHeight / totalHeight) * 100;
+              return `inset(0 0 ${spillPercent}% ${left})`;
+            }
+            return clipLeft > 0 ? `inset(0 0 0 ${clipLeft}%)` : 'none';
+          })(),
+
+          // Mask Logic
+          ...getMaskStyle(config, isPrimary), // Only apply mask if spill not clipped?
+          // Actually if forceClip is true, we are clipping via CSS clip-path anyway, but mask might define shape within 200px? 
+          // Currently mask is mostly for spill. 
+          // If forceClip is ON, we are cutting off the bottom.
+
+          // Z-Index: Primary 15, Background 14
+          zIndex: isPrimary ? 15 : 14,
+
+          // Interaction (Primary Only)
+          opacity: (isPrimary && isHoveringSpill) ? 0.15 : 1,
+          transition: 'opacity 0.2s ease-out',
+          pointerEvents: 'none'
+        }}
+      />
+    );
+  };
 
   return (
     <div className={`layout-shell layout-shell--${viewMode} ${menuQuarterMode ? 'layout-shell--menu-quarter' : ''} ${showDebugBounds ? 'layout-shell--debug' : ''}`}>
@@ -184,48 +259,11 @@ const LayoutShell = ({
         data-debug-label="Top Controller"
         data-tauri-drag-region
       >
-        {/* Background Layer with Spill Support (spill clipped in fullscreen) */}
-        <div
-          className="layout-shell__banner-bg"
-          style={{
-            ...(customBannerImage ? { backgroundImage: `url(${customBannerImage})` } : {}),
-            ...(isBannerGif || !bannerScrollEnabled ? { animation: 'none' } : {}),
-            backgroundPosition: `${bannerHorizontalOffset ?? 0}% ${bannerVerticalPosition ?? 0}%`,
-            backgroundRepeat: 'repeat-x',
-            backgroundSize: `${bannerScale ?? 100}vw auto`,
-            // Always render full height (banner + spill)
-            height: bannerSpillHeight ? `${200 + bannerSpillHeight}px` : '100%',
-            // Clip-path logic:
-            // - Fullscreen: clip to show only banner (200px), hide spill, AND apply left clip
-            // - Split-screen: show everything or apply left clip if configured
-            clipPath: (() => {
-              const leftClip = bannerClipLeft > 0 ? `${bannerClipLeft}%` : '0';
+        {/* Layer 0: Background Banner (Fullscreen Banner in Splitscreen Mode) */}
+        {backgroundBanner && renderBanner(backgroundBanner, false)}
 
-              if ((viewMode === 'full' || bannerPreviewMode === 'fullscreen') && bannerSpillHeight) {
-                // Calculate what percentage of total height is the spill
-                const totalHeight = 200 + bannerSpillHeight;
-                const spillPercent = (bannerSpillHeight / totalHeight) * 100;
-                // Clip from bottom to hide spill AND from left if configured
-                // inset(top right bottom left)
-                return `inset(0 0 ${spillPercent}% ${leftClip})`;
-              }
-
-              // In split-screen, apply left clip if configured
-              return bannerClipLeft > 0 ? `inset(0 0 0 ${bannerClipLeft}%)` : 'none';
-            })(),
-            // Only apply mask in half/quarter modes (not in full screen)
-            // But if previewing Fullscreen in split view, force disable mask (act like fullscreen)
-            ...((viewMode !== 'full' && bannerPreviewMode !== 'fullscreen') ? maskImageStyle : {}),
-
-            // Interaction Styles for Spill Over
-            // We want it to be opaque normally, but transparent when hovering the SPILL area
-            // "Click through" is handled by pointerEvents: 'none' (this allows clicks to pass to buttons below)
-            // But we still track mouse position via window listener to trigger the visual transparency
-            opacity: isHoveringSpill ? 0.15 : 1,
-            transition: 'opacity 0.2s ease-out',
-            pointerEvents: 'none'
-          }}
-        />
+        {/* Layer 1: Primary Banner (Active Banner) */}
+        {renderBanner(activeBanner, true)}
 
         <WindowControls />
 

@@ -85,10 +85,10 @@ export default function AppPage({ onBack, currentThemeId, onThemeChange, onNavig
             fullscreenBanner: saveConfig.fullscreen ? fullscreenBanner : undefined,
             splitscreenBanner: saveConfig.splitscreen ? splitscreenBanner : undefined,
 
-            // Legacy fallbacks: Prefer fullscreen, fallback to splitscreen
-            customBannerImage: (saveConfig.fullscreen ? fullscreenBanner.image : splitscreenBanner.image),
-            bannerVerticalPosition: (saveConfig.fullscreen ? fullscreenBanner.verticalPosition : splitscreenBanner.verticalPosition),
-            bannerScale: (saveConfig.fullscreen ? fullscreenBanner.scale : splitscreenBanner.scale),
+            // Legacy fallbacks: Prefer splitscreen for thumbnail (as it has the interesting spill/shape), fallback to fullscreen
+            customBannerImage: (saveConfig.splitscreen && splitscreenBanner.image ? splitscreenBanner.image : fullscreenBanner.image),
+            bannerVerticalPosition: (saveConfig.splitscreen ? splitscreenBanner.verticalPosition : fullscreenBanner.verticalPosition),
+            bannerScale: (saveConfig.splitscreen ? splitscreenBanner.scale : fullscreenBanner.scale),
 
             playlistIds: selectedPlaylistIds,
             playerControllerXOffset: (saveConfig.fullscreen ? fullscreenBanner.playerControllerXOffset : splitscreenBanner.playerControllerXOffset)

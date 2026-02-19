@@ -525,5 +525,10 @@ For detailed information about the application's theme system and recent color c
     - **Horizontal Extension**: Expanded side quadrants to allow wider spill (150% width), enabling broader composition.
     - **Border Integration**:
       - **Layering Fixes**: Updated `z-index` stacking in `LayoutShell.css` to ensure both the **Orb Spill** (z-20) and **App Banner Spill** (z-15) correctly render *above* the Player Border Separator (z-10).
-      - **Transparency Support**: Visual overlap works perfectly with transparency; non-opaque parts of the spill naturally reveal the border pattern underneath.
-  - **Documentation**: Created `atlas/orb-navigation.md`.
+  - **App Banner Navigation**:
+    -   **Dual-Mode Toggle**: Implemented a toggle button in `PlayerController` to switch arrow navigation between "Orb Mode" and "Banner Mode".
+    -   **Unified Controls**: Arrow keys contextually navigate Orb Playlists/Orbs or Banner Playlists/Presets.
+    -   **Live Preview**: Added immediate visual feedback when browsing banner presets, similar to Orb navigation.
+    -   **Click-to-Browse**: Clicking a `BannerPresetCard` in `VideosPage` now sets the active navigation context, allowing seamless continuation via controller arrows.
+    -   **Editor Integration**: Automatic "Preview Mode" override in `AppPage` ensures edits are visible instantly, reverting on exit.
+    -   **Documentation**: Updated `atlas/orb-navigation.md` with new features.

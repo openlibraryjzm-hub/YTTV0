@@ -70,9 +70,9 @@ const BannerPresetCard = ({
         >
             {/* Thumbnail Section */}
             <div className="relative aspect-video w-full overflow-hidden rounded-t-2xl bg-slate-100 dark:bg-slate-900">
-                {preset.customBannerImage ? (
+                {preset.splitscreenBanner?.image || preset.customBannerImage || preset.fullscreenBanner?.image ? (
                     <img
-                        src={preset.customBannerImage}
+                        src={preset.splitscreenBanner?.image || preset.customBannerImage || preset.fullscreenBanner?.image}
                         alt={preset.name || "Banner Preset"}
                         className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                     />

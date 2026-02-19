@@ -111,7 +111,10 @@ Users see a full-width banner at the very top of the application (200px height) 
 - **Spill Over**: `height: 200px + spillHeight`.
   - In **Fullscreen Preview** (or Mode): Spill is clipped to 200px to maintain clean header.
   - In **Splitscreen Mode**: Spill flows down under content, creating layered effect.
-  - **Spill Interaction**: The spill-over area is **always click-through** (`pointer-events: none`) to allow access to underlying buttons. When hovered, it becomes **transparent** (15% opacity) only when hovering the exact visible shape defined by the SVG mask, respecting Key/Fill clipping.
+  - **Banner Layers**:
+    - **Layer 0 (Background)**: The Fullscreen Banner config is rendered at the bottom (z-14), always clipped to 200px height. This provides a consistent "base" aesthetic even when using transparency in the upper layer.
+    - **Layer 1 (Overlay)**: The Splitscreen Banner config is rendered on top (z-15) with full spill capabilities.
+  - **Spill Interaction**: The spill-over area is **always click-through** (`pointer-events: none`) to allow access to underlying buttons. When hovered, the **Active Banner** (Layer 1 in Splitscreen) becomes **transparent** (15% opacity) only when hovering the exact visible shape defined by the SVG mask, respecting Key/Fill clipping.
     - **Border Overlap**: The spill layer (z-15) sits visually **above** the Player Border Separator (z-10), allowing the banner art to "break the frame", while transparent areas naturally reveal the border pattern underneath.
     - **Precision Hitbox**: The system uses a **ray-casting point-in-polygon algorithm** to detect hovers based on the exact **SVG crop shape** and **Left Clip** settings.
 

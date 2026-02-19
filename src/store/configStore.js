@@ -229,10 +229,19 @@ export const useConfigStore = create(
             setIsOrbPreviewMode: (val) => set({ isOrbPreviewMode: val }),
 
             // Shared Orb Navigation State
+            activeNavigationMode: 'orb', // 'orb' | 'banner'
+            setActiveNavigationMode: (val) => set({ activeNavigationMode: val }),
+
             orbNavPlaylistId: null,
             setOrbNavPlaylistId: (val) => set({ orbNavPlaylistId: val }),
             orbNavOrbId: null,
             setOrbNavOrbId: (val) => set({ orbNavOrbId: val }),
+
+            // Shared Banner Navigation State
+            bannerNavPlaylistId: null,
+            setBannerNavPlaylistId: (val) => set({ bannerNavPlaylistId: val }),
+            bannerNavBannerId: null,
+            setBannerNavBannerId: (val) => set({ bannerNavBannerId: val }),
 
             // Orb Favorites - saved configurations
             orbFavorites: [],

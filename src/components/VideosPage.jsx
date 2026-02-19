@@ -108,7 +108,10 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
     applyBannerPreset,
     //orb navigation state setters
     setOrbNavPlaylistId,
-    setOrbNavOrbId
+    setOrbNavOrbId,
+    //banner navigation state setters
+    setBannerNavPlaylistId,
+    setBannerNavBannerId
   } = useConfigStore();
 
   // Helper to get inspect label
@@ -1914,7 +1917,14 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
                             preset={{ ...video, id: video.originalId || video.id.replace('banner-', '') }}
                             allPlaylists={allPlaylists}
                             onUpdatePlaylists={updateBannerPresetPlaylists}
-                            onClick={() => applyBannerPreset(video)}
+                            onClick={() => {
+                              applyBannerPreset(video);
+                              // Sync Navigation
+                              if (activePlaylistId) {
+                                setBannerNavPlaylistId(activePlaylistId);
+                              }
+                              setBannerNavBannerId(video.originalId || video.id.replace('banner-', ''));
+                            }}
                             currentPlaylistId={activePlaylistId}
                           />
                         </div>

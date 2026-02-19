@@ -84,3 +84,48 @@ graph TD
 -   `src/store/configStore.js`: State persistence.
 -   `src/components/VideosPage.jsx`: Direct selection from grid.
 -   `src/components/OrbCard.jsx`: Visual representation in grid.
+
+## App Banner Navigation
+
+The navigation system has been extended to support **App Banners**, allowing you to browse and select banner presets using the same arrow controls.
+
+### Dual-Mode Navigation
+
+To keep the interface clean, the player controller features a **Mode Toggle** button that switches the context of the arrow keys.
+
+*   **Toggle Location**: Bottom-right of the Orb Menu (diagonal from the Twitter button).
+*   **Orb Mode** (Default): Navigate through Orb Playlists and Orb Presets.
+    *   **Icon**: Circle (`Circle`)
+    *   **Indicator**: White border, dark icon.
+*   **Banner Mode**: Navigate through Playlists with Banners and Banner Presets.
+    *   **Icon**: Layout (`Layout`)
+    *   **Indicator**: Sky blue border, blue icon.
+
+### Banner Navigation Features
+
+1.  **Unified Controls**: The same Outer/Inner arrows work for both modes.
+    *   **Outer Arrows**: Switch between playlists that contain Banner Presets.
+    *   **Inner Arrows**: Switch between Banner Presets within the current playlist.
+2.  **Direct Selection**: Clicking a **Banner Preset Card** in the videos grid automatically:
+    *   Applies the banner.
+    *   Sets the navigation context to that playlist/banner.
+    *   Allows seamless continuation of browsing via the arrows.
+3.  **Live Editing Preview**:
+    *   When editing a banner in `AppPage`, the system enters a **Banner Preview Mode**.
+    *   This temporarily overrides any navigation-selected banner to strictly show what you are editing.
+    *   Closing the editor automatically restores the previous navigation state.
+
+### Technical Implementation
+
+**State (`configStore.js`)**:
+```javascript
+activeNavigationMode: 'orb', // 'orb' | 'banner'
+bannerNavPlaylistId: null,
+bannerNavBannerId: null,
+bannerPreviewMode: null // 'fullscreen' | 'splitscreen' | null
+```
+
+**Priority Logic (`LayoutShell.jsx`)**:
+1.  **Preview Mode**: If `bannerPreviewMode` is active (from AppPage), show the draft config.
+2.  **Navigation Override**: If `bannerNavBannerId` is set, show that preset.
+3.  **Global Fallback**: Use `fullscreenBanner` / `splitscreenBanner` from general settings.
