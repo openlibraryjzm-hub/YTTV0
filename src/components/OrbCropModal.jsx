@@ -155,7 +155,7 @@ export default function OrbCropModal({
             const start = interaction.startRect;
             let newR = { ...start };
 
-            const bounds = { minX: -50, maxX: 150, minY: -50, maxY: 150 };
+            const bounds = { minX: -150, maxX: 250, minY: -150, maxY: 250 };
             const minSize = 2;
 
             if (interaction.type === 'drag') {

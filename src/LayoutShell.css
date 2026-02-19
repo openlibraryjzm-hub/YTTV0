@@ -64,7 +64,7 @@
   /* Make sure it's behind content but above player (z-index of parent is 100) */
   /* Relative to parent stacking context... */
   /* We want it BEHIND the .layout-shell__top-controller-wrapper (z=2) and separator (z=10) */
-  z-index: -1;
+  z-index: 15;
 
   /* Allow clicks to pass through spilled areas to the player below */
   pointer-events: none;
@@ -86,7 +86,7 @@
 
 /* Wrapper for top controller content */
 .layout-shell__top-controller-wrapper {
-  z-index: 2;
+  z-index: 20;
   /* Ensure content sits above bleed */
   display: flex;
   align-items: center;

@@ -31,7 +31,7 @@ The Central Orb is a circular element (154px diameter by default) positioned at 
   - **Orb Tab**: A comprehensive configuration suite for the central element:
     - **Saved Orb Presets**: Save and manage multiple orb configurations (image + settings) as presets for instant switching.
     - **Image Upload**: Upload custom images (png, jpg, gif) which are automatically resized and compressed for performance.
-    - **Spill Control**: An interactive 4-quadrant toggle system allows users to selectively enable/disable image spill for the Top-Left, Top-Right, Bottom-Left, and Bottom-Right corners.
+    - **Spill Control**: An interactive 4-quadrant toggle system allows users to selectively enable/disable image spill for the Top-Left, Top-Right, Bottom-Left, and Bottom-Right corners. The bottom quadrants support extended vertical spill (150% height), and the side quadrants support extended horizontal spill (150% width total) to accommodate dynamic character art. The expanded spill area sits **above** the Player Border Separator, allowing the image to break the frame while respecting transparency.
     - **Image Scaling**: A slider control (0.5x to 3.0x) allows precise zooming of the orb image within the spill boundaries.
     - **Image Position**: X/Y offset sliders (-100 to +100 px) allow precise panning of the orb image.
     - **Visualizer Integration**: The spill effect works in tandem with the audio visualizer border.

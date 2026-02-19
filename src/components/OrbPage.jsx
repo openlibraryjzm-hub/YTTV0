@@ -230,10 +230,10 @@ export default function OrbPage({ onBack, onNavigateToYou, onNavigateToPage, onN
                                         if (!orbSpill[q]) return null;
 
                                         const defaults = {
-                                            tl: { x: -0.5, y: -0.5, w: 1.0, h: 1.0 },
-                                            tr: { x: 0.5, y: -0.5, w: 0.5, h: 1.0 },
-                                            bl: { x: -0.5, y: 0.5, w: 1.0, h: 0.5 },
-                                            br: { x: 0.5, y: 0.5, w: 0.5, h: 0.5 }
+                                            tl: { x: -1.0, y: -0.5, w: 1.5, h: 1.0 },
+                                            tr: { x: 0.5, y: -0.5, w: 1.0, h: 1.0 },
+                                            bl: { x: -1.0, y: 0.5, w: 1.5, h: 1.5 },
+                                            br: { x: 0.5, y: 0.5, w: 1.0, h: 1.5 }
                                         };
 
                                         if (!orbAdvancedMasks[q]) {
@@ -641,10 +641,10 @@ export default function OrbPage({ onBack, onNavigateToYou, onNavigateToPage, onN
                                             if (!favorite.isSpillEnabled || !favorite.orbSpill?.[q]) return null;
 
                                             const defaults = {
-                                                tl: { x: -0.5, y: -0.5, w: 1.0, h: 1.0 },
-                                                tr: { x: 0.5, y: -0.5, w: 0.5, h: 1.0 },
-                                                bl: { x: -0.5, y: 0.5, w: 1.0, h: 0.5 },
-                                                br: { x: 0.5, y: 0.5, w: 0.5, h: 0.5 }
+                                                tl: { x: -1.0, y: -0.5, w: 1.5, h: 1.0 },
+                                                tr: { x: 0.5, y: -0.5, w: 1.0, h: 1.0 },
+                                                bl: { x: -1.0, y: 0.5, w: 1.5, h: 1.5 },
+                                                br: { x: 0.5, y: 0.5, w: 1.0, h: 1.5 }
                                             };
 
                                             if (!favorite.orbAdvancedMasks?.[q]) {

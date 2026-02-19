@@ -520,4 +520,10 @@ For detailed information about the application's theme system and recent color c
   - **Direct Selection**: Clicking an Orb card in `VideosPage.jsx` now updates the global navigation state (`orbNavPlaylistId`, `orbNavOrbId`) in `configStore.js`.
   - **Split-Screen Fix**: Orb Config shortcut button now correctly switches to split-screen mode if clicked while in full-screen.
   - **Auto-Disable**: Live Preview mode automatically turns off when navigating away from the config page.
+  - **Orb Spill Expansion**:
+    - **Vertical Extension**: Increased bottom quadrant spill height to 150% (up from 50%) to accommodate taller character art.
+    - **Horizontal Extension**: Expanded side quadrants to allow wider spill (150% width), enabling broader composition.
+    - **Border Integration**:
+      - **Layering Fixes**: Updated `z-index` stacking in `LayoutShell.css` to ensure both the **Orb Spill** (z-20) and **App Banner Spill** (z-15) correctly render *above* the Player Border Separator (z-10).
+      - **Transparency Support**: Visual overlap works perfectly with transparency; non-opaque parts of the spill naturally reveal the border pattern underneath.
   - **Documentation**: Created `atlas/orb-navigation.md`.
