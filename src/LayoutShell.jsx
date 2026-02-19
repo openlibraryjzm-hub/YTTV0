@@ -45,6 +45,78 @@ const LayoutShell = ({
     playerControllerXOffset
   } = activeBanner || {}; // Safety check if store not ready
 
+  // Spill Over Interaction Logic
+  const [isHoveringSpill, setIsHoveringSpill] = React.useState(false);
+
+  // Ray-casting algorithm for point-in-polygon check
+  const isPointInPolygon = (point, vs) => {
+    // point: [x, y], vs: [[x, y], ...]
+    const x = point[0], y = point[1];
+    let inside = false;
+    for (let i = 0, j = vs.length - 1; i < vs.length; j = i++) {
+      const xi = vs[i].x, yi = vs[i].y;
+      const xj = vs[j].x, yj = vs[j].y;
+
+      const intersect = ((yi > y) !== (yj > y))
+        && (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
+      if (intersect) inside = !inside;
+    }
+    return inside;
+  };
+
+  React.useEffect(() => {
+    // Only track if there is actually a spill
+    // AND we are NOT in fullscreen mode (where spill is clipped)
+    const isFullscreen = viewMode === 'full' || bannerPreviewMode === 'fullscreen';
+
+    if (!bannerSpillHeight || bannerSpillHeight <= 0 || isFullscreen) {
+      if (isHoveringSpill) setIsHoveringSpill(false);
+      return;
+    }
+
+    const handleMouseMove = (e) => {
+      // 1. Check if below header
+      if (e.clientY <= 200) {
+        if (isHoveringSpill) setIsHoveringSpill(false);
+        return;
+      }
+
+      // 2. Check if beyond total banner height
+      const totalHeight = 200 + bannerSpillHeight;
+      if (e.clientY > totalHeight) {
+        if (isHoveringSpill) setIsHoveringSpill(false);
+        return;
+      }
+
+      // 3. Check Left Clip - if hovering clipped area, don't trigger
+      if (bannerClipLeft > 0) {
+        const clientXPercent = (e.clientX / window.innerWidth) * 100;
+        if (clientXPercent < bannerClipLeft) {
+          if (isHoveringSpill) setIsHoveringSpill(false);
+          return;
+        }
+      }
+
+      // 4. Check Shape Mask (if exists)
+      if (bannerMaskPath && bannerMaskPath.length >= 3) {
+        // Calculate percentages
+        const xPercent = (e.clientX / window.innerWidth) * 100;
+        const yPercent = (e.clientY / totalHeight) * 100;
+
+        // Perform point-in-polygon check
+        const isInside = isPointInPolygon([xPercent, yPercent], bannerMaskPath);
+        setIsHoveringSpill(isInside);
+      } else {
+        // Default Rectangular Spill - if we are here, we are in the zone (200 < y < totalHeight)
+        // and past the left clip.
+        setIsHoveringSpill(true);
+      }
+    };
+
+    window.addEventListener('mousemove', handleMouseMove);
+    return () => window.removeEventListener('mousemove', handleMouseMove);
+  }, [bannerSpillHeight, viewMode, bannerPreviewMode, bannerMaskPath, bannerClipLeft]);
+
   // Debug: Log when second player should render
   React.useEffect(() => {
     if (showDebugBounds && (viewMode === 'full' || viewMode === 'half')) {
@@ -143,7 +215,15 @@ const LayoutShell = ({
             })(),
             // Only apply mask in half/quarter modes (not in full screen)
             // But if previewing Fullscreen in split view, force disable mask (act like fullscreen)
-            ...((viewMode !== 'full' && bannerPreviewMode !== 'fullscreen') ? maskImageStyle : {})
+            ...((viewMode !== 'full' && bannerPreviewMode !== 'fullscreen') ? maskImageStyle : {}),
+
+            // Interaction Styles for Spill Over
+            // We want it to be opaque normally, but transparent when hovering the SPILL area
+            // "Click through" is handled by pointerEvents: 'none' (this allows clicks to pass to buttons below)
+            // But we still track mouse position via window listener to trigger the visual transparency
+            opacity: isHoveringSpill ? 0.15 : 1,
+            transition: 'opacity 0.2s ease-out',
+            pointerEvents: 'none'
           }}
         />
 

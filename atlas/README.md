@@ -485,13 +485,14 @@ For detailed information about the application's theme system and recent color c
   - **Vertical Alignment**: Extended vertical position slider range to -200% to +200% for better flexibility.
   - **Modular Presets**: Updated `BannerPresetCard` and saving logic to allow saving **Specifically Fullscreen** or **Specifically Splitscreen** configurations (or both) into a preset.
   - **Customization**:
-    - "Image Scale" slider (25-200%).
+    - "Image Scale" slider (-200% to 200%) (allows flipping).
     - "Spill Over" feature.
     - "Crop Shape" functionality (`BannerCropModal`).
     - "Animate Scroll" toggle.
     - "Clip From Left" slider (0-100%).
     - "Clip From Left" slider (0-100%).
     - "Horizontal Offset" slider (-200% to +200%).
+    - **Smart Spill Interaction**: Implemented **precision hitbox** detection (ray-casting) for spill-over areas. The spill is **click-through** and becomes **semi-transparent** (15% opacity) only when hovering the exact visible shape defined by the SVG mask, respecting Key/Fill clipping.
 - **Gamification & Mission Hub**:
   - **Mission Rewards**: Added support for **Time Rewards** (minutes) and **Currency Rewards** (Credits/Coins).
   - **Reset Functionality**:

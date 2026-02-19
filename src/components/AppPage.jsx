@@ -339,10 +339,10 @@ export default function AppPage({ onBack, currentThemeId, onThemeChange, onNavig
                                     <span className="text-[10px] font-bold text-slate-500">{activeBanner.scale ?? 100}%</span>
                                 </div>
                                 <div className="flex items-center gap-4">
-                                    <span className="text-[10px] font-bold text-slate-400">25%</span>
+                                    <span className="text-[10px] font-bold text-slate-400">-200%</span>
                                     <input
                                         type="range"
-                                        min="25"
+                                        min="-200"
                                         max="200"
                                         value={activeBanner.scale ?? 100}
                                         onChange={(e) => updateActiveBanner({ scale: parseInt(e.target.value) })}

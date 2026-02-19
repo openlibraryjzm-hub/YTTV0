@@ -26,7 +26,8 @@ Users see a full-width banner at the very top of the application (200px height) 
   - **GIFs**: Play natively without scrolling animation (to avoid motion conflicts)
 - **Window Controls Integration**: Custom window controls (Minimize, Maximize, Close) float in the top-right corner
 - **Draggable Region**: The entire banner area is draggable (`data-tauri-drag-region`), allowing users to move the window
-- **Separator Line**: A 12px separator line at the bottom uses the selected animated pattern (Diagonal, Dots, Mesh, Solid) to separate the banner from app content
+- **Smart Spill Interaction**: If a "Spill Over" height is set, the portion extending beyond the header (200px) is **click-through** and automatically becomes **transparent** on hover.
+  - **Precision Hitbox**: The system uses a **ray-casting point-in-polygon algorithm** to detect hovers based on the exact **SVG crop shape** and **Left Clip** settings, ensuring transparency is only triggered when hovering visible pixels.
 - **Hover Popup**: Hovering the rightmost 1/6th reveals a 185x110px popup split into zones: 
   - **Top Section**: Centered orb flanked by two wide 40x16px rectangles.
   - **Bottom Right**: Split into a top 1/3 strip and a main 2/3 area.
@@ -104,12 +105,14 @@ Users see a full-width banner at the very top of the application (200px height) 
 - This ensures users seeing the **Split Layout** can still see and edit the **Fullscreen Banner** as if they were in fullscreen mode.
 
 **Image Sizing & Positioning:**
-- **Scale**: `background-size: ${scale}vw auto` (25% - 200%).
+- **Scale**: `background-size: ${scale}vw auto` (-200% to 200%).
 - **Vertical Alignment**: `background-position-y` (-200% to +200%).
 - **Horizontal Offset**: `background-position-x` shift (-200% to +200%).
 - **Spill Over**: `height: 200px + spillHeight`.
   - In **Fullscreen Preview** (or Mode): Spill is clipped to 200px to maintain clean header.
   - In **Splitscreen Mode**: Spill flows down under content, creating layered effect.
+  - **Spill Interaction**: The spill-over area is **always click-through** (`pointer-events: none`) to allow access to underlying buttons. When hovered, it becomes **transparent** (15% opacity) only when hovering the exact visible shape defined by the SVG mask, respecting Key/Fill clipping.
+    - **Precision Hitbox**: The system uses a **ray-casting point-in-polygon algorithm** to detect hovers based on the exact **SVG crop shape** and **Left Clip** settings.
 
 **Advanced Customization Logic:**
 - **Masking (Shape Cropping):**
@@ -135,7 +138,7 @@ Users see a full-width banner at the very top of the application (200px height) 
 - **Controls**:
   - **Image Upload**: Per-mode image.
   - **Vertical Alignment**: -200% to +200% range.
-  - **Image Scale**: 25% to 200%.
+  - **Image Scale**: -200% to 200% (allows flipping).
   - **Spill Over**: 0-500px height extension.
   - **Crop Shape**: Interactive SVG masking tool.
   - **Clip From Left**: 0-100% left-side clipping.
