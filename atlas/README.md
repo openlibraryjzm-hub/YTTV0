@@ -421,6 +421,7 @@ For detailed information about the application's theme system and recent color c
   - Implemented **JSON Import** for Twitter bookmarks, allowing bulk import of tweets as "local" videos.
   - created `TweetCard` improvements for proper rendering of MP4s and GIFs.
   - Added **High-Res Hover Previews** for Twitter media using `ImageHoverPreview`.
+  - **Playlist Card Integration**: Upgraded Twitter thumbnails to high-resolution (`name=large` & `medium`) inside playlist grid cards. Applied conditional smart framing (`object-fit: contain` with light sky blue background `#e0f2fe`) to prevent Twitter images from being blurry or improperly cropped inside standard 16:9 playlist covers and preview thumbnails.
 - **Performance Optimization**: 
   - Solved major lag on the Playlists Page by implementing `get_playlist_items_preview` (Rust backend).
   - Reduced overhead by fetching only 4 preview items per playlist instead of the entire dataset.

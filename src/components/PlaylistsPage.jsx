@@ -174,8 +174,8 @@ const PlaylistsPage = ({ onVideoSelect }) => {
               let targetVideo = items[0];
               if (activeThumbnailUrl) {
                 const coverMatch = items.find(item => {
-                  const maxThumb = getThumbnailUrl(item.video_id, 'max');
-                  const stdThumb = getThumbnailUrl(item.video_id, 'standard');
+                  const maxThumb = (item.thumbnail_url?.replace(/name=[a-z]+/, 'name=large') || getThumbnailUrl(item.video_id, 'max'));
+                  const stdThumb = (item.thumbnail_url?.replace(/name=[a-z]+/, 'name=medium') || getThumbnailUrl(item.video_id, 'standard'));
                   return maxThumb === activeThumbnailUrl || stdThumb === activeThumbnailUrl;
                 });
                 if (coverMatch) targetVideo = coverMatch;
@@ -397,8 +397,8 @@ const PlaylistsPage = ({ onVideoSelect }) => {
           } else if (meta && meta.first_video) {
             const vid = meta.first_video;
             thumbnailMap[playlist.id] = {
-              max: vid.thumbnail_url || getThumbnailUrl(vid.video_id, 'max'),
-              standard: vid.thumbnail_url || getThumbnailUrl(vid.video_id, 'standard')
+              max: vid.thumbnail_url?.replace(/name=[a-z]+/, 'name=large') || getThumbnailUrl(vid.video_id, 'max'),
+              standard: vid.thumbnail_url?.replace(/name=[a-z]+/, 'name=medium') || getThumbnailUrl(vid.video_id, 'standard')
             };
           }
 
@@ -795,8 +795,8 @@ const PlaylistsPage = ({ onVideoSelect }) => {
                                 let targetVideo = items[0];
                                 if (activeThumbnailUrl) {
                                   const coverMatch = items.find(item => {
-                                    const maxThumb = getThumbnailUrl(item.video_id, 'max');
-                                    const stdThumb = getThumbnailUrl(item.video_id, 'standard');
+                                    const maxThumb = (item.thumbnail_url?.replace(/name=[a-z]+/, 'name=large') || getThumbnailUrl(item.video_id, 'max'));
+                                    const stdThumb = (item.thumbnail_url?.replace(/name=[a-z]+/, 'name=medium') || getThumbnailUrl(item.video_id, 'standard'));
                                     return maxThumb === activeThumbnailUrl || stdThumb === activeThumbnailUrl;
                                   });
                                   if (coverMatch) targetVideo = coverMatch;
@@ -914,8 +914,8 @@ const PlaylistsPage = ({ onVideoSelect }) => {
                           const displayFolderName = customFolderName || folderColor.name;
                           const folderImageKey = `folder-${folder.playlist_id}-${folder.folder_color}`;
                           const thumbUrls = folder.first_video ? {
-                            max: getThumbnailUrl(folder.first_video.video_id, 'max'),
-                            standard: getThumbnailUrl(folder.first_video.video_id, 'standard')
+                            max: (folder.first_video.thumbnail_url?.replace(/name=[a-z]+/, 'name=large') || getThumbnailUrl(folder.first_video.video_id, 'max')),
+                            standard: (folder.first_video.thumbnail_url?.replace(/name=[a-z]+/, 'name=medium') || getThumbnailUrl(folder.first_video.video_id, 'standard'))
                           } : null;
 
                           const useFallback = imageLoadErrors.has(folderImageKey);
@@ -1021,7 +1021,7 @@ const PlaylistsPage = ({ onVideoSelect }) => {
 
                                             // Shuffle only changes thumbnail preview
                                             const randomVideo = items[Math.floor(Math.random() * items.length)];
-                                            const thumbUrl = getThumbnailUrl(randomVideo.video_id, 'max');
+                                            const thumbUrl = (randomVideo.thumbnail_url?.replace(/name=[a-z]+/, 'name=large') || getThumbnailUrl(randomVideo.video_id, 'max'));
                                             setPreviewThumbnails(prev => ({
                                               ...prev,
                                               [folderImageKey]: { videoId: randomVideo.video_id, url: thumbUrl, videoUrl: randomVideo.video_url, title: randomVideo.title, isShuffled: true }
@@ -1059,8 +1059,8 @@ const PlaylistsPage = ({ onVideoSelect }) => {
                                                 let targetVideo = items[0];
                                                 if (activeThumbnailUrl) {
                                                   const coverMatch = items.find(item => {
-                                                    const maxThumb = getThumbnailUrl(item.video_id, 'max');
-                                                    const stdThumb = getThumbnailUrl(item.video_id, 'standard');
+                                                    const maxThumb = (item.thumbnail_url?.replace(/name=[a-z]+/, 'name=large') || getThumbnailUrl(item.video_id, 'max'));
+                                                    const stdThumb = (item.thumbnail_url?.replace(/name=[a-z]+/, 'name=medium') || getThumbnailUrl(item.video_id, 'standard'));
                                                     return maxThumb === activeThumbnailUrl || stdThumb === activeThumbnailUrl;
                                                   });
                                                   if (coverMatch) targetVideo = coverMatch;
@@ -1092,8 +1092,8 @@ const PlaylistsPage = ({ onVideoSelect }) => {
                                                 let targetVideo = items[0];
                                                 if (activeThumbnailUrl) {
                                                   const coverMatch = items.find(item => {
-                                                    const maxThumb = getThumbnailUrl(item.video_id, 'max');
-                                                    const stdThumb = getThumbnailUrl(item.video_id, 'standard');
+                                                    const maxThumb = (item.thumbnail_url?.replace(/name=[a-z]+/, 'name=large') || getThumbnailUrl(item.video_id, 'max'));
+                                                    const stdThumb = (item.thumbnail_url?.replace(/name=[a-z]+/, 'name=medium') || getThumbnailUrl(item.video_id, 'standard'));
                                                     return maxThumb === activeThumbnailUrl || stdThumb === activeThumbnailUrl;
                                                   });
                                                   if (coverMatch) targetVideo = coverMatch;
@@ -1141,7 +1141,7 @@ const PlaylistsPage = ({ onVideoSelect }) => {
                                 <div className="rounded-lg overflow-hidden relative group mt-auto" style={{
                                   width: '100%',
                                   paddingBottom: '56.25%',
-                                  backgroundColor: '#0f172a',
+                                  backgroundColor: activeThumbnailUrl && activeThumbnailUrl.includes('twimg.com') ? '#e0f2fe' : '#0f172a',
                                 }} title={previewThumbnails[folderImageKey]?.title || folder.first_video?.title}>
                                   {activeThumbnailUrl ? (
                                     <img
@@ -1158,7 +1158,7 @@ const PlaylistsPage = ({ onVideoSelect }) => {
                                         left: 0,
                                         width: '100%',
                                         height: '100%',
-                                        objectFit: 'cover',
+                                        objectFit: activeThumbnailUrl && activeThumbnailUrl.includes('twimg.com') ? 'contain' : 'cover',
                                         display: 'block'
                                       }}
                                     />
@@ -1415,8 +1415,8 @@ const PlaylistsPage = ({ onVideoSelect }) => {
                                   let targetVideo = items[0];
                                   if (activeThumbnailUrl) {
                                     const coverMatch = items.find(item => {
-                                      const maxThumb = getThumbnailUrl(item.video_id, 'max');
-                                      const stdThumb = getThumbnailUrl(item.video_id, 'standard');
+                                      const maxThumb = (item.thumbnail_url?.replace(/name=[a-z]+/, 'name=large') || getThumbnailUrl(item.video_id, 'max'));
+                                      const stdThumb = (item.thumbnail_url?.replace(/name=[a-z]+/, 'name=medium') || getThumbnailUrl(item.video_id, 'standard'));
                                       return maxThumb === activeThumbnailUrl || stdThumb === activeThumbnailUrl;
                                     });
                                     if (coverMatch) targetVideo = coverMatch;
@@ -1520,7 +1520,7 @@ const PlaylistsPage = ({ onVideoSelect }) => {
 
                                         // Shuffle thumbnail preview
                                         const randomVideo = items[Math.floor(Math.random() * items.length)];
-                                        const thumbUrl = getThumbnailUrl(randomVideo.video_id, 'max');
+                                        const thumbUrl = (randomVideo.thumbnail_url?.replace(/name=[a-z]+/, 'name=large') || getThumbnailUrl(randomVideo.video_id, 'max'));
                                         setPreviewThumbnails(prev => ({
                                           ...prev,
                                           [playlistImageKey]: { videoId: randomVideo.video_id, url: thumbUrl, videoUrl: randomVideo.video_url, title: randomVideo.title, isShuffled: true }
@@ -1604,7 +1604,7 @@ const PlaylistsPage = ({ onVideoSelect }) => {
                             <div className="rounded-lg overflow-hidden relative group mt-auto border-2 border-[#052F4A]" style={{
                               width: '100%',
                               paddingBottom: '56.25%', // 16:9 aspect ratio
-                              backgroundColor: '#0f172a',
+                              backgroundColor: activeThumbnailUrl && activeThumbnailUrl.includes('twimg.com') ? '#e0f2fe' : '#0f172a',
                             }} title={previewThumbnails[playlistImageKey]?.title || playlistPreviewVideos[playlist.id]?.[0]?.title}>
                               {activeThumbnailUrl ? (
                                 <img
@@ -1621,7 +1621,7 @@ const PlaylistsPage = ({ onVideoSelect }) => {
                                     left: 0,
                                     width: '100%',
                                     height: '100%',
-                                    objectFit: 'cover',
+                                    objectFit: activeThumbnailUrl && activeThumbnailUrl.includes('twimg.com') ? 'contain' : 'cover',
                                     display: 'block'
                                   }}
                                 />
@@ -2158,8 +2158,8 @@ const PlaylistsPage = ({ onVideoSelect }) => {
                                           let targetVideo = items[0];
                                           if (activeThumbnailUrl) {
                                             const coverMatch = items.find(item => {
-                                              const maxThumb = getThumbnailUrl(item.video_id, 'max');
-                                              const stdThumb = getThumbnailUrl(item.video_id, 'standard');
+                                              const maxThumb = (item.thumbnail_url?.replace(/name=[a-z]+/, 'name=large') || getThumbnailUrl(item.video_id, 'max'));
+                                              const stdThumb = (item.thumbnail_url?.replace(/name=[a-z]+/, 'name=medium') || getThumbnailUrl(item.video_id, 'standard'));
                                               return maxThumb === activeThumbnailUrl || stdThumb === activeThumbnailUrl;
                                             });
                                             if (coverMatch) targetVideo = coverMatch;
@@ -2168,7 +2168,7 @@ const PlaylistsPage = ({ onVideoSelect }) => {
                                         }
                                       }
                                       if (currentMainVideo) {
-                                        const thumbUrl = video.thumbnail_url || getThumbnailUrl(video.video_id, 'max');
+                                        const thumbUrl = video.thumbnail_url?.replace(/name=[a-z]+/, 'name=large') || getThumbnailUrl(video.video_id, 'max');
                                         setPreviewThumbnails(prev => ({
                                           ...prev,
                                           [playlistImageKey]: {
@@ -2196,9 +2196,9 @@ const PlaylistsPage = ({ onVideoSelect }) => {
                                   title={video.title}
                                 >
                                   <img
-                                    src={video.thumbnail_url || getThumbnailUrl(video.video_id, 'medium')}
+                                    src={video.thumbnail_url?.replace(/name=[a-z]+/, 'name=medium') || getThumbnailUrl(video.video_id, 'medium')}
                                     alt=""
-                                    className="w-full h-full object-cover opacity-80 group-hover/mini:opacity-100 transition-opacity"
+                                    className={`w-full h-full opacity-80 group-hover/mini:opacity-100 transition-opacity ${video.thumbnail_url && video.thumbnail_url.includes('twimg.com') ? 'object-contain bg-[#e0f2fe] p-0.5' : 'object-cover'}`}
                                     onError={(e) => e.target.style.display = 'none'}
                                   />
                                   {/* Tiny play icon on hover */}
@@ -2221,8 +2221,8 @@ const PlaylistsPage = ({ onVideoSelect }) => {
                       const folderColor = getFolderColorById(folder.folder_color);
                       const folderImageKey = `folder-${folder.playlist_id}-${folder.folder_color}`;
                       const thumbUrls = folder.first_video ? {
-                        max: getThumbnailUrl(folder.first_video.video_id, 'max'),
-                        standard: getThumbnailUrl(folder.first_video.video_id, 'standard')
+                        max: (folder.first_video.thumbnail_url?.replace(/name=[a-z]+/, 'name=large') || getThumbnailUrl(folder.first_video.video_id, 'max')),
+                        standard: (folder.first_video.thumbnail_url?.replace(/name=[a-z]+/, 'name=medium') || getThumbnailUrl(folder.first_video.video_id, 'standard'))
                       } : null;
                       const useFallback = imageLoadErrors.has(folderImageKey);
                       // Check for preview thumbnail first (when preview shuffle mode is active)
@@ -2337,7 +2337,7 @@ const PlaylistsPage = ({ onVideoSelect }) => {
 
                                         // Shuffle only changes thumbnail preview
                                         const randomVideo = items[Math.floor(Math.random() * items.length)];
-                                        const thumbUrl = getThumbnailUrl(randomVideo.video_id, 'max');
+                                        const thumbUrl = (randomVideo.thumbnail_url?.replace(/name=[a-z]+/, 'name=large') || getThumbnailUrl(randomVideo.video_id, 'max'));
                                         setPreviewThumbnails(prev => ({
                                           ...prev,
                                           [folderImageKey]: { videoId: randomVideo.video_id, url: thumbUrl, videoUrl: randomVideo.video_url, title: randomVideo.title, isShuffled: true }
@@ -2461,7 +2461,7 @@ const PlaylistsPage = ({ onVideoSelect }) => {
                             <div className="rounded-lg overflow-hidden relative group mt-auto" style={{
                               width: '100%',
                               paddingBottom: '56.25%', // 16:9 aspect ratio
-                              backgroundColor: '#0f172a',
+                              backgroundColor: activeThumbnailUrl && activeThumbnailUrl.includes('twimg.com') ? '#e0f2fe' : '#0f172a',
                               overflow: 'hidden'
                             }} title={previewThumbnails[folderImageKey]?.title || folder.first_video?.title}>
                               {/* Colored left border indicator */}
@@ -2484,7 +2484,7 @@ const PlaylistsPage = ({ onVideoSelect }) => {
                                     left: 0,
                                     width: '100%',
                                     height: '100%',
-                                    objectFit: 'cover',
+                                    objectFit: activeThumbnailUrl && activeThumbnailUrl.includes('twimg.com') ? 'contain' : 'cover',
                                     display: 'block',
                                     paddingLeft: '8px'
                                   }}

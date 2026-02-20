@@ -78,6 +78,12 @@ Twitter content appears in standard video cards with special handling:
 - **Published Date**: Tweet creation timestamp
 - **Profile Picture**: Stored in `profile_image_url` field
 
+### Playlist Cards
+
+When a Twitter video is set as the cover or previewed in a playlist card's thumbnail slot (`PlaylistsPage.jsx`):
+- **High-Resolution Previews**: The `thumbnail_url` is automatically upgraded to `name=large` for the main cover slot or `name=medium` for the 4-mini preview thumbnails to prevent blurriness.
+- **Smart Framing**: The thumbnail rendering logic detects `twimg.com` URLs and applies the `object-fit: contain` property with the light sky blue (`#e0f2fe`) background. This ensures the native aspect ratio is preserved without being awkwardly cropped inside the strict 16:9 dimensions of playlist cards.
+
 ### Card Styles
 
 **TweetCard (Premium Twitter/X Style):**
