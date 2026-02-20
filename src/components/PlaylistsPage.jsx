@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { createPlaylist, getAllPlaylists, getPlaylistItems, deletePlaylist, deletePlaylistByName, getAllFoldersWithVideos, exportPlaylist, getFoldersForPlaylist, toggleStuckFolder, getAllStuckFolders, getVideosInFolder, getAllVideoProgress, getAllPlaylistMetadata, addVideoToPlaylist, getFolderMetadata, getPlaylistItemsPreview, updatePlaylist, reorderPlaylistItem } from '../api/playlistApi';
 import { getThumbnailUrl } from '../utils/youtubeUtils';
 import { usePlaylistStore } from '../store/playlistStore';
-import { Play, Shuffle, Grid3x3, RotateCcw, Info, ChevronUp, List, Layers, Folder, Check } from 'lucide-react';
+import { Play, Shuffle, Grid3x3, RotateCcw, Info, ChevronUp, List, Layers, Folder, Check, X } from 'lucide-react';
 import PlaylistFolderColumn from './PlaylistFolderColumn';
 import { useFolderStore } from '../store/folderStore';
 import { useTabStore } from '../store/tabStore';
@@ -57,6 +57,8 @@ const PlaylistsPage = ({ onVideoSelect }) => {
   const [showThumbnailInfo, setShowThumbnailInfo] = useState(new Set()); // Set of card keys with info overlay visible
 
   // Global info toggle - shows video titles on all cards (persisted to localStorage)
+  const [activeFolderFilters, setActiveFolderFilters] = useState({}); // { playlistId: folderColor }
+
   const [globalInfoToggle, setGlobalInfoToggle] = useState(() => {
     const saved = localStorage.getItem('playlistsPage_globalInfoToggle');
     return saved === 'true';
@@ -1140,7 +1142,7 @@ const PlaylistsPage = ({ onVideoSelect }) => {
                                   width: '100%',
                                   paddingBottom: '56.25%',
                                   backgroundColor: '#0f172a',
-                                }}>
+                                }} title={previewThumbnails[folderImageKey]?.title || folder.first_video?.title}>
                                   {activeThumbnailUrl ? (
                                     <img
                                       src={activeThumbnailUrl}
@@ -1488,7 +1490,10 @@ const PlaylistsPage = ({ onVideoSelect }) => {
 
                                         // Reset mini videos
                                         try {
-                                          const items = await getPlaylistItemsPreview(playlist.id, 4);
+                                          const filteredColor = activeFolderFilters[playlist.id];
+                                          const items = filteredColor
+                                            ? (await getVideosInFolder(playlist.id, filteredColor)).slice(0, 4)
+                                            : await getPlaylistItemsPreview(playlist.id, 4);
                                           setPlaylistPreviewVideos(prev => ({
                                             ...prev,
                                             [playlist.id]: items
@@ -1507,7 +1512,10 @@ const PlaylistsPage = ({ onVideoSelect }) => {
                                     onClick={async (e) => {
                                       e.stopPropagation();
                                       try {
-                                        const items = await getPlaylistItems(playlist.id);
+                                        const filteredColor = activeFolderFilters[playlist.id];
+                                        const items = filteredColor
+                                          ? await getVideosInFolder(playlist.id, filteredColor)
+                                          : await getPlaylistItems(playlist.id);
                                         if (items.length === 0) return;
 
                                         // Shuffle thumbnail preview
@@ -1597,7 +1605,7 @@ const PlaylistsPage = ({ onVideoSelect }) => {
                               width: '100%',
                               paddingBottom: '56.25%', // 16:9 aspect ratio
                               backgroundColor: '#0f172a',
-                            }}>
+                            }} title={previewThumbnails[playlistImageKey]?.title || playlistPreviewVideos[playlist.id]?.[0]?.title}>
                               {activeThumbnailUrl ? (
                                 <img
                                   src={activeThumbnailUrl}
@@ -1699,15 +1707,31 @@ const PlaylistsPage = ({ onVideoSelect }) => {
                                           size={32}
                                           className={`transition-colors ${openFolderListIds.has(playlist.id)
                                             ? 'text-sky-500'
-                                            : 'text-[#052F4A] opacity-90 group-hover/btn:text-sky-600'
+                                            : activeFolderFilters[playlist.id] ? '' : 'text-[#052F4A] opacity-90 group-hover/btn:text-sky-600'
                                             }`}
-                                          fill="currentColor"
+                                          fill={activeFolderFilters[playlist.id] ? getFolderColorById(activeFolderFilters[playlist.id]).hex : "currentColor"}
                                           stroke="white"
                                           strokeWidth={2}
                                         />
                                         <span className="absolute inset-x-0 bottom-0 top-[3px] flex items-center justify-center text-white text-[10px] font-bold">
                                           {activeFolderCount}
                                         </span>
+                                        {activeFolderFilters[playlist.id] && (
+                                          <div
+                                            className="absolute -top-2 -right-2 bg-red-600 rounded-full p-0.5 shadow-md hover:bg-red-500 cursor-pointer border border-white/20 hover:scale-110 transition-transform"
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              setActiveFolderFilters(prev => {
+                                                const next = { ...prev };
+                                                delete next[playlist.id];
+                                                return next;
+                                              });
+                                            }}
+                                            title="Clear folder filter"
+                                          >
+                                            <X size={12} strokeWidth={3} className="text-white" />
+                                          </div>
+                                        )}
                                       </div>
                                     </button>
 
@@ -2107,13 +2131,67 @@ const PlaylistsPage = ({ onVideoSelect }) => {
 
                             {/* 4 Little Video Thumbnails - Horizontal strip below content */}
                             <div className="mt-2 grid grid-cols-4 gap-2 px-1 pb-1">
-                              {(playlistPreviewVideos[playlist.id] || []).slice(0, 4).map((video) => (
+                              {(playlistPreviewVideos[playlist.id] || []).slice(0, 4).map((video, index) => (
                                 <div
                                   key={video.video_id}
                                   className="aspect-video relative rounded-md overflow-hidden bg-black/50 border-2 border-[#052F4A] hover:ring-2 hover:ring-sky-500 transition-all cursor-pointer group/mini shadow-md"
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     if (onVideoSelect) onVideoSelect(video.video_url);
+                                  }}
+                                  onContextMenu={async (e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    try {
+                                      let currentMainVideo = null;
+                                      const currentPreview = previewThumbnails[playlistImageKey];
+                                      if (currentPreview && currentPreview.videoId) {
+                                        currentMainVideo = {
+                                          video_id: currentPreview.videoId,
+                                          video_url: currentPreview.videoUrl,
+                                          title: currentPreview.title,
+                                          thumbnail_url: currentPreview.url
+                                        };
+                                      } else {
+                                        const items = await getPlaylistItems(playlist.id);
+                                        if (items.length > 0) {
+                                          let targetVideo = items[0];
+                                          if (activeThumbnailUrl) {
+                                            const coverMatch = items.find(item => {
+                                              const maxThumb = getThumbnailUrl(item.video_id, 'max');
+                                              const stdThumb = getThumbnailUrl(item.video_id, 'standard');
+                                              return maxThumb === activeThumbnailUrl || stdThumb === activeThumbnailUrl;
+                                            });
+                                            if (coverMatch) targetVideo = coverMatch;
+                                          }
+                                          currentMainVideo = targetVideo;
+                                        }
+                                      }
+                                      if (currentMainVideo) {
+                                        const thumbUrl = video.thumbnail_url || getThumbnailUrl(video.video_id, 'max');
+                                        setPreviewThumbnails(prev => ({
+                                          ...prev,
+                                          [playlistImageKey]: {
+                                            videoId: video.video_id,
+                                            url: thumbUrl,
+                                            videoUrl: video.video_url,
+                                            title: video.title,
+                                            isShuffled: true
+                                          }
+                                        }));
+                                        setPlaylistPreviewVideos(prev => {
+                                          const prevVideos = prev[playlist.id] || [];
+                                          const newVideos = [...prevVideos];
+                                          newVideos[index] = currentMainVideo;
+                                          return {
+                                            ...prev,
+                                            [playlist.id]: newVideos
+                                          };
+                                        });
+                                      }
+                                    } catch (err) {
+                                      console.error("Failed to swap thumbnails:", err);
+                                    }
                                   }}
                                   title={video.title}
                                 >
@@ -2385,7 +2463,7 @@ const PlaylistsPage = ({ onVideoSelect }) => {
                               paddingBottom: '56.25%', // 16:9 aspect ratio
                               backgroundColor: '#0f172a',
                               overflow: 'hidden'
-                            }}>
+                            }} title={previewThumbnails[folderImageKey]?.title || folder.first_video?.title}>
                               {/* Colored left border indicator */}
                               <div
                                 className="absolute left-0 top-0 bottom-0 w-2 z-10"
@@ -2540,10 +2618,34 @@ const PlaylistsPage = ({ onVideoSelect }) => {
               onFolderSelect={async (folder) => {
                 try {
                   const items = await getVideosInFolder(folder.playlist_id, folder.folder_color);
-                  setPlaylistItems(items, folder.playlist_id, { playlist_id: folder.playlist_id, folder_color: folder.folder_color }, playlist.name);
-                  if (items.length > 0 && onVideoSelect) {
-                    onVideoSelect(items[0].video_url);
-                  }
+                  if (items.length === 0) return;
+
+                  const playlistImageKey = `playlist-${folder.playlist_id}`;
+                  const targetVideo = items[0];
+                  const thumbUrl = targetVideo.thumbnail_url || getThumbnailUrl(targetVideo.video_id, 'max');
+
+                  setPreviewThumbnails(prev => ({
+                    ...prev,
+                    [playlistImageKey]: {
+                      videoId: targetVideo.video_id,
+                      url: thumbUrl,
+                      videoUrl: targetVideo.video_url,
+                      title: targetVideo.title,
+                      isShuffled: true
+                    }
+                  }));
+
+                  setPlaylistPreviewVideos(prev => ({
+                    ...prev,
+                    [folder.playlist_id]: items.slice(0, 4)
+                  }));
+
+                  setActiveFolderFilters(prev => ({
+                    ...prev,
+                    [folder.playlist_id]: folder.folder_color
+                  }));
+
+                  setOpenFolderListIds(new Set());
                 } catch (error) {
                   console.error('Failed to load folder items:', error);
                 }
