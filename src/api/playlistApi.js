@@ -46,6 +46,29 @@ export const deletePlaylistByName = async (name) => {
   return await invoke('delete_playlist_by_name', { name });
 };
 
+// Playlist Source operations
+export const addPlaylistSource = async (playlistId, sourceType, sourceValue, videoLimit = 10) => {
+  return await invoke('add_playlist_source', { playlistId, sourceType, sourceValue, videoLimit });
+};
+
+export const updatePlaylistSourceLimit = async (id, videoLimit) => {
+  return await invoke('update_playlist_source_limit', { id, videoLimit });
+};
+
+export const getPlaylistSources = async (playlistId) => {
+  try {
+    const result = await invoke('get_playlist_sources', { playlistId });
+    return result || [];
+  } catch (error) {
+    console.error('Error in getPlaylistSources API:', error);
+    throw error;
+  }
+};
+
+export const removePlaylistSource = async (id) => {
+  return await invoke('remove_playlist_source', { id });
+};
+
 // Playlist item operations
 export const addVideoToPlaylist = async (playlistId, videoUrl, videoId, title, thumbnailUrl, author, viewCount, publishedAt, isLocal = false, profileImageUrl = null) => {
   try {

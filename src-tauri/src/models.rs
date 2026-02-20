@@ -112,3 +112,14 @@ pub struct PlaylistMetadata {
     pub first_video: Option<PlaylistItem>,
     pub recent_video: Option<PlaylistItem>,
 }
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct PlaylistSource {
+    pub id: i64,
+    pub playlist_id: i64,
+    pub source_type: String,  // 'channel' or 'playlist'
+    pub source_value: String, // Channel ID or Playlist ID
+    pub created_at: String,
+    #[serde(default)]
+    pub video_limit: i32,
+}

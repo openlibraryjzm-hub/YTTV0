@@ -8,7 +8,9 @@ import { extractVideoId } from '../utils/youtubeUtils';
 import VideoCard from './VideoCard';
 import PlaylistSelectionModal from './PlaylistSelectionModal';
 import PlaylistUploader from './PlaylistUploader';
-import { addVideoToPlaylist, getPlaylistItems } from '../api/playlistApi';
+import { addVideoToPlaylist, getPlaylistItems, getPlaylistSources } from '../api/playlistApi';
+import { fetchChannelUploads } from '../utils/youtubeUtils';
+
 import { useStickyStore } from '../store/stickyStore';
 import { usePinStore } from '../store/pinStore';
 import StickyVideoCarousel from './StickyVideoCarousel';
@@ -26,6 +28,7 @@ import TweetCard from './TweetCard';
 import OrbCard from './OrbCard';
 import BannerPresetCard from './BannerPresetCard';
 import AutoTagModal from './AutoTagModal';
+import SubscriptionManagerModal from './SubscriptionManagerModal';
 
 
 const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
@@ -138,6 +141,7 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
   // Use preview items if available, otherwise use current playlist items
   const activePlaylistItems = previewPlaylistItems || currentPlaylistItems;
   const activePlaylistId = previewPlaylistId || currentPlaylistId;
+  const [showSubscriptionManager, setShowSubscriptionManager] = useState(false);
 
   // Reset point tracking for chevron navigation
   // Tracks the playlist to return to when clicking the return button
@@ -1460,8 +1464,17 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
           />
           {/* Page Banner - DISABLED PER USER REQUEST */}
           {/* Replacement Mini Header - MOVED TO TOPNAVIGATION */}
-          {/*
           {activePlaylistId && (
+            <div className="absolute top-0 right-0 z-50">
+              <SubscriptionManagerModal
+                isOpen={showSubscriptionManager}
+                onClose={() => setShowSubscriptionManager(false)}
+                playlistId={activePlaylistId}
+              />
+            </div>
+          )}
+          {/*
+           {activePlaylistId && (
             <div
               className="w-full h-[100px] flex items-end px-8 pb-4 transition-all duration-300"
               style={{
@@ -1719,6 +1732,93 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
                   </svg>
+                </button>
+
+                {/* Refresh Subscriptions */}
+                <button
+                  onClick={async () => {
+                    const isConfirm = window.confirm('Refresh subscriptions for this playlist? This might take a moment.');
+                    if (!isConfirm) return;
+
+                    // Inline logic or call handler
+                    if (!activePlaylistId) return;
+
+                    try {
+                      // Show loading state? 
+                      // Since we don't have a specific loading state for this button easily without more state,
+                      // we'll just use the button's disabled state or a toast/alert.
+
+                      const sources = await getPlaylistSources(activePlaylistId);
+                      if (!sources || sources.length === 0) {
+                        alert('No subscriptions found in this playlist.');
+                        return;
+                      }
+
+                      let totalNew = 0;
+                      const MAX_CONCURRENT = 5;
+
+                      // Process sources
+                      for (let i = 0; i < sources.length; i += MAX_CONCURRENT) {
+                        const chunk = sources.slice(i, i + MAX_CONCURRENT);
+                        await Promise.all(chunk.map(async (source) => {
+                          try {
+                            let videos                                    // Use stored limit, fallback to 10
+                            const limit = source.video_limit || 10;
+
+                            if (source.source_type === 'channel') {
+                              videos = await fetchChannelUploads(source.source_value, limit);
+                            } else if (source.source_type === 'playlist') {
+                              // For playlists, we might want a fetchPlaylistVideos equivalent without the parsing overhead
+                              // For now, support ONLY channel per requirements
+                            }
+
+                            for (const v of videos) {
+                              try {
+                                await addVideoToPlaylist(
+                                  activePlaylistId,
+                                  v.video_url,
+                                  v.video_id,
+                                  v.title,
+                                  v.thumbnail_url,
+                                  v.author,
+                                  null,
+                                  v.published_at
+                                );
+                                totalNew++;
+                              } catch (e) { /* ignore duplicates */ }
+                            }
+                          } catch (e) {
+                            console.error('Source refresh failed:', e);
+                          }
+                        }));
+                      }
+
+                      if (totalNew > 0) {
+                        const items = await getPlaylistItems(activePlaylistId);
+                        setPlaylistItems(items, activePlaylistId);
+                        alert(`Refresh complete! Added ${totalNew} new videos.`);
+                      } else {
+                        alert('No new videos found.');
+                      }
+
+                    } catch (e) {
+                      console.error(e);
+                      alert('Refresh failed.');
+                    }
+                  }}
+                  onContextMenu={(e) => {
+                    e.preventDefault();
+                    console.log('VideosPage: Refresh button right-click', { activePlaylistId });
+                    if (activePlaylistId) {
+                      setShowSubscriptionManager(true);
+                    } else {
+                      console.warn('VideosPage: Right-click ignored, no activePlaylistId');
+                    }
+                  }}
+                  className="p-1.5 bg-white hover:bg-gray-100 text-black rounded-md transition-all shadow-lg border-2 border-black"
+                  title="Refresh Subscriptions (Right-click to Manage)"
+                >
+                  <RotateCcw className="w-4 h-4" />
                 </button>
 
                 {/* Add */}

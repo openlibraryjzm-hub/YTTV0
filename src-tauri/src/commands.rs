@@ -68,6 +68,48 @@ pub fn delete_playlist_by_name(db: State<Mutex<Database>>, name: String) -> Resu
     db.delete_playlist_by_name(&name).map_err(|e| e.to_string())
 }
 
+// Playlist Source commands
+
+#[tauri::command]
+pub fn add_playlist_source(
+    db: State<Mutex<Database>>,
+    playlist_id: i64,
+    source_type: String,
+    source_value: String,
+    video_limit: i32,
+) -> Result<i64, String> {
+    let db = db.lock().map_err(|e| e.to_string())?;
+    db.add_playlist_source(playlist_id, &source_type, &source_value, video_limit)
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn get_playlist_sources(
+    db: State<Mutex<Database>>,
+    playlist_id: i64,
+) -> Result<Vec<PlaylistSource>, String> {
+    let db = db.lock().map_err(|e| e.to_string())?;
+    db.get_playlist_sources(playlist_id)
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn update_playlist_source_limit(
+    db: State<Mutex<Database>>,
+    id: i64,
+    video_limit: i32,
+) -> Result<bool, String> {
+    let db = db.lock().map_err(|e| e.to_string())?;
+    db.update_playlist_source_limit(id, video_limit)
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn remove_playlist_source(db: State<Mutex<Database>>, id: i64) -> Result<bool, String> {
+    let db = db.lock().map_err(|e| e.to_string())?;
+    db.remove_playlist_source(id).map_err(|e| e.to_string())
+}
+
 // Playlist item commands
 #[tauri::command]
 pub fn add_video_to_playlist(

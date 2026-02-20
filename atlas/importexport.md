@@ -29,6 +29,7 @@ Users see a unified "Config Playlist" modal when clicking the "Config Playlist" 
 - **"All" Links Input**:
   - Large textarea for pasting mixed content:
     - YouTube Playlist URLs
+    - YouTube Channel URLs (@username or /channel/ID)
     - Individual Video URLs
     - Local references
   - Supports newline, comma, pipe, or space separators.

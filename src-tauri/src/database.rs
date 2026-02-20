@@ -176,6 +176,46 @@ impl Database {
             [],
         )?;
 
+        // Create playlist_sources table
+        self.conn.execute(
+            "CREATE TABLE IF NOT EXISTS playlist_sources (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                playlist_id INTEGER NOT NULL,
+                source_type TEXT NOT NULL,
+                source_value TEXT NOT NULL,
+                created_at TEXT NOT NULL,
+                FOREIGN KEY (playlist_id) REFERENCES playlists(id) ON DELETE CASCADE,
+                UNIQUE(playlist_id, source_type, source_value)
+            )",
+            [],
+        )?;
+
+        self.conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_playlist_sources_playlist ON playlist_sources(playlist_id)",
+            [],
+        )?;
+
+        // Migration: Add video_limit column to playlist_sources if it doesn't exist
+        {
+            let mut stmt = self.conn.prepare("PRAGMA table_info(playlist_sources)")?;
+            let mut has_video_limit = false;
+            let rows = stmt.query_map([], |row| {
+                Ok(row.get::<_, String>(1)?)
+            })?;
+            for row in rows {
+                if row? == "video_limit" {
+                    has_video_limit = true;
+                    break;
+                }
+            }
+            if !has_video_limit {
+                self.conn.execute(
+                    "ALTER TABLE playlist_sources ADD COLUMN video_limit INTEGER NOT NULL DEFAULT 10",
+                    params![],
+                )?;
+            }
+        }
+
         // Migration: Add is_local column to playlist_items if it doesn't exist
         // SQLite doesn't support IF NOT EXISTS for ALTER TABLE, so we check if column exists
         let mut stmt = self.conn.prepare("PRAGMA table_info(playlist_items)")?;
@@ -618,6 +658,83 @@ impl Database {
             .collect::<Result<Vec<_>, _>>()?;
 
         Ok(items)
+    }
+
+    // Playlist Sources operations
+    pub fn add_playlist_source(
+        &self,
+        playlist_id: i64,
+        source_type: &str,
+        source_value: &str,
+        video_limit: i32,
+    ) -> Result<i64> {
+        let now = Utc::now().to_rfc3339();
+        
+        // Check if exists
+        let exists: bool = self.conn.query_row(
+            "SELECT EXISTS(SELECT 1 FROM playlist_sources WHERE playlist_id = ?1 AND source_type = ?2 AND source_value = ?3)",
+            params![playlist_id, source_type, source_value],
+            |row| row.get(0),
+        )?;
+
+        if exists {
+            let id: i64 = self.conn.query_row(
+                "SELECT id FROM playlist_sources WHERE playlist_id = ?1 AND source_type = ?2 AND source_value = ?3",
+                params![playlist_id, source_type, source_value],
+                |row| row.get(0),
+            )?;
+            // Optional: update limit if it exists? 
+            // The user might be re-adding with a new limit. Let's update it.
+            self.conn.execute(
+                "UPDATE playlist_sources SET video_limit = ?1 WHERE id = ?2",
+                params![video_limit, id],
+            )?;
+            return Ok(id);
+        }
+
+        self.conn.execute(
+            "INSERT INTO playlist_sources (playlist_id, source_type, source_value, created_at, video_limit) VALUES (?1, ?2, ?3, ?4, ?5)",
+            params![playlist_id, source_type, source_value, now, video_limit],
+        )?;
+
+        Ok(self.conn.last_insert_rowid())
+    }
+
+    pub fn get_playlist_sources(&self, playlist_id: i64) -> Result<Vec<crate::models::PlaylistSource>> {
+        let mut stmt = self.conn.prepare(
+            "SELECT id, playlist_id, source_type, source_value, created_at, video_limit FROM playlist_sources WHERE playlist_id = ?1 ORDER BY created_at DESC"
+        )?;
+
+        let sources = stmt
+            .query_map(params![playlist_id], |row| {
+                Ok(crate::models::PlaylistSource {
+                    id: row.get(0)?,
+                    playlist_id: row.get(1)?,
+                    source_type: row.get(2)?,
+                    source_value: row.get(3)?,
+                    created_at: row.get(4)?,
+                    video_limit: row.get(5)?,
+                })
+            })?
+            .collect::<Result<Vec<_>, _>>()?;
+
+        Ok(sources)
+    }
+
+    pub fn update_playlist_source_limit(&self, id: i64, video_limit: i32) -> Result<bool> {
+        let rows = self.conn.execute(
+            "UPDATE playlist_sources SET video_limit = ?1 WHERE id = ?2",
+            params![video_limit, id],
+        )?;
+        Ok(rows > 0)
+    }
+
+    pub fn remove_playlist_source(&self, id: i64) -> Result<bool> {
+        let rows = self.conn.execute(
+            "DELETE FROM playlist_sources WHERE id = ?1",
+            params![id],
+        )?;
+        Ok(rows > 0)
     }
 
     pub fn remove_video_from_playlist(&self, playlist_id: i64, item_id: i64) -> Result<bool> {

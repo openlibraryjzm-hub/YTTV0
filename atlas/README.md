@@ -425,8 +425,15 @@ For detailed information about the application's theme system and recent color c
   - **Tweet Card Layout**:
     - **Optimized Grid**: Switched VideosPage to a 2-column layout on large screens.
     - **Uniform Sizing**: Both TweetCards and VideoCards now occupy a single cell (50% width), creating a balanced, gap-free grid.
-- **Pin System Fix**: 
-  - Resolved a bug causing duplicate pins in the PinStore.
+- **Bug Fixes**:
+  - **Pins**: Fixed a bug where pins were being duplicated in the store. Added robust checks to remove existing pins before adding new ones.
+- **Subscription & Channel Management**:
+  - **Channel Import Support**: 
+    - Updated `ConfigPlaylistModal` (Unified Add) to fully support **YouTube Channel URLs** (e.g., `@ChannelName`). 
+    - The system now automatically resolves channels to their "Uploads" playlist and fetches all videos.
+  - **Backend Foundation**:
+    - Created `playlist_sources` table in SQLite to track subscription sources and their limits.
+    - Implemented API endpoints (`add_playlist_source`, `get_playlist_sources`) for future subscription management features.
 - **Asset Manager Enhancements**:
   - **Larger Orb Carousel**: Increased Orb preset size to 200px for better visibility, matching the Orb Page design.
   - **Layout Optimization**: Removed "Folder/File" sub-navigation to maximize vertical space.
