@@ -98,7 +98,12 @@ const PlaylistFolderColumn = ({
                                     style={{ background: `radial-gradient(circle at center, ${folderColor.hex}, transparent 70%)` }}
                                 />
 
-                                {/* Header removed as logic moved to TopNavigation */}
+                                {/* Folder Name Display */}
+                                <div className="mb-3 px-2">
+                                    <h3 className="text-white font-bold text-xl drop-shadow-md truncate text-center">
+                                        {displayFolderName}
+                                    </h3>
+                                </div>
 
                                 {/* Thumbnail Area */}
                                 <div className="rounded-lg overflow-hidden relative group mt-auto z-10 border-2 border-[#052F4A] shadow-inner" style={{
