@@ -95,15 +95,29 @@ const TweetPage = () => {
                         </p>
                     </div>
 
-                    {/* Large Image */}
-                    {highResImage && (
+                    {/* Media */}
+                    {(tweet.video_url && tweet.video_url.includes('.mp4') || highResImage) && (
                         <div className="rounded-3xl overflow-hidden border border-white/10 shadow-2xl bg-black/20">
-                            <img
-                                src={highResImage}
-                                alt={tweet.title}
-                                className="w-full h-auto object-contain max-h-[150vh]"
-                                loading="lazy"
-                            />
+                            {tweet.video_url && tweet.video_url.includes('.mp4') ? (
+                                <video
+                                    src={tweet.video_url}
+                                    className="w-full h-auto object-contain max-h-[150vh]"
+                                    controls
+                                    autoPlay
+                                    loop
+                                    muted
+                                    playsInline
+                                    referrerPolicy="no-referrer"
+                                    onError={(e) => console.error("Video payload error", e.target.error)}
+                                />
+                            ) : (
+                                <img
+                                    src={highResImage}
+                                    alt={tweet.title}
+                                    className="w-full h-auto object-contain max-h-[150vh]"
+                                    loading="lazy"
+                                />
+                            )}
                         </div>
                     )}
                 </div>

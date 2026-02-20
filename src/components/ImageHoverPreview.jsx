@@ -11,6 +11,7 @@ const ImageHoverPreview = ({
     delay = 0,
     maxWidth = 900,
     maxHeight = 1200,
+    isVideo = false, // Add isVideo prop
     children
 }) => {
     const [showPreview, setShowPreview] = useState(false);
@@ -141,26 +142,32 @@ const ImageHoverPreview = ({
 
     const handleImageLoad = (e) => {
         const img = e.target;
-        const aspectRatio = img.naturalWidth / img.naturalHeight;
+        const width = isVideo ? img.videoWidth : img.naturalWidth;
+        const height = isVideo ? img.videoHeight : img.naturalHeight;
 
-        let width = img.naturalWidth;
-        let height = img.naturalHeight;
+        // Sometimes video properties might be 0 immediately, guard against it
+        if (width === 0 || height === 0) return;
+
+        const aspectRatio = width / height;
+
+        let calcWidth = width;
+        let calcHeight = height;
 
         // Dynamic boundaries: no larger than prop max dimensions or 95% of viewport
         const effectiveMaxWidth = Math.min(maxWidth, window.innerWidth * 0.95);
         const effectiveMaxHeight = Math.min(maxHeight, window.innerHeight * 0.95);
 
         // Scale down if larger than max dimensions
-        if (width > effectiveMaxWidth) {
-            width = effectiveMaxWidth;
-            height = width / aspectRatio;
+        if (calcWidth > effectiveMaxWidth) {
+            calcWidth = effectiveMaxWidth;
+            calcHeight = calcWidth / aspectRatio;
         }
-        if (height > effectiveMaxHeight) {
-            height = effectiveMaxHeight;
-            width = height * aspectRatio;
+        if (calcHeight > effectiveMaxHeight) {
+            calcHeight = effectiveMaxHeight;
+            calcWidth = calcHeight * aspectRatio;
         }
 
-        const newSize = { width, height };
+        const newSize = { width: calcWidth, height: calcHeight };
         setImageSize(newSize);
 
         // Immediately recalculate position with the new size to prevent jump
@@ -212,19 +219,40 @@ const ImageHoverPreview = ({
                         transition: 'opacity 0.15s ease-in-out',
                     }}
                 >
-                    <img
-                        src={previewSrc || src}
-                        alt={alt}
-                        onLoad={handleImageLoad}
-                        style={{
-                            display: 'block',
-                            maxWidth: `min(${maxWidth}px, 95vw)`,
-                            maxHeight: `min(${maxHeight}px, 95vh)`,
-                            width: 'auto',
-                            height: 'auto',
-                            objectFit: 'contain',
-                        }}
-                    />
+                    {isVideo ? (
+                        <video
+                            src={previewSrc || src}
+                            onLoadedMetadata={handleImageLoad}
+                            autoPlay
+                            loop
+                            muted
+                            playsInline
+                            referrerPolicy="no-referrer"
+                            style={{
+                                display: 'block',
+                                maxWidth: `min(${maxWidth}px, 95vw)`,
+                                maxHeight: `min(${maxHeight}px, 95vh)`,
+                                width: 'auto',
+                                height: 'auto',
+                                objectFit: 'contain',
+                            }}
+                            onError={(e) => console.error("Hover Video error", e.target.error)}
+                        />
+                    ) : (
+                        <img
+                            src={previewSrc || src}
+                            alt={alt}
+                            onLoad={handleImageLoad}
+                            style={{
+                                display: 'block',
+                                maxWidth: `min(${maxWidth}px, 95vw)`,
+                                maxHeight: `min(${maxHeight}px, 95vh)`,
+                                width: 'auto',
+                                height: 'auto',
+                                objectFit: 'contain',
+                            }}
+                        />
+                    )}
                 </div>
             )}
         </>

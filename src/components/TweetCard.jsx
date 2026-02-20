@@ -54,8 +54,15 @@ const TweetCard = ({
     }, [video]);
 
     const previewUrl = useMemo(() => {
-        // Upgrade Twitter thumbnail from 'thumb' to 'large' or 'orig' for high-res preview
+        // Use video raw mp4 url if available, otherwise upgrade Twitter thumbnail
+        if (video.video_url && video.video_url.includes('.mp4')) {
+            return video.video_url;
+        }
         return video.thumbnail_url?.replace(/name=[a-z]+/, 'name=large') || video.thumbnail_url;
+    }, [video]);
+
+    const isVideoMedia = useMemo(() => {
+        return !!(video.video_url && video.video_url.includes('.mp4'));
     }, [video]);
 
     const primaryFolder = videoFolders.length > 0 ? getFolderColorById(videoFolders[0]) : null;
@@ -213,7 +220,13 @@ const TweetCard = ({
                 {/* Media Content */}
                 <div className="px-3 pb-2 flex-1 flex flex-col min-h-0">
                     <div className="relative rounded-xl overflow-hidden border border-sky-100 dark:border-sky-800/20 flex-1 min-h-[140px] bg-[#d0eafb]/50 p-1.5">
-                        <ImageHoverPreview src={thumbnailUrl} previewSrc={previewUrl} alt={video.title} delay={500}>
+                        <ImageHoverPreview
+                            src={thumbnailUrl}
+                            previewSrc={previewUrl}
+                            isVideo={isVideoMedia}
+                            alt={video.title}
+                            delay={500}
+                        >
                             <CardThumbnail
                                 src={thumbnailUrl}
                                 alt={video.title}

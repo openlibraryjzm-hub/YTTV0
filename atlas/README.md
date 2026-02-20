@@ -421,6 +421,7 @@ For detailed information about the application's theme system and recent color c
   - Implemented **JSON Import** for Twitter bookmarks, allowing bulk import of tweets as "local" videos.
   - created `TweetCard` improvements for proper rendering of MP4s and GIFs.
   - Added **High-Res Hover Previews** for Twitter media using `ImageHoverPreview` bounded maximally to 95% of the viewport width/height to avoid cutoff.
+  - **Native MP4 Playback Support**: Twitter videos (`.mp4`) are now natively supported in both the hover preview expansion and the full-page tweet view, complete with autoplay, looping, and a bypass for Twitter's CDN `403 Forbidden` referrer checks (`<meta name="referrer" content="no-referrer" />`).
   - **Playlist Card Integration**: Upgraded Twitter thumbnails to high-resolution (`name=large` & `medium`) inside playlist grid cards. Applied conditional smart framing (`object-fit: contain` with light sky blue background `#e0f2fe`) and wrapped them with `ImageHoverPreview` to give users a seamlessly huge high-res popout of Twitter pictures without ever overflowing the screen.
 - **Performance Optimization**: 
   - Solved major lag on the Playlists Page by implementing `get_playlist_items_preview` (Rust backend).

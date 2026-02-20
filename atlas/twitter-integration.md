@@ -116,7 +116,7 @@ Hovering over any video thumbnail triggers an enlarged preview instantly.
 - **Max Dimensions**: 900x1200px with aspect ratio preservation
 
 **Preview Sources:**
-- **Twitter/Local**: Uses `video_url` (original media URL) for photos; enlarged thumbnails (`name=large`) for videos/GIFs as raw video files cannot be displayed in expansion images.
+- **Twitter/Local**: Uses `video_url` (original media URL) to natively stream and auto-play `.mp4` video files directly in the pop-out, and automatically falls back to zoomed-in thumbnails (`name=large`) for images/GIFs.
 - **YouTube**: Uses `maxresdefault` thumbnail (highest quality)
 
 **Positioning Logic:**
