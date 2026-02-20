@@ -17,6 +17,10 @@ The drumstick rating interface appears when hovering over any video card (Standa
     - **VideoCard**: Top-right corner, next to the Pin and Folder/Star buttons.
     - **TweetCard**: Top-right corner of the media thumbnail, following the Twitter-style badge aesthetic with a blurred backdrop.
 
+### 1.1 Sticky Bar Integration
+
+The drumstick rating system is also integrated into the `VideosPage.jsx` sticky bar. Users can filter the video grid to show only videos with a specific drumstick rating (1-5) using the main sort/filter dropdown menu. Each rating level is represented by the corresponding number of drumstick emojis (🍗).
+
 ---
 
 ## 2. Technical Architecture

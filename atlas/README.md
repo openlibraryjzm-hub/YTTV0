@@ -474,7 +474,10 @@ For detailed information about the application's theme system and recent color c
   - Developed custom `DrumstickRating` component with hover effects and stop-propagation protection.
   - Integrated ratings into both `VideoCard` (standard) and `TweetCard` (Twitter/X style).
   - Created backend Tauri commands and frontend API functions for persistence.
+  - **Sticky Bar Filtering**: Added sorting options to filter videos by specific drumstick ratings (1-5) directly from the Video Page's sticky bar dropdown, using visual drumstick emojis (🍗).
   - Documented system in `atlas/drumstick-rating-system.md`.
+- **Video Sorting Enhancements**:
+  - Upgraded the Video Page sticky bar sorting dropdown to include explicit ascending (🔼) and descending (🔽) options for Date, Progress, and Last Viewed sorting to improve user control.
 - **New Tweet View**:
   - Created a dedicated `TweetPage` component for viewing high-resolution detailed views of tweets.
   - Implemented navigation flow from `TweetCard` clicks to the new page.

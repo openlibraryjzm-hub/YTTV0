@@ -1199,6 +1199,18 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
       return sorted;
     }
 
+    if (sortBy && sortBy.startsWith('rating')) {
+      const targetRating = parseInt(sortBy.replace('rating', ''), 10);
+      const filtered = [...baseVideos].filter(v => (v.drumstick_rating || 0) === targetRating);
+
+      const sorted = filtered.sort((a, b) => {
+        const dateA = new Date(a.published_at || a.added_at || 0).getTime();
+        const dateB = new Date(b.published_at || b.added_at || 0).getTime();
+        return sortDirection === 'asc' ? dateA - dateB : dateB - dateA;
+      });
+      return sorted;
+    }
+
     if (sortBy === 'lastViewed') {
       const sorted = [...baseVideos].sort((a, b) => {
         const idA = extractVideoId(a.video_url) || a.video_id || a.id;
@@ -1565,15 +1577,32 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
               {/* Sort Dropdown - Moved to Far Left */}
               <div className="relative group shrink-0 mr-3">
                 <select
-                  value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value)}
+                  value={`${sortBy}${sortBy === 'shuffle' || sortBy.startsWith('rating') ? '' : '_' + sortDirection}`}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (val === 'shuffle' || val.startsWith('rating')) {
+                      setSortBy(val);
+                    } else {
+                      const [by, dir] = val.split('_');
+                      setSortBy(by);
+                      if (dir) setSortDirection(dir);
+                    }
+                  }}
                   className="bg-white border-2 border-black rounded-md py-1 pl-1.5 pr-4 text-[10px] font-bold uppercase tracking-wider text-black focus:outline-none focus:ring-1 focus:ring-sky-500 cursor-pointer hover:bg-gray-100 transition-colors appearance-none w-auto min-w-[70px]"
                   title="Sort"
                 >
                   <option value="shuffle">Default</option>
-                  <option value="chronological">Date</option>
-                  <option value="progress">Progress</option>
-                  <option value="lastViewed">Last Viewed</option>
+                  <option value="chronological_desc">Date 🔽</option>
+                  <option value="chronological_asc">Date 🔼</option>
+                  <option value="progress_desc">Progress 🔽</option>
+                  <option value="progress_asc">Progress 🔼</option>
+                  <option value="lastViewed_desc">Last Viewed 🔽</option>
+                  <option value="lastViewed_asc">Last Viewed 🔼</option>
+                  <option value="rating5">🍗🍗🍗🍗🍗</option>
+                  <option value="rating4">🍗🍗🍗🍗</option>
+                  <option value="rating3">🍗🍗🍗</option>
+                  <option value="rating2">🍗🍗</option>
+                  <option value="rating1">🍗</option>
                 </select>
               </div>
 
