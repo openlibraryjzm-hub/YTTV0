@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { createPlaylist, getAllPlaylists, getPlaylistItems, deletePlaylist, deletePlaylistByName, getAllFoldersWithVideos, exportPlaylist, getFoldersForPlaylist, toggleStuckFolder, getAllStuckFolders, getVideosInFolder, getAllVideoProgress, getAllPlaylistMetadata, addVideoToPlaylist, getFolderMetadata, getPlaylistItemsPreview } from '../api/playlistApi';
+import { createPlaylist, getAllPlaylists, getPlaylistItems, deletePlaylist, deletePlaylistByName, getAllFoldersWithVideos, exportPlaylist, getFoldersForPlaylist, toggleStuckFolder, getAllStuckFolders, getVideosInFolder, getAllVideoProgress, getAllPlaylistMetadata, addVideoToPlaylist, getFolderMetadata, getPlaylistItemsPreview, updatePlaylist, reorderPlaylistItem } from '../api/playlistApi';
 import { getThumbnailUrl } from '../utils/youtubeUtils';
 import { usePlaylistStore } from '../store/playlistStore';
-import { Play, Shuffle, Grid3x3, RotateCcw, Info, ChevronUp, List, Layers, Folder } from 'lucide-react';
+import { Play, Shuffle, Grid3x3, RotateCcw, Info, ChevronUp, List, Layers, Folder, Check } from 'lucide-react';
 import PlaylistFolderColumn from './PlaylistFolderColumn';
 import { useFolderStore } from '../store/folderStore';
 import { useTabStore } from '../store/tabStore';
@@ -1478,13 +1478,24 @@ const PlaylistsPage = ({ onVideoSelect }) => {
                                   {/* Refresh button - only visible after shuffle has been used */}
                                   {previewThumbnails[playlistImageKey]?.isShuffled && (
                                     <button
-                                      onClick={(e) => {
+                                      onClick={async (e) => {
                                         e.stopPropagation();
                                         // Reset to default thumbnail
                                         setPreviewThumbnails(prev => {
                                           const { [playlistImageKey]: _, ...rest } = prev;
                                           return rest;
                                         });
+
+                                        // Reset mini videos
+                                        try {
+                                          const items = await getPlaylistItemsPreview(playlist.id, 4);
+                                          setPlaylistPreviewVideos(prev => ({
+                                            ...prev,
+                                            [playlist.id]: items
+                                          }));
+                                        } catch (error) {
+                                          console.error('Failed to reset preview videos:', error);
+                                        }
                                       }}
                                       className="p-1 hover:bg-slate-200 rounded text-[#052F4A] hover:text-sky-600 transition-colors"
                                       title="Reset to default cover"
@@ -1499,13 +1510,22 @@ const PlaylistsPage = ({ onVideoSelect }) => {
                                         const items = await getPlaylistItems(playlist.id);
                                         if (items.length === 0) return;
 
-                                        // Shuffle only changes thumbnail preview
+                                        // Shuffle thumbnail preview
                                         const randomVideo = items[Math.floor(Math.random() * items.length)];
                                         const thumbUrl = getThumbnailUrl(randomVideo.video_id, 'max');
                                         setPreviewThumbnails(prev => ({
                                           ...prev,
                                           [playlistImageKey]: { videoId: randomVideo.video_id, url: thumbUrl, videoUrl: randomVideo.video_url, title: randomVideo.title, isShuffled: true }
                                         }));
+
+                                        // Shuffle 4 mini videos
+                                        const shuffledItems = [...items].sort(() => 0.5 - Math.random());
+                                        const randomMiniVideos = shuffledItems.slice(0, 4);
+                                        setPlaylistPreviewVideos(prev => ({
+                                          ...prev,
+                                          [playlist.id]: randomMiniVideos
+                                        }));
+
                                       } catch (error) {
                                         console.error('Failed to shuffle thumbnail:', error);
                                       }
@@ -1698,6 +1718,44 @@ const PlaylistsPage = ({ onVideoSelect }) => {
                                   </div>
                                 );
                               })()}
+
+                              {/* Set as Cover Button (Bottom Right) */}
+                              <button
+                                onClick={async (e) => {
+                                  e.stopPropagation();
+                                  try {
+                                    if (activeThumbnailUrl) {
+                                      await updatePlaylist(playlist.id, null, null, null, activeThumbnailUrl);
+
+                                      // Save the 4 mini videos by putting them at the top of the playlist
+                                      const miniVideos = playlistPreviewVideos[playlist.id];
+                                      if (miniVideos && previewThumbnails[playlistImageKey]?.isShuffled) {
+                                        for (let i = 0; i < miniVideos.length; i++) {
+                                          await reorderPlaylistItem(playlist.id, miniVideos[i].id, i + 1);
+                                        }
+                                      }
+
+                                      // Force reload to update the UI
+                                      await loadPlaylists();
+
+                                      // Clear the shuffle state since this is now the default
+                                      if (previewThumbnails[playlistImageKey]?.isShuffled) {
+                                        setPreviewThumbnails(prev => {
+                                          const { [playlistImageKey]: _, ...rest } = prev;
+                                          return rest;
+                                        });
+                                      }
+                                    }
+                                  } catch (error) {
+                                    console.error('Failed to set playlist cover:', error);
+                                    alert('Failed to set playlist cover');
+                                  }
+                                }}
+                                className="absolute bottom-2 right-2 w-8 h-8 rounded-full bg-[#052F4A]/90 hover:bg-sky-500 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200 z-30 shadow-lg hover:scale-110 border border-white/20"
+                                title="Set as playlist cover"
+                              >
+                                <Check size={18} strokeWidth={3} />
+                              </button>
 
                               {/* 3-dot menu - moved to hover overlay (Top Right) */}
                               <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-30" onClick={e => e.stopPropagation()}>

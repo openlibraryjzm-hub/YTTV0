@@ -151,6 +151,7 @@ yttv2/
 │   ├── asset-manager-page.md     # Asset Manager Page documentation
 │   ├── app-page.md               # AppPage configuration documentation
 │   ├── ui-cards.md               # Card components
+│   ├── playlist-cards.md         # Detailed documentation for Playlist Cards
 │   ├── ui-modals.md              # Modal components
 │   ├── history.md
 │   ├── drumstick-rating-system.md
@@ -205,6 +206,7 @@ yttv2/
 | **Pop-out Browser** | `popout-browser.md` | `advanced-player-controller.md` |
 | **App Banner** | `app-banner.md` | `advanced-player-controller.md`, `ui-layout.md`, `state-management.md` |
 | **Page Banner** | `page-banner.md` | `ui-pages.md`, `ui-layout.md`, `state-management.md` |
+| **Playlist Cards** | `playlist-cards.md` | `playlist&tab.md`, `ui.md`, `api-bridge.md` |
 | **Pokedex System** | `pokedex-system.md` | `state-management.md`, `ui-pages.md`, `database-schema.md` |
 | **Debug/Testing** | `debug.md` | `ui.md` (inspect mode, debug bounds) |
 
@@ -539,3 +541,8 @@ For detailed information about the application's theme system and recent color c
     -   **Click-to-Browse**: Clicking a `BannerPresetCard` in `VideosPage` now sets the active navigation context, allowing seamless continuation via controller arrows.
     -   **Editor Integration**: Automatic "Preview Mode" override in `AppPage` ensures edits are visible instantly, reverting on exit.
     -   **Documentation**: Updated `atlas/orb-navigation.md` with new features.
+- **Playlist Cards**:
+  - **Dynamic Previews**: Implemented shuffle functionality that randomizes both the main cover thumbnail and the 4 mini preview videos. Includes a reset button to restore default states.
+  - **Set as Cover**: Added a hover-activated checkmark button to lock the currently displayed thumbnail as the permanent playlist cover. If the layout was shuffled, this action also persistently reorders the 4 mini preview videos to the top of the playlist for consistent previewing.
+  - **Always Visible Counts**: Folder count icon and total video count are now permanently visible on the card, rather than requiring a hover state.
+
