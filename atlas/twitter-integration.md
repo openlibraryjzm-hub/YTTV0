@@ -83,6 +83,7 @@ Twitter content appears in standard video cards with special handling:
 When a Twitter video is set as the cover or previewed in a playlist card's thumbnail slot (`PlaylistsPage.jsx`):
 - **High-Resolution Previews**: The `thumbnail_url` is automatically upgraded to `name=large` for the main cover slot or `name=medium` for the 4-mini preview thumbnails to prevent blurriness.
 - **Smart Framing**: The thumbnail rendering logic detects `twimg.com` URLs and applies the `object-fit: contain` property with the light sky blue (`#e0f2fe`) background. This ensures the native aspect ratio is preserved without being awkwardly cropped inside the strict 16:9 dimensions of playlist cards.
+- **Hover Expansion**: The main thumbnails are wrapped in `ImageHoverPreview`, seamlessly offering a high-res pop-out preview bounded strictly up to 95% of the screen dimension to prevent overflow while keeping clarity pristine.
 
 ### Card Styles
 

@@ -146,13 +146,17 @@ const ImageHoverPreview = ({
         let width = img.naturalWidth;
         let height = img.naturalHeight;
 
+        // Dynamic boundaries: no larger than prop max dimensions or 95% of viewport
+        const effectiveMaxWidth = Math.min(maxWidth, window.innerWidth * 0.95);
+        const effectiveMaxHeight = Math.min(maxHeight, window.innerHeight * 0.95);
+
         // Scale down if larger than max dimensions
-        if (width > maxWidth) {
-            width = maxWidth;
+        if (width > effectiveMaxWidth) {
+            width = effectiveMaxWidth;
             height = width / aspectRatio;
         }
-        if (height > maxHeight) {
-            height = maxHeight;
+        if (height > effectiveMaxHeight) {
+            height = effectiveMaxHeight;
             width = height * aspectRatio;
         }
 
@@ -214,8 +218,8 @@ const ImageHoverPreview = ({
                         onLoad={handleImageLoad}
                         style={{
                             display: 'block',
-                            maxWidth: `${maxWidth}px`,
-                            maxHeight: `${maxHeight}px`,
+                            maxWidth: `min(${maxWidth}px, 95vw)`,
+                            maxHeight: `min(${maxHeight}px, 95vh)`,
                             width: 'auto',
                             height: 'auto',
                             objectFit: 'contain',

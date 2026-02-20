@@ -24,7 +24,7 @@ import TabPresetsDropdown from './TabPresetsDropdown';
 import AddPlaylistToTabModal from './AddPlaylistToTabModal';
 import UnifiedBannerBackground from './UnifiedBannerBackground';
 import PlaylistCardSkeleton from './skeletons/PlaylistCardSkeleton';
-
+import ImageHoverPreview from './ImageHoverPreview';
 
 const PlaylistsPage = ({ onVideoSelect }) => {
   const [playlists, setPlaylists] = useState([]);
@@ -1144,24 +1144,47 @@ const PlaylistsPage = ({ onVideoSelect }) => {
                                   backgroundColor: activeThumbnailUrl && activeThumbnailUrl.includes('twimg.com') ? '#e0f2fe' : '#0f172a',
                                 }} title={previewThumbnails[folderImageKey]?.title || folder.first_video?.title}>
                                   {activeThumbnailUrl ? (
-                                    <img
-                                      src={activeThumbnailUrl}
-                                      alt={folder.first_video?.title || 'Folder thumbnail'}
-                                      onError={() => {
-                                        if (!useFallback) {
-                                          setImageLoadErrors(prev => new Set(prev).add(folderImageKey));
-                                        }
-                                      }}
-                                      style={{
-                                        position: 'absolute',
-                                        top: 0,
-                                        left: 0,
-                                        width: '100%',
-                                        height: '100%',
-                                        objectFit: activeThumbnailUrl && activeThumbnailUrl.includes('twimg.com') ? 'contain' : 'cover',
-                                        display: 'block'
-                                      }}
-                                    />
+                                    activeThumbnailUrl.includes('twimg.com') ? (
+                                      <ImageHoverPreview src={activeThumbnailUrl} previewSrc={activeThumbnailUrl?.replace(/name=[a-z]+/, 'name=large')} delay={500}>
+                                        <img
+                                          src={activeThumbnailUrl}
+                                          alt={folder.first_video?.title || 'Folder thumbnail'}
+                                          onError={() => {
+                                            if (!useFallback) {
+                                              setImageLoadErrors(prev => new Set(prev).add(folderImageKey));
+                                            }
+                                          }}
+                                          style={{
+                                            position: 'absolute',
+                                            top: 0,
+                                            left: 0,
+                                            width: '100%',
+                                            height: '100%',
+                                            objectFit: 'contain',
+                                            display: 'block'
+                                          }}
+                                        />
+                                      </ImageHoverPreview>
+                                    ) : (
+                                      <img
+                                        src={activeThumbnailUrl}
+                                        alt={folder.first_video?.title || 'Folder thumbnail'}
+                                        onError={() => {
+                                          if (!useFallback) {
+                                            setImageLoadErrors(prev => new Set(prev).add(folderImageKey));
+                                          }
+                                        }}
+                                        style={{
+                                          position: 'absolute',
+                                          top: 0,
+                                          left: 0,
+                                          width: '100%',
+                                          height: '100%',
+                                          objectFit: 'cover',
+                                          display: 'block'
+                                        }}
+                                      />
+                                    )
                                   ) : (
                                     <div style={{
                                       position: 'absolute',
@@ -1607,24 +1630,47 @@ const PlaylistsPage = ({ onVideoSelect }) => {
                               backgroundColor: activeThumbnailUrl && activeThumbnailUrl.includes('twimg.com') ? '#e0f2fe' : '#0f172a',
                             }} title={previewThumbnails[playlistImageKey]?.title || playlistPreviewVideos[playlist.id]?.[0]?.title}>
                               {activeThumbnailUrl ? (
-                                <img
-                                  src={activeThumbnailUrl}
-                                  alt={playlist.name}
-                                  onError={() => {
-                                    if (!useFallback) {
-                                      setImageLoadErrors(prev => new Set(prev).add(playlistImageKey));
-                                    }
-                                  }}
-                                  style={{
-                                    position: 'absolute',
-                                    top: 0,
-                                    left: 0,
-                                    width: '100%',
-                                    height: '100%',
-                                    objectFit: activeThumbnailUrl && activeThumbnailUrl.includes('twimg.com') ? 'contain' : 'cover',
-                                    display: 'block'
-                                  }}
-                                />
+                                activeThumbnailUrl.includes('twimg.com') ? (
+                                  <ImageHoverPreview src={activeThumbnailUrl} previewSrc={activeThumbnailUrl?.replace(/name=[a-z]+/, 'name=large')} delay={500}>
+                                    <img
+                                      src={activeThumbnailUrl}
+                                      alt={playlist.name}
+                                      onError={() => {
+                                        if (!useFallback) {
+                                          setImageLoadErrors(prev => new Set(prev).add(playlistImageKey));
+                                        }
+                                      }}
+                                      style={{
+                                        position: 'absolute',
+                                        top: 0,
+                                        left: 0,
+                                        width: '100%',
+                                        height: '100%',
+                                        objectFit: 'contain',
+                                        display: 'block'
+                                      }}
+                                    />
+                                  </ImageHoverPreview>
+                                ) : (
+                                  <img
+                                    src={activeThumbnailUrl}
+                                    alt={playlist.name}
+                                    onError={() => {
+                                      if (!useFallback) {
+                                        setImageLoadErrors(prev => new Set(prev).add(playlistImageKey));
+                                      }
+                                    }}
+                                    style={{
+                                      position: 'absolute',
+                                      top: 0,
+                                      left: 0,
+                                      width: '100%',
+                                      height: '100%',
+                                      objectFit: 'cover',
+                                      display: 'block'
+                                    }}
+                                  />
+                                )
                               ) : (
                                 <div style={{
                                   position: 'absolute',
@@ -2470,25 +2516,49 @@ const PlaylistsPage = ({ onVideoSelect }) => {
                                 style={{ backgroundColor: folderColor.hex }}
                               />
                               {activeThumbnailUrl ? (
-                                <img
-                                  src={activeThumbnailUrl}
-                                  alt={folder.first_video?.title || 'Folder thumbnail'}
-                                  onError={() => {
-                                    if (!useFallback) {
-                                      setImageLoadErrors(prev => new Set(prev).add(folderImageKey));
-                                    }
-                                  }}
-                                  style={{
-                                    position: 'absolute',
-                                    top: 0,
-                                    left: 0,
-                                    width: '100%',
-                                    height: '100%',
-                                    objectFit: activeThumbnailUrl && activeThumbnailUrl.includes('twimg.com') ? 'contain' : 'cover',
-                                    display: 'block',
-                                    paddingLeft: '8px'
-                                  }}
-                                />
+                                activeThumbnailUrl.includes('twimg.com') ? (
+                                  <ImageHoverPreview src={activeThumbnailUrl} previewSrc={activeThumbnailUrl?.replace(/name=[a-z]+/, 'name=large')} delay={500}>
+                                    <img
+                                      src={activeThumbnailUrl}
+                                      alt={folder.first_video?.title || 'Folder thumbnail'}
+                                      onError={() => {
+                                        if (!useFallback) {
+                                          setImageLoadErrors(prev => new Set(prev).add(folderImageKey));
+                                        }
+                                      }}
+                                      style={{
+                                        position: 'absolute',
+                                        top: 0,
+                                        left: 0,
+                                        width: '100%',
+                                        height: '100%',
+                                        objectFit: 'contain',
+                                        display: 'block',
+                                        paddingLeft: '8px'
+                                      }}
+                                    />
+                                  </ImageHoverPreview>
+                                ) : (
+                                  <img
+                                    src={activeThumbnailUrl}
+                                    alt={folder.first_video?.title || 'Folder thumbnail'}
+                                    onError={() => {
+                                      if (!useFallback) {
+                                        setImageLoadErrors(prev => new Set(prev).add(folderImageKey));
+                                      }
+                                    }}
+                                    style={{
+                                      position: 'absolute',
+                                      top: 0,
+                                      left: 0,
+                                      width: '100%',
+                                      height: '100%',
+                                      objectFit: 'cover',
+                                      display: 'block',
+                                      paddingLeft: '8px'
+                                    }}
+                                  />
+                                )
                               ) : (
                                 <div style={{
                                   position: 'absolute',
