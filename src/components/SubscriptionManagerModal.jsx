@@ -223,8 +223,8 @@ const SubscriptionManagerModal = ({ isOpen, onClose, playlistId }) => {
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 z-[60] flex items-end justify-center bg-black/50 backdrop-blur-sm p-4 pb-12 animate-in fade-in duration-200">
-            <div className="bg-slate-900 border border-slate-700 rounded-xl shadow-2xl w-full max-w-2xl max-h-[75vh] flex flex-col">
+        <div className="fixed inset-0 z-[60] flex items-start justify-center bg-black/50 backdrop-blur-sm p-4 pt-[35vh] animate-in fade-in duration-200">
+            <div className="bg-slate-900 border border-slate-700 rounded-xl shadow-2xl w-full max-w-2xl max-h-[60vh] flex flex-col">
 
                 {/* Header */}
                 <div className="flex items-center justify-between p-4 border-b border-slate-800 bg-slate-800/50 rounded-t-xl">

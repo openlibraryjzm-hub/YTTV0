@@ -362,6 +362,13 @@ const PlaylistUploader = ({ onUploadComplete, onCancel, initialPlaylistId }) => 
       });
 
       if (tasks.length === 0) {
+        if (targetMode === 'new') {
+          setProgress({ current: 1, total: 1, message: `Complete! Created empty playlist "${targetName}".` });
+          setTimeout(() => {
+            if (onUploadComplete) onUploadComplete();
+          }, 1500);
+          return;
+        }
         throw new Error('No valid links found to import.');
       }
 
