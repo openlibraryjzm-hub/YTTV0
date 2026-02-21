@@ -23,6 +23,7 @@ import {
 import { usePlaylistStore } from "../store/playlistStore";
 import { useLayoutStore } from "../store/layoutStore";
 import { useNavigationStore } from "../store/navigationStore";
+import { usePlaylistGroupStore } from "../store/playlistGroupStore";
 import { useInspectLabel } from "../utils/inspectLabels";
 
 const PlaylistCard = ({
@@ -33,23 +34,23 @@ const PlaylistCard = ({
   initialPreviewVideos = [],
   globalInfoToggle,
   folderMetadata = {},
-  activeTabId,
-  tabs = [],
   deletingPlaylistId,
   expandedPlaylists,
 
   onVideoSelect,
   togglePlaylistExpand,
   handleExportPlaylist,
-  removePlaylistFromTab,
   handleDeletePlaylist,
-  addPlaylistToTab,
   loadPlaylists,
+  onAssignToGroupClick,
 }) => {
   const { currentPlaylistId, setPlaylistItems, setPreviewPlaylist } =
     usePlaylistStore();
   const { viewMode, setViewMode, inspectMode } = useLayoutStore();
   const { setCurrentPage } = useNavigationStore();
+  const { getGroupIdsForPlaylist, removePlaylistFromGroup } = usePlaylistGroupStore();
+  const groupIdsForPlaylist = getGroupIdsForPlaylist(playlist.id);
+  const isInAnyCarousel = groupIdsForPlaylist.length > 0;
 
   const getInspectTitle = (label) => (inspectMode ? label : undefined);
 
@@ -632,11 +633,10 @@ const PlaylistCard = ({
                   action: "export",
                 },
                 {
-                  label: "Add to Tab",
-                  submenu: "tabs",
+                  label: "Assign to group",
                   icon: (
                     <svg
-                      className="w-4 h-4"
+                      className="w-4 h-4 text-sky-500"
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"
@@ -645,18 +645,19 @@ const PlaylistCard = ({
                         strokeLinecap="round"
                         strokeLinejoin="round"
                         strokeWidth={2}
-                        d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+                        d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
                       />
                     </svg>
                   ),
+                  action: "openAssignToGroup",
                 },
-                ...(activeTabId !== "all"
+                ...(isInAnyCarousel
                   ? [
                       {
-                        label: "Remove from Tab",
+                        label: groupIdsForPlaylist.length > 1 ? "Remove from carousels" : "Remove from carousel",
                         icon: (
                           <svg
-                            className="w-4 h-4"
+                            className="w-4 h-4 text-sky-500"
                             fill="none"
                             stroke="currentColor"
                             viewBox="0 0 24 24"
@@ -665,12 +666,11 @@ const PlaylistCard = ({
                               strokeLinecap="round"
                               strokeLinejoin="round"
                               strokeWidth={2}
-                              d="M20 12H4"
+                              d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"
                             />
                           </svg>
                         ),
-                        action: "removeFromTabCurrent",
-                        danger: true,
+                        action: "removeFromCarousel",
                       },
                     ]
                   : []),
@@ -714,33 +714,20 @@ const PlaylistCard = ({
                   disabled: deletingPlaylistId === playlist.id,
                 },
               ]}
-              submenuOptions={{
-                tabs: tabs
-                  .filter((tab) => tab.id !== "all")
-                  .map((tab) => {
-                    const isInTab = tab.playlistIds.includes(playlist.id);
-                    return {
-                      label: isInTab ? `✓ ${tab.name}` : tab.name,
-                      action: isInTab ? "removeFromTab" : "addToTab",
-                      tabId: tab.id,
-                    };
-                  }),
-              }}
               onOptionClick={(option) => {
                 if (option.action === "toggleFolders")
                   togglePlaylistExpand?.(playlist.id);
                 else if (option.action === "export")
                   handleExportPlaylist?.(playlist.id, playlist.name);
-                else if (option.action === "removeFromTabCurrent")
-                  removePlaylistFromTab?.(activeTabId, playlist.id);
                 else if (option.action === "delete")
                   handleDeletePlaylist?.(playlist.id, playlist.name, {
                     stopPropagation: () => {},
                   });
-                else if (option.action === "addToTab")
-                  addPlaylistToTab?.(option.tabId, playlist.id);
-                else if (option.action === "removeFromTab")
-                  removePlaylistFromTab?.(option.tabId, playlist.id);
+                else if (option.action === "openAssignToGroup")
+                  onAssignToGroupClick?.();
+                else if (option.action === "removeFromCarousel") {
+                  groupIdsForPlaylist.forEach((gid) => removePlaylistFromGroup(gid, playlist.id));
+                }
               }}
             />
           </div>

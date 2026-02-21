@@ -85,6 +85,8 @@ yttv2/
 │   │   ├── PlaylistFolderSelector.jsx  # Universal playlist/folder selector
 │   │   ├── PlaylistSelectionModal.jsx  # Modal for selecting playlist (Move/Copy actions)
 │   │   ├── StickyVideoCarousel.jsx     # Carousel/Grid for stickied videos
+│   │   ├── GroupPlaylistCarousel.jsx   # Horizontal carousel row for playlist group (GROUPS view)
+│   │   ├── PlaylistGroupColumn.jsx     # Full-screen overlay to assign playlist to a carousel
 │   │   ├── InfiniteScrollWrapper.jsx   # Infinite/Looping horizontal scroll wrapper
 │   │   ├── PageBanner.jsx              # Banner with metadata, media carousel (continue/pinned/ASCII), animated patterns
 │   │   ├── EditPlaylistModal.jsx       # Modal for editing playlist/folder metadata
@@ -106,8 +108,9 @@ yttv2/
 │   │   ├── navigationStore.js    # Current page (playlists/videos/history)
 │   │   ├── playlistStore.js      # Current playlist items, video index
 │   │   ├── folderStore.js        # Folder state, bulk tagging, show folders
-│   │   ├── tabStore.js           # Tab state management
+│   │   ├── tabStore.js           # View mode (ALL/UNSORTED/GROUPS) for Playlists page
 │   │   ├── tabPresetStore.js     # Tab preset state management
+│   │   ├── playlistGroupStore.js # Group carousels: groups, assign/rename/delete (persisted)
 │   │   ├── pinStore.js           # Pin state management (persisted)
 │   │   ├── stickyStore.js        # Sticky video state management (persisted)
 │   │   ├── shuffleStore.js       # Shuffle state for video ordering
@@ -152,6 +155,7 @@ yttv2/
 │   ├── app-page.md               # AppPage configuration documentation
 │   ├── ui-cards.md               # Card components
 │   ├── playlist-cards.md         # Detailed documentation for Playlist Cards
+│   ├── group-carousel.md         # Group carousel system (Playlists page: ALL/UNSORTED/GROUPS, assign/rename/delete)
 │   ├── ui-modals.md              # Modal components
 │   ├── history.md
 │   ├── drumstick-rating-system.md
@@ -207,6 +211,7 @@ yttv2/
 | **App Banner** | `app-banner.md` | `advanced-player-controller.md`, `ui-layout.md`, `state-management.md` |
 | **Page Banner** | `page-banner.md` | `ui-pages.md`, `ui-layout.md`, `state-management.md` |
 | **Playlist Cards** | `playlist-cards.md` | `playlist&tab.md`, `ui.md`, `api-bridge.md` |
+| **Group Carousel (Playlists Page)** | `group-carousel.md` | `playlist-cards.md`, `state-management.md`, `ui-pages.md` |
 | **Subscription Manager** | `subscription-manager.md` | `api-bridge.md`, `database-schema.md` |
 | **Pokedex System** | `pokedex-system.md` | `state-management.md`, `ui-pages.md`, `database-schema.md` |
 | **Debug/Testing** | `debug.md` | `ui.md` (inspect mode, debug bounds) |
@@ -299,6 +304,11 @@ yttv2/
 **Key Topics**: 4-Tab Navigation (Orb, Page, App, Theme), Content Carousels, Sub-Navigation (Folder/File), Spatial Controls
 **Cross-References**: See `orb-page.md`, `page-page.md` for specific asset details
 
+#### `group-carousel.md`
+**Covers**: Group carousel system on the Playlists page (successor to legacy tabs)
+**Key Topics**: ALL / UNSORTED / GROUPS views, multiple named carousels, assign/rename/delete carousel, PlaylistGroupColumn, playlistGroupStore
+**Cross-References**: See `playlist-cards.md`, `state-management.md` (playlistGroupStore, tabStore), `ui-pages.md`
+
 #### `debug.md`
 **Covers**: Debug bounds, inspect mode, layout debugging, ruler overlay (non-functional)
 **Key Topics**: Visual debugging, element labels, layout regions, measurement tools
@@ -329,6 +339,11 @@ yttv2/
 ## Cross-Reference Guide
 
 ### When Working On...
+
+**Group Carousel (Playlists):**
+- Primary: `group-carousel.md`
+- State: `state-management.md` (playlistGroupStore), `tabStore.js` (ALL/UNSORTED/GROUPS)
+- UI: `PlaylistsPage.jsx`, `GroupPlaylistCarousel.jsx`, `PlaylistGroupColumn.jsx`, `PlaylistCard.jsx` (menu)
 
 **Folder Assignments:**
 - Primary: `playlist&tab.md` (Section 2.2)

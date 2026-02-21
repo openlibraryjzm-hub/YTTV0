@@ -26,8 +26,9 @@ The application uses **Zustand** (v5.0.9) for state management. Zustand is a lig
    - `folderStore` - Folder assignments, bulk tagging state
 
 3. **Organization State Stores** (persisted to localStorage):
-   - `tabStore` - Tab organization
+   - `tabStore` - Playlists page view mode (ALL / UNSORTED / GROUPS)
    - `tabPresetStore` - Tab preset configurations
+   - `playlistGroupStore` - Group carousels (assign/rename/delete); see `group-carousel.md`
    - `stickyStore` - Sticky video state management
 
 4. **Configuration State Stores** (persisted to localStorage):
@@ -166,11 +167,11 @@ The application uses **Zustand** (v5.0.9) for state management. Zustand is a lig
 
 ### 5. tabStore (`src/store/tabStore.js`)
 
-**Purpose**: Manages tab organization for playlists
+**Purpose**: On the Playlists page, drives the view mode: **ALL** (all playlists), **UNSORTED** (playlists not in any group carousel), or **GROUPS** (group carousels only). Valid `activeTabId` values are `'all' | 'unsorted' | 'groups'`. Legacy tab/preset UI has been retired in favor of group carousels (see `group-carousel.md`).
 
 **State:**
-- `tabs`: Array - Array of tab objects `{ id, name, playlistIds: [] }`
-- `activeTabId`: string - Currently active tab ID
+- `tabs`: Array - Legacy tab objects (may still exist; Playlists page no longer uses for filtering)
+- `activeTabId`: string - Current view: `'all'`, `'unsorted'`, or `'groups'`
 
 **Actions:**
 - `setActiveTab(tabId)` - Sets active tab (persists to localStorage)
@@ -287,7 +288,23 @@ The application uses **Zustand** (v5.0.9) for state management. Zustand is a lig
 
 ---
 
-### 8. stickyStore (`src/store/stickyStore.js`)
+### 8. playlistGroupStore (`src/store/playlistGroupStore.js`)
+
+**Purpose**: Persisted state for the group carousel system on the Playlists page. Holds multiple named groups; each group is one carousel row. Playlists are assigned to groups (not stored in DB). See **group-carousel.md** for full behavior.
+
+**State:**
+- `groups`: Array of `{ id, name, playlistIds }`
+
+**Actions:**
+- `addGroup(name)`, `removeGroup(groupId)`, `renameGroup(groupId, name)`
+- `addPlaylistToGroup(groupId, playlistId)`, `removePlaylistFromGroup(groupId, playlistId)`
+- `isPlaylistInGroup(playlistId, groupId)`, `getGroupIdsForPlaylist(playlistId)`
+
+**Persistence:** localStorage key `playlist-group-storage`.
+
+---
+
+### 9. stickyStore (`src/store/stickyStore.js`)
 
 **Purpose**: Manages sticky video state with folder-scoped persistence
 
@@ -314,7 +331,7 @@ The application uses **Zustand** (v5.0.9) for state management. Zustand is a lig
 
 ---
 
-### 9. configStore (`src/store/configStore.js`)
+### 10. configStore (`src/store/configStore.js`)
 
 **Purpose**: Manages application-wide configuration including themes and user profile
 

@@ -4,9 +4,9 @@ import { getThumbnailUrl } from '../utils/youtubeUtils';
 import { usePlaylistStore } from '../store/playlistStore';
 import { Play, Shuffle, Grid3x3, RotateCcw, Info, ChevronUp, List, Layers, Folder, Check, X } from 'lucide-react';
 import PlaylistFolderColumn from './PlaylistFolderColumn';
+import PlaylistGroupColumn from './PlaylistGroupColumn';
 import { useFolderStore } from '../store/folderStore';
 import { useTabStore } from '../store/tabStore';
-import { useTabPresetStore } from '../store/tabPresetStore';
 import { useLayoutStore } from '../store/layoutStore';
 import { useNavigationStore } from '../store/navigationStore';
 import { getFolderColorById, FOLDER_COLORS } from '../utils/folderColors';
@@ -15,14 +15,14 @@ import PlaylistUploader from './PlaylistUploader';
 import BulkPlaylistImporter from './BulkPlaylistImporter';
 import LocalVideoUploader from './LocalVideoUploader';
 import PlaylistCard from './PlaylistCard';
+import GroupPlaylistCarousel from './GroupPlaylistCarousel';
 import CardMenu from './NewCardMenu'; // Using NewCardMenu as CardMenu
 import TabBar from './TabBar';
 import CardThumbnail from './CardThumbnail';
 import PageBanner from './PageBanner';
 import { usePinStore } from '../store/pinStore';
+import { usePlaylistGroupStore } from '../store/playlistGroupStore';
 import { useConfigStore } from '../store/configStore';
-import TabPresetsDropdown from './TabPresetsDropdown';
-import AddPlaylistToTabModal from './AddPlaylistToTabModal';
 import UnifiedBannerBackground from './UnifiedBannerBackground';
 import PlaylistCardSkeleton from './skeletons/PlaylistCardSkeleton';
 import ImageHoverPreview from './ImageHoverPreview';
@@ -48,6 +48,7 @@ const PlaylistsPage = ({ onVideoSelect }) => {
   const [folderMetadata, setFolderMetadata] = useState({}); // Store folder custom names: { "playlistId:folderColor": { name, description } }
   const [openFolderMenuIds, setOpenFolderMenuIds] = useState(new Set()); // Track which playlists have folder selector menu open
   const [openFolderListIds, setOpenFolderListIds] = useState(new Set()); // Track which playlists have folder list view open
+  const [assignToGroupPlaylistId, setAssignToGroupPlaylistId] = useState(null); // Playlist id when "Assign to group" column is open
   const [hoveredPieSegment, setHoveredPieSegment] = useState({}); // Track hovered pie segment per playlist: { playlistId: folderColorId }
   const pieChartRefs = useRef({}); // Refs for pie chart containers to handle wheel events
   const pieDataRef = useRef({ hoveredPieSegment: {}, playlistFolders: {} }); // Ref to hold latest state for wheel handler
@@ -64,9 +65,6 @@ const PlaylistsPage = ({ onVideoSelect }) => {
     const saved = localStorage.getItem('playlistsPage_globalInfoToggle');
     return saved === 'true';
   });
-
-  // Tab Bar Mode ('tabs' or 'presets')
-  const [tabBarMode, setTabBarMode] = useState('tabs');
 
   // Keep ref in sync with state
   pieDataRef.current.hoveredPieSegment = hoveredPieSegment;
@@ -103,8 +101,8 @@ const PlaylistsPage = ({ onVideoSelect }) => {
   }, [currentPlaylistId, playlists, playlistThumbnails, currentPlaylistItems, currentVideoIndex]);
   const { showColoredFolders, setShowColoredFolders } = useFolderStore();
   const [imageLoadErrors, setImageLoadErrors] = useState(new Set());
-  const { tabs, activeTabId, addPlaylistToTab, removePlaylistFromTab } = useTabStore();
-  const { activePresetId, presets } = useTabPresetStore();
+  const { activeTabId } = useTabStore();
+  const { groups: playlistGroups, getGroupIdsForPlaylist, addGroup, renameGroup, removeGroup } = usePlaylistGroupStore();
   const { setViewMode, viewMode, inspectMode } = useLayoutStore();
   const { customPageBannerImage, bannerHeight, bannerBgSize } = useConfigStore();
   const { setCurrentPage } = useNavigationStore();
@@ -699,28 +697,16 @@ const PlaylistsPage = ({ onVideoSelect }) => {
           {/* Playlist Grid - Horizontal Scrolling */}
           <div ref={scrollContainerRef} className="flex-1 overflow-y-auto overflow-x-hidden bg-transparent relative">
             {(() => {
-              const activePreset = presets.find(p => p.id === activePresetId);
-              let bannerTitle = activePresetId === 'all' || !activePreset
-                ? "All"
-                : activePreset.name;
+              const bannerTitle = activeTabId === 'all' ? 'All' : activeTabId === 'unsorted' ? 'Unsorted' : 'Groups';
 
-              if (activeTabId && activeTabId !== 'all') {
-                const activeTab = tabs.find(t => t.id === activeTabId);
-                if (activeTab) {
-                  bannerTitle += ` - ${activeTab.name}`;
-                }
-              }
-
-              // Calculate visible playlists and total videos
-              // Filter logic must match the rendering logic below
-              const filteredPlaylists = playlists.filter((playlist) => {
+              // Filter for grid (all = all playlists, unsorted = playlists not in any group)
+              const filteredPlaylistsForCount = playlists.filter((playlist) => {
                 if (activeTabId === 'all') return true;
-                const activeTab = tabs.find(t => t.id === activeTabId);
-                return activeTab && activeTab.playlistIds.includes(playlist.id);
+                if (activeTabId === 'unsorted') return getGroupIdsForPlaylist(playlist.id).length === 0;
+                return false;
               });
-
-              const playlistCount = filteredPlaylists.length;
-              const totalVideos = filteredPlaylists.reduce((sum, p) => sum + (playlistItemCounts[p.id] || 0), 0);
+              const playlistCount = filteredPlaylistsForCount.length;
+              const totalVideos = filteredPlaylistsForCount.reduce((sum, p) => sum + (playlistItemCounts[p.id] || 0), 0);
 
               return (
                 <div className="px-8 pt-8">
@@ -765,12 +751,7 @@ const PlaylistsPage = ({ onVideoSelect }) => {
 
                 {/* Left: Tab Bar */}
                 <div className="flex-1 overflow-x-auto no-scrollbar mask-gradient-right min-w-0">
-                  <TabBar
-                    onAddPlaylistToTab={addPlaylistToTab}
-                    showPresets={true}
-                    mode={tabBarMode}
-                    setMode={setTabBarMode}
-                  />
+                  <TabBar />
                 </div>
 
                 {/* Right: Controls */}
@@ -861,6 +842,72 @@ const PlaylistsPage = ({ onVideoSelect }) => {
             {/* Horizontal Scrolling Grid */}
             {/* Playlists Grid */}
             <div className="px-4 pb-8">
+              {/* GROUPS view: only group carousels, one per row */}
+              {activeTabId === 'groups' &&
+                playlistGroups.map((group) => (
+                    <GroupPlaylistCarousel
+                      key={group.id}
+                      title={group.name}
+                      groupId={group.id}
+                      onRename={renameGroup}
+                      onDelete={removeGroup}
+                    >
+                      {group.playlistIds
+                        .map((id) => playlists.find((p) => Number(p.id) === Number(id)))
+                        .filter(Boolean)
+                        .map((playlist) => {
+                          const thumbData = playlistThumbnails[playlist.id];
+                          const playlistImageKey = `playlist-${playlist.id}`;
+                          const useFallback = imageLoadErrors.has(playlistImageKey);
+                          const activeThumbnailUrl = thumbData ? (useFallback ? thumbData.standard : thumbData.max) : null;
+                          const itemCount = playlistItemCounts[playlist.id] || 0;
+                          const folders = playlistFolders[playlist.id] || [];
+                          const initialPreviewVideos = playlistPreviewVideos[playlist.id] || [];
+                          return (
+                            <PlaylistCard
+                              key={playlist.id}
+                              playlist={playlist}
+                              folders={folders}
+                              activeThumbnailUrl={activeThumbnailUrl}
+                              itemCount={itemCount}
+                              initialPreviewVideos={initialPreviewVideos}
+                              globalInfoToggle={globalInfoToggle}
+                              folderMetadata={folderMetadata}
+                              deletingPlaylistId={deletingPlaylistId}
+                              expandedPlaylists={expandedPlaylists}
+                              onVideoSelect={onVideoSelect}
+                              togglePlaylistExpand={togglePlaylistExpand}
+                              handleExportPlaylist={handleExportPlaylist}
+                              handleDeletePlaylist={handleDeletePlaylist}
+                              loadPlaylists={loadPlaylists}
+                              onAssignToGroupClick={() => setAssignToGroupPlaylistId(playlist.id)}
+                            />
+                          );
+                        })}
+                    </GroupPlaylistCarousel>
+                  ))}
+
+              {/* New carousel button - below last carousel on GROUPS view */}
+              {activeTabId === 'groups' && (
+                <div className="mt-4 mb-8 flex justify-center">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const name = window.prompt('Carousel name', 'New carousel');
+                      if (name != null && name.trim()) addGroup(name.trim());
+                    }}
+                    className="rounded-xl border-2 border-dashed border-slate-400 text-slate-500 hover:border-sky-500 hover:text-sky-500 hover:bg-sky-500/5 px-6 py-4 font-medium text-sm uppercase tracking-wide transition-colors flex items-center gap-2"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                    </svg>
+                    New carousel
+                  </button>
+                </div>
+              )}
+
+              {/* ALL / UNSORTED view: grid only, no carousels */}
+              {(activeTabId === 'all' || activeTabId === 'unsorted') && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
                 {/* Colored Folders - Grouped by playlist with headers */}
                 {showColoredFolders && (() => {
@@ -869,8 +916,8 @@ const PlaylistsPage = ({ onVideoSelect }) => {
                     const folderKey = `${folder.playlist_id}:${folder.folder_color}`;
                     if (stuckFolders.has(folderKey)) return false;
                     if (activeTabId === 'all') return true;
-                    const activeTab = tabs.find(t => t.id === activeTabId);
-                    return activeTab && activeTab.playlistIds.includes(folder.playlist_id);
+                    if (activeTabId === 'unsorted') return getGroupIdsForPlaylist(folder.playlist_id).length === 0;
+                    return false;
                   });
 
                   // Group folders by playlist_id
@@ -1348,8 +1395,8 @@ const PlaylistsPage = ({ onVideoSelect }) => {
                   // Build a flat array of items (playlists + their expanded folders)
                   const filteredPlaylists = playlists.filter((playlist) => {
                     if (activeTabId === 'all') return true;
-                    const activeTab = tabs.find(t => t.id === activeTabId);
-                    return activeTab && activeTab.playlistIds.includes(playlist.id);
+                    if (activeTabId === 'unsorted') return getGroupIdsForPlaylist(playlist.id).length === 0;
+                    return false;
                   });
 
                   const items = [];
@@ -1389,7 +1436,7 @@ const PlaylistsPage = ({ onVideoSelect }) => {
                         const parentPlaylist = playlists.find(p => p.id === folder.playlist_id);
                         if (parentPlaylist) {
                           const isInFiltered = activeTabId === 'all' ||
-                            tabs.find(t => t.id === activeTabId)?.playlistIds.includes(folder.playlist_id);
+                            (activeTabId === 'unsorted' && getGroupIdsForPlaylist(folder.playlist_id).length === 0);
                           if (isInFiltered) {
                             processedStuckFolders.add(folderKey);
                             items.push({ type: 'folder', data: folder, parentPlaylist: parentPlaylist, isStuck: true });
@@ -1420,17 +1467,14 @@ const PlaylistsPage = ({ onVideoSelect }) => {
                           initialPreviewVideos={initialPreviewVideos}
                           globalInfoToggle={globalInfoToggle}
                           folderMetadata={folderMetadata}
-                          activeTabId={activeTabId}
-                          tabs={tabs}
                           deletingPlaylistId={deletingPlaylistId}
                           expandedPlaylists={expandedPlaylists}
                           onVideoSelect={onVideoSelect}
                           togglePlaylistExpand={togglePlaylistExpand}
                           handleExportPlaylist={handleExportPlaylist}
-                          removePlaylistFromTab={removePlaylistFromTab}
                           handleDeletePlaylist={handleDeletePlaylist}
-                          addPlaylistToTab={addPlaylistToTab}
                           loadPlaylists={loadPlaylists}
+                          onAssignToGroupClick={() => setAssignToGroupPlaylistId(playlist.id)}
                         />
                       );
                     } else {
@@ -1820,6 +1864,7 @@ const PlaylistsPage = ({ onVideoSelect }) => {
                   });
                 })()}
               </div>
+              )}
             </div>
 
             {/* Up Arrow - Centered at bottom */}
@@ -1915,6 +1960,20 @@ const PlaylistsPage = ({ onVideoSelect }) => {
           );
         })()
       }
+
+      {/* Assign to Group Carousel column overlay */}
+      {assignToGroupPlaylistId != null && (() => {
+        const playlist = playlists.find(p => p.id === assignToGroupPlaylistId);
+        if (!playlist) return null;
+        return (
+          <PlaylistGroupColumn
+            playlist={playlist}
+            onClose={() => setAssignToGroupPlaylistId(null)}
+            playlists={playlists}
+            playlistThumbnails={playlistThumbnails}
+          />
+        );
+      })()}
 
     </div >
   );

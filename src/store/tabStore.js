@@ -1,5 +1,7 @@
 import { create } from 'zustand';
 
+const VALID_VIEW_IDS = ['all', 'unsorted', 'groups'];
+
 // Load tabs from localStorage
 const loadTabs = () => {
   try {
@@ -28,9 +30,10 @@ const useTabStore = create((set, get) => ({
   activeTabId: 'all',
 
   setActiveTab: (tabId) => {
-    set({ activeTabId: tabId });
+    const id = VALID_VIEW_IDS.includes(tabId) ? tabId : 'all';
+    set({ activeTabId: id });
     try {
-      localStorage.setItem('activeTabId', tabId);
+      localStorage.setItem('activeTabId', id);
     } catch (error) {
       console.error('Failed to save active tab:', error);
     }
@@ -103,21 +106,19 @@ const useTabStore = create((set, get) => ({
   },
 }));
 
-// Load active tab from localStorage on init
+// Load active view from localStorage on init (only all | unsorted | groups)
 const loadActiveTab = () => {
   try {
     const stored = localStorage.getItem('activeTabId');
-    return stored || 'all';
+    if (stored && VALID_VIEW_IDS.includes(stored)) return stored;
+    return 'all';
   } catch {
     return 'all';
   }
 };
 
-// Initialize active tab
-const initialActiveTab = loadActiveTab();
-if (initialActiveTab !== 'all') {
-  useTabStore.getState().setActiveTab(initialActiveTab);
-}
+// Restore saved view on load
+useTabStore.getState().setActiveTab(loadActiveTab());
 
 export { useTabStore };
 

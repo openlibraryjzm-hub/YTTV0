@@ -35,4 +35,4 @@ When hovering over the card, a **Set as Cover** checkmark button appears in the 
 
 ### 4. Details and Metadata
 *   **Video Title Overlay:** Toggling the **Info** button (or using the global info toggle) displays the title of the video currently shown as the main thumbnail.
-*   **Three-Dot Menu:** Provides access to additional options like expanding/collapsing all folders within the playlist, exporting the playlist data, or adding the entire playlist to a specific Tab.
+*   **Three-Dot Menu:** Provides access to: expand/collapse all folders, export playlist data, **Assign to group** (opens the group carousel column to assign this playlist to carousels), **Remove from carousel(s)** (when the playlist is in at least one group carousel—removes it from all), and delete playlist. See **group-carousel.md** for the group carousel system.
