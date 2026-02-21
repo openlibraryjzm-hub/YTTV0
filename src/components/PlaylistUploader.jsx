@@ -478,6 +478,39 @@ const PlaylistUploader = ({ onUploadComplete, onCancel, initialPlaylistId }) => 
       }
 
       // 4. Insert into DB
+      setProgress({ current: 0, total: 1, message: 'Checking for duplicates...' });
+
+      const existingItems = await getPlaylistItems(dbPlaylistId);
+      const existingVideoIds = new Set(existingItems.map(item => item.video_id));
+
+      const uniqueVideosToInsert = [];
+      const seenVideoIds = new Set();
+
+      for (const v of allVideosToInsert) {
+        if (!existingVideoIds.has(v.videoId) && !seenVideoIds.has(v.videoId)) {
+          uniqueVideosToInsert.push(v);
+          seenVideoIds.add(v.videoId);
+        } else if (v.folderColor) {
+          // If it's a duplicate but has a folder color, we might want to still assign it to the folder. 
+          // But user requested "only unique links are added". We'll just skip it.
+        }
+      }
+
+      const skippedCount = allVideosToInsert.length - uniqueVideosToInsert.length;
+      allVideosToInsert = uniqueVideosToInsert;
+
+      if (allVideosToInsert.length === 0) {
+        let msg = skippedCount > 0
+          ? `Complete! Skipped ${skippedCount} duplicate videos. No new videos added.`
+          : `Complete! Created empty playlist "${targetName}".`;
+
+        setProgress({ current: 1, total: 1, message: msg });
+        setTimeout(() => {
+          if (onUploadComplete) onUploadComplete();
+        }, 2000);
+        return;
+      }
+
       setProgress({ current: 0, total: allVideosToInsert.length, message: `Adding ${allVideosToInsert.length} videos to "${targetName}"...` });
 
       let addedCount = 0;
@@ -635,12 +668,42 @@ const PlaylistUploader = ({ onUploadComplete, onCancel, initialPlaylistId }) => 
         throw new Error('No tweets with media found in JSON');
       }
 
-      setProgress({ current: 0, total: tweetsWithMedia.length, message: `Importing ${tweetsWithMedia.length} tweets to "${targetName}"...` });
+      setProgress({ current: 0, total: 1, message: 'Checking for duplicates...' });
+
+      const existingItems = await getPlaylistItems(dbPlaylistId);
+      const existingVideoIds = new Set(existingItems.map(item => item.video_id));
+
+      const uniqueTweetsToInsert = [];
+      const seenTweetIds = new Set();
+
+      for (const tweet of tweetsWithMedia) {
+        if (!existingVideoIds.has(tweet.id) && !seenTweetIds.has(tweet.id)) {
+          uniqueTweetsToInsert.push(tweet);
+          seenTweetIds.add(tweet.id);
+        }
+      }
+
+      const skippedCount = tweetsWithMedia.length - uniqueTweetsToInsert.length;
+      let finalTweetsToInsert = uniqueTweetsToInsert;
+
+      if (finalTweetsToInsert.length === 0) {
+        let msg = skippedCount > 0
+          ? `Complete! Skipped ${skippedCount} duplicate tweets. No new tweets added.`
+          : `Complete! Created empty playlist "${targetName}".`;
+
+        setProgress({ current: 1, total: 1, message: msg });
+        setTimeout(() => {
+          if (onUploadComplete) onUploadComplete();
+        }, 2000);
+        return;
+      }
+
+      setProgress({ current: 0, total: finalTweetsToInsert.length, message: `Importing ${finalTweetsToInsert.length} tweets to "${targetName}"...` });
 
 
       let addedCount = 0;
-      for (let i = 0; i < tweetsWithMedia.length; i++) {
-        const tweet = tweetsWithMedia[i];
+      for (let i = 0; i < finalTweetsToInsert.length; i++) {
+        const tweet = finalTweetsToInsert[i];
 
         try {
           // Use the first media item's original URL as the "video"
