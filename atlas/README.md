@@ -557,4 +557,6 @@ For detailed information about the application's theme system and recent color c
   - **Set as Cover**: Added a hover-activated checkmark button to lock the currently displayed thumbnail as the permanent playlist cover. If the layout was shuffled, this action also persistently reorders the 4 mini preview videos to the top of the playlist for consistent previewing.
   - **Folder Shuffle Mode**: Clicking a folder card in the column view temporarily replaces the parent playlist card's previews with videos from that folder, locking shuffle to that specific color until cleared via the red 'X' button.
   - **Always Visible Counts**: Folder count icon and total video count are now permanently visible on the card, rather than requiring a hover state.
-
+- **Playlist Uploader Enhancements**:
+  - **Empty Playlists**: Added the ability to create new, empty playlists without needing to provide initial links.
+  - **Duplicate Detection**: Implemented checks against existing playlist videos and within incoming batches before adding links or importing Twitter JSON, ensuring only unique items are added.
