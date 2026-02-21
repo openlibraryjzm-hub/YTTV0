@@ -553,6 +553,7 @@ For detailed information about the application's theme system and recent color c
     -   **Editor Integration**: Automatic "Preview Mode" override in `AppPage` ensures edits are visible instantly, reverting on exit.
     -   **Documentation**: Updated `atlas/orb-navigation.md` with new features.
 - **Playlist Cards**:
+  - **Refactoring**: Completely extracted the complex inline playlist card rendering from `PlaylistsPage.jsx` into a modular, highly-reusable `PlaylistCard.jsx` component. Localized state (such as shuffle previews and folder pie menus) inside the new component to drastically reduce parent component complexity and prepare for integration into components like `StickyVideoCarousel`.
   - **Dynamic Previews**: Implemented shuffle functionality that randomizes both the main cover thumbnail and the 4 mini preview videos. Includes a reset button to restore default states. Added **Swap** feature: right-clicking any mini preview swaps it with the main cover thumbnail. Added video title hover tooltips to all preview thumbnails.
   - **Set as Cover**: Added a hover-activated checkmark button to lock the currently displayed thumbnail as the permanent playlist cover. If the layout was shuffled, this action also persistently reorders the 4 mini preview videos to the top of the playlist for consistent previewing.
   - **Folder Shuffle Mode**: Clicking a folder card in the column view temporarily replaces the parent playlist card's previews with videos from that folder, locking shuffle to that specific color until cleared via the red 'X' button.
