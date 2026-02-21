@@ -1,7 +1,8 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { createPlaylist, getAllPlaylists, getPlaylistItems, deletePlaylist, deletePlaylistByName, getAllFoldersWithVideos, exportPlaylist, getFoldersForPlaylist, toggleStuckFolder, getAllStuckFolders, getVideosInFolder, getAllVideoProgress, getAllPlaylistMetadata, addVideoToPlaylist, getFolderMetadata, getPlaylistItemsPreview, updatePlaylist, reorderPlaylistItem } from '../api/playlistApi';
 import { getThumbnailUrl } from '../utils/youtubeUtils';
 import { usePlaylistStore } from '../store/playlistStore';
+import { useConfigStore } from '../store/configStore';
 import { Play, Shuffle, Grid3x3, RotateCcw, Info, ChevronUp, List, Layers, Folder, Check, X } from 'lucide-react';
 import PlaylistFolderColumn from './PlaylistFolderColumn';
 import PlaylistGroupColumn from './PlaylistGroupColumn';
@@ -22,7 +23,6 @@ import CardThumbnail from './CardThumbnail';
 import PageBanner from './PageBanner';
 import { usePinStore } from '../store/pinStore';
 import { usePlaylistGroupStore } from '../store/playlistGroupStore';
-import { useConfigStore } from '../store/configStore';
 import UnifiedBannerBackground from './UnifiedBannerBackground';
 import PlaylistCardSkeleton from './skeletons/PlaylistCardSkeleton';
 import ImageHoverPreview from './ImageHoverPreview';
@@ -71,6 +71,45 @@ const PlaylistsPage = ({ onVideoSelect }) => {
   pieDataRef.current.playlistFolders = playlistFolders;
   const { setPlaylistItems, currentPlaylistItems, currentPlaylistId, currentVideoIndex, setCurrentFolder, setPreviewPlaylist, setAllPlaylists } = usePlaylistStore();
   const { pinnedVideos: allPinnedVideos, priorityPinIds } = usePinStore();
+  const { orbFavorites, bannerPresets } = useConfigStore();
+
+  // Combined preview items per playlist: orbs + banners assigned to this playlist, then DB preview videos
+  const combinedPreviewItems = useMemo(() => {
+    const out = {};
+    if (!playlists?.length) return out;
+    const orbList = Array.isArray(orbFavorites) ? orbFavorites : [];
+    const bannerList = Array.isArray(bannerPresets) ? bannerPresets : [];
+    playlists.forEach((p) => {
+      const pid = p.id;
+      const pidStr = String(pid);
+      // Match VideosPage: only include if playlistIds exists and contains this playlist (no "show on all")
+      const orbIncludesPid = (orb) =>
+        Array.isArray(orb.playlistIds) && orb.playlistIds.map(String).includes(pidStr);
+      const bannerIncludesPid = (preset) =>
+        Array.isArray(preset.playlistIds) && preset.playlistIds.map(String).includes(pidStr);
+      const assignedOrbs = orbList
+        .filter(orbIncludesPid)
+        .map((orb) => ({
+          ...orb,
+          id: `orb-${orb.id}`,
+          originalId: orb.id,
+          isOrb: true,
+          title: orb.name,
+        }));
+      const assignedBanners = bannerList
+        .filter(bannerIncludesPid)
+        .map((preset) => ({
+          ...preset,
+          id: `banner-${preset.id}`,
+          originalId: preset.id,
+          isBannerPreset: true,
+          title: preset.name,
+        }));
+      const videos = playlistPreviewVideos[pid] || [];
+      out[pid] = [...assignedOrbs, ...assignedBanners, ...videos];
+    });
+    return out;
+  }, [playlists, playlistPreviewVideos, orbFavorites, bannerPresets]);
 
   const priorityVideo = React.useMemo(() => {
     return allPinnedVideos.find(v => priorityPinIds.includes(v.id));
@@ -859,10 +898,19 @@ const PlaylistsPage = ({ onVideoSelect }) => {
                           const thumbData = playlistThumbnails[playlist.id];
                           const playlistImageKey = `playlist-${playlist.id}`;
                           const useFallback = imageLoadErrors.has(playlistImageKey);
-                          const activeThumbnailUrl = thumbData ? (useFallback ? thumbData.standard : thumbData.max) : null;
-                          const itemCount = playlistItemCounts[playlist.id] || 0;
+                          const combined = combinedPreviewItems[playlist.id] || [];
+                          const firstItem = combined[0];
+                          let activeThumbnailUrl = thumbData ? (useFallback ? thumbData.standard : thumbData.max) : null;
+                          if (!playlist.custom_thumbnail_url && firstItem) {
+                            if (firstItem.isOrb && firstItem.customOrbImage) activeThumbnailUrl = firstItem.customOrbImage;
+                            else if (firstItem.isBannerPreset) activeThumbnailUrl = firstItem.splitscreenBanner?.image || firstItem.customBannerImage || firstItem.fullscreenBanner?.image || firstItem.image || null;
+                          }
+                          const videoCount = playlistItemCounts[playlist.id] || 0;
+                          const orbCount = combined.filter((i) => i.isOrb).length;
+                          const bannerCount = combined.filter((i) => i.isBannerPreset).length;
+                          const itemCount = videoCount + orbCount + bannerCount;
                           const folders = playlistFolders[playlist.id] || [];
-                          const initialPreviewVideos = playlistPreviewVideos[playlist.id] || [];
+                          const initialPreviewVideos = combined;
                           return (
                             <PlaylistCard
                               key={playlist.id}
@@ -870,6 +918,9 @@ const PlaylistsPage = ({ onVideoSelect }) => {
                               folders={folders}
                               activeThumbnailUrl={activeThumbnailUrl}
                               itemCount={itemCount}
+                              videoCount={videoCount}
+                              orbCount={orbCount}
+                              bannerCount={bannerCount}
                               initialPreviewVideos={initialPreviewVideos}
                               globalInfoToggle={globalInfoToggle}
                               folderMetadata={folderMetadata}
@@ -1451,11 +1502,20 @@ const PlaylistsPage = ({ onVideoSelect }) => {
                       const playlist = item.data;
                       const thumbData = playlistThumbnails[playlist.id];
                       const playlistImageKey = `playlist-${playlist.id}`;
-                      const useFallback = imageLoadErrors.has(playlistImageKey);                      
-                      const activeThumbnailUrl = thumbData ? (useFallback ? thumbData.standard : thumbData.max) : null;
-                      const itemCount = playlistItemCounts[playlist.id] || 0;
+                      const useFallback = imageLoadErrors.has(playlistImageKey);
+                      const combined = combinedPreviewItems[playlist.id] || [];
+                      const firstItem = combined[0];
+                      let activeThumbnailUrl = thumbData ? (useFallback ? thumbData.standard : thumbData.max) : null;
+                      if (!playlist.custom_thumbnail_url && firstItem) {
+                        if (firstItem.isOrb && firstItem.customOrbImage) activeThumbnailUrl = firstItem.customOrbImage;
+                        else if (firstItem.isBannerPreset) activeThumbnailUrl = firstItem.splitscreenBanner?.image || firstItem.customBannerImage || firstItem.fullscreenBanner?.image || firstItem.image || null;
+                      }
+                      const videoCount = playlistItemCounts[playlist.id] || 0;
+                      const orbCount = combined.filter((i) => i.isOrb).length;
+                      const bannerCount = combined.filter((i) => i.isBannerPreset).length;
+                      const itemCount = videoCount + orbCount + bannerCount;
                       const folders = playlistFolders[playlist.id] || [];
-                      const initialPreviewVideos = playlistPreviewVideos[playlist.id] || [];
+                      const initialPreviewVideos = combined;
 
                       return (
                         <PlaylistCard
@@ -1464,6 +1524,9 @@ const PlaylistsPage = ({ onVideoSelect }) => {
                           folders={folders}
                           activeThumbnailUrl={activeThumbnailUrl}
                           itemCount={itemCount}
+                          videoCount={videoCount}
+                          orbCount={orbCount}
+                          bannerCount={bannerCount}
                           initialPreviewVideos={initialPreviewVideos}
                           globalInfoToggle={globalInfoToggle}
                           folderMetadata={folderMetadata}

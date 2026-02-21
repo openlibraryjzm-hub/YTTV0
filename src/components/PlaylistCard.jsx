@@ -31,6 +31,9 @@ const PlaylistCard = ({
   folders = [],
   activeThumbnailUrl,
   itemCount,
+  videoCount = itemCount,
+  orbCount = 0,
+  bannerCount = 0,
   initialPreviewVideos = [],
   globalInfoToggle,
   folderMetadata = {},
@@ -63,6 +66,7 @@ const PlaylistCard = ({
   const [isListOpen, setIsListOpen] = useState(false);
   const [hoveredPieSegment, setHoveredPieSegment] = useState(null);
   const [imageError, setImageError] = useState(false);
+  const [miniImageErrors, setMiniImageErrors] = useState(new Set());
 
   const pieChartRef = useRef(null);
   const pieDataRef = useRef({ folders, hoveredSegment: hoveredPieSegment });
@@ -127,6 +131,42 @@ const PlaylistCard = ({
   const displayedThumbnailUrl = previewThumbnail?.url || activeThumbnailUrl;
   const isExpanded = expandedPlaylists?.has(playlist.id);
 
+  // Thumbnail URL and title for a preview item (video, tweet, orb, or banner) — plain image only, no SVG
+  const getPreviewItemThumbnail = (item) => {
+    if (!item) return null;
+    if (item.isOrb) return item.customOrbImage ?? item.image ?? null;
+    if (item.isBannerPreset) {
+      return (
+        item.splitscreenBanner?.image ||
+        item.customBannerImage ||
+        item.fullscreenBanner?.image ||
+        item.image ||
+        null
+      );
+    }
+    return item.thumbnail_url?.replace(/name=[a-z]+/, "name=medium") || getThumbnailUrl(item.video_id, "medium");
+  };
+  const getPreviewItemTitle = (item) => item?.title ?? "";
+  const getPreviewItemKey = (item, index) => item?.id ?? item?.video_id ?? `preview-${index}`;
+
+  // Build previewThumbnail state from any item (video, orb, or banner) for shuffle/swap
+  const previewThumbnailFromItem = (item) => {
+    if (!item) return null;
+    const url = item.isOrb
+      ? (item.customOrbImage ?? null)
+      : item.isBannerPreset
+        ? (item.splitscreenBanner?.image || item.customBannerImage || item.fullscreenBanner?.image || item.image || null)
+        : (item.thumbnail_url?.replace(/name=[a-z]+/, "name=large") || getThumbnailUrl(item.video_id, "max"));
+    return {
+      url: url || null,
+      title: getPreviewItemTitle(item),
+      videoId: item.video_id ?? null,
+      videoUrl: item.video_url ?? null,
+      isShuffled: true,
+      originalItem: item,
+    };
+  };
+
   const handleCardClick = async (e) => {
     if (e.target.closest('[data-card-menu="true"]')) return;
     try {
@@ -178,26 +218,25 @@ const PlaylistCard = ({
   const handleShuffle = async (e) => {
     e.stopPropagation();
     try {
-      const items = activeFolderFilter
-        ? await getVideosInFolder(playlist.id, activeFolderFilter)
-        : await getPlaylistItems(playlist.id);
-      if (items.length === 0) return;
-
-      const randomVideo = items[Math.floor(Math.random() * items.length)];
-      const thumbUrl =
-        randomVideo.thumbnail_url?.replace(/name=[a-z]+/, "name=large") ||
-        getThumbnailUrl(randomVideo.video_id, "max");
-
-      setPreviewThumbnail({
-        videoId: randomVideo.video_id,
-        url: thumbUrl,
-        videoUrl: randomVideo.video_url,
-        title: randomVideo.title,
-        isShuffled: true,
-      });
-
-      const shuffledItems = [...items].sort(() => 0.5 - Math.random());
-      setLocalPreviewVideos(shuffledItems.slice(0, 4));
+      if (activeFolderFilter) {
+        const items = await getVideosInFolder(playlist.id, activeFolderFilter);
+        if (items.length === 0) return;
+        const randomVideo = items[Math.floor(Math.random() * items.length)];
+        setPreviewThumbnail(previewThumbnailFromItem(randomVideo));
+        const shuffledItems = [...items].sort(() => 0.5 - Math.random());
+        setLocalPreviewVideos(shuffledItems.slice(0, 4));
+      } else {
+        const orbsAndBanners = (initialPreviewVideos || []).filter(
+          (item) => item.isOrb || item.isBannerPreset
+        );
+        const allVideos = await getPlaylistItems(playlist.id);
+        const pool = [...orbsAndBanners, ...allVideos];
+        if (pool.length === 0) return;
+        const randomItem = pool[Math.floor(Math.random() * pool.length)];
+        setPreviewThumbnail(previewThumbnailFromItem(randomItem));
+        const shuffled = [...pool].sort(() => 0.5 - Math.random());
+        setLocalPreviewVideos(shuffled.slice(0, 4));
+      }
     } catch (error) {
       console.error("Failed to shuffle thumbnail:", error);
     }
@@ -207,10 +246,13 @@ const PlaylistCard = ({
     e.stopPropagation();
     setPreviewThumbnail(null);
     try {
-      const items = activeFolderFilter
-        ? (await getVideosInFolder(playlist.id, activeFolderFilter)).slice(0, 4)
-        : await getPlaylistItemsPreview(playlist.id, 4);
-      setLocalPreviewVideos(items);
+      if (activeFolderFilter) {
+        const items = (await getVideosInFolder(playlist.id, activeFolderFilter)).slice(0, 4);
+        setLocalPreviewVideos(items);
+      } else {
+        // Restore default order: first 4 of combined list (orbs + banners + videos)
+        setLocalPreviewVideos(initialPreviewVideos.slice(0, 4));
+      }
     } catch (error) {
       console.error("Failed to reset preview videos:", error);
     }
@@ -252,12 +294,13 @@ const PlaylistCard = ({
         );
 
         if (localPreviewVideos && previewThumbnail?.isShuffled) {
+          let videoPosition = 1;
           for (let i = 0; i < localPreviewVideos.length; i++) {
-            await reorderPlaylistItem(
-              playlist.id,
-              localPreviewVideos[i].id,
-              i + 1,
-            );
+            const item = localPreviewVideos[i];
+            if (!item.isOrb && !item.isBannerPreset && item.id != null) {
+              await reorderPlaylistItem(playlist.id, item.id, videoPosition);
+              videoPosition++;
+            }
           }
         }
         await loadPlaylists?.();
@@ -272,57 +315,54 @@ const PlaylistCard = ({
     }
   };
 
-  const handleMiniVideoRightClick = async (e, video, index) => {
+  const handleMiniVideoRightClick = async (e, clickedItem, index) => {
     e.preventDefault();
     e.stopPropagation();
     try {
-      let currentMainVideo = null;
-      if (previewThumbnail?.videoId) {
-        currentMainVideo = {
+      let currentMainItem = null;
+      if (previewThumbnail?.originalItem) {
+        currentMainItem = previewThumbnail.originalItem;
+      } else if (previewThumbnail?.videoId != null) {
+        currentMainItem = {
           video_id: previewThumbnail.videoId,
           video_url: previewThumbnail.videoUrl,
           title: previewThumbnail.title,
           thumbnail_url: previewThumbnail.url,
         };
       } else {
-        const items = await getPlaylistItems(playlist.id);
-        if (items.length > 0) {
-          let targetVideo = items[0];
-          if (activeThumbnailUrl) {
-            const coverMatch = items.find((item) => {
-              const maxThumb =
-                item.thumbnail_url?.replace(/name=[a-z]+/, "name=large") ||
-                getThumbnailUrl(item.video_id, "max");
-              const stdThumb =
-                item.thumbnail_url?.replace(/name=[a-z]+/, "name=medium") ||
-                getThumbnailUrl(item.video_id, "standard");
-              return (
-                maxThumb === activeThumbnailUrl ||
-                stdThumb === activeThumbnailUrl
-              );
-            });
-            if (coverMatch) targetVideo = coverMatch;
+        const first = localPreviewVideos[0];
+        if (first) {
+          currentMainItem = first;
+        } else {
+          const items = await getPlaylistItems(playlist.id);
+          if (items.length > 0) {
+            let targetVideo = items[0];
+            if (activeThumbnailUrl) {
+              const coverMatch = items.find((item) => {
+                const maxThumb =
+                  item.thumbnail_url?.replace(/name=[a-z]+/, "name=large") ||
+                  getThumbnailUrl(item.video_id, "max");
+                const stdThumb =
+                  item.thumbnail_url?.replace(/name=[a-z]+/, "name=medium") ||
+                  getThumbnailUrl(item.video_id, "standard");
+                return (
+                  maxThumb === activeThumbnailUrl ||
+                  stdThumb === activeThumbnailUrl
+                );
+              });
+              if (coverMatch) targetVideo = coverMatch;
+            }
+            currentMainItem = targetVideo;
           }
-          currentMainVideo = targetVideo;
         }
       }
 
-      if (currentMainVideo) {
-        const thumbUrl =
-          video.thumbnail_url?.replace(/name=[a-z]+/, "name=large") ||
-          getThumbnailUrl(video.video_id, "max");
-        setPreviewThumbnail({
-          videoId: video.video_id,
-          url: thumbUrl,
-          videoUrl: video.video_url,
-          title: video.title,
-          isShuffled: true,
-        });
-
+      if (currentMainItem) {
+        setPreviewThumbnail(previewThumbnailFromItem(clickedItem));
         setLocalPreviewVideos((prev) => {
-          const newVideos = [...prev];
-          newVideos[index] = currentMainVideo;
-          return newVideos;
+          const next = [...prev];
+          next[index] = currentMainItem;
+          return next;
         });
       }
     } catch (err) {
@@ -456,7 +496,7 @@ const PlaylistCard = ({
                 ? "#e0f2fe"
                 : "#0f172a",
           }}
-          title={previewThumbnail?.title || localPreviewVideos[0]?.title}
+          title={previewThumbnail?.title || getPreviewItemTitle(localPreviewVideos[0])}
         >
           {displayedThumbnailUrl ? (
             displayedThumbnailUrl.includes("twimg.com") ? (
@@ -528,13 +568,13 @@ const PlaylistCard = ({
             </div>
           )}
 
-          {(showInfo || globalInfoToggle) && previewThumbnail?.title && (
+          {(showInfo || globalInfoToggle) && (previewThumbnail?.title || getPreviewItemTitle(localPreviewVideos[0])) && (
             <div
               className="absolute bottom-0 left-0 right-0 bg-black/80 px-2 py-1.5 z-20"
               style={{ backdropFilter: "blur(4px)" }}
             >
               <p className="text-white text-sm font-medium truncate">
-                {previewThumbnail.title}
+                {previewThumbnail?.title || getPreviewItemTitle(localPreviewVideos[0])}
               </p>
             </div>
           )}
@@ -575,8 +615,10 @@ const PlaylistCard = ({
               </div>
             </button>
 
-            <span className="text-white text-xs font-bold bg-black/60 px-2 py-1 rounded-md backdrop-blur-sm">
-              {itemCount} videos
+            <span className="text-white text-xs font-bold bg-black/60 px-2 py-1 rounded-md backdrop-blur-sm" title={orbCount + bannerCount > 0 ? `${videoCount} video(s), ${orbCount} orb(s), ${bannerCount} banner(s)` : undefined}>
+              {orbCount + bannerCount > 0
+                ? `${videoCount} video${videoCount !== 1 ? "s" : ""}${orbCount ? `, ${orbCount} orb${orbCount !== 1 ? "s" : ""}` : ""}${bannerCount ? `, ${bannerCount} banner${bannerCount !== 1 ? "s" : ""}` : ""}`
+                : `${itemCount} video${itemCount !== 1 ? "s" : ""}`}
             </span>
           </div>
 
@@ -984,31 +1026,44 @@ const PlaylistCard = ({
 
         {/* Mini Preview Strip */}
         <div className="mt-2 grid grid-cols-4 gap-2 px-1 pb-1">
-          {localPreviewVideos.slice(0, 4).map((video, index) => (
-            <div
-              key={video.video_id}
-              className="aspect-video relative rounded-md overflow-hidden bg-black/50 border-2 border-[#052F4A] hover:ring-2 hover:ring-sky-500 transition-all cursor-pointer group/mini shadow-md"
-              onClick={(e) => {
-                e.stopPropagation();
-                if (onVideoSelect) onVideoSelect(video.video_url);
-              }}
-              onContextMenu={(e) => handleMiniVideoRightClick(e, video, index)}
-              title={video.title}
-            >
-              <img
-                src={
-                  video.thumbnail_url?.replace(/name=[a-z]+/, "name=medium") ||
-                  getThumbnailUrl(video.video_id, "medium")
-                }
-                alt=""
-                className={`w-full h-full opacity-80 group-hover/mini:opacity-100 transition-opacity ${video.thumbnail_url?.includes("twimg.com") ? "object-contain bg-[#e0f2fe] p-0.5" : "object-cover"}`}
-                onError={(e) => (e.target.style.display = "none")}
-              />
-              <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/mini:opacity-100 bg-black/30 transition-opacity">
-                <Play size={12} className="text-white fill-current" />
+          {localPreviewVideos.slice(0, 4).map((item, index) => {
+            const slotKey = getPreviewItemKey(item, index);
+            const thumbSrc = getPreviewItemThumbnail(item);
+            const thumbFailed = miniImageErrors.has(slotKey);
+            const showImg = thumbSrc && !thumbFailed;
+            const isVideo = !item.isOrb && !item.isBannerPreset;
+            const isTweet = isVideo && item.thumbnail_url?.includes("twimg.com");
+            return (
+              <div
+                key={slotKey}
+                className="aspect-video relative rounded-md overflow-hidden bg-black/50 border-2 border-[#052F4A] hover:ring-2 hover:ring-sky-500 transition-all cursor-pointer group/mini shadow-md"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (isVideo && item.video_url && onVideoSelect) onVideoSelect(item.video_url);
+                }}
+                onContextMenu={(e) => handleMiniVideoRightClick(e, item, index)}
+                title={getPreviewItemTitle(item)}
+              >
+                {showImg ? (
+                  <img
+                    src={thumbSrc}
+                    alt=""
+                    className={`w-full h-full opacity-80 group-hover/mini:opacity-100 transition-opacity ${isTweet ? "object-contain bg-[#e0f2fe] p-0.5" : "object-cover"}`}
+                    onError={() => setMiniImageErrors((prev) => new Set(prev).add(slotKey))}
+                  />
+                ) : (
+                  <div className={`w-full h-full flex items-center justify-center ${item.isOrb ? "bg-amber-900/60 text-amber-200" : item.isBannerPreset ? "bg-violet-900/60 text-violet-200" : "bg-slate-700/50 text-slate-400"}`}>
+                    <span className="text-xs font-bold uppercase">{item.isOrb ? "Orb" : item.isBannerPreset ? "Banner" : ""}</span>
+                  </div>
+                )}
+                {isVideo && showImg && (
+                  <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/mini:opacity-100 bg-black/30 transition-opacity">
+                    <Play size={12} className="text-white fill-current" />
+                  </div>
+                )}
               </div>
-            </div>
-          ))}
+            );
+          })}
           {Array.from({
             length: Math.max(0, 4 - localPreviewVideos.length),
           }).map((_, i) => (
