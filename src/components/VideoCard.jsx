@@ -102,7 +102,7 @@ const VideoCard = ({
 
       return video.video_url || video.thumbnail_url;
     }
-    return getThumbnailUrl(video.video_id, 'maxres');
+    return getThumbnailUrl(video.video_id, 'medium');
   }, [video]);
 
   const primaryFolder = videoFolders.length > 0 ? getFolderColorById(videoFolders[0]) : null;
@@ -628,7 +628,7 @@ const VideoCard = ({
             badges={bulkTagMode ? badges.filter(b => b.position !== 'top-right') : badges}
             progress={progress}
             className={`rounded-lg overflow-hidden border-2 ${bulkTagBorderColor ? '' : 'border-black'} ${isCurrentlyPlaying ? 'ring-4 ring-red-500 ring-offset-2 ring-offset-black shadow-[0_0_40px_rgba(239,68,68,1),inset_0_0_40px_rgba(239,68,68,0.8)]' : ''}`} // Rounding thumbnail specifically
-            style={bulkTagBorderColor ? { borderColor: bulkTagBorderColor, borderWidth: '2px' } : undefined}
+            style={bulkTagBorderColor ? { borderColor: bulkTagBorderColor } : undefined}
           />
         </ImageHoverPreview>
 

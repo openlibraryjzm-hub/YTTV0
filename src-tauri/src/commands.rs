@@ -105,6 +105,24 @@ pub fn update_playlist_source_limit(
 }
 
 #[tauri::command]
+pub fn update_playlist_source_name(
+    db: State<Mutex<Database>>,
+    id: i64,
+    custom_name: Option<String>,
+) -> Result<bool, String> {
+    let db = db.lock().map_err(|e| e.to_string())?;
+    db.update_playlist_source_name(id, custom_name.as_deref())
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn update_playlist_source_sync(db: State<Mutex<Database>>, id: i64) -> Result<bool, String> {
+    let db = db.lock().map_err(|e| e.to_string())?;
+    db.update_playlist_source_sync(id)
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
 pub fn remove_playlist_source(db: State<Mutex<Database>>, id: i64) -> Result<bool, String> {
     let db = db.lock().map_err(|e| e.to_string())?;
     db.remove_playlist_source(id).map_err(|e| e.to_string())

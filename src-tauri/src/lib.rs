@@ -56,6 +56,8 @@ pub fn run() {
             commands::add_playlist_source,
             commands::get_playlist_sources,
             commands::update_playlist_source_limit,
+            commands::update_playlist_source_name,
+            commands::update_playlist_source_sync,
             commands::remove_playlist_source,
             commands::add_video_to_playlist,
             commands::get_playlist_items,

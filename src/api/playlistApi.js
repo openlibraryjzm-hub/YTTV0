@@ -65,6 +65,14 @@ export const getPlaylistSources = async (playlistId) => {
   }
 };
 
+export const updatePlaylistSourceName = async (id, customName) => {
+  return await invoke('update_playlist_source_name', { id, customName });
+};
+
+export const updatePlaylistSourceSync = async (id) => {
+  return await invoke('update_playlist_source_sync', { id });
+};
+
 export const removePlaylistSource = async (id) => {
   return await invoke('remove_playlist_source', { id });
 };

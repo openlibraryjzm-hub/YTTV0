@@ -126,7 +126,7 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
     currentPlaylistTitle,
   } = usePlaylistStore();
 
-  const { setCurrentPage } = useNavigationStore();
+  const { currentPage, setCurrentPage } = useNavigationStore();
   const { pinnedVideos, togglePriorityPin, removePin, isPriorityPin, isPinned, isFollowerPin, togglePin } = usePinStore();
   const { viewMode, setViewMode, inspectMode, toggleMenuQuarterMode, menuQuarterMode, showDebugBounds, toggleDebugBounds, toggleInspectMode, showRuler, toggleRuler, showDevToolbar, toggleDevToolbar } = useLayoutStore();
   const { showColoredFolders } = useFolderStore();
@@ -877,9 +877,13 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
 
   // Handle grid navigation
   const handlePlaylistsGrid = () => {
-    setCurrentPage('playlists');
-    if (viewMode === 'full') {
-      setViewMode('half');
+    if (currentPage === 'playlists') {
+      setViewMode(viewMode === 'full' ? 'half' : 'full');
+    } else {
+      setCurrentPage('playlists');
+      if (viewMode === 'full') {
+        setViewMode('half');
+      }
     }
   };
 
@@ -899,9 +903,13 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
     }
 
     if (currentPlaylistId) {
-      setCurrentPage('videos');
-      if (viewMode === 'full') {
-        setViewMode('half');
+      if (currentPage === 'videos') {
+        setViewMode(viewMode === 'full' ? 'half' : 'full');
+      } else {
+        setCurrentPage('videos');
+        if (viewMode === 'full') {
+          setViewMode('half');
+        }
       }
     }
   };

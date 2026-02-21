@@ -28,7 +28,6 @@ const CardThumbnail = ({
         position: 'relative',
         width: '100%',
         paddingBottom: '56.25%', // 16:9 aspect ratio
-        backgroundColor: '#e0f2fe',
         overflow: 'hidden'
       }}
     >
@@ -42,7 +41,7 @@ const CardThumbnail = ({
             left: 0,
             width: '100%',
             height: '100%',
-            objectFit: 'contain',
+            objectFit: 'cover',
             display: 'block'
           }}
           onError={() => setImageError(true)}

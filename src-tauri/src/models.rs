@@ -122,4 +122,6 @@ pub struct PlaylistSource {
     pub created_at: String,
     #[serde(default)]
     pub video_limit: i32,
+    pub custom_name: Option<String>,
+    pub last_synced_at: Option<String>,
 }

@@ -207,6 +207,7 @@ yttv2/
 | **App Banner** | `app-banner.md` | `advanced-player-controller.md`, `ui-layout.md`, `state-management.md` |
 | **Page Banner** | `page-banner.md` | `ui-pages.md`, `ui-layout.md`, `state-management.md` |
 | **Playlist Cards** | `playlist-cards.md` | `playlist&tab.md`, `ui.md`, `api-bridge.md` |
+| **Subscription Manager** | `subscription-manager.md` | `api-bridge.md`, `database-schema.md` |
 | **Pokedex System** | `pokedex-system.md` | `state-management.md`, `ui-pages.md`, `database-schema.md` |
 | **Debug/Testing** | `debug.md` | `ui.md` (inspect mode, debug bounds) |
 
@@ -435,9 +436,14 @@ For detailed information about the application's theme system and recent color c
   - **Channel Import Support**: 
     - Updated `ConfigPlaylistModal` (Unified Add) to fully support **YouTube Channel URLs** (e.g., `@ChannelName`). 
     - The system now automatically resolves channels to their "Uploads" playlist and fetches all videos.
+  - **Subscription UI**:
+    - Aligned `SubscriptionManagerModal` cleanly at the bottom of the screen (`items-end`, `pb-12`).
+    - Added inline channel editing for assigning custom names (`custom_name`).
+    - Added `last_synced_at` timestamp display below the fetch button.
+    - Improved standard thumbnail crops by restoring `medium` resolution logic for YouTube thumbnails within `VideoCard.jsx` and switching to an `object-fit: cover` aspect ratio fill directly on the card.
   - **Backend Foundation**:
-    - Created `playlist_sources` table in SQLite to track subscription sources and their limits.
-    - Implemented API endpoints (`add_playlist_source`, `get_playlist_sources`) for future subscription management features.
+    - Created `playlist_sources` table in SQLite to track subscription sources, their limits, names, and sync times.
+    - Implemented API endpoints (`add_playlist_source`, `get_playlist_sources`, `update_playlist_source_name`, `update_playlist_source_sync`) for subscription management features.
 - **Asset Manager Enhancements**:
   - **Larger Orb Carousel**: Increased Orb preset size to 200px for better visibility, matching the Orb Page design.
   - **Layout Optimization**: Removed "Folder/File" sub-navigation to maximize vertical space.

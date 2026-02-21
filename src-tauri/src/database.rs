@@ -199,18 +199,39 @@ impl Database {
         {
             let mut stmt = self.conn.prepare("PRAGMA table_info(playlist_sources)")?;
             let mut has_video_limit = false;
+            let mut has_custom_name = false;
+            let mut has_last_synced_at = false;
             let rows = stmt.query_map([], |row| {
                 Ok(row.get::<_, String>(1)?)
             })?;
             for row in rows {
-                if row? == "video_limit" {
-                    has_video_limit = true;
-                    break;
+                if let Ok(col_name) = row {
+                    if col_name == "video_limit" {
+                        has_video_limit = true;
+                    }
+                    if col_name == "custom_name" {
+                        has_custom_name = true;
+                    }
+                    if col_name == "last_synced_at" {
+                        has_last_synced_at = true;
+                    }
                 }
             }
             if !has_video_limit {
                 self.conn.execute(
                     "ALTER TABLE playlist_sources ADD COLUMN video_limit INTEGER NOT NULL DEFAULT 10",
+                    params![],
+                )?;
+            }
+            if !has_custom_name {
+                self.conn.execute(
+                    "ALTER TABLE playlist_sources ADD COLUMN custom_name TEXT",
+                    params![],
+                )?;
+            }
+            if !has_last_synced_at {
+                self.conn.execute(
+                    "ALTER TABLE playlist_sources ADD COLUMN last_synced_at TEXT",
                     params![],
                 )?;
             }
@@ -702,7 +723,7 @@ impl Database {
 
     pub fn get_playlist_sources(&self, playlist_id: i64) -> Result<Vec<crate::models::PlaylistSource>> {
         let mut stmt = self.conn.prepare(
-            "SELECT id, playlist_id, source_type, source_value, created_at, video_limit FROM playlist_sources WHERE playlist_id = ?1 ORDER BY created_at DESC"
+            "SELECT id, playlist_id, source_type, source_value, created_at, video_limit, custom_name, last_synced_at FROM playlist_sources WHERE playlist_id = ?1 ORDER BY created_at DESC"
         )?;
 
         let sources = stmt
@@ -714,11 +735,30 @@ impl Database {
                     source_value: row.get(3)?,
                     created_at: row.get(4)?,
                     video_limit: row.get(5)?,
+                    custom_name: row.get(6).unwrap_or(None),
+                    last_synced_at: row.get(7).unwrap_or(None),
                 })
             })?
             .collect::<Result<Vec<_>, _>>()?;
 
         Ok(sources)
+    }
+
+    pub fn update_playlist_source_name(&self, id: i64, custom_name: Option<&str>) -> Result<bool> {
+        let rows = self.conn.execute(
+            "UPDATE playlist_sources SET custom_name = ?1 WHERE id = ?2",
+            params![custom_name, id],
+        )?;
+        Ok(rows > 0)
+    }
+
+    pub fn update_playlist_source_sync(&self, id: i64) -> Result<bool> {
+        let now = Utc::now().to_rfc3339();
+        let rows = self.conn.execute(
+            "UPDATE playlist_sources SET last_synced_at = ?1 WHERE id = ?2",
+            params![now, id],
+        )?;
+        Ok(rows > 0)
     }
 
     pub fn update_playlist_source_limit(&self, id: i64, video_limit: i32) -> Result<bool> {
