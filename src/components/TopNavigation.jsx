@@ -3,14 +3,18 @@ import { useNavigationStore } from '../store/navigationStore';
 import { useLayoutStore } from '../store/layoutStore';
 import { usePlaylistStore } from '../store/playlistStore';
 import { useFolderStore } from '../store/folderStore';
-import { ChevronLeft, Twitter, Info } from 'lucide-react';
+import { ChevronLeft, Twitter, Info, LayoutGrid, LayoutList, Minus } from 'lucide-react';
 import { THEMES } from '../utils/themes';
 import { FOLDER_COLORS } from '../utils/folderColors';
 import TabBar from './TabBar';
+import { useTabStore } from '../store/tabStore';
+import { usePlaylistGroupStore } from '../store/playlistGroupStore';
 
 const TopNavigation = () => {
     const { currentPage, history, goBack, setCurrentPage } = useNavigationStore();
     const { setViewMode, inspectMode, videoCardStyle, toggleVideoCardStyle, playlistsPageShowTitles, setPlaylistsPageShowTitles, setShowPlaylistUploader } = useLayoutStore();
+    const setAllGroupCarouselModes = usePlaylistGroupStore((s) => s.setAllGroupCarouselModes);
+    const { activeTabId } = useTabStore();
     // Consume previewPlaylistId to support "visiting" context vs "playing" context
     const { previewPlaylistId, clearPreview, currentPlaylistId, currentPlaylistTitle, allPlaylists } = usePlaylistStore();
     // Consume selectedFolder and showColoredFolders from folderStore
@@ -78,8 +82,36 @@ const TopNavigation = () => {
             className={`w-full flex items-end justify-between px-8 pb-4 transition-all duration-300 min-h-[100px] ${!hasActiveContext ? `${theme.menuBg} ${theme.menuBorder} backdrop-blur-md border rounded-xl` : ''}`}
             style={containerStyle}
         >
-            {/* Left side: Playlist/Folder Info */}
+            {/* Left side: Override-for-all carousel mode (GROUPS) + Playlist/Folder Info */}
             <div className="flex flex-col justify-end min-w-0 flex-1">
+                {isPlaylistsPage && activeTabId === 'groups' && (
+                    <div className="flex items-center gap-1 mb-2">
+                        <button
+                            type="button"
+                            onClick={() => setAllGroupCarouselModes('large')}
+                            className="p-1.5 rounded-md transition-all shrink-0 bg-slate-800/80 text-slate-400 hover:bg-slate-700 hover:text-white border border-white/10"
+                            title="Apply large to all carousels"
+                        >
+                            <LayoutGrid size={16} />
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setAllGroupCarouselModes('small')}
+                            className="p-1.5 rounded-md transition-all shrink-0 bg-slate-800/80 text-slate-400 hover:bg-slate-700 hover:text-white border border-white/10"
+                            title="Apply small to all carousels"
+                        >
+                            <LayoutList size={16} />
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setAllGroupCarouselModes('bar')}
+                            className="p-1.5 rounded-md transition-all shrink-0 bg-slate-800/80 text-slate-400 hover:bg-slate-700 hover:text-white border border-white/10"
+                            title="Apply bar to all carousels"
+                        >
+                            <Minus size={16} />
+                        </button>
+                    </div>
+                )}
                 <h1
                     className={`text-3xl font-bold tracking-tight truncate`}
                     style={titleStyle}

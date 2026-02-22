@@ -39,6 +39,7 @@ const PlaylistCard = ({
   folderMetadata = {},
   deletingPlaylistId,
   expandedPlaylists,
+  size = 'large', // 'large' | 'small' – small = thumbnail-only (no 4 mini previews), for small carousel
 
   onVideoSelect,
   togglePlaylistExpand,
@@ -422,9 +423,9 @@ const PlaylistCard = ({
           String(playlist.id) === String(currentPlaylistId) ? "true" : "false"
         }
       >
-        <div className="mb-2 flex items-center justify-between border-2 border-[#052F4A] rounded-md p-1 bg-slate-100/90 shadow-sm relative overflow-hidden h-[38px]">
+        <div className={`mb-2 flex items-center justify-between border-2 border-[#052F4A] rounded-md p-1 bg-slate-100/90 shadow-sm relative overflow-hidden ${size === 'small' ? 'h-[32px]' : 'h-[38px]'}`}>
           <h3
-            className="font-bold text-lg truncate transition-colors pl-1 flex-1 text-left"
+            className={`font-bold truncate transition-colors pl-1 flex-1 text-left ${size === 'small' ? 'text-sm' : 'text-lg'}`}
             style={{ color: "#052F4A" }}
             onMouseEnter={(e) => (e.currentTarget.style.color = "#38bdf8")}
             onMouseLeave={(e) => (e.currentTarget.style.color = "#052F4A")}
@@ -1030,7 +1031,8 @@ const PlaylistCard = ({
           </div>
         )}
 
-        {/* Mini Preview Strip */}
+        {/* Mini Preview Strip – hidden in small size (carousel thumbnail-only mode) */}
+        {size !== 'small' && (
         <div className="mt-2 grid grid-cols-4 gap-2 px-1 pb-1">
           {localPreviewVideos.slice(0, 4).map((item, index) => {
             const slotKey = getPreviewItemKey(item, index);
@@ -1079,6 +1081,7 @@ const PlaylistCard = ({
             />
           ))}
         </div>
+        )}
       </div>
     </div>
   );

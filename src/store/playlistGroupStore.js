@@ -13,6 +13,26 @@ export const usePlaylistGroupStore = create(
             // Array of { id, name, playlistIds }
             groups: [],
 
+            /** Per-group carousel display mode: { [groupId]: 'large' | 'small' | 'bar' }. Defaults to 'large' when missing. */
+            groupCarouselModes: {},
+            setGroupCarouselMode: (groupId, mode) => {
+                if (groupId == null) return;
+                const valid = ['large', 'small', 'bar'].includes(mode) ? mode : 'large';
+                set((state) => ({
+                    groupCarouselModes: { ...state.groupCarouselModes, [groupId]: valid },
+                }));
+            },
+
+            /** One-shot: set every group's carousel mode to the same value (e.g. "apply Bar to all"). */
+            setAllGroupCarouselModes: (mode) => {
+                const valid = ['large', 'small', 'bar'].includes(mode) ? mode : 'large';
+                set((state) => {
+                    const next = {};
+                    state.groups.forEach((g) => { next[g.id] = valid; });
+                    return { groupCarouselModes: { ...state.groupCarouselModes, ...next } };
+                });
+            },
+
             /** Last group carousel the user "entered from" on GROUPS tab (used for single badge + future nav range) */
             activeGroupId: null,
             setActiveGroupId: (id) => set({ activeGroupId: id == null ? null : id }),
@@ -71,10 +91,14 @@ export const usePlaylistGroupStore = create(
         }),
         {
             name: 'playlist-group-storage',
-            version: 2,
+            version: 3,
             migrate: (state) => {
-                if (!state) return { groups: [], activeGroupId: null };
-                const next = { groups: state.groups || [], activeGroupId: state.activeGroupId ?? null };
+                if (!state) return { groups: [], activeGroupId: null, groupCarouselModes: {} };
+                const next = {
+                    groups: state.groups || [],
+                    activeGroupId: state.activeGroupId ?? null,
+                    groupCarouselModes: state.groupCarouselModes && typeof state.groupCarouselModes === 'object' ? state.groupCarouselModes : {},
+                };
                 if (!Array.isArray(next.groups)) {
                     const legacy = state.groupPlaylistIds;
                     next.groups = Array.isArray(legacy) && legacy.length > 0

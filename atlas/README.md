@@ -111,7 +111,7 @@ yttv2/
 │   │   ├── folderStore.js        # Folder state, bulk tagging, show folders
 │   │   ├── tabStore.js           # View mode (ALL/UNSORTED/GROUPS) for Playlists page
 │   │   ├── tabPresetStore.js     # Tab preset state management
-│   │   ├── playlistGroupStore.js # Group carousels: groups, assign/rename/delete (persisted)
+│   │   ├── playlistGroupStore.js # Group carousels: groups, per-carousel modes (large/small/bar), assign/rename/delete (persisted)
 │   │   ├── pinStore.js           # Pin state management (persisted)
 │   │   ├── stickyStore.js        # Sticky video state management (persisted)
 │   │   ├── shuffleStore.js       # Shuffle state for video ordering
@@ -316,7 +316,7 @@ yttv2/
 
 #### `group-carousel.md`
 **Covers**: Group carousel system on the Playlists page (successor to legacy tabs)
-**Key Topics**: ALL / UNSORTED / GROUPS views; Playlists bar in TopNavigation (TabBar, Info/Folder/Add, Back/Close); bounded carousel boxes with top bar (name, rename, delete); horizontal scroll for 1+ items with consistent large card size; playlistGroupStore, layoutStore (playlistsPageShowTitles, showPlaylistUploader), tabStore
+**Key Topics**: ALL / UNSORTED / GROUPS views; per-carousel display mode (Large / Small / Bar) with mode buttons on each carousel's top bar; TopNavigation "apply to all" one-shot (setAllGroupCarouselModes); bounded carousel boxes, horizontal scroll; playlistGroupStore (groups, groupCarouselModes, setGroupCarouselMode, setAllGroupCarouselModes), tabStore, layoutStore (playlistsPageShowTitles, showPlaylistUploader)
 **Cross-References**: See `group-badge-player-controller.md`, `playlist-cards.md`, `state-management.md` (playlistGroupStore, tabStore, layoutStore), `ui-pages.md`, `page-banner.md` (TopNavigation)
 
 #### `group-badge-player-controller.md`
