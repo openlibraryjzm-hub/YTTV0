@@ -18,9 +18,7 @@ import LocalVideoUploader from './LocalVideoUploader';
 import PlaylistCard from './PlaylistCard';
 import GroupPlaylistCarousel from './GroupPlaylistCarousel';
 import CardMenu from './NewCardMenu'; // Using NewCardMenu as CardMenu
-import TabBar from './TabBar';
 import CardThumbnail from './CardThumbnail';
-import PageBanner from './PageBanner';
 import { usePinStore } from '../store/pinStore';
 import { usePlaylistGroupStore } from '../store/playlistGroupStore';
 import UnifiedBannerBackground from './UnifiedBannerBackground';
@@ -61,10 +59,9 @@ const PlaylistsPage = ({ onVideoSelect }) => {
   // Global info toggle - shows video titles on all cards (persisted to localStorage)
   const [activeFolderFilters, setActiveFolderFilters] = useState({}); // { playlistId: folderColor }
 
-  const [globalInfoToggle, setGlobalInfoToggle] = useState(() => {
-    const saved = localStorage.getItem('playlistsPage_globalInfoToggle');
-    return saved === 'true';
-  });
+  // Global info toggle: driven by layoutStore (synced from localStorage on mount, persisted on change)
+  const { playlistsPageShowTitles, setPlaylistsPageShowTitles, showPlaylistUploader, setShowPlaylistUploader } = useLayoutStore();
+  const globalInfoToggle = playlistsPageShowTitles;
 
   // Keep ref in sync with state
   pieDataRef.current.hoveredPieSegment = hoveredPieSegment;
@@ -152,35 +149,16 @@ const PlaylistsPage = ({ onVideoSelect }) => {
   const getInspectTitle = (label) => inspectMode ? label : undefined;
   const hasDeletedTestPlaylist = useRef(false);
 
-  // Sticky header state detection
-  const [isStuck, setIsStuck] = useState(false);
-  const stickySentinelRef = useRef(null);
   const scrollContainerRef = useRef(null);
   const horizontalScrollRef = useRef(null);
   const arrowButtonRef = useRef(null);
 
   const scrollToTop = () => {
     if (horizontalScrollRef.current) {
-      // For infinite scroll, "Top/Start" is the startOffset (start of real content)
-      // We fall back to 0 if not set
       const target = parseFloat(horizontalScrollRef.current.dataset.startOffset || 0);
       horizontalScrollRef.current.scrollTo({ left: target, behavior: 'smooth' });
     }
   };
-
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        setIsStuck(entry.intersectionRatio < 1 && entry.boundingClientRect.top < 0);
-      },
-      { threshold: [1], rootMargin: '-1px 0px 0px 0px' }
-    );
-
-    if (stickySentinelRef.current) {
-      observer.observe(stickySentinelRef.current);
-    }
-    return () => observer.disconnect();
-  }, []);
 
 
 
@@ -191,10 +169,24 @@ const PlaylistsPage = ({ onVideoSelect }) => {
     loadStuckFolders();
   }, []);
 
-  // Persist global info toggle to localStorage
+  // Sync playlistsPageShowTitles from localStorage on mount (store default is false)
+  useEffect(() => {
+    const saved = localStorage.getItem('playlistsPage_globalInfoToggle');
+    if (saved === 'true') setPlaylistsPageShowTitles(true);
+  }, []);
+
+  // Persist global info toggle to localStorage when store value changes
   useEffect(() => {
     localStorage.setItem('playlistsPage_globalInfoToggle', globalInfoToggle.toString());
   }, [globalInfoToggle]);
+
+  // When TopNavigation "Add" sets showPlaylistUploader, open uploader and clear flag
+  useEffect(() => {
+    if (showPlaylistUploader) {
+      setShowUploader(true);
+      setShowPlaylistUploader(false);
+    }
+  }, [showPlaylistUploader, setShowPlaylistUploader]);
 
   // Fetch titles for all playlists when global info toggle is on and playlists have loaded
   useEffect(() => {
@@ -733,154 +725,9 @@ const PlaylistsPage = ({ onVideoSelect }) => {
         <>
 
 
-          {/* Playlist Grid - Horizontal Scrolling */}
+          {/* Playlist Grid - Horizontal Scrolling (bar moved to TopNavigation when on Playlists page) */}
           <div ref={scrollContainerRef} className="flex-1 overflow-y-auto overflow-x-hidden bg-transparent relative">
-            {(() => {
-              const bannerTitle = activeTabId === 'all' ? 'All' : activeTabId === 'unsorted' ? 'Unsorted' : 'Groups';
-
-              // Filter for grid (all = all playlists, unsorted = playlists not in any group)
-              const filteredPlaylistsForCount = playlists.filter((playlist) => {
-                if (activeTabId === 'all') return true;
-                if (activeTabId === 'unsorted') return getGroupIdsForPlaylist(playlist.id).length === 0;
-                return false;
-              });
-              const playlistCount = filteredPlaylistsForCount.length;
-              const totalVideos = filteredPlaylistsForCount.reduce((sum, p) => sum + (playlistItemCounts[p.id] || 0), 0);
-
-              return (
-                <div className="px-8 pt-8">
-                  {/* Page Banner - DISABLED PER USER REQUEST */}
-                  {/*
-                  <PageBanner
-                    title={bannerTitle}
-                    description={null}
-                    folderColor={null}
-                    seamlessBottom={true}
-                    videoCount={playlistCount}
-                    countLabel="Playlist"
-                    author={`${totalVideos} Videos`}
-                    continueVideo={activeRecentVideo}
-                    onContinue={() => setCurrentPage('videos')}
-                    pinnedVideos={priorityVideo ? [priorityVideo] : []}
-                    onPinnedClick={(video) => onVideoSelect && onVideoSelect(video.video_url)}
-                  />
-                  */}
-                </div>
-              );
-            })()}
-
-            {/* Sticky Sentinel */}
-            <div ref={stickySentinelRef} className="absolute h-px w-full -mt-px pointer-events-none opacity-0" />
-
-            {/* Sticky Toolbar */}
-            <div
-              className={`sticky top-0 z-40 transition-all duration-500 cubic-bezier(0.4, 0, 0.2, 1) overflow-visible mt-0
-              ${isStuck
-                  ? 'backdrop-blur-xl border-y shadow-2xl mx-0 rounded-none mb-6 pt-2 pb-2 bg-slate-900/70'
-                  : 'backdrop-blur-[2px] border-b border-x border-t border-white/10 shadow-xl mx-8 rounded-b-2xl mb-8 mt-0 pt-1 pb-0 bg-transparent'
-                }
-              `}
-              style={{
-                backgroundColor: isStuck ? undefined : 'transparent' // Fully transparent resting state
-              }}
-            >
-
-
-              <div className={`px-4 flex items-center justify-between transition-all duration-300 relative z-10 ${isStuck ? 'h-[52px]' : 'py-0.5'}`}>
-
-                {/* Left: Tab Bar */}
-                <div className="flex-1 overflow-x-auto no-scrollbar mask-gradient-right min-w-0">
-                  <TabBar />
-                </div>
-
-                {/* Right: Controls */}
-                <div className="flex items-center gap-2 ml-4 shrink-0 pl-3 border-l border-white/10">
-
-                  {/* Global Info Toggle - Shows video titles on all cards */}
-                  <button
-                    onClick={async () => {
-                      const newState = !globalInfoToggle;
-                      setGlobalInfoToggle(newState);
-
-                      // If turning on and we have cards without titles, fetch them
-                      if (newState) {
-                        // Fetch titles for all playlists that don't have preview thumbnails
-                        for (const playlist of playlists) {
-                          const playlistKey = `playlist-${playlist.id}`;
-                          if (!previewThumbnails[playlistKey]?.title) {
-                            try {
-                              const items = await getPlaylistItems(playlist.id);
-                              if (items.length > 0) {
-                                const thumbData = playlistThumbnails[playlist.id];
-                                const activeThumbnailUrl = thumbData?.max || thumbData?.standard;
-                                let targetVideo = items[0];
-                                if (activeThumbnailUrl) {
-                                  const coverMatch = items.find(item => {
-                                    const maxThumb = (item.thumbnail_url?.replace(/name=[a-z]+/, 'name=large') || getThumbnailUrl(item.video_id, 'max'));
-                                    const stdThumb = (item.thumbnail_url?.replace(/name=[a-z]+/, 'name=medium') || getThumbnailUrl(item.video_id, 'standard'));
-                                    return maxThumb === activeThumbnailUrl || stdThumb === activeThumbnailUrl;
-                                  });
-                                  if (coverMatch) targetVideo = coverMatch;
-                                }
-                                setPreviewThumbnails(prev => ({
-                                  ...prev,
-                                  [playlistKey]: {
-                                    ...prev[playlistKey],
-                                    title: targetVideo.title,
-                                    videoId: targetVideo.video_id,
-                                    videoUrl: targetVideo.video_url,
-                                    url: prev[playlistKey]?.url || activeThumbnailUrl
-                                  }
-                                }));
-                              }
-                            } catch (error) {
-                              console.error('Failed to fetch video title for playlist:', playlist.id, error);
-                            }
-                          }
-                        }
-                      }
-                    }}
-                    className={`p-1.5 rounded-md transition-all ${globalInfoToggle
-                      ? 'bg-sky-600 text-white shadow-sm'
-                      : 'bg-slate-800/80 text-slate-400 hover:bg-slate-700 hover:text-white border border-white/10'
-                      }`}
-                    title={globalInfoToggle ? "Hide All Video Titles" : "Show All Video Titles"}
-                  >
-                    <Info size={16} />
-                  </button>
-
-                  {/* Folder Toggle - Icon Only */}
-                  <button
-                    onClick={() => setShowColoredFolders(!showColoredFolders)}
-                    className={`p-1.5 rounded-md transition-all ${showColoredFolders
-                      ? 'bg-sky-600 text-white shadow-sm'
-                      : 'bg-slate-800/80 text-slate-400 hover:bg-slate-700 hover:text-white border border-white/10'
-                      }`}
-                    title={showColoredFolders ? "Hide Folders" : "Show Folders"}
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
-                    </svg>
-                  </button>
-
-                  {/* Add Playlist - Icon Only */}
-                  <button
-                    onClick={() => setShowImportModal(true)}
-                    className="p-1.5 bg-sky-500 hover:bg-sky-400 text-white rounded-md transition-all shadow-lg hover:shadow-sky-500/25 border border-white/10"
-                    title="Add Playlist"
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                    </svg>
-                  </button>
-                </div>
-
-              </div>
-            </div>
-
-            {/* Horizontal Scrolling Grid */}
-            {/* Playlists Grid */}
-            <div className="px-4 pb-8">
+            <div className="px-4 pt-4 pb-8">
               {/* GROUPS view: only group carousels, one per row */}
               {activeTabId === 'groups' &&
                 playlistGroups.map((group) => (

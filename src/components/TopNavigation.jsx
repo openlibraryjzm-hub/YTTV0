@@ -3,17 +3,18 @@ import { useNavigationStore } from '../store/navigationStore';
 import { useLayoutStore } from '../store/layoutStore';
 import { usePlaylistStore } from '../store/playlistStore';
 import { useFolderStore } from '../store/folderStore';
-import { ChevronLeft, Twitter } from 'lucide-react';
+import { ChevronLeft, Twitter, Info } from 'lucide-react';
 import { THEMES } from '../utils/themes';
 import { FOLDER_COLORS } from '../utils/folderColors';
+import TabBar from './TabBar';
 
 const TopNavigation = () => {
-    const { history, goBack, setCurrentPage } = useNavigationStore();
-    const { setViewMode, inspectMode, videoCardStyle, toggleVideoCardStyle } = useLayoutStore();
+    const { currentPage, history, goBack, setCurrentPage } = useNavigationStore();
+    const { setViewMode, inspectMode, videoCardStyle, toggleVideoCardStyle, playlistsPageShowTitles, setPlaylistsPageShowTitles, setShowPlaylistUploader } = useLayoutStore();
     // Consume previewPlaylistId to support "visiting" context vs "playing" context
     const { previewPlaylistId, clearPreview, currentPlaylistId, currentPlaylistTitle, allPlaylists } = usePlaylistStore();
-    // Consume selectedFolder from folderStore as it controls the UI filter state
-    const { selectedFolder } = useFolderStore();
+    // Consume selectedFolder and showColoredFolders from folderStore
+    const { selectedFolder, showColoredFolders, setShowColoredFolders } = useFolderStore();
 
     const [currentThemeId] = useState('blue'); // Defaulting to blue theme for consistency
     const theme = THEMES[currentThemeId];
@@ -27,14 +28,19 @@ const TopNavigation = () => {
     const activePlaylistId = previewPlaylistId || currentPlaylistId;
     const activePlaylist = allPlaylists.find(p => p.id === activePlaylistId);
 
+    // On Playlists page, show "Playlists" and bar controls in header; otherwise use playlist/folder context
+    const isPlaylistsPage = currentPage === 'playlists';
+
     // Determine display content
     // Use currentPlaylistTitle only if we are in the "current" context (no preview)
-    let displayTitle = (activePlaylistId === currentPlaylistId ? currentPlaylistTitle : null)
-        || (activePlaylist ? activePlaylist.name : 'Select a Playlist');
+    let displayTitle = isPlaylistsPage
+        ? 'Playlists'
+        : ((activePlaylistId === currentPlaylistId ? currentPlaylistTitle : null)
+            || (activePlaylist ? activePlaylist.name : 'Select a Playlist'));
 
-    let displayDescription = activePlaylist ? activePlaylist.description : '';
+    let displayDescription = isPlaylistsPage ? '' : (activePlaylist ? activePlaylist.description : '');
     let bannerHex = '#ffffff'; // Default to white if no color found
-    let hasActiveContext = !!activePlaylist || !!activePlaylistId;
+    let hasActiveContext = isPlaylistsPage || !!activePlaylist || !!activePlaylistId;
 
     // Determine color/folder context based on selectedFolder (UI State)
     if (selectedFolder) {
@@ -87,8 +93,70 @@ const TopNavigation = () => {
                 )}
             </div>
 
-            {/* Right side actions */}
-            <div className="flex items-center gap-2 pl-4 mb-1 shrink-0">
+            {/* Right side actions: on Playlists page = TabBar + Info/Folder/Add; else = Twitter/Back/Close */}
+            <div className="flex items-center gap-2 pl-4 mb-1 shrink-0 min-w-0">
+                {isPlaylistsPage ? (
+                    <>
+                        <div className="flex-1 min-w-0 overflow-x-auto no-scrollbar max-w-[280px]">
+                            <TabBar />
+                        </div>
+                        <button
+                            onClick={() => setPlaylistsPageShowTitles()}
+                            className={`p-1.5 rounded-md transition-all shrink-0 ${playlistsPageShowTitles
+                                ? 'bg-sky-600 text-white shadow-sm'
+                                : 'bg-slate-800/80 text-slate-400 hover:bg-slate-700 hover:text-white border border-white/10'
+                            }`}
+                            title={playlistsPageShowTitles ? 'Hide All Video Titles' : 'Show All Video Titles'}
+                        >
+                            <Info size={16} />
+                        </button>
+                        <button
+                            onClick={() => setShowColoredFolders(!showColoredFolders)}
+                            className={`p-1.5 rounded-md transition-all shrink-0 ${showColoredFolders
+                                ? 'bg-sky-600 text-white shadow-sm'
+                                : 'bg-slate-800/80 text-slate-400 hover:bg-slate-700 hover:text-white border border-white/10'
+                            }`}
+                            title={showColoredFolders ? 'Hide Folders' : 'Show Folders'}
+                        >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+                            </svg>
+                        </button>
+                        <button
+                            onClick={() => setShowPlaylistUploader(true)}
+                            className="p-1.5 bg-sky-500 hover:bg-sky-400 text-white rounded-md transition-all shadow-lg hover:shadow-sky-500/25 border border-white/10 shrink-0"
+                            title="Add Playlist"
+                        >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                            </svg>
+                        </button>
+                        {/* Back and Close (same as other pages) */}
+                        {(history.length > 0 || previewPlaylistId) && (
+                            <button
+                                onClick={() => {
+                                    if (previewPlaylistId) clearPreview();
+                                    if (history.length > 0) goBack();
+                                    else if (previewPlaylistId) setCurrentPage('playlists');
+                                }}
+                                className={`flex items-center justify-center w-8 h-8 rounded-full shadow-sm border transition-all hover:scale-105 active:scale-90 ${theme.tabInactive}`}
+                                title={getInspectTitle('Go Back') || 'Go Back'}
+                            >
+                                <ChevronLeft size={18} />
+                            </button>
+                        )}
+                        <button
+                            onClick={() => setViewMode('full')}
+                            className="flex items-center justify-center w-8 h-8 bg-rose-500 text-white rounded-lg hover:bg-rose-600 transition-colors shadow-md border border-rose-400 active:scale-90"
+                            title={getInspectTitle('Close menu (Full screen)') || 'Close menu (Full screen)'}
+                        >
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                    </>
+                ) : (
+                    <>
                 {/* Twitter/X Style Toggle */}
                 <button
                     onClick={toggleVideoCardStyle}
@@ -132,6 +200,8 @@ const TopNavigation = () => {
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" />
                     </svg>
                 </button>
+                    </>
+                )}
             </div>
         </div >
     );

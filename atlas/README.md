@@ -52,7 +52,7 @@ yttv2/
 │   │   ├── YouTubePlayer.jsx     # YouTube iframe player component
 │   │   ├── NativeVideoPlayer.jsx # Native mpv player for local videos
 │   │   ├── LocalVideoPlayer.jsx  # HTML5 fallback player (browser-compatible formats)
-│   │   ├── TopNavigation.jsx     # Contextual Mini Header (Playlist/Folder Info)
+│   │   ├── TopNavigation.jsx     # Contextual Mini Header; on Playlists page shows TabBar + Info/Folder/Add + Back/Close
 │   │   ├── PlaylistsPage.jsx     # Main playlists grid view
 │   │   ├── VideosPage.jsx        # Videos grid view for current playlist
 │   │   ├── TweetPage.jsx         # Full screen tweet detail view
@@ -215,7 +215,7 @@ yttv2/
 | **App Banner** | `app-banner.md` | `advanced-player-controller.md`, `ui-layout.md`, `state-management.md` |
 | **Page Banner** | `page-banner.md` | `ui-pages.md`, `ui-layout.md`, `state-management.md` |
 | **Playlist Cards** | `playlist-cards.md` | `playlist&tab.md`, `ui.md`, `api-bridge.md` |
-| **Group Carousel (Playlists Page)** | `group-carousel.md` | `playlist-cards.md`, `state-management.md`, `ui-pages.md` |
+| **Group Carousel (Playlists Page)** | `group-carousel.md` | `playlist-cards.md`, `state-management.md`, `ui-pages.md`, `page-banner.md` (TopNavigation) |
 | **Group Badge & Playlist Nav (Player Controller)** | `group-badge-player-controller.md` | `group-carousel.md`, `advanced-player-controller.md` |
 | **Subscription Manager** | `subscription-manager.md` | `api-bridge.md`, `database-schema.md` |
 | **Pokedex System** | `pokedex-system.md` | `state-management.md`, `ui-pages.md`, `database-schema.md` |
@@ -316,8 +316,8 @@ yttv2/
 
 #### `group-carousel.md`
 **Covers**: Group carousel system on the Playlists page (successor to legacy tabs)
-**Key Topics**: ALL / UNSORTED / GROUPS views, multiple named carousels, assign/rename/delete carousel, PlaylistGroupColumn, playlistGroupStore, activeGroupId/setActiveGroupId
-**Cross-References**: See `group-badge-player-controller.md`, `playlist-cards.md`, `state-management.md` (playlistGroupStore, tabStore), `ui-pages.md`
+**Key Topics**: ALL / UNSORTED / GROUPS views; Playlists bar in TopNavigation (TabBar, Info/Folder/Add, Back/Close); bounded carousel boxes with top bar (name, rename, delete); horizontal scroll for 1+ items with consistent large card size; playlistGroupStore, layoutStore (playlistsPageShowTitles, showPlaylistUploader), tabStore
+**Cross-References**: See `group-badge-player-controller.md`, `playlist-cards.md`, `state-management.md` (playlistGroupStore, tabStore, layoutStore), `ui-pages.md`, `page-banner.md` (TopNavigation)
 
 #### `group-badge-player-controller.md`
 **Covers**: Group carousel badge on the Player Controller Top Playlist Menu, left/right arrow cycling through all group carousels, and restriction of playlist navigation (up/down) to the selected group
@@ -357,8 +357,8 @@ yttv2/
 
 **Group Carousel (Playlists):**
 - Primary: `group-carousel.md`
-- State: `state-management.md` (playlistGroupStore), `tabStore.js` (ALL/UNSORTED/GROUPS)
-- UI: `PlaylistsPage.jsx`, `GroupPlaylistCarousel.jsx`, `PlaylistGroupColumn.jsx`, `PlaylistCard.jsx` (menu)
+- State: `state-management.md` (playlistGroupStore, tabStore, layoutStore playlistsPageShowTitles/showPlaylistUploader)
+- UI: `TopNavigation.jsx` (Playlists bar when on Playlists page), `PlaylistsPage.jsx`, `GroupPlaylistCarousel.jsx`, `PlaylistGroupColumn.jsx`, `PlaylistCard.jsx` (menu)
 
 **Group Badge & Playlist Nav (Player Controller):**
 - Primary: `group-badge-player-controller.md`
@@ -597,3 +597,6 @@ For detailed information about the application's theme system and recent color c
 - **Playlist Uploader Enhancements**:
   - **Empty Playlists**: Added the ability to create new, empty playlists without needing to provide initial links.
   - **Duplicate Detection**: Implemented checks against existing playlist videos and within incoming batches before adding links or importing Twitter JSON, ensuring only unique items are added.
+- **Playlists Page & Group Carousel Overhaul**:
+  - **Playlists bar in TopNavigation**: When on the Playlists page, the view switcher (ALL / UNSORTED / GROUPS) and actions (Info, Folder, Add) are rendered in the global TopNavigation header instead of a sticky toolbar on the page, freeing vertical space. Back and Close buttons remain in the header. layoutStore now holds `playlistsPageShowTitles` and `showPlaylistUploader`; PlaylistsPage syncs/persists the titles toggle and opens the uploader when the header Add is used.
+  - **GroupPlaylistCarousel redesign**: Each carousel is a bounded box (rounded border, slate background) with a dedicated top bar for name, rename, and delete. All non-empty carousels (1, 2, or 3+ items) use the same horizontal scroll row with a consistent large card size (`min-w-[380px]`, `w-[min(520px,calc(50vw-2rem))]`); scrollbar sits close to the cards; native horizontal scroll only (no custom drag/snap) to avoid jitter and snap-back. Structure inlined (no inner component) so re-renders do not remount the scroll container. Documented in `atlas/group-carousel.md`.

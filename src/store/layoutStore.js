@@ -50,5 +50,15 @@ export const useLayoutStore = create((set) => ({
   toggleVideoCardStyle: () => set((state) => ({
     videoCardStyle: state.videoCardStyle === 'youtube' ? 'twitter' : 'youtube'
   })),
+
+  // Playlists page: show video titles on all cards (synced from localStorage in PlaylistsPage)
+  playlistsPageShowTitles: false,
+  setPlaylistsPageShowTitles: (v) => set((s) => ({
+    playlistsPageShowTitles: v === undefined ? !s.playlistsPageShowTitles : v
+  })),
+
+  // Playlists page: when true, PlaylistsPage opens uploader and clears this
+  showPlaylistUploader: false,
+  setShowPlaylistUploader: (v) => set({ showPlaylistUploader: !!v }),
 }));
 
