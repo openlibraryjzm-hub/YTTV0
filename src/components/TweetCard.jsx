@@ -1,17 +1,12 @@
-import React, { useState, useRef, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import Card from './Card';
 import CardThumbnail from './CardThumbnail';
-import CardActions from './CardActions';
 import BulkTagColorGrid from './BulkTagColorGrid';
-import StarColorPicker from './StarColorPicker';
 import ImageHoverPreview from './ImageHoverPreview';
-import DrumstickRating from './DrumstickRating';
-import { getFolderColorById, FOLDER_COLORS } from '../utils/folderColors';
 import { usePinStore } from '../store/pinStore';
-import { useLayoutStore } from '../store/layoutStore';
 import { useFolderStore } from '../store/folderStore';
-import { Pin, MessageCircle, Repeat2, Heart, Share, MoreHorizontal } from 'lucide-react';
 import { getDrumstickRating, setDrumstickRating } from '../api/playlistApi';
+import VideoCardThreeDotMenu from './VideoCardThreeDotMenu';
 
 const TweetCard = ({
     video,
@@ -38,14 +33,7 @@ const TweetCard = ({
     folderMetadata = {},
     onRenameFolder,
 }) => {
-    const { inspectMode } = useLayoutStore();
     const { quickAssignFolder } = useFolderStore();
-    const [isHovered, setIsHovered] = useState(false);
-    const [isStarHovered, setIsStarHovered] = useState(false);
-    const starHoverTimeoutRef = useRef(null);
-    const starHoverDelayRef = useRef(null);
-
-    const getInspectTitle = (label) => inspectMode ? label : undefined;
 
     const thumbnailUrl = useMemo(() => {
         // Upgrade Twitter card thumbnail to 'medium' for better clarity than 'thumb'
@@ -65,19 +53,12 @@ const TweetCard = ({
         return !!(video.video_url && video.video_url.includes('.mp4'));
     }, [video]);
 
-    const primaryFolder = videoFolders.length > 0 ? getFolderColorById(videoFolders[0]) : null;
-    const quickAssignColor = getFolderColorById(quickAssignFolder);
-
-    // Pin logic (copied from VideoCard for consistency)
     const isPinnedVideo = usePinStore(state =>
         state.pinnedVideos.some(v => v.id === video.id) && !state.priorityPinIds.includes(video.id)
     );
     const isPriority = usePinStore(state => state.priorityPinIds.includes(video.id));
     const isFollower = usePinStore(state => state.followerPinIds.includes(video.id));
     const { togglePin, togglePriorityPin, removePin } = usePinStore();
-    const pinLongPressTimerRef = useRef(null);
-    const lastClickTimeRef = useRef(0);
-    const [activePin, setActivePin] = useState(null);
 
     // Drumstick rating state
     const [drumstickRating, setDrumstickRatingState] = useState(video.drumstick_rating || 0);
@@ -103,59 +84,15 @@ const TweetCard = ({
         }
     };
 
-    const handlePinMouseDown = (e) => {
-        e.stopPropagation();
-        setActivePin('pressing');
-        pinLongPressTimerRef.current = setTimeout(() => {
-            togglePriorityPin(video);
-            setActivePin('long-pressed');
-            pinLongPressTimerRef.current = null;
-        }, 600);
-    };
-
-    const handlePinMouseUp = (e) => {
-        e.stopPropagation();
-        setActivePin(null);
-        if (pinLongPressTimerRef.current) {
-            clearTimeout(pinLongPressTimerRef.current);
-            pinLongPressTimerRef.current = null;
-            const now = Date.now();
-            const timeSinceLastClick = now - lastClickTimeRef.current;
-            lastClickTimeRef.current = now;
-            if (timeSinceLastClick < 300 && (isPinnedVideo || isPriority)) {
-                removePin(video.id);
-                if (onPinClick) onPinClick(video);
-            } else {
-                togglePin(video);
-                if (onPinClick) onPinClick(video);
-            }
-        }
-    };
-
-    const handlePinMouseLeave = (e) => {
-        if (pinLongPressTimerRef.current) {
-            clearTimeout(pinLongPressTimerRef.current);
-            pinLongPressTimerRef.current = null;
-            setActivePin(null);
-        }
-    };
+    const splatterPath = "M47.5,12.2c0,0-2.3,16.2-7.8,19.3c-5.5,3.1-17.7-6.2-17.7-6.2s3.8,11.2-1.7,16.5c-5.5,5.3-20.2-2.1-20.2-2.1 s12.5,9.6,9.2,16.5c-3.3,6.9-10.7,5.5-10.7,5.5s12.9,5.7,12.5,14.7c-0.4,9-10.6,15.6-10.6,15.6s15.3-1.6,20.2,4.2 c4.9,5.8-0.9,13.8-0.9,13.8s9.4-9,16.9-5.3c7.5,3.7,5.9,14.6,5.9,14.6s5.9-11.8,13.6-10.6c7.7,1.2,13.6,9.5,13.6,9.5 s-1.8-13.6,5.3-16.7c7.1-3.1,16.5,2.7,16.5,2.7s-8.1-13.6-1.5-18.9c6.6-5.3,18.8,0.7,18.8,0.7s-13.2-8.1-11.1-16.7 C99.2,40.4,100,28.8,100,28.8s-12,8.8-17.7,3.1c-5.7-5.7-1.3-18.8-1.3-18.8s-9,11.6-16.5,9.4c-7.5-2.2-11.1-12.2-11.1-12.2 S50.4,14.5,47.5,12.2z";
 
     const menuOptions = [
-        { label: isStickied ? 'Unsticky' : 'Sticky', action: 'toggleSticky', icon: <Pin size={14} className="text-amber-500" /> },
-        { label: 'Delete', danger: true, action: 'delete', icon: <Share size={14} /> },
-        { label: 'Move', action: 'moveToPlaylist', icon: <Share size={14} /> },
-        { label: 'Cover', action: 'setPlaylistCover', icon: <Share size={14} /> },
-        { label: 'Assign', submenu: 'folders', action: 'assignFolder', icon: <Share size={14} /> },
+        { label: isStickied ? 'Unsticky Video' : 'Sticky Video', action: 'toggleSticky', icon: <svg className="w-4 h-4 text-amber-500" viewBox="0 0 100 100" fill="currentColor"><path d={splatterPath} /></svg> },
+        { label: 'Delete', danger: true, action: 'delete', icon: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg> },
+        { label: 'Move to Playlist', action: 'moveToPlaylist', icon: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg> },
+        { label: 'Set as Playlist Cover', action: 'setPlaylistCover', icon: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg> },
+        { label: 'Copy to Playlist', action: 'copyToPlaylist', icon: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg> },
     ];
-
-    const submenuOptions = {
-        folders: FOLDER_COLORS.map(color => ({
-            label: color.name,
-            icon: <div className="w-3 h-3 rounded-full" style={{ backgroundColor: color.hex }} />,
-            action: 'assignFolder',
-            folderColor: color.id
-        }))
-    };
 
     // Parse author
     const authorMatch = video.author?.match(/^(.+?)\s*\(@(.+?)\)$/);
@@ -194,21 +131,11 @@ const TweetCard = ({
                     </div>
 
                     <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-1 group/author cursor-pointer">
-                                <span className="font-bold truncate hover:underline text-sm" style={{ color: '#052F4A' }}>{displayName}</span>
-                                <span className="text-slate-500 text-xs truncate">{handle}</span>
-                                <span className="text-slate-400 text-xs">·</span>
-                                <span className="text-slate-400 text-xs hover:underline">2026</span>
-                            </div>
-                            <div className="opacity-0 group-hover:opacity-100 transition-opacity">
-                                <CardActions
-                                    menuOptions={menuOptions}
-                                    onMenuOptionClick={onMenuOptionClick}
-                                    submenuOptions={submenuOptions}
-                                    className="p-1 hover:bg-sky-50 dark:hover:bg-slate-800 rounded-full"
-                                />
-                            </div>
+                        <div className="flex items-center gap-1 group/author cursor-pointer">
+                            <span className="font-bold truncate hover:underline text-sm" style={{ color: '#052F4A' }}>{displayName}</span>
+                            <span className="text-slate-500 text-xs truncate">{handle}</span>
+                            <span className="text-slate-400 text-xs">·</span>
+                            <span className="text-slate-400 text-xs hover:underline">2026</span>
                         </div>
 
                         <p className="mt-0.5 text-sm leading-normal line-clamp-3" style={{ color: '#052F4A' }}>
@@ -235,67 +162,30 @@ const TweetCard = ({
                             />
                         </ImageHoverPreview>
 
-                        {/* Floating Badges (Pin & Star) - Twitter Specific Style */}
-                        <div className="absolute top-2 right-2 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                            <button
-                                onMouseDown={handlePinMouseDown}
-                                onMouseUp={handlePinMouseUp}
-                                onMouseLeave={handlePinMouseLeave}
-                                className={`p-2 rounded-full backdrop-blur-md shadow-lg transition-all active:scale-95 ${isPriority ? 'bg-amber-500 text-white' :
-                                    isPinnedVideo ? 'bg-sky-500 text-white' :
-                                        'bg-black/40 text-white hover:bg-black/60'
-                                    }`}
-                            >
-                                <Pin size={16} fill={isPriority || isPinnedVideo ? 'currentColor' : 'none'} />
-                            </button>
-
-                            <div
-                                className="relative"
-                                onMouseEnter={() => {
-                                    if (starHoverDelayRef.current) clearTimeout(starHoverDelayRef.current);
-                                    starHoverDelayRef.current = setTimeout(() => setIsStarHovered(true), 800);
-                                }}
-                                onMouseLeave={() => {
-                                    if (starHoverDelayRef.current) clearTimeout(starHoverDelayRef.current);
-                                    setTimeout(() => setIsStarHovered(false), 200);
-                                }}
-                            >
-                                <button
-                                    onClick={(e) => { e.stopPropagation(); onStarClick?.(e); }}
-                                    className="p-2 rounded-full backdrop-blur-md shadow-lg bg-black/40 text-white hover:bg-black/60 transition-all"
-                                    style={{ color: videoFolders.length > 0 ? (primaryFolder?.hex || '#fbbf24') : 'white' }}
-                                >
-                                    <Heart size={16} fill={videoFolders.length > 0 ? 'currentColor' : 'none'} />
-                                </button>
-
-                                {isStarHovered && (
-                                    <div className="absolute right-full top-0 mr-2 pointer-events-auto">
-                                        <StarColorPicker
-                                            currentFolders={videoFolders}
-                                            quickAssignFolder={quickAssignFolder}
-                                            folderMetadata={folderMetadata}
-                                            onColorLeftClick={(folderColor) => {
-                                                onStarColorLeftClick?.(video, folderColor);
-                                                setIsStarHovered(false);
-                                            }}
-                                            onColorRightClick={(folderColor) => {
-                                                onStarColorRightClick?.(folderColor);
-                                                setIsStarHovered(false);
-                                            }}
-                                        />
-                                    </div>
-                                )}
-                            </div>
-
-                            {/* Drumstick Rating */}
-                            <div className="bg-black/40 rounded-full px-2 py-1 backdrop-blur-md shadow-lg flex items-center justify-center">
-                                <DrumstickRating
-                                    rating={drumstickRating}
-                                    onRate={handleDrumstickRate}
-                                    disabled={false}
+                        {/* 3-dot menu (same as VideoCard) */}
+                        {!bulkTagMode && (
+                            <div className="absolute bottom-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                                <VideoCardThreeDotMenu
+                                    video={video}
+                                    playlistId={playlistId}
+                                    isPinned={isPinnedVideo}
+                                    isPriority={isPriority}
+                                    isFollower={isFollower}
+                                    onTogglePin={(v) => { togglePin(v); if (onPinClick) onPinClick(v); }}
+                                    onTogglePriorityPin={togglePriorityPin}
+                                    onRemovePin={(id) => { removePin(id); if (onPinClick) onPinClick(video); }}
+                                    videoFolders={videoFolders}
+                                    folderMetadata={folderMetadata}
+                                    onStarColorLeftClick={onStarColorLeftClick}
+                                    onRenameFolder={onRenameFolder}
+                                    drumstickRating={drumstickRating}
+                                    onDrumstickRate={handleDrumstickRate}
+                                    menuOptions={menuOptions}
+                                    onMenuOptionClick={onMenuOptionClick}
+                                    triggerClassName="bg-black/50 hover:bg-black/70 backdrop-blur-md shadow-lg"
                                 />
                             </div>
-                        </div>
+                        )}
 
                         {/* Watched Badge */}
                         {!isCurrentlyPlaying && isWatched && (

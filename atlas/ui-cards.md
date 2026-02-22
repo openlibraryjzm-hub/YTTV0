@@ -5,6 +5,7 @@ This document covers the reusable Card component system used throughout the appl
 **Related Documentation:**
 - **Pages**: See ui-pages.md for page components that use cards
 - **Layout**: See ui-layout.md for layout system
+- **Video/Tweet card 3-dot menu**: See video-tweet-card-three-dot-menu.md for the all-in-one menu (pins, folder grid, rating, sticky, actions) used by VideoCard and TweetCard
 
 ---
 

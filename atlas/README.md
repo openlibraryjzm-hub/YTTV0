@@ -68,16 +68,17 @@ yttv2/
 │   │   ├── CardContent.jsx       # Card content (title, subtitle, metadata)
 │   │   ├── CardActions.jsx       # Quick actions management
 │   │   ├── CardMenu.jsx          # Legacy 3-dot menu
-│   │   ├── ModernVideoMenu.jsx   # New floating glassmorphism menu system
+│   │   ├── ModernVideoMenu.jsx   # Floating glassmorphism menu (legacy)
+│   │   ├── VideoCardThreeDotMenu.jsx # All-in-one 3-dot menu (VideoCard & TweetCard)
 │   │   ├── ImageHoverPreview.jsx # High-res image expansion (used for Tweets)
-│   │   ├── VideoCard.jsx         # Video card implementation (uses ModernVideoMenu)
+│   │   ├── VideoCard.jsx         # Video card (uses VideoCardThreeDotMenu; bulk strip = BulkTagColorGrid)
 │   │   ├── OrbCard.jsx           # Orb preset card component
 │   │   ├── BannerPresetCard.jsx  # App banner preset card component
-│   │   ├── TweetCard.jsx         # Tweet card component
+│   │   ├── TweetCard.jsx         # Tweet card (uses VideoCardThreeDotMenu; bulk strip = BulkTagColorGrid)
 │   │   ├── FolderCard.jsx        # Colored folder card component
 │   │   ├── FolderSelector.jsx    # 16-color folder selector
-│   │   ├── BulkTagColorGrid.jsx  # Bulk tagging color grid
-│   │   ├── StarColorPicker.jsx   # Star color picker menu (hover menu for folder assignment)
+│   │   ├── BulkTagColorGrid.jsx  # 16-color folder grid (bulk tag strip + 3-dot menu Folder section)
+│   │   ├── StarColorPicker.jsx   # Star color picker (legacy; folder assignment now via BulkTagColorGrid in menu)
 │   │   ├── TabBar.jsx            # Tab navigation component
 │   │   ├── AddPlaylistToTabModal.jsx  # Modal for adding playlists to tabs
 │   │   ├── TabPresetsDropdown.jsx     # Tab preset selector
@@ -168,6 +169,7 @@ yttv2/
 │   ├── database-schema.md
 │   ├── api-bridge.md
 │   ├── navigation-routing.md
+│   ├── video-tweet-card-three-dot-menu.md  # All-in-one 3-dot menu (VideoCard & TweetCard)
 │   ├── popout-browser.md         # Documentation for standalone webview windows (e.g. Twitter)
 │   └── session-updates.md        # Development session logs
 │
@@ -204,7 +206,8 @@ yttv2/
 | **UI Components** | `ui.md` | `state-management.md`, `navigation-routing.md` |
 | **Watch History** | `history.md` | `database-schema.md`, `api-bridge.md`, `state-management.md` |
 | **Video Player** | `videoplayer.md` | `database-schema.md`, `api-bridge.md`, `state-management.md` |
-| **Drumstick Rating** | `drumstick-rating-system.md` | `database-schema.md`, `api-bridge.md`, `ui-cards.md` |
+| **Drumstick Rating** | `drumstick-rating-system.md` | `database-schema.md`, `api-bridge.md`, `ui-cards.md`, `video-tweet-card-three-dot-menu.md` |
+| **Video/Tweet Card 3-Dot Menu** | `video-tweet-card-three-dot-menu.md` | `ui-cards.md`, `drumstick-rating-system.md`, `playlist&tab.md` |
 | **Local Videos** | `local-videos.md` | `videoplayer.md`, `database-schema.md`, `api-bridge.md`, `importexport.md` |
 | **Audio Visualizer** | `audio-visualizer.md` | `advanced-player-controller.md`, `api-bridge.md` |
 | **Mission Hub** | `mission-hub.md` | `player-controller.md`, `state-management.md` |
@@ -269,7 +272,12 @@ yttv2/
 #### `drumstick-rating-system.md`
 **Covers**: 5-drumstick rating system, persistence, UI integration
 **Key Topics**: Database schema updates, optimistic UI, card integration (VideoCard/TweetCard), event propagation protection
-**Cross-References**: See `database-schema.md` for `playlist_items` table, `api-bridge.md` for rating commands, `ui-cards.md` for card components
+**Cross-References**: See `database-schema.md` for `playlist_items` table, `api-bridge.md` for rating commands, `ui-cards.md` for card components, `video-tweet-card-three-dot-menu.md` for menu integration
+
+#### `video-tweet-card-three-dot-menu.md`
+**Covers**: All-in-one 3-dot menu for VideoCard and TweetCard on the Videos page
+**Key Topics**: Horizontal menu layout (actions, pins/rating/sticky, folder grid), BulkTagColorGrid in menu and in bulk-tag strip, positioning above row, no hover clutter
+**Cross-References**: See `ui-cards.md` for card components, `drumstick-rating-system.md` for rating, `playlist&tab.md` for folder assignment
 
 #### `videoplayer.md`
 **Covers**: YouTube iframe player, progress tracking, dual player system
