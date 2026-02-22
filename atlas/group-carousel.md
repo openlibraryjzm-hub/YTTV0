@@ -2,6 +2,8 @@
 
 The group carousel system lets users organize playlists into named, horizontal carousel rows on the Playlists page. It replaces the legacy tab system as the primary way to curate and surface playlists. Carousels are stored in local state (Zustand + localStorage); no database tables are used.
 
+**Related:** The **group badge** on the Player Controller’s Top Playlist Menu and **restriction of playlist navigation** (up/down) to the current group are documented in **`group-badge-player-controller.md`**.
+
 ---
 
 ## 1. User-facing behavior
@@ -47,16 +49,17 @@ The Playlists page has three view modes (no tabs or presets):
 ### 3.1 playlistGroupStore
 
 - **Storage:** Zustand with `persist` middleware; key `playlist-group-storage` in localStorage.
-- **State:** `groups: Array<{ id: string, name: string, playlistIds: number[] }>`.
+- **State:** `groups: Array<{ id: string, name: string, playlistIds: number[] }>`, `activeGroupId: string | null`.
 - **Actions:**
   - `addGroup(name)` – appends a new group, returns its `id`.
-  - `removeGroup(groupId)` – removes the group (playlists are unassigned, not deleted).
+  - `removeGroup(groupId)` – removes the group (playlists are unassigned, not deleted); clears `activeGroupId` if it was this group.
   - `addPlaylistToGroup(groupId, playlistId)` – adds a playlist to a group (idempotent).
   - `removePlaylistFromGroup(groupId, playlistId)` – removes a playlist from a group.
   - `isPlaylistInGroup(playlistId, groupId)` – returns whether the playlist is in that group.
   - `getGroupIdsForPlaylist(playlistId)` – returns array of group IDs that contain the playlist.
   - `renameGroup(groupId, name)` – renames the group.
-- **Migration:** Legacy single-list format (`groupPlaylistIds`) is migrated to one group named “Featured playlists”.
+  - `setActiveGroupId(id)` – sets or clears the "entered from" group (used by Player Controller badge and playlist navigation range). Set when user opens a playlist from a carousel card; cleared when opening from the main grid.
+- **Migration:** Legacy single-list format (`groupPlaylistIds`) is migrated to one group named "Featured playlists". Version 2 adds `activeGroupId` (default `null`).
 
 ### 3.2 tabStore (view mode)
 
@@ -91,6 +94,7 @@ The Playlists page has three view modes (no tabs or presets):
 
 ## 5. Cross-references
 
+- **Group badge and playlist navigation (Player Controller):** `group-badge-player-controller.md` (single badge, “entered from” group, nav restricted to group).
 - **Playlist cards:** `playlist-cards.md` (card UI and folder integration).
 - **Playlists page layout:** `ui-pages.md`, `ui.md`.
 - **State:** `state-management.md` (playlistGroupStore, tabStore).

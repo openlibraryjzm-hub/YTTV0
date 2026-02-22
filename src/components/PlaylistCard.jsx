@@ -46,6 +46,8 @@ const PlaylistCard = ({
   handleDeletePlaylist,
   loadPlaylists,
   onAssignToGroupClick,
+  groupIdFromCarousel,
+  onEnterFromGroup,
 }) => {
   const { currentPlaylistId, setPlaylistItems, setPreviewPlaylist } =
     usePlaylistStore();
@@ -169,6 +171,10 @@ const PlaylistCard = ({
 
   const handleCardClick = async (e) => {
     if (e.target.closest('[data-card-menu="true"]')) return;
+    if (typeof onEnterFromGroup === "function") {
+      if (groupIdFromCarousel) onEnterFromGroup(groupIdFromCarousel);
+      else onEnterFromGroup(null);
+    }
     try {
       const items = await getPlaylistItems(playlist.id);
       setPlaylistItems(items, playlist.id, null, playlist.name);

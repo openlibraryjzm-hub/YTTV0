@@ -408,6 +408,7 @@ Users see a bottom toolbar in the video menu rectangle with distinct, grouped ac
 The Top Playlist Menu is the left rectangle in the PlayerController. It has been significantly refined for compactness and accessibility:
 
 *   **Display**: Shows the current playlist's title, centered within the menu. Below the title, badges appear to indicate context:
+    *   **Group Carousel**: (If playlist is in a group) A single violet badge showing the current group carousel name. Determines the **playlist navigation range** (up/down only cycle through playlists in that group). See **`group-badge-player-controller.md`** for how "entered from" group is set and how nav is restricted.
     *   **Active Preset**: (If not "All") An indigo badge showing the current preset name.
     *   **Active Tab**: (If not "All") A sky-blue badge showing the current tab name.
     *   **Folder**: (If video is in a folder) A colored badge displaying the folder name.
@@ -424,7 +425,7 @@ The Top Playlist Menu is the left rectangle in the PlayerController. It has been
 *   **Spacing**: The gap between this menu, the central orb, and the video menu (`orbMenuGap`) is 20px.
 
 Users see:
-- **Main Display**: The playlist title text, centered and framed. Below it, colored badges appear if the video belongs to a folder.
+- **Main Display**: The playlist title text, centered and framed. Below it, badges appear: group carousel (violet, when applicable), preset, tab, and folder (colored) badges.
 - **Bottom Bar**: Metadata on the left, Navigation Controls on the right.
 - **Priority Pin**: If active, overlaid at top-right.
 - **Actions**: Bottom bar with navigation and tool buttons.
@@ -451,12 +452,15 @@ Users see:
 
 **State Management:**
 - `src/store/playlistStore.js`:
-  - `navigationItems`: Flat array of playlists and folders for navigation
+  - `navigationItems`: Flat array of playlists and folders for navigation (when group badge is active, restricted to that group's playlists; see `group-badge-player-controller.md`)
   - `currentNavigationIndex`: Current position in navigationItems
   - `currentPlaylistId`: ID of currently loaded playlist
   - `currentFolder`: `{ playlist_id, folder_color }` or null if viewing playlist
   - `allPlaylists`: Array of all playlists
   - `nextPlaylist()`, `previousPlaylist()`: Navigation functions
+- `src/store/playlistGroupStore.js`:
+  - `activeGroupId`: "Entered from" group (set when opening a playlist from a carousel on GROUPS tab); used for single group badge and to restrict navigation list.
+  - `setActiveGroupId(id)`, `groups`, `getGroupIdsForPlaylist(playlistId)`: See `group-badge-player-controller.md`.
 - `src/store/tabStore.js`:
   - `tabs`: Array of tab objects
   - `activeTabId`: Currently active tab ID

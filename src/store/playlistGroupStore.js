@@ -13,6 +13,10 @@ export const usePlaylistGroupStore = create(
             // Array of { id, name, playlistIds }
             groups: [],
 
+            /** Last group carousel the user "entered from" on GROUPS tab (used for single badge + future nav range) */
+            activeGroupId: null,
+            setActiveGroupId: (id) => set({ activeGroupId: id == null ? null : id }),
+
             addGroup: (name) => {
                 const id = generateId();
                 set({
@@ -22,9 +26,10 @@ export const usePlaylistGroupStore = create(
             },
 
             removeGroup: (groupId) => {
-                set({
-                    groups: get().groups.filter((g) => g.id !== groupId),
-                });
+                set((state) => ({
+                    groups: state.groups.filter((g) => g.id !== groupId),
+                    activeGroupId: state.activeGroupId === groupId ? null : state.activeGroupId,
+                }));
             },
 
             addPlaylistToGroup: (groupId, playlistId) => {
@@ -66,15 +71,17 @@ export const usePlaylistGroupStore = create(
         }),
         {
             name: 'playlist-group-storage',
-            version: 1,
+            version: 2,
             migrate: (state) => {
-                if (!state) return { groups: [] };
-                if (state.groups && Array.isArray(state.groups)) return state;
-                const legacy = state.groupPlaylistIds;
-                if (Array.isArray(legacy) && legacy.length > 0) {
-                    return { groups: [{ id: generateId(), name: 'Featured playlists', playlistIds: legacy }] };
+                if (!state) return { groups: [], activeGroupId: null };
+                const next = { groups: state.groups || [], activeGroupId: state.activeGroupId ?? null };
+                if (!Array.isArray(next.groups)) {
+                    const legacy = state.groupPlaylistIds;
+                    next.groups = Array.isArray(legacy) && legacy.length > 0
+                        ? [{ id: generateId(), name: 'Featured playlists', playlistIds: legacy }]
+                        : [];
                 }
-                return { groups: [] };
+                return next;
             },
         }
     )

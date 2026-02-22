@@ -59,6 +59,7 @@ import { usePinStore } from '../store/pinStore';
 import { useLayoutStore } from '../store/layoutStore';
 import { useFolderStore } from '../store/folderStore';
 import { useTabStore } from '../store/tabStore';
+import { usePlaylistGroupStore } from '../store/playlistGroupStore';
 import { useConfigStore } from '../store/configStore';
 import { useMissionStore } from '../store/missionStore';
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow';
@@ -132,6 +133,7 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
   const { showColoredFolders } = useFolderStore();
   const { tabs, activeTabId, setActiveTab } = useTabStore();
   const { presets, activePresetId, setActivePreset } = useTabPresetStore();
+  const { groups, getGroupIdsForPlaylist, activeGroupId } = usePlaylistGroupStore();
 
   // Ensure tabs and presets are arrays
   const safeTabs = Array.isArray(tabs) ? tabs : [];
@@ -176,6 +178,18 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
               tabName: activeTab.name,
               filteredCount: playlists.length
             });
+          }
+        }
+
+        // Restrict to current group carousel when activeGroupId is set (playlist nav = group range)
+        if (activeGroupId && Array.isArray(playlists)) {
+          const group = groups.find(g => g.id === activeGroupId);
+          if (group && group.playlistIds && group.playlistIds.length > 0) {
+            const idSet = new Set(group.playlistIds.map(Number));
+            playlists = playlists.filter(p => idSet.has(Number(p.id)));
+            const orderMap = new Map(group.playlistIds.map((id, i) => [Number(id), i]));
+            playlists = [...playlists].sort((a, b) => (orderMap.get(Number(a.id)) ?? 999) - (orderMap.get(Number(b.id)) ?? 999));
+            console.log('[DEBUG_EXT] Filtered by Group:', { groupName: group.name, filteredCount: playlists.length });
           }
         }
 
@@ -236,7 +250,7 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
       }
     };
     buildNav();
-  }, [allPlaylists, buildNavigationItems, setNavigationItems, showColoredFolders, activeTabId, tabs]);
+  }, [allPlaylists, buildNavigationItems, setNavigationItems, showColoredFolders, activeTabId, tabs, activeGroupId, groups]);
 
 
   // --- UI State ---
@@ -2013,7 +2027,13 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
     playlistTitle = currentPlaylist ? currentPlaylist.name : 'No Playlist';
   }
 
-
+  // Group carousel badge: single group (entered-from carousel, or first group containing playlist)
+  const effectivePlaylistIdForBadge = (hasSecondPlayerVideo && secondPlayerPlaylistId) ? secondPlayerPlaylistId : currentPlaylistId;
+  const groupIdsForCurrentPlaylist = effectivePlaylistIdForBadge ? getGroupIdsForPlaylist(effectivePlaylistIdForBadge) : [];
+  const allGroupsForPlaylist = groupIdsForCurrentPlaylist.map(id => groups.find(g => g.id === id)).filter(Boolean);
+  const singleGroupForBadge = (activeGroupId && allGroupsForPlaylist.some(g => g.id === activeGroupId))
+    ? groups.find(g => g.id === activeGroupId)
+    : (allGroupsForPlaylist[0] || null);
 
   return (
     <div className="w-full pointer-events-none">
@@ -2106,8 +2126,24 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
                   </h1>
 
                   {/* Badges Container */}
-                  {(currentVideoFolders.length > 0 || activeTabId !== 'all' || activePresetId !== 'all') && (
+                  {(currentVideoFolders.length > 0 || activeTabId !== 'all' || activePresetId !== 'all' || singleGroupForBadge) && (
                     <div className="flex flex-wrap justify-center gap-1 mb-0.5 animate-in fade-in zoom-in duration-300">
+
+                      {/* Group Carousel Badge - single group (entered-from carousel or first containing playlist) */}
+                      {singleGroupForBadge && (
+                        <span
+                          key={singleGroupForBadge.id}
+                          className="text-[9px] font-black uppercase tracking-[0.15em] px-2 py-0.5 rounded-full border shadow-sm backdrop-blur-sm"
+                          style={{
+                            color: '#6d28d9', // Violet 700
+                            borderColor: '#c4b5fd', // Violet 300
+                            backgroundColor: '#f5f3ffcc' // Violet 50 + alpha
+                          }}
+                          title={`Carousel: ${singleGroupForBadge.name}`}
+                        >
+                          {singleGroupForBadge.name}
+                        </span>
+                      )}
 
                       {/* Active Preset Badge */}
                       {activePresetId !== 'all' && (() => {

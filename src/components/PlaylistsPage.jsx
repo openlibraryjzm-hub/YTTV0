@@ -141,7 +141,7 @@ const PlaylistsPage = ({ onVideoSelect }) => {
   const { showColoredFolders, setShowColoredFolders } = useFolderStore();
   const [imageLoadErrors, setImageLoadErrors] = useState(new Set());
   const { activeTabId } = useTabStore();
-  const { groups: playlistGroups, getGroupIdsForPlaylist, addGroup, renameGroup, removeGroup } = usePlaylistGroupStore();
+  const { groups: playlistGroups, getGroupIdsForPlaylist, addGroup, renameGroup, removeGroup, setActiveGroupId } = usePlaylistGroupStore();
   const { setViewMode, viewMode, inspectMode } = useLayoutStore();
   const { customPageBannerImage, bannerHeight, bannerBgSize } = useConfigStore();
   const { setCurrentPage } = useNavigationStore();
@@ -932,6 +932,8 @@ const PlaylistsPage = ({ onVideoSelect }) => {
                               handleDeletePlaylist={handleDeletePlaylist}
                               loadPlaylists={loadPlaylists}
                               onAssignToGroupClick={() => setAssignToGroupPlaylistId(playlist.id)}
+                              groupIdFromCarousel={group.id}
+                              onEnterFromGroup={setActiveGroupId}
                             />
                           );
                         })}
@@ -1538,6 +1540,7 @@ const PlaylistsPage = ({ onVideoSelect }) => {
                           handleDeletePlaylist={handleDeletePlaylist}
                           loadPlaylists={loadPlaylists}
                           onAssignToGroupClick={() => setAssignToGroupPlaylistId(playlist.id)}
+                          onEnterFromGroup={() => setActiveGroupId(null)}
                         />
                       );
                     } else {
