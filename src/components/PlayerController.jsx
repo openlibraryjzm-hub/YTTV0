@@ -133,7 +133,7 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
   const { showColoredFolders } = useFolderStore();
   const { tabs, activeTabId, setActiveTab } = useTabStore();
   const { presets, activePresetId, setActivePreset } = useTabPresetStore();
-  const { groups, getGroupIdsForPlaylist, activeGroupId } = usePlaylistGroupStore();
+  const { groups, getGroupIdsForPlaylist, activeGroupId, setActiveGroupId } = usePlaylistGroupStore();
 
   // Ensure tabs and presets are arrays
   const safeTabs = Array.isArray(tabs) ? tabs : [];
@@ -2027,14 +2027,27 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
     playlistTitle = currentPlaylist ? currentPlaylist.name : 'No Playlist';
   }
 
-  // Group carousel badge: single group (entered-from carousel, or first group containing playlist)
+  // Group carousel badge: which group to show (activeGroupId if set, else first group containing current playlist)
   const effectivePlaylistIdForBadge = (hasSecondPlayerVideo && secondPlayerPlaylistId) ? secondPlayerPlaylistId : currentPlaylistId;
   const groupIdsForCurrentPlaylist = effectivePlaylistIdForBadge ? getGroupIdsForPlaylist(effectivePlaylistIdForBadge) : [];
   const allGroupsForPlaylist = groupIdsForCurrentPlaylist.map(id => groups.find(g => g.id === id)).filter(Boolean);
-  const singleGroupForBadge = (activeGroupId && allGroupsForPlaylist.some(g => g.id === activeGroupId))
+  const singleGroupForBadge = (activeGroupId && groups.some(g => g.id === activeGroupId))
     ? groups.find(g => g.id === activeGroupId)
-    : (allGroupsForPlaylist[0] || null);
+    : (allGroupsForPlaylist[0] || groups[0] || null);
 
+  // Cycle group badge: cycle through ALL group carousels (not just groups containing current playlist)
+  const cycleGroupBadge = (direction) => {
+    if (groups.length < 2) return;
+    const currentIdx = singleGroupForBadge
+      ? groups.findIndex(g => g.id === singleGroupForBadge.id)
+      : 0;
+    const idx = currentIdx >= 0 ? currentIdx : 0;
+    const nextIdx = direction === 'prev'
+      ? (idx - 1 + groups.length) % groups.length
+      : (idx + 1) % groups.length;
+    setActiveGroupId(groups[nextIdx].id);
+  };
+  const canCycleGroups = groups.length >= 2;
   return (
     <div className="w-full pointer-events-none">
       <div className="max-w-5xl mx-auto py-4 px-6 pointer-events-auto">
@@ -2099,7 +2112,7 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
               </div>
               <div className={`border-4 shadow-2xl flex flex-col relative overflow-visible transition-all duration-300 group/playlist ${isEditMode ? 'ring-4 ring-sky-400/30' : theme.orbBorder + ' ' + theme.menuBg + ' backdrop-blur-2xl rounded-2xl overflow-hidden'}`} style={{ width: `${menuWidth}px`, height: `${menuHeight}px` }}>
                 <div
-                  className="flex-grow flex flex-col items-center justify-center px-4 relative z-10 overflow-hidden w-full h-full"
+                  className="flex-grow flex flex-col items-center justify-center px-4 relative z-10 overflow-x-visible overflow-y-hidden w-full h-full min-h-0"
                   onMouseDown={(e) => {
                     if (e.button === 2) { // Right mouse button
                       e.preventDefault();
@@ -2127,21 +2140,36 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
 
                   {/* Badges Container */}
                   {(currentVideoFolders.length > 0 || activeTabId !== 'all' || activePresetId !== 'all' || singleGroupForBadge) && (
-                    <div className="flex flex-wrap justify-center gap-1 mb-0.5 animate-in fade-in zoom-in duration-300">
+                    <div className="flex flex-wrap justify-center gap-1 mb-0.5 animate-in fade-in zoom-in duration-300 overflow-visible min-w-0">
 
-                      {/* Group Carousel Badge - single group (entered-from carousel or first containing playlist) */}
+                      {/* Group Carousel Badge - single group; always show left/right arrows (disabled when only one group) */}
                       {singleGroupForBadge && (
-                        <span
-                          key={singleGroupForBadge.id}
-                          className="text-[9px] font-black uppercase tracking-[0.15em] px-2 py-0.5 rounded-full border shadow-sm backdrop-blur-sm"
-                          style={{
-                            color: '#6d28d9', // Violet 700
-                            borderColor: '#c4b5fd', // Violet 300
-                            backgroundColor: '#f5f3ffcc' // Violet 50 + alpha
-                          }}
-                          title={`Carousel: ${singleGroupForBadge.name}`}
-                        >
-                          {singleGroupForBadge.name}
+                        <span key={singleGroupForBadge.id} className="inline-flex items-center shrink-0 rounded-full border shadow-sm backdrop-blur-sm" style={{ borderColor: '#c4b5fd', backgroundColor: '#f5f3ffcc' }}>
+                          <button
+                            type="button"
+                            onClick={(e) => { e.preventDefault(); e.stopPropagation(); cycleGroupBadge('prev'); }}
+                            disabled={!canCycleGroups}
+                            className="p-1 rounded-l-full text-[#6d28d9] hover:bg-violet-200/60 active:scale-95 disabled:opacity-40 disabled:cursor-default disabled:hover:bg-transparent"
+                            title={canCycleGroups ? (getInspectTitle('Previous group carousel') || 'Previous group carousel') : 'Only one group carousel'}
+                          >
+                            <ChevronLeft size={16} strokeWidth={3} />
+                          </button>
+                          <span
+                            className="text-[9px] font-black uppercase tracking-[0.15em] px-2 py-0.5"
+                            style={{ color: '#6d28d9' }}
+                            title={`Carousel: ${singleGroupForBadge.name}`}
+                          >
+                            {singleGroupForBadge.name}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={(e) => { e.preventDefault(); e.stopPropagation(); cycleGroupBadge('next'); }}
+                            disabled={!canCycleGroups}
+                            className="p-1 rounded-r-full text-[#6d28d9] hover:bg-violet-200/60 active:scale-95 disabled:opacity-40 disabled:cursor-default disabled:hover:bg-transparent"
+                            title={canCycleGroups ? (getInspectTitle('Next group carousel') || 'Next group carousel') : 'Only one group carousel'}
+                          >
+                            <ChevronRight size={16} strokeWidth={3} />
+                          </button>
                         </span>
                       )}
 

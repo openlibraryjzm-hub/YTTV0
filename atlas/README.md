@@ -156,7 +156,7 @@ yttv2/
 │   ├── ui-cards.md               # Card components
 │   ├── playlist-cards.md         # Detailed documentation for Playlist Cards
 │   ├── group-carousel.md         # Group carousel system (Playlists page: ALL/UNSORTED/GROUPS, assign/rename/delete)
-│   ├── group-badge-player-controller.md  # Group badge on Top Playlist Menu + playlist nav restricted to group
+│   ├── group-badge-player-controller.md  # Group badge + arrow cycling (all carousels) + playlist nav restricted to group
 │   ├── ui-modals.md              # Modal components
 │   ├── history.md
 │   ├── drumstick-rating-system.md
@@ -312,8 +312,8 @@ yttv2/
 **Cross-References**: See `group-badge-player-controller.md`, `playlist-cards.md`, `state-management.md` (playlistGroupStore, tabStore), `ui-pages.md`
 
 #### `group-badge-player-controller.md`
-**Covers**: Group carousel badge on the Player Controller Top Playlist Menu and restriction of playlist navigation (up/down) to the current group
-**Key Topics**: Single group badge, "entered from" group (activeGroupId), playlist nav range, PlaylistCard groupIdFromCarousel/onEnterFromGroup
+**Covers**: Group carousel badge on the Player Controller Top Playlist Menu, left/right arrow cycling through all group carousels, and restriction of playlist navigation (up/down) to the selected group
+**Key Topics**: Single group badge, visible left/right arrows (cycle all carousels), "entered from" group (activeGroupId), playlist nav range, PlaylistCard groupIdFromCarousel/onEnterFromGroup
 **Cross-References**: See `group-carousel.md`, `advanced-player-controller.md` (Top Playlist Menu), `state-management.md` (playlistGroupStore, playlistStore)
 
 #### `debug.md`
