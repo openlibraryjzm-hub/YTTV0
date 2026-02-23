@@ -460,9 +460,10 @@ For detailed information about the application's theme system and recent color c
 3. **Use cross-references** to navigate between related topics
 
 ### Update Log (Current Session)
-- **Videos Page Sticky Bar & TopNavigation**:
-  - **VideoSortFilters** (`VideoSortFilters.jsx`): Replaced sort dropdown with icon bar—Home (default), Calendar (date), Bar chart (progress), Clock (last viewed), each with click-to-cycle direction and arrow indicator; single drumstick icon that expands on hover to multi-select rating filter (1–5). Documented in `ui-pages.md` (4.1.2) and `drumstick-rating-system.md`.
-  - **Folder prism**: All and Unsorted merged into the main color prism as first two segments (labels "All" and "?"); folder nav arrows moved to the **rightmost** part of the bar. Single prism order: All → Unsorted → 16 colors → prev/next arrows.
+- **App Banner (splitscreen spill)**: Spill hover uses simple full-banner opacity (`SPILL_HOVER_OPACITY` in `LayoutShell.jsx`, default 0.2) instead of cursor-following cutout; see `app-banner.md`.
+- **Videos Page Sticky Bar & Folder Prism**:
+  - **VideoSortFilters** (`VideoSortFilters.jsx`): Icon bar (Home, Calendar, Bar chart, Clock, Drumstick rating filter). Documented in `ui-pages.md` (4.1.2) and `drumstick-rating-system.md`.
+  - **Folder prism**: All and Unsorted show **item counts** (not "All"/"?"). Folder nav arrows **removed** from toolbar; prism uses full width. **Populated-only mode**: arrow button (right of prism) toggles showing only segments with ≥1 item (equal width); **default on** when entering Videos page. See `ui-pages.md` §4.1.2.
   - **TopNavigation (Videos page)**: Add, Subscriptions, and Bulk Tag buttons moved from sticky toolbar to TopNavigation left side, **above** the playlist title. layoutStore flags (`showVideosUploader`, `showSubscriptionManager`, `requestSubscriptionRefresh`, `requestShowAutoTagModal`) drive modals/refresh; VideosPage reacts and clears. Save/Cancel remain in toolbar when bulk tag mode is on.
   - **Mini header gradient**: Gradient spans full width in splitscreen; removed horizontal padding from `.layout-shell__mini-header` (LayoutShell.css) and from the miniHeader wrapper in App.jsx. Content inset preserved via TopNavigation `pl-8`/`pr-8`.
 - **Video Card & Bulk Tag UX**:

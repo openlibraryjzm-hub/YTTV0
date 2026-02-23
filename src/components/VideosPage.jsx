@@ -18,7 +18,7 @@ import PageBanner from './PageBanner';
 import EditPlaylistModal from './EditPlaylistModal';
 import UnifiedBannerBackground from './UnifiedBannerBackground';
 import { useNavigationStore } from '../store/navigationStore';
-import { Star, MoreVertical, Plus, Play, Check, X, ArrowUp, Clock, Heart, Pin, Settings, Cat, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Star, MoreVertical, Plus, Play, Check, X, ArrowUp, Clock, Heart, Pin, Settings, Cat, ChevronRight, ChevronLeft } from 'lucide-react';
 import VideoCardSkeleton from './skeletons/VideoCardSkeleton';
 import { updatePlaylist, getAllPlaylists, getFolderMetadata, setFolderMetadata } from '../api/playlistApi';
 import { useConfigStore } from '../store/configStore';
@@ -139,6 +139,7 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
   const [sortBy, setSortBy] = useState('shuffle'); // 'shuffle', 'chronological', 'progress', 'lastViewed'
   const [sortDirection, setSortDirection] = useState('desc'); // 'asc', 'desc'
   const [selectedRatings, setSelectedRatings] = useState([]); // 1-5 multi-select for rating filter
+  const [prismOnlyPopulated, setPrismOnlyPopulated] = useState(true); // when true, prism shows only segments with ≥1 item, equal width; default on for Videos page
   const [includeUnwatched, setIncludeUnwatched] = useState(true);
   const [showOnlyCompleted, setShowOnlyCompleted] = useState(false);
   const [watchedVideoIds, setWatchedVideoIds] = useState(new Set());
@@ -1022,7 +1023,7 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
     }
   };
 
-  // Calculate folder counts
+  // Calculate folder counts (16 colors only)
   const folderCounts = useMemo(() => {
     const counts = {};
     if (videoFolderAssignments) {
@@ -1036,6 +1037,32 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
     }
     return counts;
   }, [videoFolderAssignments]);
+
+  // Count for "All" (total items) and "Unsorted" (videos with no folder) for prism labels
+  const allCount = useMemo(() => {
+    const orbs = orbFavorites?.filter(orb => orb.playlistIds?.includes(activePlaylistId))?.length ?? 0;
+    const banners = bannerPresets?.filter(p => p.playlistIds?.map(String).includes(String(activePlaylistId)))?.length ?? 0;
+    return orbs + banners + (activePlaylistItems?.length ?? 0);
+  }, [activePlaylistId, activePlaylistItems, orbFavorites, bannerPresets]);
+
+  const unsortedCount = useMemo(() => {
+    if (!activePlaylistItems?.length) return 0;
+    return activePlaylistItems.filter(v => {
+      const folders = videoFolderAssignments?.[v.id];
+      return !folders || folders.length === 0;
+    }).length;
+  }, [activePlaylistItems, videoFolderAssignments]);
+
+  // Segments to show in "only populated" prism mode: All, Unsorted (if ≥1), and colors with ≥1 item
+  const prismPopulatedSegments = useMemo(() => {
+    const segments = [{ type: 'all', id: null, count: allCount, label: null, hex: null }];
+    if (unsortedCount >= 1) segments.push({ type: 'unsorted', id: 'unsorted', count: unsortedCount, label: null, hex: null });
+    FOLDER_COLORS.forEach(color => {
+      const count = folderCounts[color.id] || 0;
+      if (count >= 1) segments.push({ type: 'color', id: color.id, count, label: color.name, hex: color.hex });
+    });
+    return segments;
+  }, [allCount, unsortedCount, folderCounts]);
 
   // Get available folders (those with videos, plus "all" and "unsorted")
   const availableFolders = useMemo(() => {
@@ -1667,116 +1694,98 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
                 selectedRatings={selectedRatings}
                 onToggleRating={handleToggleRating}
                 isLight={selectedFolder === null}
-                className="shrink-0 mr-3"
+                className="shrink-0 mr-2"
               />
 
-              {/* Folder Selection Row: prism first, then folder nav arrows (rightmost) */}
-              <div className="flex items-center gap-0 overflow-x-auto no-scrollbar mask-gradient-right flex-1 min-w-0 pr-0">
-                {/* Single prism: All (1st), Unsorted (2nd), then 16 folder colors */}
-                <div className="flex-1 flex items-center shrink-0 h-6 mr-3 border-2 border-black rounded-lg overflow-hidden min-w-0">
-                  {/* All - 1st */}
-                  <button
-                    onClick={() => setSelectedFolder(null)}
-                    className={`h-full min-w-[2.5rem] px-2 flex items-center justify-center transition-all rounded-l-md ${selectedFolder === null
-                      ? 'opacity-100 z-10 relative after:content-[""] after:absolute after:inset-0 after:ring-2 after:ring-inset after:ring-black/10'
-                      : 'opacity-60 hover:opacity-100'
-                      } bg-white text-black text-[10px] font-bold uppercase tracking-wider`}
-                    title="Show All"
-                  >
-                    All
-                  </button>
-                  {/* Unsorted - 2nd */}
-                  <button
-                    onClick={() => setSelectedFolder('unsorted')}
-                    className={`h-full min-w-[2rem] flex items-center justify-center transition-all ${selectedFolder === 'unsorted'
-                      ? 'opacity-100 z-10 relative after:content-[""] after:absolute after:inset-0 after:ring-2 after:ring-inset after:ring-white/30'
-                      : 'opacity-60 hover:opacity-100'
-                      } bg-black text-white text-[10px] font-bold`}
-                    title="Unsorted"
-                  >
-                    ?
-                  </button>
-                  {/* 16 folder colors */}
-                  {FOLDER_COLORS.map((color, index) => {
-                    const isSelected = selectedFolder === color.id;
-                    const isLast = index === FOLDER_COLORS.length - 1;
-                    const count = folderCounts[color.id] || 0;
-
-                    return (
+              {/* Folder prism: full bar or "only populated" mode (equal-width segments); arrow toggles */}
+              <div className="flex items-center min-w-0 flex-1 mr-0 gap-1">
+                <div className="flex items-center h-7 min-w-0 flex-1 border-2 border-black rounded-lg overflow-hidden">
+                  {prismOnlyPopulated ? (
+                    /* Only segments with ≥1 item; equal width */
+                    prismPopulatedSegments.map((seg, idx) => {
+                      const isFirst = idx === 0;
+                      const isLast = idx === prismPopulatedSegments.length - 1;
+                      const isSelected = selectedFolder === seg.id;
+                      const isAll = seg.type === 'all';
+                      const isUnsorted = seg.type === 'unsorted';
+                      const ringClass = isSelected
+                        ? (isAll ? 'after:ring-black/10' : isUnsorted ? 'after:ring-white/30' : 'after:ring-white/50')
+                        : '';
+                      const bg = isAll ? 'bg-white text-black' : isUnsorted ? 'bg-black text-white' : '';
+                      return (
+                        <button
+                          key={seg.type + (seg.id ?? 'all')}
+                          onClick={() => setSelectedFolder(seg.id)}
+                          className={`h-full flex-1 min-w-0 flex items-center justify-center transition-all tabular-nums px-0.5 text-[10px] font-bold leading-none ${isSelected
+                            ? `opacity-100 z-10 relative after:content-[""] after:absolute after:inset-0 after:ring-2 after:ring-inset ${ringClass}`
+                            : 'opacity-60 hover:opacity-100'
+                            } ${isFirst ? 'rounded-l-md' : ''} ${isLast ? 'rounded-r-md' : ''} ${bg}`}
+                          style={seg.hex ? { backgroundColor: seg.hex } : undefined}
+                          title={isAll ? `Show All (${seg.count})` : isUnsorted ? `Unsorted (${seg.count})` : `${allFolderMetadata[seg.id]?.name || seg.label} (${seg.count})`}
+                        >
+                          <span className={seg.hex ? 'text-white/90 drop-shadow-md' : ''}>{seg.count}</span>
+                        </button>
+                      );
+                    })
+                  ) : (
+                    <>
+                      {/* All */}
                       <button
-                        key={color.id}
-                        onClick={() => setSelectedFolder(color.id)}
-                        className={`h-full flex-1 flex items-center justify-center transition-all min-w-0 ${isSelected
-                          ? 'opacity-100 z-10 relative after:content-[""] after:absolute after:inset-0 after:ring-2 after:ring-inset after:ring-white/50'
+                        onClick={() => setSelectedFolder(null)}
+                        className={`h-full min-w-[2.25rem] flex-1 flex items-center justify-center transition-all rounded-l-md tabular-nums px-px max-w-[3rem] ${selectedFolder === null
+                          ? 'opacity-100 z-10 relative after:content-[""] after:absolute after:inset-0 after:ring-2 after:ring-inset after:ring-black/10'
                           : 'opacity-60 hover:opacity-100'
-                          } ${isLast ? 'rounded-r-md' : ''}`}
-                        style={{ backgroundColor: color.hex }}
-                        title={`${allFolderMetadata[color.id]?.name || color.name} (${count})`}
+                          } bg-white text-black text-[10px] font-bold leading-none`}
+                        title={`Show All (${allCount} items)`}
                       >
-                        {count > 0 && (
-                          <span className="text-sm font-bold text-white/90 drop-shadow-md">
-                            {count}
-                          </span>
-                        )}
+                        {allCount}
                       </button>
-                    );
-                  })}
+                      {/* Unsorted */}
+                      <button
+                        onClick={() => setSelectedFolder('unsorted')}
+                        className={`h-full min-w-[2.25rem] flex-1 flex items-center justify-center transition-all tabular-nums px-px max-w-[3rem] ${selectedFolder === 'unsorted'
+                          ? 'opacity-100 z-10 relative after:content-[""] after:absolute after:inset-0 after:ring-2 after:ring-inset after:ring-white/30'
+                          : 'opacity-60 hover:opacity-100'
+                          } bg-black text-white text-[10px] font-bold leading-none`}
+                        title={`Unsorted (${unsortedCount} items)`}
+                      >
+                        {unsortedCount}
+                      </button>
+                      {/* 16 folder colors */}
+                      {FOLDER_COLORS.map((color, index) => {
+                        const isSelected = selectedFolder === color.id;
+                        const isLast = index === FOLDER_COLORS.length - 1;
+                        const count = folderCounts[color.id] || 0;
+                        return (
+                          <button
+                            key={color.id}
+                            onClick={() => setSelectedFolder(color.id)}
+                            className={`h-full flex-1 min-w-0 flex items-center justify-center transition-all tabular-nums px-0.5 ${isSelected
+                              ? 'opacity-100 z-10 relative after:content-[""] after:absolute after:inset-0 after:ring-2 after:ring-inset after:ring-white/50'
+                              : 'opacity-60 hover:opacity-100'
+                              } ${isLast ? 'rounded-r-md' : ''}`}
+                            style={{ backgroundColor: color.hex }}
+                            title={`${allFolderMetadata[color.id]?.name || color.name} (${count})`}
+                          >
+                            {count > 0 && (
+                              <span className="text-[10px] font-bold text-white/90 drop-shadow-md truncate max-w-full">
+                                {count}
+                              </span>
+                            )}
+                          </button>
+                        );
+                      })}
+                    </>
+                  )}
                 </div>
-
-                {/* Compact Folder Navigator (prev/next) - rightmost */}
-                {(() => {
-                  let navBg = 'rgba(30, 41, 59, 0.8)'; // slate-800/80
-                  let iconColor = 'text-white/60';
-                  let iconHoverColor = 'hover:text-white';
-                  let dividerColor = 'bg-white/10';
-                  let hoverBg = 'hover:bg-white/10';
-
-                  if (selectedFolder === null) {
-                    navBg = '#ffffff';
-                    iconColor = 'text-black/60';
-                    iconHoverColor = 'hover:text-black';
-                    dividerColor = 'bg-black/10';
-                    hoverBg = 'hover:bg-black/5';
-                  } else if (selectedFolder === 'unsorted') {
-                    navBg = '#000000';
-                    iconColor = 'text-white/60';
-                    iconHoverColor = 'hover:text-white';
-                    dividerColor = 'bg-white/10';
-                    hoverBg = 'hover:bg-white/10';
-                  } else {
-                    const colorInfo = FOLDER_COLORS.find(c => c.id === selectedFolder);
-                    if (colorInfo) {
-                      navBg = colorInfo.hex;
-                      iconColor = 'text-white/90';
-                      iconHoverColor = 'hover:text-white';
-                      dividerColor = 'bg-white/20';
-                      hoverBg = 'hover:bg-black/10';
-                    }
-                  }
-
-                  return (
-                    <div
-                      className="flex items-center shrink-0 h-6 mr-3 border-2 border-black rounded-lg overflow-hidden transition-colors duration-300"
-                      style={{ backgroundColor: navBg }}
-                    >
-                      <button
-                        onClick={handleFolderNavigatePrev}
-                        className={`h-full px-1.5 flex items-center justify-center ${hoverBg} ${iconColor} ${iconHoverColor} transition-colors disabled:opacity-30 disabled:hover:bg-transparent`}
-                        title="Previous Folder"
-                      >
-                        <ChevronLeft size={12} strokeWidth={3} />
-                      </button>
-                      <div className={`w-px h-3 ${dividerColor} mx-0`}></div>
-                      <button
-                        onClick={handleFolderNavigateNext}
-                        className={`h-full px-1.5 flex items-center justify-center ${hoverBg} ${iconColor} ${iconHoverColor} transition-colors disabled:opacity-30 disabled:hover:bg-transparent`}
-                        title="Next Folder"
-                      >
-                        <ChevronRight size={12} strokeWidth={3} />
-                      </button>
-                    </div>
-                  );
-                })()}
+                <button
+                  type="button"
+                  onClick={() => setPrismOnlyPopulated(p => !p)}
+                  className="h-7 w-7 shrink-0 flex items-center justify-center rounded-md border-2 border-black bg-white/90 hover:bg-slate-100 text-black/70 hover:text-black transition-colors"
+                  title={prismOnlyPopulated ? 'Show all segments' : 'Show only segments with items (equal width)'}
+                >
+                  {prismOnlyPopulated ? <ChevronLeft size={14} strokeWidth={2.5} /> : <ChevronRight size={14} strokeWidth={2.5} />}
+                </button>
               </div>
 
               {/* Right Side: Sort Dropdown + Actions */}

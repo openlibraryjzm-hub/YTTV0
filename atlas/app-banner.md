@@ -26,8 +26,8 @@ Users see a full-width banner at the very top of the application (200px height) 
   - **GIFs**: Play natively without scrolling animation (to avoid motion conflicts)
 - **Window Controls Integration**: Custom window controls (Minimize, Maximize, Close) float in the top-right corner
 - **Draggable Region**: The entire banner area is draggable (`data-tauri-drag-region`), allowing users to move the window
-- **Smart Spill Interaction**: If a "Spill Over" height is set, the portion extending beyond the header (200px) is **click-through** and automatically becomes **transparent** on hover.
-  - **Precision Hitbox**: The system uses a **ray-casting point-in-polygon algorithm** to detect hovers based on the exact **SVG crop shape** and **Left Clip** settings, ensuring transparency is only triggered when hovering visible pixels.
+- **Smart Spill Interaction**: If a "Spill Over" height is set, the portion extending beyond the header (200px) is **click-through**. On hover over the spill, the **Active Banner** (splitscreen layer) dims to a fixed opacity so you can see through to the content below (opacity is tunable via `SPILL_HOVER_OPACITY` in `LayoutShell.jsx`, default 0.2).
+  - **Precision Hitbox**: The system uses a **ray-casting point-in-polygon algorithm** to detect hovers based on the exact **SVG crop shape** and **Left Clip** settings, so transparency is only triggered when hovering visible spill pixels.
 - **Hover Popup**: Hovering the rightmost 1/6th reveals a 185x110px popup split into zones: 
   - **Top Section**: Centered orb flanked by two wide 40x16px rectangles.
   - **Bottom Right**: Split into a top 1/3 strip and a main 2/3 area.
@@ -114,7 +114,7 @@ Users see a full-width banner at the very top of the application (200px height) 
   - **Banner Layers**:
     - **Layer 0 (Background)**: The Fullscreen Banner config is rendered at the bottom (z-14), always clipped to 200px height. This provides a consistent "base" aesthetic even when using transparency in the upper layer.
     - **Layer 1 (Overlay)**: The Splitscreen Banner config is rendered on top (z-15) with full spill capabilities.
-  - **Spill Interaction**: The spill-over area is **always click-through** (`pointer-events: none`) to allow access to underlying buttons. When hovered, the **Active Banner** (Layer 1 in Splitscreen) becomes **transparent** (15% opacity) only when hovering the exact visible shape defined by the SVG mask, respecting Key/Fill clipping.
+  - **Spill Interaction**: The spill-over area is **always click-through** (`pointer-events: none`). When hovered over the visible spill shape, the **Active Banner** (Layer 1 in Splitscreen) dims to a configurable opacity (default 0.2) so you can see through to the player/content below.
     - **Border Overlap**: The spill layer (z-15) sits visually **above** the Player Border Separator (z-10), allowing the banner art to "break the frame", while transparent areas naturally reveal the border pattern underneath.
     - **Precision Hitbox**: The system uses a **ray-casting point-in-polygon algorithm** to detect hovers based on the exact **SVG crop shape** and **Left Clip** settings.
 

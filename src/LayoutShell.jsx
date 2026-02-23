@@ -63,18 +63,17 @@ const LayoutShell = ({
     playerControllerXOffset
   } = activeBanner || {};
 
-  // Spill Over Interaction Logic
+  // Spill Over Interaction: when hovering the spill area, dim the primary banner so you can see through (single opacity, no cursor tracking)
   const [isHoveringSpill, setIsHoveringSpill] = React.useState(false);
+  const SPILL_HOVER_OPACITY = 0.2; // 0 = fully see-through, 1 = no change; tune if full transparency is too strong
 
   // Ray-casting algorithm for point-in-polygon check
   const isPointInPolygon = (point, vs) => {
-    // point: [x, y], vs: [[x, y], ...]
     const x = point[0], y = point[1];
     let inside = false;
     for (let i = 0, j = vs.length - 1; i < vs.length; j = i++) {
       const xi = vs[i].x, yi = vs[i].y;
       const xj = vs[j].x, yj = vs[j].y;
-
       const intersect = ((yi > y) !== (yj > y))
         && (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
       if (intersect) inside = !inside;
@@ -83,11 +82,6 @@ const LayoutShell = ({
   };
 
   React.useEffect(() => {
-    // Only track if there is actually a spill on the ACTIVE banner
-    // AND we are NOT in fullscreen mode (where spill is clipped)
-    // Actually, if activeBanner IS fullscreen banner (in fullscreen mode), it is clipped, so logic holds.
-
-    // We only care about interacting with the Active Banner
     const banner = activeBanner;
     if (!banner) return;
 
@@ -100,20 +94,15 @@ const LayoutShell = ({
     }
 
     const handleMouseMove = (e) => {
-      // 1. Check if below header
       if (e.clientY <= 200) {
         if (isHoveringSpill) setIsHoveringSpill(false);
         return;
       }
-
-      // 2. Check if beyond total banner height
       const totalHeight = 200 + spillHeight;
       if (e.clientY > totalHeight) {
         if (isHoveringSpill) setIsHoveringSpill(false);
         return;
       }
-
-      // 3. Check Left Clip - if hovering clipped area, don't trigger
       if (clipLeft > 0) {
         const clientXPercent = (e.clientX / window.innerWidth) * 100;
         if (clientXPercent < clipLeft) {
@@ -122,25 +111,18 @@ const LayoutShell = ({
         }
       }
 
-      // 4. Check Shape Mask (if exists)
       if (maskPath && maskPath.length >= 3) {
-        // Calculate percentages
         const xPercent = (e.clientX / window.innerWidth) * 100;
         const yPercent = (e.clientY / totalHeight) * 100;
-
-        // Perform point-in-polygon check
-        const isInside = isPointInPolygon([xPercent, yPercent], maskPath);
-        setIsHoveringSpill(isInside);
+        setIsHoveringSpill(isPointInPolygon([xPercent, yPercent], maskPath));
       } else {
-        // Default Rectangular Spill - if we are here, we are in the zone (200 < y < totalHeight)
-        // and past the left clip.
         setIsHoveringSpill(true);
       }
     };
 
     window.addEventListener('mousemove', handleMouseMove);
     return () => window.removeEventListener('mousemove', handleMouseMove);
-  }, [activeBanner, viewMode, bannerPreviewMode]); // Dep on activeBanner object ref
+  }, [activeBanner, viewMode, bannerPreviewMode]);
 
   // Debug: Log when second player should render
   React.useEffect(() => {
@@ -218,10 +200,8 @@ const LayoutShell = ({
           backgroundPosition: `${horizontalOffset ?? 0}% ${verticalPosition ?? 0}%`,
           backgroundRepeat: 'repeat-x',
           backgroundSize: `${scale ?? 100}vw auto`,
-          // Always render full height (banner + spill)
           height: spillHeight ? `${200 + spillHeight}px` : '100%',
 
-          // Clip Path Logic
           clipPath: (() => {
             const left = clipLeft > 0 ? `${clipLeft}%` : '0';
             if (forceClip && spillHeight) {
@@ -232,17 +212,11 @@ const LayoutShell = ({
             return clipLeft > 0 ? `inset(0 0 0 ${clipLeft}%)` : 'none';
           })(),
 
-          // Mask Logic
-          ...getMaskStyle(config, isPrimary), // Only apply mask if spill not clipped?
-          // Actually if forceClip is true, we are clipping via CSS clip-path anyway, but mask might define shape within 200px? 
-          // Currently mask is mostly for spill. 
-          // If forceClip is ON, we are cutting off the bottom.
+          ...getMaskStyle(config, isPrimary),
 
-          // Z-Index: Primary 15, Background 14
           zIndex: isPrimary ? 15 : 14,
 
-          // Interaction (Primary Only)
-          opacity: (isPrimary && isHoveringSpill) ? 0.15 : 1,
+          opacity: isPrimary && isHoveringSpill ? SPILL_HOVER_OPACITY : 1,
           transition: 'opacity 0.2s ease-out',
           pointerEvents: 'none'
         }}
