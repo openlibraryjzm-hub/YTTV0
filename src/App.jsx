@@ -619,7 +619,7 @@ function App() {
             }
             secondPlayer={secondPlayerVideoUrl ? <YouTubePlayer videoUrl={secondPlayerVideoUrl} playerId="second" onEnded={() => handleVideoEnded('second')} playlistItems={secondPlayerPlaylistItems} /> : null}
             miniHeader={
-              <div className="w-full h-full flex items-center px-4">
+              <div className="w-full h-full flex items-center min-w-0">
                 <TopNavigation />
               </div>
             }

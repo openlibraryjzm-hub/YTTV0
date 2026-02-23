@@ -18,7 +18,7 @@ import PageBanner from './PageBanner';
 import EditPlaylistModal from './EditPlaylistModal';
 import UnifiedBannerBackground from './UnifiedBannerBackground';
 import { useNavigationStore } from '../store/navigationStore';
-import { Star, MoreVertical, Plus, Play, Check, X, ArrowUp, Clock, Heart, Pin, Settings, Cat, ChevronLeft, ChevronRight, RotateCcw } from 'lucide-react';
+import { Star, MoreVertical, Plus, Play, Check, X, ArrowUp, Clock, Heart, Pin, Settings, Cat, ChevronLeft, ChevronRight } from 'lucide-react';
 import VideoCardSkeleton from './skeletons/VideoCardSkeleton';
 import { updatePlaylist, getAllPlaylists, getFolderMetadata, setFolderMetadata } from '../api/playlistApi';
 import { useConfigStore } from '../store/configStore';
@@ -29,6 +29,7 @@ import OrbCard from './OrbCard';
 import BannerPresetCard from './BannerPresetCard';
 import AutoTagModal from './AutoTagModal';
 import SubscriptionManagerModal from './SubscriptionManagerModal';
+import VideoSortFilters from './VideoSortFilters';
 
 
 const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
@@ -60,7 +61,20 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
     clearBulkTagSelections,
   } = useFolderStore();
   const { shuffleStates, getShuffleState } = useShuffleStore();
-  const { setViewMode, inspectMode, viewMode, videoCardStyle } = useLayoutStore();
+  const {
+    setViewMode,
+    inspectMode,
+    viewMode,
+    videoCardStyle,
+    showVideosUploader,
+    setShowVideosUploader,
+    showSubscriptionManager,
+    setShowSubscriptionManager,
+    requestSubscriptionRefresh,
+    setRequestSubscriptionRefresh,
+    requestShowAutoTagModal,
+    setRequestShowAutoTagModal,
+  } = useLayoutStore();
   const { currentPage: currentNavTab, setCurrentPage: setCurrentNavTab, setSelectedTweet } = useNavigationStore();
   const scrollContainerRef = useRef(null);
   const horizontalScrollRef = useRef(null);
@@ -122,8 +136,9 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
   const [displayedVideos, setDisplayedVideos] = useState([]);
   const [loadingFolders, setLoadingFolders] = useState(true); // Start true to show skeletons immediately
   const [savingBulkTags, setSavingBulkTags] = useState(false);
-  const [sortBy, setSortBy] = useState('shuffle'); // 'shuffle', 'chronological', 'progress'
+  const [sortBy, setSortBy] = useState('shuffle'); // 'shuffle', 'chronological', 'progress', 'lastViewed'
   const [sortDirection, setSortDirection] = useState('desc'); // 'asc', 'desc'
+  const [selectedRatings, setSelectedRatings] = useState([]); // 1-5 multi-select for rating filter
   const [includeUnwatched, setIncludeUnwatched] = useState(true);
   const [showOnlyCompleted, setShowOnlyCompleted] = useState(false);
   const [watchedVideoIds, setWatchedVideoIds] = useState(new Set());
@@ -141,7 +156,6 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
   // Use preview items if available, otherwise use current playlist items
   const activePlaylistItems = previewPlaylistItems || currentPlaylistItems;
   const activePlaylistId = previewPlaylistId || currentPlaylistId;
-  const [showSubscriptionManager, setShowSubscriptionManager] = useState(false);
 
   // Reset point tracking for chevron navigation
   // Tracks the playlist to return to when clicking the return button
@@ -243,7 +257,7 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
     if (horizontalScrollRef.current) {
       horizontalScrollRef.current.scrollTo({ left: 0, behavior: 'smooth' });
     }
-  }, [activePlaylistId, selectedFolder, sortBy, sortDirection, includeUnwatched, showOnlyCompleted, resetPagination]);
+  }, [activePlaylistId, selectedFolder, sortBy, sortDirection, selectedRatings, includeUnwatched, showOnlyCompleted, resetPagination]);
 
   // Scroll to left when page changes (unless preserveScroll is set from TopNav)
   useEffect(() => {
@@ -256,6 +270,72 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
       }
     }
   }, [currentPage, preserveScroll, clearPreserveScroll]);
+
+  // When TopNavigation requests open uploader or auto-tag modal
+  useEffect(() => {
+    if (showVideosUploader) {
+      setShowUploader(true);
+      setShowVideosUploader(false);
+    }
+  }, [showVideosUploader, setShowVideosUploader]);
+  useEffect(() => {
+    if (requestShowAutoTagModal) {
+      setShowAutoTagModal(true);
+      setRequestShowAutoTagModal(false);
+    }
+  }, [requestShowAutoTagModal, setRequestShowAutoTagModal]);
+
+  // When TopNavigation requests subscription refresh (left-click on Subscriptions button)
+  useEffect(() => {
+    if (!requestSubscriptionRefresh || !activePlaylistId) return;
+    setRequestSubscriptionRefresh(false);
+    let cancelled = false;
+    (async () => {
+      try {
+        const sources = await getPlaylistSources(activePlaylistId);
+        if (cancelled || !sources || sources.length === 0) {
+          if (!cancelled) alert('No subscriptions found in this playlist.');
+          return;
+        }
+        let totalNew = 0;
+        const MAX_CONCURRENT = 5;
+        for (let i = 0; i < sources.length; i += MAX_CONCURRENT) {
+          const chunk = sources.slice(i, i + MAX_CONCURRENT);
+          await Promise.all(chunk.map(async (source) => {
+            try {
+              const limit = source.video_limit || 10;
+              let videos = [];
+              if (source.source_type === 'channel') {
+                videos = await fetchChannelUploads(source.source_value, limit);
+              }
+              for (const v of videos) {
+                try {
+                  await addVideoToPlaylist(activePlaylistId, v.video_url, v.video_id, v.title, v.thumbnail_url, v.author, null, v.published_at);
+                  totalNew++;
+                } catch (e) { /* ignore duplicates */ }
+              }
+            } catch (e) {
+              console.error('Source refresh failed:', e);
+            }
+          }));
+        }
+        if (cancelled) return;
+        if (totalNew > 0) {
+          const items = await getPlaylistItems(activePlaylistId);
+          setPlaylistItems(items, activePlaylistId);
+          alert(`Refresh complete! Added ${totalNew} new videos.`);
+        } else {
+          alert('No new videos found.');
+        }
+      } catch (e) {
+        if (!cancelled) {
+          console.error(e);
+          alert('Refresh failed.');
+        }
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [requestSubscriptionRefresh, activePlaylistId, setRequestSubscriptionRefresh, setPlaylistItems]);
 
   useEffect(() => {
     // Sync selected video with current playing video
@@ -837,6 +917,12 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
     setBulkTagMode(false);
   };
 
+  const handleToggleRating = (rating) => {
+    setSelectedRatings(prev =>
+      prev.includes(rating) ? prev.filter(r => r !== rating) : [...prev, rating].sort((a, b) => a - b)
+    );
+  };
+
   const [showAutoTagModal, setShowAutoTagModal] = useState(false);
   const [isAutoTagging, setIsAutoTagging] = useState(false);
 
@@ -1120,7 +1206,17 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
   // IMPORTANT: This hook must be called BEFORE any early returns
   const sortedVideos = useMemo(() => {
     // Determine which videos to display (folder filtered or all)
-    const baseVideos = visibleItems;
+    let baseVideos = visibleItems;
+
+    // Rating filter: when any drumstick rating is selected, filter to those ratings
+    if (selectedRatings && selectedRatings.length > 0) {
+      const ratingSet = new Set(selectedRatings);
+      baseVideos = baseVideos.filter(v => {
+        if (v.isOrb || v.isBannerPreset) return true; // Keep non-video items
+        const r = v.drumstick_rating ?? 0;
+        return ratingSet.has(r);
+      });
+    }
 
     // Handle empty arrays
     if (!baseVideos || baseVideos.length === 0) {
@@ -1199,18 +1295,6 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
       return sorted;
     }
 
-    if (sortBy && sortBy.startsWith('rating')) {
-      const targetRating = parseInt(sortBy.replace('rating', ''), 10);
-      const filtered = [...baseVideos].filter(v => (v.drumstick_rating || 0) === targetRating);
-
-      const sorted = filtered.sort((a, b) => {
-        const dateA = new Date(a.published_at || a.added_at || 0).getTime();
-        const dateB = new Date(b.published_at || b.added_at || 0).getTime();
-        return sortDirection === 'asc' ? dateA - dateB : dateB - dateA;
-      });
-      return sorted;
-    }
-
     if (sortBy === 'lastViewed') {
       const sorted = [...baseVideos].sort((a, b) => {
         const idA = extractVideoId(a.video_url) || a.video_id || a.id;
@@ -1236,7 +1320,7 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
     }
 
     return baseVideos;
-  }, [selectedFolder, displayedVideos, activePlaylistItems, sortBy, sortDirection, videoProgress, includeUnwatched, showOnlyCompleted, shuffleStates, activePlaylistId]);
+  }, [selectedFolder, displayedVideos, activePlaylistItems, sortBy, sortDirection, selectedRatings, videoProgress, includeUnwatched, showOnlyCompleted, shuffleStates, activePlaylistId]);
 
   // Determine which videos to display (for count display)
   const videosToDisplay = visibleItems;
@@ -1574,47 +1658,26 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
 
             <div className={`px-4 flex items-center justify-between transition-all duration-300 relative z-10 ${isStuck ? 'h-[52px]' : 'py-0.5'}`}>
 
-              {/* Sort Dropdown - Moved to Far Left */}
-              <div className="relative group shrink-0 mr-3">
-                <select
-                  value={`${sortBy}${sortBy === 'shuffle' || sortBy.startsWith('rating') ? '' : '_' + sortDirection}`}
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    if (val === 'shuffle' || val.startsWith('rating')) {
-                      setSortBy(val);
-                    } else {
-                      const [by, dir] = val.split('_');
-                      setSortBy(by);
-                      if (dir) setSortDirection(dir);
-                    }
-                  }}
-                  className="bg-white border-2 border-black rounded-md py-1 pl-1.5 pr-4 text-[10px] font-bold uppercase tracking-wider text-black focus:outline-none focus:ring-1 focus:ring-sky-500 cursor-pointer hover:bg-gray-100 transition-colors appearance-none w-auto min-w-[70px]"
-                  title="Sort"
-                >
-                  <option value="shuffle">Default</option>
-                  <option value="chronological_desc">Date 🔽</option>
-                  <option value="chronological_asc">Date 🔼</option>
-                  <option value="progress_desc">Progress 🔽</option>
-                  <option value="progress_asc">Progress 🔼</option>
-                  <option value="lastViewed_desc">Last Viewed 🔽</option>
-                  <option value="lastViewed_asc">Last Viewed 🔼</option>
-                  <option value="rating5">🍗🍗🍗🍗🍗</option>
-                  <option value="rating4">🍗🍗🍗🍗</option>
-                  <option value="rating3">🍗🍗🍗</option>
-                  <option value="rating2">🍗🍗</option>
-                  <option value="rating1">🍗</option>
-                </select>
-              </div>
+              {/* Sort & rating filters: Home, Date, Progress, Last Viewed, Drumsticks */}
+              <VideoSortFilters
+                sortBy={sortBy}
+                setSortBy={setSortBy}
+                sortDirection={sortDirection}
+                setSortDirection={setSortDirection}
+                selectedRatings={selectedRatings}
+                onToggleRating={handleToggleRating}
+                isLight={selectedFolder === null}
+                className="shrink-0 mr-3"
+              />
 
-
-              {/* Folder Selection Row */}
-              {/* Left Side: All, Unsorted, and Colored Prism */}
+              {/* Folder Selection Row: prism first, then folder nav arrows (rightmost) */}
               <div className="flex items-center gap-0 overflow-x-auto no-scrollbar mask-gradient-right flex-1 min-w-0 pr-0">
-                {/* All/Unsorted Prism */}
-                <div className="flex items-center shrink-0 h-6 mr-3 border-2 border-black rounded-lg overflow-hidden">
+                {/* Single prism: All (1st), Unsorted (2nd), then 16 folder colors */}
+                <div className="flex-1 flex items-center shrink-0 h-6 mr-3 border-2 border-black rounded-lg overflow-hidden min-w-0">
+                  {/* All - 1st */}
                   <button
                     onClick={() => setSelectedFolder(null)}
-                    className={`h-full px-3 flex items-center justify-center transition-all ${selectedFolder === null
+                    className={`h-full min-w-[2.5rem] px-2 flex items-center justify-center transition-all rounded-l-md ${selectedFolder === null
                       ? 'opacity-100 z-10 relative after:content-[""] after:absolute after:inset-0 after:ring-2 after:ring-inset after:ring-black/10'
                       : 'opacity-60 hover:opacity-100'
                       } bg-white text-black text-[10px] font-bold uppercase tracking-wider`}
@@ -1622,9 +1685,10 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
                   >
                     All
                   </button>
+                  {/* Unsorted - 2nd */}
                   <button
                     onClick={() => setSelectedFolder('unsorted')}
-                    className={`h-full w-8 flex items-center justify-center transition-all ${selectedFolder === 'unsorted'
+                    className={`h-full min-w-[2rem] flex items-center justify-center transition-all ${selectedFolder === 'unsorted'
                       ? 'opacity-100 z-10 relative after:content-[""] after:absolute after:inset-0 after:ring-2 after:ring-inset after:ring-white/30'
                       : 'opacity-60 hover:opacity-100'
                       } bg-black text-white text-[10px] font-bold`}
@@ -1632,9 +1696,34 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
                   >
                     ?
                   </button>
+                  {/* 16 folder colors */}
+                  {FOLDER_COLORS.map((color, index) => {
+                    const isSelected = selectedFolder === color.id;
+                    const isLast = index === FOLDER_COLORS.length - 1;
+                    const count = folderCounts[color.id] || 0;
+
+                    return (
+                      <button
+                        key={color.id}
+                        onClick={() => setSelectedFolder(color.id)}
+                        className={`h-full flex-1 flex items-center justify-center transition-all min-w-0 ${isSelected
+                          ? 'opacity-100 z-10 relative after:content-[""] after:absolute after:inset-0 after:ring-2 after:ring-inset after:ring-white/50'
+                          : 'opacity-60 hover:opacity-100'
+                          } ${isLast ? 'rounded-r-md' : ''}`}
+                        style={{ backgroundColor: color.hex }}
+                        title={`${allFolderMetadata[color.id]?.name || color.name} (${count})`}
+                      >
+                        {count > 0 && (
+                          <span className="text-sm font-bold text-white/90 drop-shadow-md">
+                            {count}
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
                 </div>
 
-                {/* Compact Folder Navigator */}
+                {/* Compact Folder Navigator (prev/next) - rightmost */}
                 {(() => {
                   let navBg = 'rgba(30, 41, 59, 0.8)'; // slate-800/80
                   let iconColor = 'text-white/60';
@@ -1658,10 +1747,10 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
                     const colorInfo = FOLDER_COLORS.find(c => c.id === selectedFolder);
                     if (colorInfo) {
                       navBg = colorInfo.hex;
-                      iconColor = 'text-white/90'; // More opaque on colors
+                      iconColor = 'text-white/90';
                       iconHoverColor = 'hover:text-white';
-                      dividerColor = 'bg-white/20'; // More visible divider
-                      hoverBg = 'hover:bg-black/10'; // Darken on hover
+                      dividerColor = 'bg-white/20';
+                      hoverBg = 'hover:bg-black/10';
                     }
                   }
 
@@ -1688,34 +1777,6 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
                     </div>
                   );
                 })()}
-
-                <div className="flex-1 flex items-center shrink-0 h-6 mr-3 border-2 border-black rounded-lg overflow-hidden">
-                  {FOLDER_COLORS.map((color, index) => {
-                    const isSelected = selectedFolder === color.id;
-                    const isFirst = index === 0;
-                    const isLast = index === FOLDER_COLORS.length - 1;
-                    const count = folderCounts[color.id] || 0;
-
-                    return (
-                      <button
-                        key={color.id}
-                        onClick={() => setSelectedFolder(color.id)}
-                        className={`h-full flex-1 flex items-center justify-center transition-all ${isSelected
-                          ? 'opacity-100 z-10 relative after:content-[""] after:absolute after:inset-0 after:ring-2 after:ring-inset after:ring-white/50'
-                          : 'opacity-60 hover:opacity-100'
-                          } ${isFirst ? 'rounded-l-md' : ''} ${isLast ? 'rounded-r-md' : ''}`}
-                        style={{ backgroundColor: color.hex }}
-                        title={`${allFolderMetadata[color.id]?.name || color.name} (${count})`}
-                      >
-                        {count > 0 && (
-                          <span className="text-sm font-bold text-white/90 drop-shadow-md">
-                            {count}
-                          </span>
-                        )}
-                      </button>
-                    );
-                  })}
-                </div>
               </div>
 
               {/* Right Side: Sort Dropdown + Actions */}
@@ -1744,122 +1805,6 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
                   </>
                 )}
 
-                {/* Bulk Tag */}
-                <button
-                  onClick={() => setBulkTagMode(!bulkTagMode)}
-                  onContextMenu={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    setShowAutoTagModal(true);
-                  }}
-                  className={`p-1.5 rounded-md transition-all ${bulkTagMode
-                    ? 'bg-black text-white border-2 border-black shadow-lg'
-                    : 'bg-white text-black hover:bg-gray-100 border-2 border-black'
-                    }`}
-                  title={bulkTagMode ? "Exit Bulk Tagging" : "Bulk Tag (Right-click for Auto-Tag)"}
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
-                  </svg>
-                </button>
-
-                {/* Refresh Subscriptions */}
-                <button
-                  onClick={async () => {
-                    const isConfirm = window.confirm('Refresh subscriptions for this playlist? This might take a moment.');
-                    if (!isConfirm) return;
-
-                    // Inline logic or call handler
-                    if (!activePlaylistId) return;
-
-                    try {
-                      // Show loading state? 
-                      // Since we don't have a specific loading state for this button easily without more state,
-                      // we'll just use the button's disabled state or a toast/alert.
-
-                      const sources = await getPlaylistSources(activePlaylistId);
-                      if (!sources || sources.length === 0) {
-                        alert('No subscriptions found in this playlist.');
-                        return;
-                      }
-
-                      let totalNew = 0;
-                      const MAX_CONCURRENT = 5;
-
-                      // Process sources
-                      for (let i = 0; i < sources.length; i += MAX_CONCURRENT) {
-                        const chunk = sources.slice(i, i + MAX_CONCURRENT);
-                        await Promise.all(chunk.map(async (source) => {
-                          try {
-                            let videos                                    // Use stored limit, fallback to 10
-                            const limit = source.video_limit || 10;
-
-                            if (source.source_type === 'channel') {
-                              videos = await fetchChannelUploads(source.source_value, limit);
-                            } else if (source.source_type === 'playlist') {
-                              // For playlists, we might want a fetchPlaylistVideos equivalent without the parsing overhead
-                              // For now, support ONLY channel per requirements
-                            }
-
-                            for (const v of videos) {
-                              try {
-                                await addVideoToPlaylist(
-                                  activePlaylistId,
-                                  v.video_url,
-                                  v.video_id,
-                                  v.title,
-                                  v.thumbnail_url,
-                                  v.author,
-                                  null,
-                                  v.published_at
-                                );
-                                totalNew++;
-                              } catch (e) { /* ignore duplicates */ }
-                            }
-                          } catch (e) {
-                            console.error('Source refresh failed:', e);
-                          }
-                        }));
-                      }
-
-                      if (totalNew > 0) {
-                        const items = await getPlaylistItems(activePlaylistId);
-                        setPlaylistItems(items, activePlaylistId);
-                        alert(`Refresh complete! Added ${totalNew} new videos.`);
-                      } else {
-                        alert('No new videos found.');
-                      }
-
-                    } catch (e) {
-                      console.error(e);
-                      alert('Refresh failed.');
-                    }
-                  }}
-                  onContextMenu={(e) => {
-                    e.preventDefault();
-                    console.log('VideosPage: Refresh button right-click', { activePlaylistId });
-                    if (activePlaylistId) {
-                      setShowSubscriptionManager(true);
-                    } else {
-                      console.warn('VideosPage: Right-click ignored, no activePlaylistId');
-                    }
-                  }}
-                  className="p-1.5 bg-white hover:bg-gray-100 text-black rounded-md transition-all shadow-lg border-2 border-black"
-                  title="Refresh Subscriptions (Right-click to Manage)"
-                >
-                  <RotateCcw className="w-4 h-4" />
-                </button>
-
-                {/* Add */}
-                <button
-                  onClick={() => setShowUploader(true)}
-                  className="p-1.5 bg-white hover:bg-gray-100 text-black rounded-md transition-all shadow-lg border-2 border-black"
-                  title="Add Config"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                  </svg>
-                </button>
               </div>
 
             </div>

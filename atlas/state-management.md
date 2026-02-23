@@ -45,14 +45,21 @@ The application uses **Zustand** (v5.0.9) for state management. Zustand is a lig
 - `menuQuarterMode`: boolean - Menu quarter mode toggle
 - `showDebugBounds`: boolean - Layout debug mode (colored boundaries)
 - `inspectMode`: boolean - Inspect element mode (tooltip labels)
+- `playlistsPageShowTitles`: boolean - Show video titles on playlist cards (synced from localStorage by PlaylistsPage)
+- `showPlaylistUploader`: boolean - When true, PlaylistsPage opens uploader and clears (TopNavigation Add on Playlists)
+- `showVideosUploader`: boolean - When true, VideosPage opens Add/Config uploader and clears (TopNavigation Add on Videos)
+- `showSubscriptionManager`: boolean - Subscription manager modal visibility (TopNavigation right-click Subscriptions)
+- `requestSubscriptionRefresh`: boolean - One-shot; when true, VideosPage runs subscription refresh and clears (TopNavigation left-click Subscriptions)
+- `requestShowAutoTagModal`: boolean - One-shot; when true, VideosPage opens Auto-Tag modal and clears (TopNavigation right-click Bulk Tag)
 
 **Actions:**
 - `setViewMode(mode)` - Sets view mode, auto-disables menuQuarterMode when switching to 'full'
 - `toggleMenuQuarterMode()` - Toggles menu quarter mode (only works when not in 'full')
 - `toggleDebugBounds()` - Toggles layout debug bounds
 - `toggleInspectMode()` - Toggles inspect element mode
+- `setPlaylistsPageShowTitles(v)` / `setShowPlaylistUploader(v)` / `setShowVideosUploader(v)` / `setShowSubscriptionManager(v)` / `setRequestSubscriptionRefresh(v)` / `setRequestShowAutoTagModal(v)` - Videos/Playlists page UI triggers
 
-**Persistence**: None - all state is session-only
+**Persistence**: None for session-only flags; playlistsPageShowTitles is synced from localStorage by PlaylistsPage
 
 **Dependencies:**
 - When `viewMode` changes → `LayoutShell` re-renders → Layout structure changes

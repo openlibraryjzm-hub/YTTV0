@@ -60,5 +60,21 @@ export const useLayoutStore = create((set) => ({
   // Playlists page: when true, PlaylistsPage opens uploader and clears this
   showPlaylistUploader: false,
   setShowPlaylistUploader: (v) => set({ showPlaylistUploader: !!v }),
+
+  // Videos page: when true, VideosPage opens uploader and clears this
+  showVideosUploader: false,
+  setShowVideosUploader: (v) => set({ showVideosUploader: !!v }),
+
+  // Videos page: subscription manager modal (VideosPage renders it)
+  showSubscriptionManager: false,
+  setShowSubscriptionManager: (v) => set({ showSubscriptionManager: !!v }),
+
+  // Videos page: one-shot trigger to run subscription refresh (VideosPage handles and clears)
+  requestSubscriptionRefresh: false,
+  setRequestSubscriptionRefresh: (v) => set({ requestSubscriptionRefresh: !!v }),
+
+  // Videos page: one-shot to open Auto-Tag modal (e.g. right-click on Bulk tag in TopNav)
+  requestShowAutoTagModal: false,
+  setRequestShowAutoTagModal: (v) => set({ requestShowAutoTagModal: !!v }),
 }));
 

@@ -262,15 +262,13 @@
   min-height: 60px;
   height: auto;
   background: transparent;
-  background: transparent;
-  /* Thicker Top Border REMOVED - Separator handles it now */
-  /* border-top: 4px solid rgb(4, 41, 65); */
   /* Unified to match left side */
   border-bottom: 1px solid rgba(0, 0, 0, 0.1);
   display: flex;
   flex-direction: column;
   justify-content: center;
-  padding: 8px 16px;
+  padding: 8px 0;
+  /* No horizontal padding so TopNavigation gradient can span full width in splitscreen */
 }
 
 .layout-shell__side-menu-content {

@@ -169,16 +169,12 @@ Users see a horizontal scrolling layout with two rows of video cards showing vid
     - **Return Button**: Amber icon appears when navigated away from entry point, returns to reset point
 
 - **Sticky Toolbar**: Sits below the Page Banner and sticks to the top of the viewport when scrolling.
-  - **Compact Layout**: Features a streamlined single-row design to maximize vertical screen real estate.
-  - **Unified Background**: Inherits the **Custom Page Banner Image** (if set) and continues the same horizontal scroll animation, maintaining visual alignment with the top banner.
-  - **Positioning**: Uses inline style `marginTop: '-19px'` for precise vertical positioning, providing increased spacing from the page banner (45px more than the original -64px baseline)
-  - **Videos Page Layout**:
-    - **Left**: Sort Dropdown + All/Unsorted Prism + Compact Folder Navigator + Colored Folder Prism.
-    - **Right**: Save/Cancel buttons (when in bulk tag mode) + Bulk Tag Mode toggle + Add Button.
-    - **Sort Dropdown**: Compact design moved to the far left for better access.
-    - **All/Unsorted Prism**: Unified container with distinct styling (White "ALL" / Black "Unsorted?").
-    - **Compact Folder Navigator**: Dynamic colored arrow buttons situated between the prisms.
-    - **Bulk Tag Controls**: When bulk tag mode is active, Save (green) and Cancel (red) buttons appear between the sort dropdown and bulk tag toggle, providing clear workflow actions.
+  - **Compact Layout**: Single-row design to maximize vertical space. Add, Subscriptions, and Bulk Tag actions have been moved to **TopNavigation** (left side, above playlist title) when on Videos page; only Save/Cancel remain in the toolbar when bulk tag mode is active.
+  - **Videos Page Layout** (left to right):
+    - **VideoSortFilters** (`VideoSortFilters.jsx`): Icon-based sort and rating filter. **Home** = default (shuffle). **Calendar** = date (click to cycle asc/desc, arrow indicator). **Bar chart** = progress (click to cycle direction). **Clock** = last viewed (click to cycle). **Drumstick** = single icon; hover expands vertically to show 1–5 drumsticks for multi-select rating filter (grey when unselected). Styling adapts to folder context (light when All, dark when Unsorted/folder).
+    - **Folder prism**: Single bar with **All** (1st, white, label "All"), **Unsorted** (2nd, black, label "?"), then the 16 folder color segments (with counts). **Folder nav arrows** (prev/next chevrons) are the **rightmost** part of this row; they match the selected segment color.
+    - **Right**: Save and Cancel buttons only when bulk tag mode is on.
+  - **TopNavigation (Videos page)**: When current page is Videos, the header shows a row **above the playlist title** with **Add** (opens uploader), **Subscriptions** (left-click = refresh, right-click = manage modal), and **Bulk Tag** (toggle mode; right-click = Auto-Tag modal). Driven by `layoutStore` flags; VideosPage reacts and clears one-shot flags.
   - **Playlists Page Layout**:
     - **Left**: Tab Bar navigation.
     - **Right**: Control cluster (Tab Presets, Folder Toggle, Add Playlist).
@@ -225,6 +221,7 @@ Users see a horizontal scrolling layout with two rows of video cards showing vid
 
 **UI/Components:**
 - `src/components/VideosPage.jsx`: Main videos grid page component
+- `src/components/VideoSortFilters.jsx`: Icon sort bar (Home/Date/Progress/Last Viewed) + hover-expand drumstick rating filter; used in Videos page sticky toolbar
 - `src/components/VideoCard.jsx`: Individual video card component
 - `src/components/Card.jsx`: Base card component
 - `src/components/CardThumbnail.jsx`: Thumbnail component

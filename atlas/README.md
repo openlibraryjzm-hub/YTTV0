@@ -52,9 +52,10 @@ yttv2/
 │   │   ├── YouTubePlayer.jsx     # YouTube iframe player component
 │   │   ├── NativeVideoPlayer.jsx # Native mpv player for local videos
 │   │   ├── LocalVideoPlayer.jsx  # HTML5 fallback player (browser-compatible formats)
-│   │   ├── TopNavigation.jsx     # Contextual Mini Header; on Playlists page shows TabBar + Info/Folder/Add + Back/Close
+│   │   ├── TopNavigation.jsx     # Contextual Mini Header; Playlists: TabBar + Info/Folder/Add; Videos: Add/Subs/Bulk tag above title; Back/Close
 │   │   ├── PlaylistsPage.jsx     # Main playlists grid view
 │   │   ├── VideosPage.jsx        # Videos grid view for current playlist
+│   │   ├── VideoSortFilters.jsx # Icon sort bar (Home/Date/Progress/Last Viewed) + hover-expand drumstick rating filter for Videos toolbar
 │   │   ├── TweetPage.jsx         # Full screen tweet detail view
 │   │   ├── HistoryPage.jsx       # Watch history display (last 100 videos)
 │   │   ├── LikesPage.jsx         # Liked videos grid view
@@ -105,7 +106,7 @@ yttv2/
 │   │   └── ScrollbarChevrons.jsx       # Scrollbar navigation controls (chevron-dot-chevron capsule)
 │   ├── store/                    # Zustand state management
 │   │   ├── configStore.js        # Theme and Profile configuration
-│   │   ├── layoutStore.js        # View mode, menu state, debug/inspect/ruler/dev toolbar toggles
+│   │   ├── layoutStore.js        # View mode, menu state, debug/inspect/ruler; Playlists/Videos page UI (showUploader, subscription, bulk-tag/auto-tag)
 │   │   ├── navigationStore.js    # Current page (playlists/videos/history)
 │   │   ├── playlistStore.js      # Current playlist items, video index
 │   │   ├── folderStore.js        # Folder state, bulk tagging, show folders
@@ -355,6 +356,12 @@ yttv2/
 
 ### When Working On...
 
+**Videos Page Sticky Bar (Sort & Folder Prism):**
+- Primary: `ui-pages.md` (Section 4.1.2, Sticky Toolbar)
+- Components: `VideoSortFilters.jsx`, `VideosPage.jsx` (toolbar row)
+- State: `layoutStore` (Videos page UI triggers), `folderStore` (bulkTagMode, selectedFolder), `paginationStore`
+- Rating filter: `drumstick-rating-system.md`
+
 **Group Carousel (Playlists):**
 - Primary: `group-carousel.md`
 - State: `state-management.md` (playlistGroupStore, tabStore, layoutStore playlistsPageShowTitles/showPlaylistUploader)
@@ -453,6 +460,11 @@ For detailed information about the application's theme system and recent color c
 3. **Use cross-references** to navigate between related topics
 
 ### Update Log (Current Session)
+- **Videos Page Sticky Bar & TopNavigation**:
+  - **VideoSortFilters** (`VideoSortFilters.jsx`): Replaced sort dropdown with icon bar—Home (default), Calendar (date), Bar chart (progress), Clock (last viewed), each with click-to-cycle direction and arrow indicator; single drumstick icon that expands on hover to multi-select rating filter (1–5). Documented in `ui-pages.md` (4.1.2) and `drumstick-rating-system.md`.
+  - **Folder prism**: All and Unsorted merged into the main color prism as first two segments (labels "All" and "?"); folder nav arrows moved to the **rightmost** part of the bar. Single prism order: All → Unsorted → 16 colors → prev/next arrows.
+  - **TopNavigation (Videos page)**: Add, Subscriptions, and Bulk Tag buttons moved from sticky toolbar to TopNavigation left side, **above** the playlist title. layoutStore flags (`showVideosUploader`, `showSubscriptionManager`, `requestSubscriptionRefresh`, `requestShowAutoTagModal`) drive modals/refresh; VideosPage reacts and clears. Save/Cancel remain in toolbar when bulk tag mode is on.
+  - **Mini header gradient**: Gradient spans full width in splitscreen; removed horizontal padding from `.layout-shell__mini-header` (LayoutShell.css) and from the miniHeader wrapper in App.jsx. Content inset preserved via TopNavigation `pl-8`/`pr-8`.
 - **Video Card & Bulk Tag UX**:
   - **Video card thumbnails**: Removed rounded corners and black outline from VideoCard thumbnails (YouTube and Twitter style). Card base component now supports an optional `rounded={false}` prop for square corners; VideoCard uses it so the full card and thumbnail area are square.
   - **BulkTagColorGrid placement**: In bulk tag mode, the 16-color folder grid no longer overlays the bottom quarter of the thumbnail. It now appears **below the thumbnail**, between thumbnail and title (VideoCard YouTube style), or below the thumbnail within the card (VideoCard Twitter style and TweetCard), in a fixed-height strip (`h-20`) for easier use.
