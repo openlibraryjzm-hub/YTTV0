@@ -453,6 +453,9 @@ For detailed information about the application's theme system and recent color c
 3. **Use cross-references** to navigate between related topics
 
 ### Update Log (Current Session)
+- **Video Card & Bulk Tag UX**:
+  - **Video card thumbnails**: Removed rounded corners and black outline from VideoCard thumbnails (YouTube and Twitter style). Card base component now supports an optional `rounded={false}` prop for square corners; VideoCard uses it so the full card and thumbnail area are square.
+  - **BulkTagColorGrid placement**: In bulk tag mode, the 16-color folder grid no longer overlays the bottom quarter of the thumbnail. It now appears **below the thumbnail**, between thumbnail and title (VideoCard YouTube style), or below the thumbnail within the card (VideoCard Twitter style and TweetCard), in a fixed-height strip (`h-20`) for easier use.
 - **Twitter Import & Integration**: 
   - Implemented **JSON Import** for Twitter bookmarks, allowing bulk import of tweets as "local" videos.
   - created `TweetCard` improvements for proper rendering of MP4s and GIFs.

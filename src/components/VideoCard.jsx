@@ -227,8 +227,9 @@ const VideoCard = ({
         playing={isCurrentlyPlaying}
         className={bulkTagMode ? 'cursor-default' : ''}
         variant="minimal"
+        rounded={false}
       >
-        <div className={`relative group rounded-lg ${bulkTagMode ? 'overflow-visible' : 'overflow-hidden'}`}>
+        <div className={`relative group ${bulkTagMode ? 'overflow-visible' : 'overflow-hidden'}`}>
           {/* Twitter/X Header Section (Top 1/5th) */}
           <div className="flex items-start gap-3 p-3 pb-2">
             {/* Profile Picture Circle */}
@@ -287,14 +288,14 @@ const VideoCard = ({
                 overlay={playOverlay}
                 badges={badges}
                 progress={progress}
-                className={`rounded-xl overflow-hidden ${bulkTagBorderColor ? 'border-2' : ''} ${isCurrentlyPlaying ? 'ring-4 ring-red-500 ring-offset-2 ring-offset-white shadow-[0_0_40px_rgba(239,68,68,1),inset_0_0_40px_rgba(239,68,68,0.8)]' : ''}`}
+                className={`overflow-hidden ${bulkTagBorderColor ? 'border-2' : ''} ${isCurrentlyPlaying ? 'ring-4 ring-red-500 ring-offset-2 ring-offset-white shadow-[0_0_40px_rgba(239,68,68,1),inset_0_0_40px_rgba(239,68,68,0.8)]' : ''}`}
                 style={bulkTagBorderColor ? { borderColor: bulkTagBorderColor, borderWidth: '2px' } : undefined}
               />
             </ImageHoverPreview>
 
-            {/* Bulk tag: TweetCard-style bottom strip, always visible in bulk mode */}
+            {/* Bulk tag: below thumbnail, above card bottom, when bulk tag mode is active */}
             {bulkTagMode && (
-              <div className="absolute bottom-0 left-0 right-0 h-1/4 z-40 rounded-b-xl overflow-hidden">
+              <div className="relative w-full h-20 flex-shrink-0 overflow-hidden mt-2" data-card-action="true">
                 <BulkTagColorGrid
                   videoId={video.id}
                   currentFolders={videoFolders}
@@ -320,8 +321,9 @@ const VideoCard = ({
       playing={isCurrentlyPlaying}
       className={bulkTagMode ? 'cursor-default' : ''}
       variant="minimal"
+      rounded={false}
     >
-      <div className={`relative group rounded-lg ${bulkTagMode ? 'overflow-visible' : 'overflow-hidden'}`}>
+      <div className={`relative group ${bulkTagMode ? 'overflow-visible' : 'overflow-hidden'}`}>
         <ImageHoverPreview src={thumbnailUrl} previewSrc={previewUrl} alt={video.title || `Video ${index + 1}`} delay={500}>
           <CardThumbnail
             src={thumbnailUrl}
@@ -329,26 +331,26 @@ const VideoCard = ({
             overlay={playOverlay}
             badges={badges}
             progress={progress}
-            className={`rounded-lg overflow-hidden border-2 ${bulkTagBorderColor ? '' : 'border-black'} ${isCurrentlyPlaying ? 'ring-4 ring-red-500 ring-offset-2 ring-offset-black shadow-[0_0_40px_rgba(239,68,68,1),inset_0_0_40px_rgba(239,68,68,0.8)]' : ''}`} // Rounding thumbnail specifically
+            className={`overflow-hidden ${bulkTagBorderColor ? 'border-2' : ''} ${isCurrentlyPlaying ? 'ring-4 ring-red-500 ring-offset-2 ring-offset-black shadow-[0_0_40px_rgba(239,68,68,1),inset_0_0_40px_rgba(239,68,68,0.8)]' : ''}`}
             style={bulkTagBorderColor ? { borderColor: bulkTagBorderColor } : undefined}
           />
         </ImageHoverPreview>
-
-        {/* Bulk tag: TweetCard-style bottom strip, always visible in bulk mode */}
-        {bulkTagMode && (
-          <div className="absolute bottom-0 left-0 right-0 h-1/4 z-40 rounded-b-lg overflow-hidden">
-            <BulkTagColorGrid
-              videoId={video.id}
-              currentFolders={videoFolders}
-              selectedFolders={bulkTagSelections}
-              onColorClick={onBulkTagColorClick}
-              playlistId={playlistId}
-              folderMetadata={folderMetadata}
-              onRenameFolder={onRenameFolder}
-            />
-          </div>
-        )}
       </div>
+
+      {/* Bulk tag: below thumbnail, above title, when bulk tag mode is active */}
+      {bulkTagMode && (
+        <div className="relative w-full h-20 flex-shrink-0 overflow-hidden" data-card-action="true">
+          <BulkTagColorGrid
+            videoId={video.id}
+            currentFolders={videoFolders}
+            selectedFolders={bulkTagSelections}
+            onColorClick={onBulkTagColorClick}
+            playlistId={playlistId}
+            folderMetadata={folderMetadata}
+            onRenameFolder={onRenameFolder}
+          />
+        </div>
+      )}
 
       <CardContent
         title={video.title || `Video ${index + 1}`}

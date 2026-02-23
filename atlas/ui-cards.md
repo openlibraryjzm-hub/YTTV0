@@ -302,9 +302,9 @@ User clicks the "List" icon (bottom-left of Playlist Card thumbnail) to open the
 Users see video cards built using the Card component system with video-specific features:
 
 - **Card Structure**:
-  - **Thumbnail Area**: 16:9 aspect ratio
+  - **Thumbnail Area**: 16:9 aspect ratio, **square corners** (no rounding), **no border** by default
     - Image: Video thumbnail from YouTube
-    - **Border**: `border-2 border-black` outline around thumbnail (YouTube style); **Borderless** by default for Twitter style
+    - **Border**: Only when bulk-tag selection is active, border color matches first selected folder; otherwise borderless (YouTube and Twitter style)
     - **Background**: Light sky blue (`#e0f2fe`) matching app theme (visible when image doesn't fill 16:9 ratio)
     - **Badges**:
       - **Top-left**: "Now Playing" indicator (3 animated bouncing dots in Warm Red, only when playing)
@@ -320,7 +320,7 @@ Users see video cards built using the Card component system with video-specific 
     - **Hover Overlay**: 
       - **Top Right**: Pin button and Star button appear
       - **Bottom Right**: 3-dot menu appears
-    - **Bulk Tag Overlay**: When in bulk tag mode, 4x4 color grid appears on hover, perfectly covering the entire thumbnail
+    - **Bulk Tag Strip**: When in bulk tag mode, a 4x4 color grid appears **below the thumbnail** (between thumbnail and title), in a fixed-height strip (`h-20`), always visible—no overlay on the thumbnail
     - **Custom Folder Names**: If a folder has a custom name (different from default color name), it appears as overlay text on the square
     - **Bulk Tag Border**: When folders are selected in bulk tag mode, thumbnail border color changes to match the first selected folder color
     - **Star Color Picker Overlay**: When hovering over star icon for 1.2 seconds, a grid of 16 colored stars appears centered at the top of the thumbnail
@@ -363,8 +363,8 @@ Users see video cards built using the Card component system with video-specific 
     - **Copy to Playlist**: Opens modal to copy video to another playlist (keeps in current).
     - **Delete**: Removes video from playlist (context-aware removal).
     - *Note: "Assign to Folder" and "Quick Assign" removed to streamline UI.*
-  - **Bulk Tag Grid** (hover in bulk mode): 
-    - 16-color grid (4x4 pattern) that perfectly covers the entire thumbnail with no gaps
+  - **Bulk Tag Grid** (in bulk mode): 
+    - 16-color grid (4x4 pattern) in a strip **below the thumbnail** (between thumbnail and title), fixed height; does not overlay the thumbnail
     - Each square fills its grid cell completely (`w-full h-full`)
     - Custom folder names displayed as overlay text on squares (only if name differs from default)
     - Selected folders show checkmark icon
@@ -504,8 +504,7 @@ Users see video cards built using the Card component system with video-specific 
 
 8. **Bulk Tag Flow:**
    - User enters bulk tag mode → `bulkTagMode: true`
-   - User hovers video → `setIsHovered(true)` (line 247)
-   - `BulkTagColorGrid` appears → Shows 4x4 grid (16 colors) perfectly covering thumbnail
+   - `BulkTagColorGrid` appears below the thumbnail (between thumbnail and title) in a fixed-height strip → Shows 4x4 grid (16 colors), always visible when in bulk mode
    - **Grid Layout**: `grid-cols-4 grid-rows-4` with `gap-0`, each square uses `w-full h-full` to fill cell
    - **Custom Names**: Folder metadata loaded → Custom names displayed as overlay text on squares (only if different from default)
    - User clicks color → `onBulkTagColorClick(video, folderColor)` (line 287)
@@ -531,7 +530,7 @@ Users see video cards built using the Card component system with video-specific 
 - When `isPriorityPin` changes → Pin icon updates → Amber filled if priority
 - When `isFollower` changes → Pin icon updates → Double-pin icon if follower modifier active
 - When `isCurrentlyPlaying` changes → "Now Playing" badge appears/disappears
-- When `bulkTagMode` changes → Hover behavior changes → Color grid appears on hover, star menu hidden
+- When `bulkTagMode` changes → Color grid strip appears below thumbnail, star menu hidden
 - When folder assigned → Parent updates `videoFolderAssignments` → Star icon updates, menu reflects changes
 - When video pinned → `pinStore` updates → Pin icon updates (blue=normal, amber=priority, double-pin=follower)
 - When follower video completes → Pin transfers to next video → Both old and new video icons update

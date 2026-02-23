@@ -75,7 +75,7 @@ The menu receives:
 
 When the user enables **bulk tag mode** on the Videos page:
 
-- **VideoCard** and **TweetCard** show a **bottom strip** (height `h-1/4`) that is **always visible** (no hover). The strip uses **BulkTagColorGrid** for multi-select folder tagging; Save/Cancel are in the page toolbar.
+- **VideoCard** and **TweetCard** show a **BulkTagColorGrid** strip **below the thumbnail** (between thumbnail and title), in a fixed-height band (`h-20`), always visible when bulk tag mode is on. The strip does not overlay the thumbnail. Save/Cancel are in the page toolbar.
 - The **3-dot menu is not shown** in bulk tag mode so that the same grid is not duplicated and the UX stays focused on the strip.
 
 This matches the “TweetCard-style” bulk experience: one consistent strip on both video and tweet cards.

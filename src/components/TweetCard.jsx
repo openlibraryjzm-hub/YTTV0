@@ -197,24 +197,22 @@ const TweetCard = ({
                         )}
 
                     </div>
+
+                    {/* Bulk tag: below thumbnail when bulk tag mode is active */}
+                    {bulkTagMode && (
+                        <div className="relative w-full h-20 flex-shrink-0 overflow-hidden mt-2" data-card-action="true">
+                            <BulkTagColorGrid
+                                videoId={video.id}
+                                currentFolders={videoFolders}
+                                selectedFolders={bulkTagSelections}
+                                onColorClick={onBulkTagColorClick}
+                                playlistId={playlistId}
+                                folderMetadata={folderMetadata}
+                                onRenameFolder={onRenameFolder}
+                            />
+                        </div>
+                    )}
                 </div>
-
-
-                {/* Bulk Tag Overlay */}
-                {/* Bulk Tag Overlay */}
-                {bulkTagMode && (
-                    <div className="absolute bottom-0 left-0 right-0 h-1/4 z-40">
-                        <BulkTagColorGrid
-                            videoId={video.id}
-                            currentFolders={videoFolders}
-                            selectedFolders={bulkTagSelections}
-                            onColorClick={onBulkTagColorClick}
-                            playlistId={playlistId}
-                            folderMetadata={folderMetadata}
-                            onRenameFolder={onRenameFolder}
-                        />
-                    </div>
-                )}
             </div>
 
             <style jsx>{`

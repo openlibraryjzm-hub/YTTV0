@@ -13,6 +13,7 @@ const Card = ({
   disabled = false,
   selected = false,
   playing = false,
+  rounded = true, // set false for square corners (e.g. video thumbnails)
   // Action areas - these won't trigger card click
   actionAreas = [], // Array of refs or selectors for areas that shouldn't trigger card click
 }) => {
@@ -55,7 +56,7 @@ const Card = ({
 
   const baseClasses = `
     relative
-    rounded-lg
+    ${rounded ? 'rounded-lg' : 'rounded-none'}
     overflow-visible
     transition-all
     duration-200
