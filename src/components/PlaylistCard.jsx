@@ -40,6 +40,7 @@ const PlaylistCard = ({
   deletingPlaylistId,
   expandedPlaylists,
   size = 'large', // 'large' | 'small' – small = thumbnail-only (no 4 mini previews), for small carousel
+  inCarousel = false, // when true, card is inside GroupPlaylistCarousel: no card/thumbnail border, white-friendly
 
   onVideoSelect,
   togglePlaylistExpand,
@@ -418,14 +419,16 @@ const PlaylistCard = ({
       data-playlist-name={playlist.name}
     >
       <div
-        className={`border-2 border-slate-700/50 rounded-xl p-2 bg-slate-100/90 hover:border-sky-500/50 transition-colors h-full flex flex-col ${String(playlist.id) === String(currentPlaylistId) ? "active-playlist-marker" : ""}`}
+        className={`rounded-xl h-full flex flex-col ${inCarousel ? 'bg-white' : 'bg-slate-100/90 border-2 border-slate-700/50 hover:border-sky-500/50 transition-colors'} ${size === 'small' ? 'p-0 overflow-hidden' : 'p-2'} ${String(playlist.id) === String(currentPlaylistId) ? "active-playlist-marker" : ""}`}
         data-active-playlist={
           String(playlist.id) === String(currentPlaylistId) ? "true" : "false"
         }
       >
-        <div className={`mb-2 flex items-center justify-between border-2 border-[#052F4A] rounded-md p-1 bg-slate-100/90 shadow-sm relative overflow-hidden ${size === 'small' ? 'h-[32px]' : 'h-[38px]'}`}>
+        {/* Title bar – only in large size; small carousel uses title below thumbnail (VideoCard-style) */}
+        {size !== 'small' && (
+        <div className={`mb-2 flex items-center justify-between border-2 border-[#052F4A] rounded-md p-1 bg-slate-100/90 shadow-sm relative overflow-hidden h-[38px]`}>
           <h3
-            className={`font-bold truncate transition-colors pl-1 flex-1 text-left ${size === 'small' ? 'text-sm' : 'text-lg'}`}
+            className="font-bold truncate transition-colors pl-1 flex-1 text-left text-lg"
             style={{ color: "#052F4A" }}
             onMouseEnter={(e) => (e.currentTarget.style.color = "#38bdf8")}
             onMouseLeave={(e) => (e.currentTarget.style.color = "#052F4A")}
@@ -491,9 +494,10 @@ const PlaylistCard = ({
             </div>
           </div>
         </div>
+        )}
 
         <div
-          className="rounded-lg overflow-hidden relative group mt-auto border-2 border-[#052F4A]"
+          className={`overflow-hidden relative group ${size === 'small' ? 'rounded-t-xl' : 'rounded-lg mt-auto'} ${!inCarousel ? 'border-2 border-[#052F4A]' : ''}`}
           style={{
             width: "100%",
             paddingBottom: "56.25%",
@@ -575,7 +579,7 @@ const PlaylistCard = ({
             </div>
           )}
 
-          {(showInfo || globalInfoToggle) && (previewThumbnail?.title || getPreviewItemTitle(localPreviewVideos[0])) && (
+          {(size !== 'small') && (showInfo || globalInfoToggle) && (previewThumbnail?.title || getPreviewItemTitle(localPreviewVideos[0])) && (
             <div
               className="absolute bottom-0 left-0 right-0 bg-black/80 px-2 py-1.5 z-20"
               style={{ backdropFilter: "blur(4px)" }}
@@ -586,6 +590,7 @@ const PlaylistCard = ({
             </div>
           )}
 
+          {size !== 'small' && (
           <div className="absolute bottom-2 left-2 z-30 flex items-center gap-2 group/folder-area">
             <button
               onClick={toggleFolderList}
@@ -628,7 +633,9 @@ const PlaylistCard = ({
                 : `${itemCount} video${itemCount !== 1 ? "s" : ""}`}
             </span>
           </div>
+          )}
 
+          {size !== 'small' && (
           <button
             onClick={handleSetAsCover}
             className="absolute bottom-2 right-2 w-8 h-8 rounded-full bg-[#052F4A]/90 hover:bg-sky-500 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200 z-30 shadow-lg hover:scale-110 border border-white/20"
@@ -636,6 +643,7 @@ const PlaylistCard = ({
           >
             <Check size={18} strokeWidth={3} />
           </button>
+          )}
 
           <div
             className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-30"
@@ -781,6 +789,19 @@ const PlaylistCard = ({
             />
           </div>
         </div>
+
+        {/* Small carousel: title below thumbnail (VideoCard-style minimal) */}
+        {size === 'small' && (
+          <p
+            className="font-medium text-sm truncate pt-2 px-2 pb-2 transition-colors"
+            style={{ color: '#052F4A' }}
+            onMouseEnter={(e) => (e.currentTarget.style.color = '#38bdf8')}
+            onMouseLeave={(e) => (e.currentTarget.style.color = '#052F4A')}
+            title={playlist.name}
+          >
+            {playlist.name}
+          </p>
+        )}
 
         {isMenuOpen && (
           <div

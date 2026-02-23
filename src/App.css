@@ -76,56 +76,80 @@ html,
 }
 
 /* ============================================
-   CUSTOM SCROLLBAR STYLES
+   CUSTOM SCROLLBAR STYLES (universal)
+   Fully rectangular (no rounding), 14px, diagonal grip stripes
    ============================================ */
 
 /* Firefox */
 * {
-  scrollbar-width: thin;
-  scrollbar-color: rgba(5, 47, 74, 0.3) rgba(224, 242, 254, 0.1);
+  scrollbar-width: auto;
+  scrollbar-color: #94a3b8 #e2e8f0;
 }
 
-/* Webkit browsers (Chrome, Edge, Safari) */
+/* Webkit: fully rectangular, no rounded ends */
 *::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
+  width: 14px;
+  height: 14px;
+  border-radius: 0 !important;
+  -webkit-border-radius: 0 !important;
+}
+
+/* Remove rounded end caps (buttons); keeps bar fully rectangular */
+*::-webkit-scrollbar-button {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
 }
 
 *::-webkit-scrollbar-track {
-  background: rgba(224, 242, 254, 0.1);
-  border-radius: 10px;
+  background: #e2e8f0 !important;
+  border-radius: 0 !important;
+  -webkit-border-radius: 0 !important;
   margin: 4px;
 }
 
+/* Thumb: rectangular, diagonal stripe pattern (opaque stripes so pattern is visible) */
 *::-webkit-scrollbar-thumb {
-  background: linear-gradient(135deg,
-      rgba(5, 47, 74, 0.4) 0%,
-      rgba(5, 47, 74, 0.3) 50%,
-      rgba(5, 47, 74, 0.4) 100%);
-  border-radius: 10px;
-  border: 2px solid rgba(224, 242, 254, 0.1);
-  transition: all 0.2s ease;
+  background: #94a3b8 !important;
+  background-image: repeating-linear-gradient(
+    -45deg,
+    #94a3b8 0px,
+    #94a3b8 3px,
+    #64748b 3px,
+    #64748b 5px
+  ) !important;
+  border-radius: 0 !important;
+  -webkit-border-radius: 0 !important;
+  border: 1px solid #64748b;
 }
 
 *::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(135deg,
-      rgba(5, 47, 74, 0.6) 0%,
-      rgba(5, 47, 74, 0.5) 50%,
-      rgba(5, 47, 74, 0.6) 100%);
-  border-color: rgba(224, 242, 254, 0.2);
+  background: #64748b !important;
+  background-image: repeating-linear-gradient(
+    -45deg,
+    #64748b 0px,
+    #64748b 3px,
+    #475569 3px,
+    #475569 5px
+  ) !important;
 }
 
 *::-webkit-scrollbar-thumb:active {
-  background: linear-gradient(135deg,
-      rgba(5, 47, 74, 0.8) 0%,
-      rgba(5, 47, 74, 0.7) 50%,
-      rgba(5, 47, 74, 0.8) 100%);
+  background: #475569 !important;
+  background-image: repeating-linear-gradient(
+    -45deg,
+    #475569 0px,
+    #475569 3px,
+    #334155 3px,
+    #334155 5px
+  ) !important;
 }
 
-/* Corner (where horizontal and vertical scrollbars meet) */
+/* Corner: rectangular */
 *::-webkit-scrollbar-corner {
-  background: rgba(224, 242, 254, 0.1);
-  border-radius: 10px;
+  background: #e2e8f0 !important;
+  border-radius: 0 !important;
+  -webkit-border-radius: 0 !important;
 }
 
 /* ============================================
@@ -352,31 +376,13 @@ html,
   animation: shimmer 1.5s infinite;
 }
 
-/* Horizontal video scroll container - ensure scrollbar is visible */
+/* Horizontal video scroll container - force scrollbar visible; uses universal scrollbar style */
 .horizontal-video-scroll {
-  scrollbar-width: thin;
-  scrollbar-color: rgba(148, 163, 184, 0.6) rgba(15, 23, 42, 0.3);
-  /* Force scrollbar to always be visible */
   overflow-x: scroll !important;
   overflow-y: hidden !important;
 }
 
-.horizontal-video-scroll::-webkit-scrollbar {
-  height: 12px !important;
-  display: block !important;
-}
-
-.horizontal-video-scroll::-webkit-scrollbar-track {
-  background: rgba(15, 23, 42, 0.4) !important;
-  border-radius: 6px;
-}
-
-.horizontal-video-scroll::-webkit-scrollbar-thumb {
-  background: rgba(148, 163, 184, 0.7) !important;
-  border-radius: 6px;
-  min-width: 20px;
-}
-
-.horizontal-video-scroll::-webkit-scrollbar-thumb:hover {
-  background: rgba(148, 163, 184, 0.9) !important;
+/* Group carousel uses universal scrollbar; optional track margin override */
+.group-carousel-scroll::-webkit-scrollbar-track {
+  margin: 0 8px;
 }

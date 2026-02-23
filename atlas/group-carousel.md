@@ -19,10 +19,10 @@ The Playlists page has three view modes:
 | **GROUPS** | Shows only group carousels: one horizontal carousel per group, with a “New carousel” button at the bottom. No main grid. |
 
 - **ALL** and **UNSORTED** use the same card size and grid layout (`grid-cols-1 md:grid-cols-2 gap-10`).
-- **GROUPS** shows each group in a **bounded carousel box** (see below). Each carousel has its **own display mode** (Large / Small / Bar), set via mode buttons on that carousel's top bar; modes can be mixed. TopNavigation provides a one-shot **"apply to all"** (see 1.2).
-  - **Large:** Cards use a larger fixed size (`min-w-[380px]`, `w-[min(520px,calc(50vw-2rem))]`), horizontal scroll, full PlaylistCard including 4 mini preview thumbnails. Top bar: standard padding (`px-4 py-2.5`).
-  - **Small:** Thumbnail-sized cards (~3 visible); PlaylistCard gets `size="small"` (injected by carousel) and hides the 4 mini preview strip. Card wrapper `min-w-[140px]`, `w-[min(180px,calc(33vw-1rem))]`; gap `gap-4`; scroll area `pt-1 pb-1`; compact top bar (`px-3 py-1`); box `mb-1.5` so carousels sit close together.
-  - **Bar:** Thin bar only: Layers icon, title, inline scroll left/right, rename, delete. No thumbnails; hidden scroll strip keeps scroll position. Box `mb-3`, compact bar styling.
+- **GROUPS** shows each group in a **bounded carousel box** (see below). Each carousel has its **own display mode** (Large / Small / Bar), set via mode buttons on that carousel's top bar; modes can be mixed. TopNavigation provides a one-shot **"apply to all"** (see 1.2). **Small and Large** carousels use a **white box** (`bg-white`), light gray border (`border-slate-200`), and **light top bar** (`bg-slate-50`, dark text); **Bar** mode keeps the dark box and bar.
+  - **Large:** Cards use a larger fixed size (`min-w-[380px]`, `w-[min(520px,calc(50vw-2rem))]`), horizontal scroll via **bottom scrollbar only** (no side arrow buttons). Full PlaylistCard including 4 mini preview thumbnails. Cards inside the carousel have **no border** and **white background** (`PlaylistCard` receives `inCarousel: true`). Top bar: standard padding (`px-4 py-2.5`).
+  - **Small:** Thumbnail-sized cards (~3 visible); PlaylistCard gets `size="small"` and `inCarousel: true` (injected by carousel) and uses a **minimal layout**: main-slot thumbnail on top, playlist title below (VideoCard-style). No title bar above the thumbnail; no 4 mini preview strip; no folder/count/set-as-cover overlays on the thumbnail (3-dot menu remains). Card wrapper `min-w-[140px]`, `w-[min(180px,calc(33vw-1rem))]`; gap `gap-4`; scroll via **bottom scrollbar only**; compact top bar (`px-3 py-1`); box `mb-1.5`, white background.
+  - **Bar:** Thin bar only: Layers icon, title, inline scroll left/right, rename, delete. No thumbnails; hidden scroll strip keeps scroll position. Box `mb-3`, dark styling, compact bar.
 
 ### 1.2 Playlists bar (TopNavigation)
 
@@ -111,15 +111,14 @@ This bar is **not** rendered on the Playlists page content area; it lives in the
 
 ### 4.3 GroupPlaylistCarousel
 
-- **Structure:** Each carousel is a single **bounded box**: rounded corners (`rounded-2xl`, or `rounded-xl` in bar mode), border (`border-white/10`), background (`bg-slate-800/40`), shadow. No inner component is used (structure is inlined) so re-renders do not remount the scroll container and scroll position is preserved.
+- **Structure:** Each carousel is a single **bounded box**. For **Small and Large** mode: white background (`bg-white`), light border (`border-slate-200`), rounded corners (`rounded-2xl`), shadow. For **Bar** mode: dark box (`bg-slate-800/40`, `border-white/10`, `rounded-xl`). No inner component is used (structure is inlined) so re-renders do not remount the scroll container and scroll position is preserved.
 - **Mode:** Effective mode is read from `playlistGroupStore.groupCarouselModes[groupId]` (default `'large'`). No global override; TopNavigation “apply to all” updates every group’s stored mode.
-- **Top bar:** A fixed top bar inside the box contains: Layers icon, carousel title (truncated); when `groupId` is set, **three mode buttons** (Large / Small / Bar) that call `setGroupCarouselMode(groupId, mode)`; in bar mode, inline scroll left/right buttons; when `groupId` / `onRename` / `onDelete` are provided, rename (pencil) and delete (trash) buttons. Styling: `border-b border-white/10`, `bg-slate-800/60`. In small/bar mode the bar is compact (`px-3 py-1` or `py-1.5`, smaller icons).
-- **Empty group:** Same box and top bar; body shows a placeholder: “No playlists in this carousel” (omitted in bar mode).
-- **Bar mode (1+ items):** Only the top bar is visible; a hidden scroll strip (fixed-width slots) keeps scroll position so the inline left/right buttons still advance by one “slot” per click.
+- **Top bar:** A fixed top bar inside the box. For **Small/Large**: light bar (`bg-slate-50`, `border-b border-slate-200`), dark text (`text-slate-800`), sky icon; mode/rename/delete buttons use slate/sky hover. For **Bar**: dark bar (`bg-slate-800/60`, `border-white/10`) with inline scroll left/right. When `groupId` is set, **three mode buttons** (Large / Small / Bar) call `setGroupCarouselMode(groupId, mode)`; when `onRename`/`onDelete` are provided, rename (pencil) and delete (trash). In small/bar mode the bar is compact (`px-3 py-1` or `py-1.5`, smaller icons).
+- **Empty group:** Same box and top bar; body shows a placeholder: “No playlists in this carousel” (omitted in bar mode). Empty state area uses `bg-slate-50` for Small/Large.
+- **Bar mode (1+ items):** Only the top bar is visible; a hidden scroll strip keeps scroll position so the inline left/right buttons advance by one “slot” per click.
 - **Large / Small mode (1+ items):** Horizontal scroll row:
-  - Scrollable flex row with mode-dependent gap (`gap-10` large, `gap-4` small) and padding (`pt-3 pb-2` large, `pt-1 pb-1` small). Custom webkit scrollbar.
-  - Card wrapper: large `w-[min(520px,calc(50vw-2rem))] min-w-[380px]`; small `w-[min(180px,calc(33vw-1rem))] min-w-[140px]`. Children receive injected `size` via `React.cloneElement`: `size="small"` when mode is small, else `"large"` (PlaylistCard uses this to hide the 4-mini-preview strip and compact header when small).
-  - Left/right chevron buttons (visibility on hover) call `scrollBy({ left: ±amount, behavior: 'smooth' })`.
+  - Scrollable flex row with mode-dependent gap (`gap-10` large, `gap-4` small) and padding (`pt-3 pb-2` large, `pt-1 pb-1` small). Scrolling is **only via the horizontal scrollbar** at the bottom (no left/right arrow buttons on the sides).
+  - Card wrapper: large `w-[min(520px,calc(50vw-2rem))] min-w-[380px]`; small `w-[min(180px,calc(33vw-1rem))] min-w-[140px]`. Children receive injected `size` and **`inCarousel: true`** via `React.cloneElement`. PlaylistCard with `inCarousel` has no card or thumbnail border and uses `bg-white` to match the carousel box.
   - No custom drag-to-scroll or scroll-snap; native horizontal scroll only. Stable keys on mapped children for list reconciliation.
 
 ### 4.4 PlaylistCard 3-dot menu
@@ -129,7 +128,11 @@ This bar is **not** rendered on the Playlists page content area; it lives in the
 
 ---
 
-## 5. Cross-references
+## 5. Scrollbar styling
+
+App-wide scrollbar styling is defined in `App.css` (universal `*::-webkit-scrollbar*` rules): 14px height/width, rectangular (no rounded ends), slate track/thumb with diagonal stripe pattern. **WebView (e.g. Tauri/WebView2) may not honor custom scrollbar appearance** (rounded or native look can still appear). Carousel horizontal scroll uses the same scrollbar; scrolling is only via the bottom scrollbar (no side arrow buttons).
+
+## 6. Cross-references
 
 - **Group badge and playlist navigation (Player Controller):** `group-badge-player-controller.md` (single badge, “entered from” group, nav restricted to group).
 - **Playlist cards:** `playlist-cards.md` (card UI and folder integration).

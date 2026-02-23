@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef } from 'react';
 import { ChevronLeft, ChevronRight, Layers, LayoutGrid, LayoutList, Minus, Pencil, Trash2 } from 'lucide-react';
 import { usePlaylistGroupStore } from '../store/playlistGroupStore';
 
@@ -10,7 +10,6 @@ import { usePlaylistGroupStore } from '../store/playlistGroupStore';
  */
 const GroupPlaylistCarousel = ({ children, title = 'Featured playlists', groupId, onRename, onDelete, mode: modeProp }) => {
     const scrollContainerRef = useRef(null);
-    const [showControls, setShowControls] = useState(false);
 
     const storedMode = usePlaylistGroupStore((s) => (groupId != null ? s.groupCarouselModes?.[groupId] ?? 'large' : 'large'));
     const setGroupCarouselMode = usePlaylistGroupStore((s) => s.setGroupCarouselMode);
@@ -33,21 +32,22 @@ const GroupPlaylistCarousel = ({ children, title = 'Featured playlists', groupId
     const isSmallMode = mode === 'small';
 
     const topBarCompact = isBarMode || isSmallMode;
+    const topBarLight = !isBarMode; // small and large carousels use white box + light top bar
     const topBar = (
         <div
-            className={`flex items-center justify-between gap-3 border-b border-white/10 bg-slate-800/60 ${
-                isBarMode ? 'px-3 py-1.5' : isSmallMode ? 'px-3 py-1' : 'px-4 py-2.5'
-            }`}
+            className={`flex items-center justify-between gap-3 ${
+                topBarLight ? 'border-b border-slate-200 bg-slate-50' : 'border-b border-white/10 bg-slate-800/60'
+            } ${isBarMode ? 'px-3 py-1.5' : isSmallMode ? 'px-3 py-1' : 'px-4 py-2.5'}`}
         >
             <div className="flex items-center gap-2 min-w-0 flex-1">
                 <Layers
-                    className={`text-sky-400 flex-shrink-0 ${topBarCompact ? 'w-3.5 h-3.5' : 'w-4 h-4'}`}
+                    className={`flex-shrink-0 ${topBarLight ? 'text-sky-600' : 'text-sky-400'} ${topBarCompact ? 'w-3.5 h-3.5' : 'w-4 h-4'}`}
                     aria-hidden
                 />
                 <h3
-                    className={`font-semibold text-slate-100 truncate ${
-                        isBarMode ? 'text-sm' : isSmallMode ? 'text-sm' : 'text-base'
-                    }`}
+                    className={`font-semibold truncate ${
+                        topBarLight ? 'text-slate-800' : 'text-slate-100'
+                    } ${isBarMode ? 'text-sm' : isSmallMode ? 'text-sm' : 'text-base'}`}
                 >
                     {title}
                 </h3>
@@ -77,7 +77,7 @@ const GroupPlaylistCarousel = ({ children, title = 'Featured playlists', groupId
                     <button
                         type="button"
                         onClick={() => setGroupCarouselMode(groupId, 'large')}
-                        className={`rounded-md transition-colors ${topBarCompact ? 'p-1.5' : 'p-2'} ${mode === 'large' ? 'bg-sky-600 text-white' : 'text-slate-400 hover:text-sky-400 hover:bg-sky-500/10'}`}
+                        className={`rounded-md transition-colors ${topBarCompact ? 'p-1.5' : 'p-2'} ${mode === 'large' ? 'bg-sky-600 text-white' : topBarLight ? 'text-slate-500 hover:text-sky-600 hover:bg-sky-500/10' : 'text-slate-400 hover:text-sky-400 hover:bg-sky-500/10'}`}
                         title="Large carousel"
                     >
                         <LayoutGrid size={topBarCompact ? 14 : 16} />
@@ -85,7 +85,7 @@ const GroupPlaylistCarousel = ({ children, title = 'Featured playlists', groupId
                     <button
                         type="button"
                         onClick={() => setGroupCarouselMode(groupId, 'small')}
-                        className={`rounded-md transition-colors ${topBarCompact ? 'p-1.5' : 'p-2'} ${mode === 'small' ? 'bg-sky-600 text-white' : 'text-slate-400 hover:text-sky-400 hover:bg-sky-500/10'}`}
+                        className={`rounded-md transition-colors ${topBarCompact ? 'p-1.5' : 'p-2'} ${mode === 'small' ? 'bg-sky-600 text-white' : topBarLight ? 'text-slate-500 hover:text-sky-600 hover:bg-sky-500/10' : 'text-slate-400 hover:text-sky-400 hover:bg-sky-500/10'}`}
                         title="Small carousel"
                     >
                         <LayoutList size={topBarCompact ? 14 : 16} />
@@ -93,7 +93,7 @@ const GroupPlaylistCarousel = ({ children, title = 'Featured playlists', groupId
                     <button
                         type="button"
                         onClick={() => setGroupCarouselMode(groupId, 'bar')}
-                        className={`rounded-md transition-colors ${topBarCompact ? 'p-1.5' : 'p-2'} ${mode === 'bar' ? 'bg-sky-600 text-white' : 'text-slate-400 hover:text-sky-400 hover:bg-sky-500/10'}`}
+                        className={`rounded-md transition-colors ${topBarCompact ? 'p-1.5' : 'p-2'} ${mode === 'bar' ? 'bg-sky-600 text-white' : topBarLight ? 'text-slate-500 hover:text-sky-600 hover:bg-sky-500/10' : 'text-slate-400 hover:text-sky-400 hover:bg-sky-500/10'}`}
                         title="Bar mode"
                     >
                         <Minus size={topBarCompact ? 14 : 16} />
@@ -109,7 +109,7 @@ const GroupPlaylistCarousel = ({ children, title = 'Featured playlists', groupId
                             const newName = window.prompt('Rename carousel', title);
                             if (newName != null && newName.trim()) onRename(groupId, newName.trim());
                         }}
-                        className={`rounded-lg text-slate-400 hover:text-sky-400 hover:bg-sky-500/10 transition-colors ${topBarCompact ? 'p-1.5' : 'p-2'}`}
+                        className={`rounded-lg transition-colors ${topBarCompact ? 'p-1.5' : 'p-2'} ${topBarLight ? 'text-slate-500 hover:text-sky-600 hover:bg-sky-500/10' : 'text-slate-400 hover:text-sky-400 hover:bg-sky-500/10'}`}
                         title="Rename carousel"
                     >
                         <Pencil size={topBarCompact ? 14 : 16} />
@@ -125,7 +125,7 @@ const GroupPlaylistCarousel = ({ children, title = 'Featured playlists', groupId
                             );
                             if (ok) onDelete(groupId);
                         }}
-                        className={`rounded-lg text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 transition-colors ${topBarCompact ? 'p-1.5' : 'p-2'}`}
+                        className={`rounded-lg transition-colors ${topBarCompact ? 'p-1.5' : 'p-2'} ${topBarLight ? 'text-slate-500 hover:text-rose-500 hover:bg-rose-500/10' : 'text-slate-400 hover:text-rose-400 hover:bg-rose-500/10'}`}
                         title="Delete carousel"
                     >
                         <Trash2 size={topBarCompact ? 14 : 16} />
@@ -138,21 +138,17 @@ const GroupPlaylistCarousel = ({ children, title = 'Featured playlists', groupId
     const boxClassName = isBarMode
         ? 'w-full mb-3 rounded-xl border border-white/10 bg-slate-800/40 shadow-md overflow-hidden'
         : isSmallMode
-            ? 'w-full mb-1.5 rounded-2xl border border-white/10 bg-slate-800/40 shadow-lg shadow-black/10 overflow-hidden'
-            : 'w-full mb-6 rounded-2xl border border-white/10 bg-slate-800/40 shadow-lg shadow-black/10 overflow-hidden';
+            ? 'w-full mb-1.5 rounded-2xl border border-slate-200 bg-white shadow-lg shadow-black/5 overflow-hidden'
+            : 'w-full mb-6 rounded-2xl border border-slate-200 bg-white shadow-lg shadow-black/5 overflow-hidden';
 
     // Empty carousel
     if (count === 0) {
         return (
             <div className="px-4">
-                <div
-                    className={boxClassName}
-                    onMouseEnter={() => setShowControls(true)}
-                    onMouseLeave={() => setShowControls(false)}
-                >
+                <div className={boxClassName}>
                     {topBar}
                     {!isBarMode && (
-                        <div className="min-h-[120px] flex items-center justify-center bg-slate-800/20">
+                        <div className="min-h-[120px] flex items-center justify-center bg-slate-50">
                             <p className="text-sm text-slate-500">No playlists in this carousel</p>
                         </div>
                     )}
@@ -165,7 +161,7 @@ const GroupPlaylistCarousel = ({ children, title = 'Featured playlists', groupId
     if (isBarMode) {
         return (
             <div className="px-4">
-                <div className={`${boxClassName} relative`} onMouseEnter={() => setShowControls(true)} onMouseLeave={() => setShowControls(false)}>
+                <div className={`${boxClassName} relative`}>
                     {topBar}
                     <div
                         ref={scrollContainerRef}
@@ -190,38 +186,9 @@ const GroupPlaylistCarousel = ({ children, title = 'Featured playlists', groupId
 
     return (
         <div className="px-4">
-            <div
-                className={boxClassName}
-                onMouseEnter={() => setShowControls(true)}
-                onMouseLeave={() => setShowControls(false)}
-            >
+            <div className={boxClassName}>
                 {topBar}
                 <div className="relative min-w-0">
-                    <style>{`
-                        .group-carousel-scroll::-webkit-scrollbar { height: 6px; }
-                        .group-carousel-scroll::-webkit-scrollbar-track {
-                            background: rgba(255,255,255,0.05);
-                            border-radius: 3px;
-                            margin: 0 12px;
-                        }
-                        .group-carousel-scroll::-webkit-scrollbar-thumb {
-                            background: rgba(148, 163, 184, 0.4);
-                            border-radius: 3px;
-                        }
-                        .group-carousel-scroll::-webkit-scrollbar-thumb:hover {
-                            background: rgba(148, 163, 184, 0.6);
-                        }
-                    `}</style>
-
-                    <button
-                        type="button"
-                        onClick={() => scroll('left')}
-                        className={`absolute left-2 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full bg-slate-800/90 backdrop-blur-sm border border-white/10 shadow-lg flex items-center justify-center text-slate-200 hover:text-white hover:bg-slate-700/90 transition-all duration-300 ${showControls ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
-                        aria-label="Scroll left"
-                    >
-                        <ChevronLeft size={18} />
-                    </button>
-
                     <div
                         ref={scrollContainerRef}
                         className={`group-carousel-scroll flex ${gapClass} overflow-x-auto overflow-y-hidden px-1 min-w-0 overscroll-x-contain ${isSmallMode ? 'pt-1 pb-1' : 'pt-3 pb-2'}`}
@@ -230,20 +197,11 @@ const GroupPlaylistCarousel = ({ children, title = 'Featured playlists', groupId
                         {React.Children.map(children, (child, index) => (
                             <div key={child?.key ?? `carousel-item-${index}`} className={cardWrapperClass}>
                                 {React.isValidElement(child)
-                                    ? React.cloneElement(child, { size: mode === 'small' ? 'small' : 'large' })
+                                    ? React.cloneElement(child, { size: mode === 'small' ? 'small' : 'large', inCarousel: true })
                                     : child}
                             </div>
                         ))}
                     </div>
-
-                    <button
-                        type="button"
-                        onClick={() => scroll('right')}
-                        className={`absolute right-2 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full bg-slate-800/90 backdrop-blur-sm border border-white/10 shadow-lg flex items-center justify-center text-slate-200 hover:text-white hover:bg-slate-700/90 transition-all duration-300 ${showControls ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
-                        aria-label="Scroll right"
-                    >
-                        <ChevronRight size={18} />
-                    </button>
                 </div>
             </div>
         </div>
