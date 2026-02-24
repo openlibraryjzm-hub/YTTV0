@@ -219,7 +219,7 @@ yttv2/
 | **Group Carousel (Playlists Page)** | `group-carousel.md` | `playlist-cards.md`, `state-management.md`, `ui-pages.md`, `page-banner.md` (TopNavigation) |
 | **Group Badge & Playlist Nav (Player Controller)** | `group-badge-player-controller.md` | `group-carousel.md`, `advanced-player-controller.md` |
 | **Subscription Manager** | `subscription-manager.md` | `api-bridge.md`, `database-schema.md` |
-| **Pokedex System** | `pokedex-system.md` | `state-management.md`, `ui-pages.md`, `database-schema.md` |
+| **Pokedex System** | `pokedex-system.md` | `gen1-pokemon-reference.md`, `state-management.md`, `ui-pages.md`, `database-schema.md` |
 | **Debug/Testing** | `debug.md` | `ui.md` (inspect mode, debug bounds) |
 
 ### By Technical Domain
@@ -626,4 +626,4 @@ For detailed information about the application's theme system and recent color c
   - **Scrolling**: Horizontal scroll only via bottom scrollbar; left/right arrow buttons removed from carousel sides.
   - **Scrollbar styling**: Universal scrollbar in `App.css` (14px, rectangular, slate track/thumb, diagonal stripe pattern) applied app-wide; WebView may not honor custom appearance. See `atlas/group-carousel.md` §5.
 - **Mission Hub – Disable time restrictions**: Settings button (top-right of hub) opens a panel with toggle "Disable time restrictions"; when on, launch is always allowed and the timer does not consume or auto-lock. Setting persisted in `missionStore` (`timerDisabled`). See `atlas/mission-hub.md` §2.6.
-- **Pokédex – Detail popup**: Clicking a fully unlocked Pokémon opens a light-theme popup with nameplate, official Pokédex entry (Pokémon Sun preferred, from PokeAPI species), and sprites table (Normal/Shiny × Gen 1–6 from Pokemon DB; Gen 1 Shiny cell shows em-dash placeholder). Lazy-loaded per Pokémon. See `atlas/pokedex-system.md` §4 and Asset Handling.
+- **Pokédex – Detail popup**: Clicking a fully unlocked Pokémon opens a light-theme popup with nameplate (type badges, artwork with gender-ratio ring—blue/pink/gray dashed from `gen1PokemonPhysical.js`; image moved left for close-button space), quote-style Pokédex entry (Sun preferred, PokeAPI), optional Lore (`gen1PokemonLore.js`), and sprites table (Normal/Shiny × Gen 1–6 from Pokemon DB). Types and physical data are hardcoded; only flavor text is fetched from API. See `atlas/pokedex-system.md` §4 and Asset Handling.

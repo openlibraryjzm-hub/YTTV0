@@ -2,6 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Lock, Check, Grid, Search } from 'lucide-react';
 import { usePokedexStore } from '../store/pokedexStore';
+import { GEN_1_POKEMON_TYPES } from '../data/gen1PokemonTypes';
+import { GEN_1_POKEMON_LORE } from '../data/gen1PokemonLore';
+import { GEN_1_POKEMON_PHYSICAL } from '../data/gen1PokemonPhysical';
 
 // Pokemon DB sprite URL pattern: https://img.pokemondb.net/sprites/{game}/{normal|shiny}/{slug}.png
 // One game per generation (Gen 1–6); table layout: rows = Normal, Shiny | cols = Gen 1…6
@@ -143,6 +146,28 @@ const PokemonCard = ({ pokemon, onSelect }) => {
 
 const POKEDEX_VERSION_PREFERRED = 'sun'; // Pokemon Sun entries (same as on Pokemon DB)
 
+// Type colors (aligned with Pokemon DB / classic games) for badges
+const TYPE_COLORS = {
+    normal: 'bg-slate-400 text-white',
+    fire: 'bg-orange-500 text-white',
+    water: 'bg-blue-500 text-white',
+    electric: 'bg-amber-400 text-slate-900',
+    grass: 'bg-green-500 text-white',
+    ice: 'bg-cyan-300 text-slate-900',
+    fighting: 'bg-rose-600 text-white',
+    poison: 'bg-violet-600 text-white',
+    ground: 'bg-amber-700 text-white',
+    flying: 'bg-indigo-300 text-slate-900',
+    psychic: 'bg-pink-500 text-white',
+    bug: 'bg-lime-600 text-white',
+    rock: 'bg-amber-600 text-white',
+    ghost: 'bg-purple-500 text-white',
+    dragon: 'bg-indigo-600 text-white',
+    dark: 'bg-slate-700 text-white',
+    steel: 'bg-slate-400 text-slate-900',
+    fairy: 'bg-pink-300 text-slate-900'
+};
+
 function normalizeFlavorText(text) {
     if (!text || typeof text !== 'string') return '';
     return text.replace(/\f/g, ' ').replace(/\n/g, ' ').replace(/\s+/g, ' ').trim();
@@ -156,6 +181,13 @@ const PokemonDetailPopup = ({ pokemon, onClose }) => {
     const [pokedexEntry, setPokedexEntry] = useState(null);
     const [pokedexVersion, setPokedexVersion] = useState(POKEDEX_VERSION_PREFERRED);
     const [pokedexLoading, setPokedexLoading] = useState(true);
+
+    // Types, lore, and physical from hardcoded Gen 1 data (atlas/gen1-pokemon-reference.md → src/data/)
+    const types = GEN_1_POKEMON_TYPES[id] || [];
+    const lore = GEN_1_POKEMON_LORE[id];
+    const physical = GEN_1_POKEMON_PHYSICAL[id];
+    // Female % for gender ring (0–100); null = genderless
+    const femalePct = physical == null ? null : physical.genderRate === -1 ? null : physical.genderRate === 0 ? 0 : physical.genderRate === 8 ? 100 : physical.genderRate >= 1 && physical.genderRate <= 7 ? physical.genderRate * 12.5 : Math.round((physical.genderRate / 256) * 100);
 
     useEffect(() => {
         let cancelled = false;
@@ -216,44 +248,105 @@ const PokemonDetailPopup = ({ pokemon, onClose }) => {
                     <X size={20} />
                 </button>
 
-                {/* Nameplate - light theme to match Pokedex/HomeHub */}
-                <div className="relative px-8 pt-8 pb-4 border-b border-blue-100 bg-blue-50/20">
+                {/* Nameplate - light theme to match Pokedex/HomeHub; pr-14 leaves room for close button */}
+                <div className="relative px-8 pt-8 pb-4 pr-14 border-b border-blue-100 bg-blue-50/20">
                     <div className="relative flex items-end justify-between gap-4 flex-wrap">
                         <div>
                             <p className="text-blue-900/40 font-mono text-xs uppercase tracking-[0.3em] mb-1">National №</p>
                             <h2 className="text-4xl md:text-5xl font-black text-slate-800 tracking-tight">
                                 {name}
                             </h2>
-                            <p className="text-slate-500 font-mono text-lg mt-1">#{String(id).padStart(3, '0')}</p>
+                            <div className="flex items-center gap-2 mt-1 flex-wrap">
+                                <p className="text-slate-500 font-mono text-lg">#{String(id).padStart(3, '0')}</p>
+                                {types.length > 0 && (
+                                    <span className="flex items-center gap-1.5 flex-wrap">
+                                        {types.map((typeName) => (
+                                            <span
+                                                key={typeName}
+                                                className={`inline-flex items-center px-2 py-0.5 rounded-md text-xs font-bold uppercase tracking-wider shadow-sm ${TYPE_COLORS[typeName] || 'bg-slate-300 text-slate-700'}`}
+                                            >
+                                                {typeName}
+                                            </span>
+                                        ))}
+                                    </span>
+                                )}
+                            </div>
                         </div>
-                        <div className="w-24 h-24 md:w-28 md:h-28 rounded-xl border-2 border-blue-100 bg-white flex items-center justify-center overflow-hidden flex-shrink-0 shadow-sm">
-                            <img
-                                src={officialArtUrl}
-                                alt={name}
-                                className="w-full h-full object-contain"
-                            />
+                        {/* Pokémon image with gender-ratio ring (blue = male, pink = female); moved left for close button space */}
+                        <div className="relative flex-shrink-0 mr-12 flex items-center justify-center">
+                            <div className="relative w-28 h-28 md:w-32 md:h-32 flex items-center justify-center">
+                                {physical != null && (() => {
+                                    const r = 48;
+                                    const circumference = 2 * Math.PI * r;
+                                    return (
+                                        <svg className="absolute inset-0 w-full h-full -rotate-90" viewBox="0 0 100 100" aria-hidden>
+                                            <circle cx="50" cy="50" r={r} fill="none" strokeWidth="5" className="stroke-slate-200/80" />
+                                            {femalePct === null ? (
+                                                <circle cx="50" cy="50" r={r} fill="none" strokeWidth="5" strokeDasharray="4 6" className="stroke-slate-400" />
+                                            ) : (
+                                                <>
+                                                    <circle
+                                                        cx="50" cy="50" r={r}
+                                                        fill="none" strokeWidth="5"
+                                                        stroke="#ec4899"
+                                                        strokeDasharray={`${(femalePct / 100) * circumference} ${circumference}`}
+                                                        strokeDashoffset={0}
+                                                        className="transition-[stroke-dasharray] duration-500"
+                                                    />
+                                                    <circle
+                                                        cx="50" cy="50" r={r}
+                                                        fill="none" strokeWidth="5"
+                                                        stroke="#3b82f6"
+                                                        strokeDasharray={`${((100 - femalePct) / 100) * circumference} ${circumference}`}
+                                                        strokeDashoffset={-((femalePct / 100) * circumference)}
+                                                        className="transition-[stroke-dasharray] duration-500"
+                                                    />
+                                                </>
+                                            )}
+                                        </svg>
+                                    );
+                                })()}
+                                <div className="relative w-20 h-20 md:w-24 md:h-24 rounded-xl overflow-hidden bg-white/90 flex items-center justify-center">
+                                    <img
+                                        src={officialArtUrl}
+                                        alt={name}
+                                        className="w-full h-full object-contain"
+                                    />
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                {/* Pokédex entry (Sun preferred; same official text as Pokemon DB) */}
+                {/* Pokédex entry (Sun preferred; from PokeAPI) — styled as iconic quote */}
                 <div className="px-6 pt-4 pb-4 border-b border-blue-100">
-                    <div className="flex items-center gap-2 mb-3">
-                        <h3 className="text-sm font-bold text-slate-800 uppercase tracking-widest">Pokédex entry</h3>
-                        <span className="text-blue-300/80 select-none" aria-hidden>•</span>
-                        <span className="text-xs font-mono text-blue-600/80 uppercase tracking-wider">Pokémon {pokedexVersion}</span>
-                    </div>
-                    <div className="relative rounded-xl border border-blue-100 bg-gradient-to-br from-blue-50/60 to-indigo-50/40 py-4 px-5 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.6)]">
-                        <div className="absolute left-0 top-0 bottom-0 w-1 rounded-l-xl bg-gradient-to-b from-blue-400 to-indigo-500 opacity-80" />
-                    {pokedexLoading ? (
-                        <p className="text-slate-400 italic text-sm pl-4">Loading…</p>
-                    ) : pokedexEntry ? (
-                        <p className="text-slate-700 text-sm leading-relaxed pl-4 font-medium tracking-wide">{pokedexEntry}</p>
-                    ) : (
-                        <p className="text-slate-400 italic text-sm pl-4">No entry available.</p>
-                    )}
+                    <div className="relative py-6 px-8 rounded-2xl bg-gradient-to-b from-slate-50/90 to-blue-50/50 border border-slate-200/80 shadow-[inset_0_1px_0_rgba(255,255,255,0.8)]">
+                        <span className="absolute top-4 left-6 text-5xl font-serif text-blue-300/60 leading-none select-none" aria-hidden>"</span>
+                        <span className="absolute top-4 right-6 text-5xl font-serif text-blue-300/60 leading-none select-none transform scale-x-[-1]" aria-hidden>"</span>
+                        {pokedexLoading ? (
+                            <p className="text-slate-400 italic text-center py-4">Loading…</p>
+                        ) : pokedexEntry ? (
+                            <>
+                                <p className="text-slate-700 text-base md:text-lg leading-relaxed text-center font-serif italic max-w-xl mx-auto">
+                                    {pokedexEntry}
+                                </p>
+                                <p className="text-slate-500 text-xs font-semibold uppercase tracking-[0.25em] text-center mt-4">
+                                    — Pokémon {pokedexVersion}
+                                </p>
+                            </>
+                        ) : (
+                            <p className="text-slate-400 italic text-center py-4">No entry available.</p>
+                        )}
                     </div>
                 </div>
+
+                {/* Lore summary (from atlas/gen1-pokemon-reference.md when available) */}
+                {lore && (
+                    <div className="px-6 pt-4 pb-4 border-b border-blue-100">
+                        <h3 className="text-sm font-bold text-slate-800 uppercase tracking-widest mb-3">Lore</h3>
+                        <p className="text-slate-700 text-sm leading-relaxed font-medium tracking-wide">{lore}</p>
+                    </div>
+                )}
 
                 {/* Sprites table: rows = Normal, Shiny | columns = Gen 1–6 (like Pokemon DB) */}
                 <div className="flex-1 overflow-y-auto p-6">

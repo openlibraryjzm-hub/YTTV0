@@ -43,10 +43,12 @@ A visual gallery tracking collection progress, featuring the **Atlas Blue** ligh
 ### 4. Pokémon Detail Popup (unlocked only)
 Clicking a **fully unlocked** Pokémon card opens a detail popup (light theme, aligned with Pokedex/Home Hub).
 
--   **Nameplate**: National № label, large Pokémon name, `#XXX` ID, and official artwork thumbnail.
--   **Pokédex entry**: Official in-game flavor text. **Pokémon Sun** is preferred; fetched from PokeAPI (`/pokemon-species/{id}`). If no Sun entry exists, the first available English entry is shown with the game name (e.g. Red, X). Styled as a data card with gradient background, left accent bar, and title line "POKÉDEX ENTRY • Pokémon Sun".
+-   **Nameplate**: National № label, large Pokémon name, `#XXX` ID, **type badges** (from `gen1PokemonTypes.js`), and official artwork thumbnail. The thumbnail has **no border** and is wrapped by a **gender-ratio ring** (blue = male, pink = female; genderless species show a gray dashed ring). Ring and physical data come from **`gen1PokemonPhysical.js`**. The image block is shifted left with extra right padding (`pr-14`) so the close button has clear space.
+-   **Pokédex entry**: Official in-game flavor text shown **first**, styled as an **iconic quote** (centred, serif, large quotation marks, attribution “— Pokémon Sun”). **Pokémon Sun** is preferred; fetched from PokeAPI (`/pokemon-species/{id}`). If no Sun entry exists, the first available English entry is shown with the game name (e.g. Red, X).
+-   **Lore** (when present): Optional “Lore” section below the quote, using narrative text from **`gen1PokemonLore.js`** (sourced from `atlas/gen1-pokemon-reference.md`). Shown only for Pokémon that have a lore entry.
 -   **Sprites table**: Layout matches [Pokémon Database](https://pokemondb.net): one row for **Normal**, one for **Shiny**; columns **Gen 1–6**. Sprites are sourced from `img.pokemondb.net` (URL pattern: `.../sprites/{game}/{normal|shiny}/{slug}.png`). Games used: Red/Blue (Gen 1), Silver (Gen 2), Ruby/Sapphire (Gen 3), Diamond/Pearl (Gen 4), Black/White (Gen 5), X/Y (Gen 6). **Gen 1 Shiny** has no sprite on the source site; that cell shows a stylized em-dash placeholder instead of an image.
 -   **Lazy loading**: Sprites and Pokédex text load only when the popup opens (per Pokémon), avoiding bulk requests for all 151 entries.
+-   **Data sources (no extra API for types/physical)**: Types from **`gen1PokemonTypes.js`**; lore from **`gen1PokemonLore.js`**; height, weight, and gender ratio from **`gen1PokemonPhysical.js`**. The only API call in the popup is PokeAPI `GET /pokemon-species/{id}` for flavor text. Sprites use built URLs (Pokemon DB + PokeAPI GitHub artwork).
 
 ## Technical Architecture
 
@@ -64,8 +66,8 @@ Uses `zustand` with `persist` middleware to save progress to local storage.
 -   **`HomeHub.jsx`**: Orchestrates the overlay states (`isShopOpen`, `isLootboxOpen`, `isPokedexOpen`).
 -   **`LootboxOverlay`**: Handles the opening animation, reward generation, and card rendering.
 -   **`LootboxShop`**: The UI for selecting crate tiers.
--   **`PokedexModal.jsx`**: Grid view of the collection; hosts **`PokemonCard`** (clickable when fully unlocked) and **`PokemonDetailPopup`** (nameplate, Pokédex entry, sprites table). Slug mapping for Pokemon DB URLs: Gen 1 name overrides for Nidoran♀/♂, Farfetch'd, Mr. Mime; otherwise derived from name (lowercase, hyphenated).
+-   **`PokedexModal.jsx`**: Grid view of the collection; hosts **`PokemonCard`** (clickable when fully unlocked) and **`PokemonDetailPopup`** (nameplate with type badges, artwork with gender-ratio ring, quote-style Pokédex entry, optional Lore, sprites table). Slug mapping for Pokemon DB URLs: Gen 1 name overrides for Nidoran♀/♂, Farfetch'd, Mr. Mime; otherwise derived from name (lowercase, hyphenated). Types from **`src/data/gen1PokemonTypes.js`**; lore from **`src/data/gen1PokemonLore.js`**; height/weight/gender from **`src/data/gen1PokemonPhysical.js`** — all keyed from **`atlas/gen1-pokemon-reference.md`** (single source of truth for Gen 1 names, types, physical data, and lore).
 
 ## Asset Handling
 -   **Grid / puzzle**: PokeAPI GitHub raw assets for official artwork; CSS `clip-path` slices into 4 puzzle quadrants.
--   **Detail popup**: Same PokeAPI artwork for the nameplate thumbnail; **Pokemon DB** (`img.pokemondb.net`) for Normal/Shiny sprites by generation (lazy-loaded when popup opens). **PokeAPI** `GET /pokemon-species/{id}` for Pokédex flavor text (Sun preferred, English).
+-   **Detail popup**: Same PokeAPI artwork for the nameplate thumbnail (no border; wrapped by gender-ratio ring from `gen1PokemonPhysical.js`). **Pokemon DB** (`img.pokemondb.net`) for Normal/Shiny sprites by generation (lazy-loaded when popup opens). **PokeAPI** `GET /pokemon-species/{id}` only for Pokédex flavor text (Sun preferred, English). Types, lore, and physical data (height, weight, gender) are hardcoded from `atlas/gen1-pokemon-reference.md` via `gen1PokemonTypes.js`, `gen1PokemonLore.js`, and `gen1PokemonPhysical.js`.
