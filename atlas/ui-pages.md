@@ -168,7 +168,7 @@ Users see a horizontal scrolling layout with two rows of video cards showing vid
     - **Playlist Name**: Fixed-width display with truncation
     - **Return Button**: Amber icon appears when navigated away from entry point, returns to reset point
 
-- **Sticky Toolbar**: Sits below the Page Banner and sticks to the top of the viewport when scrolling.
+- **Sticky Toolbar**: Sits below the Page Banner and sticks to the top of the viewport when scrolling. **Full width**: The bar spans the full width of the video page (no side margins); reduced margin below (`mb-4`) to free vertical space for content.
   - **Compact Layout**: Single-row design to maximize vertical space. Add, Subscriptions, and Bulk Tag actions have been moved to **TopNavigation** (left side, above playlist title) when on Videos page; only Save/Cancel remain in the toolbar when bulk tag mode is active.
   - **Videos Page Layout** (left to right):
     - **VideoSortFilters** (`VideoSortFilters.jsx`): Icon-based sort and rating filter. **Home** = default (shuffle). **Calendar** = date (click to cycle asc/desc, arrow indicator). **Bar chart** = progress (click to cycle direction). **Clock** = last viewed (click to cycle). **Drumstick** = single icon; hover expands vertically to show 1–5 drumsticks for multi-select rating filter (grey when unselected). Styling adapts to folder context (light when All, dark when Unsorted/folder).
@@ -179,12 +179,11 @@ Users see a horizontal scrolling layout with two rows of video cards showing vid
     - **Left**: Tab Bar navigation.
     - **Right**: Control cluster (Tab Presets, Folder Toggle, Add Playlist).
 
-- **Pagination Controls**: For performance, videos are paginated (50 videos per page). Controls appear in two locations:
-  - **Bottom of Grid**: Full pagination with `< [page] of [total] >` format
-  - **Page Banner Navigation Buttons**: Compact pagination appears below the thumbnail/ASCII section when on Videos page with multiple pages
-    - **Previous/Next Buttons**: Navigate one page forward/backward
-    - **Page Indicator**: Clickable page number (e.g., "1/99") that allows direct page navigation via text input
-  - **State Management**: Uses `paginationStore.js` for shared state between both locations
+- **Pagination Controls**: For performance, videos are paginated (50 videos per page). **Bottom of Grid** (primary):
+  - **Styling**: Light theme matching VideoSortFilters (white/light gray buttons, black borders; active page = black fill).
+  - **Layout**: Prev arrow | up to **5 numbered page buttons** (sliding window when total pages > 5) | Next arrow.
+  - **Prev/Next**: Click = previous/next page; double-click = jump by quarter (when >4 pages); **long-press (~500ms)** = jump to first/last page, with a visible charge-up animation during the hold.
+  - **State Management**: Uses `paginationStore.js` for shared state (e.g. with TopNav when applicable).
 
 - **Sticky Video Carousel**: 
   - **Purpose**: Displays important videos at the very top of the page.

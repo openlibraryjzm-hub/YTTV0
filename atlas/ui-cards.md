@@ -327,19 +327,17 @@ Users see video cards built using the Card component system with video-specific 
 
 - **Content Area**:
   - **Title**: Video title, dark blue text (RGB(5, 47, 74) / #052F4A), truncates
-  - **Title**: Video title, dark blue text (RGB(5, 47, 74) / #052F4A), truncates
-  - **Hidden by default (visible on hover)**:
-    - **Subtitle**: Video ID, gray text
+  - **Title**: Video title, dark blue text (RGB(5, 47, 74) / #052F4A), truncates. No subtitle (video ID) is shown.
 
 - **Visual States**:
   - **Default**: Gray border, thumbnail and title visible
   - **Selected**: Blue border (when video is selected)
   - **Playing**: **Vibrant Red Glow** (thick `ring-red-500` border + dual-layer shadow bleeding into/out of thumbnail)
   - **Bulk Tag Selected**: Colored border matching first selected folder color (when in bulk tag mode with selections)
-  - **Hover**: Lighter background, top-right controls (Pin/Star), bottom-right menu, and subtitle appear
+  - **Hover**: Lighter background, top-right controls (Pin/Star), bottom-right menu
 
 - **Interactive Elements**:
-  - **Card Click**: Plays video in main player (No detailed preview expansion on hover).
+  - **Card Click**: Plays video in main player. No thumbnail hover expansion (ImageHoverPreview is used for TweetCard only, not VideoCard).
 
   - **Pin Button** (top-right):
     - **Click unpinned**: Adds normal pin (filled blue icon).

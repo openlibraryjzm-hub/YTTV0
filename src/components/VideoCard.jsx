@@ -1,9 +1,8 @@
-import React, { useState, useRef, useMemo, useEffect } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import Card from './Card';
 import CardThumbnail from './CardThumbnail';
 import CardContent from './CardContent';
 import BulkTagColorGrid from './BulkTagColorGrid';
-import ImageHoverPreview from './ImageHoverPreview';
 import { getThumbnailUrl } from '../utils/youtubeUtils';
 import { FOLDER_COLORS, getFolderColorById } from '../utils/folderColors';
 import { usePinStore } from '../store/pinStore';
@@ -70,27 +69,6 @@ const VideoCard = ({
 
   // Use stored thumbnail_url if available (for Twitter/local content), otherwise construct YouTube thumbnail
   const thumbnailUrl = video.thumbnail_url || getThumbnailUrl(video.video_id, 'medium');
-
-  // For preview, use high-res source:
-  // - For local/Twitter content: 
-  //   - If it's a video/gif file (MP4), we can't show it in <img>, so use enlarged thumbnail
-  //   - If it's an image, use the original video_url
-  // - For YouTube: use maxresdefault thumbnail
-  const previewUrl = useMemo(() => {
-    if (video.is_local) {
-      const isVideoFile = video.video_url?.match(/\.(mp4|gif|mov|m3u8|webm|ts)/i);
-      const isTwitter = video.video_url?.includes('twimg.com') || video.thumbnail_url?.includes('twimg.com');
-
-      if (isVideoFile && isTwitter) {
-        // Upgrade Twitter thumbnail from 'thumb' to 'large' or 'orig'
-        // 'large' is generally safe for video thumbnails
-        return video.thumbnail_url?.replace(/name=[a-z]+/, 'name=large');
-      }
-
-      return video.video_url || video.thumbnail_url;
-    }
-    return getThumbnailUrl(video.video_id, 'medium');
-  }, [video]);
 
   // Get border color for bulk tag selections
   const getBulkTagBorderColor = () => {
@@ -281,17 +259,15 @@ const VideoCard = ({
 
           {/* Shrunken Thumbnail with Margins */}
           <div className="px-3 pb-3">
-            <ImageHoverPreview src={thumbnailUrl} previewSrc={previewUrl} alt={video.title || `Video ${index + 1}`} delay={500}>
-              <CardThumbnail
-                src={thumbnailUrl}
-                alt={video.title || `Video ${index + 1}`}
-                overlay={playOverlay}
-                badges={badges}
-                progress={progress}
-                className={`overflow-hidden ${bulkTagBorderColor ? 'border-2' : ''} ${isCurrentlyPlaying ? 'ring-4 ring-red-500 ring-offset-2 ring-offset-white shadow-[0_0_40px_rgba(239,68,68,1),inset_0_0_40px_rgba(239,68,68,0.8)]' : ''}`}
-                style={bulkTagBorderColor ? { borderColor: bulkTagBorderColor, borderWidth: '2px' } : undefined}
-              />
-            </ImageHoverPreview>
+            <CardThumbnail
+              src={thumbnailUrl}
+              alt={video.title || `Video ${index + 1}`}
+              overlay={playOverlay}
+              badges={badges}
+              progress={progress}
+              className={`overflow-hidden ${bulkTagBorderColor ? 'border-2' : ''} ${isCurrentlyPlaying ? 'ring-4 ring-red-500 ring-offset-2 ring-offset-white shadow-[0_0_40px_rgba(239,68,68,1),inset_0_0_40px_rgba(239,68,68,0.8)]' : ''}`}
+              style={bulkTagBorderColor ? { borderColor: bulkTagBorderColor, borderWidth: '2px' } : undefined}
+            />
 
             {/* Bulk tag: below thumbnail, above card bottom, when bulk tag mode is active */}
             {bulkTagMode && (
@@ -324,17 +300,15 @@ const VideoCard = ({
       rounded={false}
     >
       <div className={`relative group ${bulkTagMode ? 'overflow-visible' : 'overflow-hidden'}`}>
-        <ImageHoverPreview src={thumbnailUrl} previewSrc={previewUrl} alt={video.title || `Video ${index + 1}`} delay={500}>
-          <CardThumbnail
-            src={thumbnailUrl}
-            alt={video.title || `Video ${index + 1}`}
-            overlay={playOverlay}
-            badges={badges}
-            progress={progress}
-            className={`overflow-hidden ${bulkTagBorderColor ? 'border-2' : ''} ${isCurrentlyPlaying ? 'ring-4 ring-red-500 ring-offset-2 ring-offset-black shadow-[0_0_40px_rgba(239,68,68,1),inset_0_0_40px_rgba(239,68,68,0.8)]' : ''}`}
-            style={bulkTagBorderColor ? { borderColor: bulkTagBorderColor } : undefined}
-          />
-        </ImageHoverPreview>
+        <CardThumbnail
+          src={thumbnailUrl}
+          alt={video.title || `Video ${index + 1}`}
+          overlay={playOverlay}
+          badges={badges}
+          progress={progress}
+          className={`overflow-hidden ${bulkTagBorderColor ? 'border-2' : ''} ${isCurrentlyPlaying ? 'ring-4 ring-red-500 ring-offset-2 ring-offset-black shadow-[0_0_40px_rgba(239,68,68,1),inset_0_0_40px_rgba(239,68,68,0.8)]' : ''}`}
+          style={bulkTagBorderColor ? { borderColor: bulkTagBorderColor } : undefined}
+        />
       </div>
 
       {/* Bulk tag: below thumbnail, above title, when bulk tag mode is active */}
@@ -354,8 +328,6 @@ const VideoCard = ({
 
       <CardContent
         title={video.title || `Video ${index + 1}`}
-        subtitle={video.video_id}
-        className="[&>p]:opacity-0 [&>p]:group-hover:opacity-100 [&>p]:transition-opacity [&>p]:duration-200"
         padding="p-0 pt-3"
         headerActions={null}
       />

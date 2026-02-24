@@ -460,6 +460,10 @@ For detailed information about the application's theme system and recent color c
 3. **Use cross-references** to navigate between related topics
 
 ### Update Log (Current Session)
+- **Videos Page & Video Card UX**:
+  - **Sticky toolbar**: Full width (no side margins), reduced margin below (`mb-4`) so the bar spans the video page and content area gains vertical space.
+  - **Pagination**: Light theme (VideoSortFilters-style); up to 5 numbered page buttons with sliding window; prev/next with 500ms long-press for first/last page and charge-up animation.
+  - **VideoCard**: No thumbnail hover expansion (ImageHoverPreview removed; reserved for TweetCard). Video ID subtitle below title removed.
 - **App Banner (splitscreen spill)**: Spill hover uses simple full-banner opacity (`SPILL_HOVER_OPACITY` in `LayoutShell.jsx`, default 0.2) instead of cursor-following cutout; see `app-banner.md`.
 - **Videos Page Sticky Bar & Folder Prism**:
   - **VideoSortFilters** (`VideoSortFilters.jsx`): Icon bar (Home, Calendar, Bar chart, Clock, Drumstick rating filter). Documented in `ui-pages.md` (4.1.2) and `drumstick-rating-system.md`.

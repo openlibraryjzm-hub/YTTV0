@@ -247,6 +247,13 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
     clearPreserveScroll,
   } = usePaginationStore();
   const pageInputRef = useRef(null);
+  // Long-press "charge" progress for first/last page (0..1), per button
+  const [navHoldProgress, setNavHoldProgress] = useState({ prev: 0, next: 0 });
+  const navHoldIntervalRef = useRef(null);
+  const navHoldTargetRef = useRef(null); // 'prev' | 'next'
+  const navSingleClickTimerRef = useRef(null);
+  const navLastClickTimeRef = useRef(0);
+  const navDidLongClickRef = useRef(false);
 
 
 
@@ -1672,8 +1679,8 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
           <div
             className={`sticky top-0 z-40 transition-all duration-500 cubic-bezier(0.4, 0, 0.2, 1) overflow-hidden
             ${isStuck
-                ? 'backdrop-blur-xl border-y shadow-2xl mx-0 rounded-none mb-6 pt-2 pb-2 bg-slate-900/70'
-                : 'backdrop-blur-[2px] border-b border-x border-t border-white/10 shadow-xl mx-[22px] rounded-b-2xl mb-8 mt-0 pt-1 pb-0 bg-transparent'
+                ? 'backdrop-blur-xl border-y shadow-2xl mx-0 rounded-none mb-4 pt-2 pb-2 bg-slate-900/70'
+                : 'backdrop-blur-[2px] border-b border-x border-t border-white/10 shadow-xl mx-0 rounded-none mb-4 mt-0 pt-1 pb-0 bg-transparent'
               }
             `}
             style={{
@@ -2034,11 +2041,8 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
 
             {/* Pagination Controls - Based on Regular Videos only, since Stickies are always shown */}
             {totalPages > 1 && (() => {
-              // Calculate quarter jump targets
-              // For small page counts (<=4), double-click acts as normal prev/next
+              // Quarter jump targets for double-click
               const useQuarterJumps = totalPages > 4;
-
-              // Quarter marks: 25%, 50%, 75%, 100% of total pages
               const quarterMarks = useQuarterJumps
                 ? [
                   Math.max(1, Math.round(totalPages * 0.25)),
@@ -2047,174 +2051,190 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
                   totalPages
                 ]
                 : [];
-
-              // Find next quarter mark (for double-click >)
               const getNextQuarter = () => {
                 if (!useQuarterJumps) return Math.min(currentPage + 1, totalPages);
                 const next = quarterMarks.find(q => q > currentPage);
                 return next || totalPages;
               };
-
-              // Find previous quarter mark (for double-click <)
               const getPrevQuarter = () => {
                 if (!useQuarterJumps) return Math.max(currentPage - 1, 1);
                 const prev = [...quarterMarks].reverse().find(q => q < currentPage);
                 return prev || 1;
               };
 
-              // Combined handler: single click, double click, and long press
-              const LONG_CLICK_MS = 600;
+              const LONG_PRESS_MS = 500;
               const DOUBLE_CLICK_MS = 300;
-              let longClickTimer = null;
-              let singleClickTimer = null;
-              let didLongClick = false;
-              let lastClickTime = 0;
+              const TICK_MS = 40;
+              const progressPerTick = TICK_MS / LONG_PRESS_MS;
 
-              const createCombinedHandlers = (singleAction, doubleAction, longAction) => ({
+              const clearHoldProgress = (which) => {
+                if (navHoldIntervalRef.current) {
+                  clearInterval(navHoldIntervalRef.current);
+                  navHoldIntervalRef.current = null;
+                }
+                navHoldTargetRef.current = null;
+                setNavHoldProgress((p) => ({ ...p, [which]: 0 }));
+              };
+
+              const createCombinedHandlers = (which, singleAction, doubleAction, longAction) => ({
                 onMouseDown: () => {
-                  didLongClick = false;
-                  longClickTimer = setTimeout(() => {
-                    didLongClick = true;
-                    clearTimeout(singleClickTimer);
-                    longAction();
-                  }, LONG_CLICK_MS);
+                  navDidLongClickRef.current = false;
+                  setNavHoldProgress((p) => ({ ...p, [which]: 0 }));
+                  navHoldTargetRef.current = which;
+                  navHoldIntervalRef.current = setInterval(() => {
+                    setNavHoldProgress((p) => {
+                      const next = Math.min(1, p[which] + progressPerTick);
+                      if (next >= 1) {
+                        if (navHoldIntervalRef.current) {
+                          clearInterval(navHoldIntervalRef.current);
+                          navHoldIntervalRef.current = null;
+                        }
+                        navDidLongClickRef.current = true;
+                        longAction();
+                        return { ...p, [which]: 0 };
+                      }
+                      return { ...p, [which]: next };
+                    });
+                  }, TICK_MS);
                 },
                 onMouseUp: () => {
-                  clearTimeout(longClickTimer);
-                  if (didLongClick) return;
-
+                  clearHoldProgress(which);
+                  if (navDidLongClickRef.current) return;
                   const now = Date.now();
-                  const timeSinceLastClick = now - lastClickTime;
-
+                  const timeSinceLastClick = now - navLastClickTimeRef.current;
                   if (timeSinceLastClick < DOUBLE_CLICK_MS) {
-                    // Double click detected
-                    clearTimeout(singleClickTimer);
-                    lastClickTime = 0;
+                    if (navSingleClickTimerRef.current) clearTimeout(navSingleClickTimerRef.current);
+                    navLastClickTimeRef.current = 0;
                     doubleAction();
                   } else {
-                    // Potential single click - wait to see if double click comes
-                    lastClickTime = now;
-                    singleClickTimer = setTimeout(() => {
+                    navLastClickTimeRef.current = now;
+                    navSingleClickTimerRef.current = setTimeout(() => {
                       singleAction();
-                      lastClickTime = 0;
+                      navLastClickTimeRef.current = 0;
                     }, DOUBLE_CLICK_MS);
                   }
                 },
-                onMouseLeave: () => {
-                  clearTimeout(longClickTimer);
-                },
+                onMouseLeave: () => clearHoldProgress(which),
                 onTouchStart: () => {
-                  didLongClick = false;
-                  longClickTimer = setTimeout(() => {
-                    didLongClick = true;
-                    clearTimeout(singleClickTimer);
-                    longAction();
-                  }, LONG_CLICK_MS);
+                  navDidLongClickRef.current = false;
+                  setNavHoldProgress((p) => ({ ...p, [which]: 0 }));
+                  navHoldTargetRef.current = which;
+                  navHoldIntervalRef.current = setInterval(() => {
+                    setNavHoldProgress((p) => {
+                      const next = Math.min(1, p[which] + progressPerTick);
+                      if (next >= 1) {
+                        if (navHoldIntervalRef.current) {
+                          clearInterval(navHoldIntervalRef.current);
+                          navHoldIntervalRef.current = null;
+                        }
+                        navDidLongClickRef.current = true;
+                        longAction();
+                        return { ...p, [which]: 0 };
+                      }
+                      return { ...p, [which]: next };
+                    });
+                  }, TICK_MS);
                 },
                 onTouchEnd: (e) => {
-                  clearTimeout(longClickTimer);
-                  if (didLongClick) {
+                  clearHoldProgress(which);
+                  if (navDidLongClickRef.current) {
                     e.preventDefault();
                     return;
                   }
-
                   const now = Date.now();
-                  const timeSinceLastClick = now - lastClickTime;
-
+                  const timeSinceLastClick = now - navLastClickTimeRef.current;
                   if (timeSinceLastClick < DOUBLE_CLICK_MS) {
-                    clearTimeout(singleClickTimer);
-                    lastClickTime = 0;
+                    if (navSingleClickTimerRef.current) clearTimeout(navSingleClickTimerRef.current);
+                    navLastClickTimeRef.current = 0;
                     doubleAction();
                   } else {
-                    lastClickTime = now;
-                    singleClickTimer = setTimeout(() => {
+                    navLastClickTimeRef.current = now;
+                    navSingleClickTimerRef.current = setTimeout(() => {
                       singleAction();
-                      lastClickTime = 0;
+                      navLastClickTimeRef.current = 0;
                     }, DOUBLE_CLICK_MS);
                   }
                   e.preventDefault();
                 },
               });
 
-              // Handler sets for prev/next buttons
               const prevHandlers = createCombinedHandlers(
+                'prev',
                 () => setCurrentPage(Math.max(currentPage - 1, 1)),
                 () => setCurrentPage(getPrevQuarter()),
                 () => setCurrentPage(1)
               );
               const nextHandlers = createCombinedHandlers(
+                'next',
                 () => setCurrentPage(Math.min(currentPage + 1, totalPages)),
                 () => setCurrentPage(getNextQuarter()),
                 () => setCurrentPage(totalPages)
               );
 
+              // Up to 5 numbered page buttons; sliding window when totalPages > 5
+              const maxNumberedButtons = 5;
+              const startPage = totalPages <= maxNumberedButtons
+                ? 1
+                : Math.max(1, Math.min(currentPage - 2, totalPages - maxNumberedButtons + 1));
+              const endPage = Math.min(totalPages, startPage + maxNumberedButtons - 1);
+              const pageNumbers = [];
+              for (let p = startPage; p <= endPage; p++) pageNumbers.push(p);
+
+              const btnBase = 'p-1.5 rounded-md transition-all border-2 shrink-0 flex items-center justify-center min-w-[2rem] font-bold select-none';
+              const btnInactive = 'bg-white/80 text-black/60 hover:bg-gray-100 hover:text-black border-black/20';
+              const btnActive = 'bg-black text-white border-black shadow-md';
+
               return (
-                <div className="flex justify-center items-center gap-3 mt-8 mb-4">
-                  {/* Previous: click=prev, double-click=quarter back, hold=first */}
+                <div className="flex justify-center items-center gap-2 mt-8 mb-4 flex-wrap">
+                  {/* Previous: click=prev, double-click=quarter back, hold=first (with charge animation) */}
                   <button
                     {...prevHandlers}
                     disabled={currentPage === 1}
-                    className="px-4 py-2 bg-slate-700 hover:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg font-bold transition-colors border border-slate-600 text-sky-400 hover:text-sky-300 text-lg select-none"
-                    title="Click: previous | Double-click: quarter back | Hold: first page"
+                    className={`relative overflow-hidden px-3 py-2 rounded-lg border-2 border-black/20 font-bold text-lg transition-colors select-none
+                      ${currentPage === 1 ? 'opacity-50 cursor-not-allowed bg-white/50' : 'bg-white/80 text-black/70 hover:bg-gray-100 hover:text-black'}`}
+                    title="Click: previous | Double-click: quarter back | Hold ~0.5s: first page"
                   >
-                    &lt;
+                    <span className="relative z-10">&lt;</span>
+                    {navHoldProgress.prev > 0 && (
+                      <span
+                        className="absolute inset-0 bg-black/20 transition-all duration-75 ease-linear"
+                        style={{ width: `${navHoldProgress.prev * 100}%` }}
+                        aria-hidden
+                      />
+                    )}
                   </button>
 
-                  <span className="text-slate-400 font-medium px-3 flex items-center gap-1">
-                    {isEditingPage ? (
-                      <input
-                        ref={pageInputRef}
-                        type="text"
-                        value={pageInputValue}
-                        onChange={(e) => {
-                          const val = e.target.value.replace(/[^0-9]/g, '');
-                          setPageInputValue(val);
-                        }}
-                        onBlur={() => {
-                          const page = parseInt(pageInputValue);
-                          if (page >= 1 && page <= totalPages) {
-                            setCurrentPage(page);
-                          }
-                          setIsEditingPage(false);
-                        }}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') {
-                            const page = parseInt(pageInputValue);
-                            if (page >= 1 && page <= totalPages) {
-                              setCurrentPage(page);
-                            }
-                            setIsEditingPage(false);
-                          } else if (e.key === 'Escape') {
-                            setIsEditingPage(false);
-                          }
-                        }}
-                        className="w-12 px-1 py-0.5 bg-slate-800 border border-sky-500 rounded text-center text-sky-400 font-medium focus:outline-none focus:ring-1 focus:ring-sky-500"
-                        autoFocus
-                      />
-                    ) : (
-                      <span
-                        onClick={() => {
-                          setPageInputValue(String(currentPage));
-                          setIsEditingPage(true);
-                          setTimeout(() => pageInputRef.current?.select(), 0);
-                        }}
-                        className="cursor-pointer hover:text-sky-400 hover:underline transition-colors"
-                        title="Click to jump to a specific page"
+                  {/* Numbered page buttons (up to 8) */}
+                  <div className="flex items-center gap-1 flex-wrap justify-center">
+                    {pageNumbers.map((p) => (
+                      <button
+                        key={p}
+                        type="button"
+                        onClick={() => setCurrentPage(p)}
+                        className={`${btnBase} ${p === currentPage ? btnActive : btnInactive}`}
+                        title={`Page ${p}`}
                       >
-                        {currentPage}
-                      </span>
-                    )}
-                    {' '}of {totalPages}
-                  </span>
+                        {p}
+                      </button>
+                    ))}
+                  </div>
 
-                  {/* Next: click=next, double-click=quarter forward, hold=last */}
+                  {/* Next: click=next, double-click=quarter forward, hold=last (with charge animation) */}
                   <button
                     {...nextHandlers}
                     disabled={currentPage >= totalPages}
-                    className="px-4 py-2 bg-slate-700 hover:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg font-bold transition-colors border border-slate-600 text-sky-400 hover:text-sky-300 text-lg select-none"
-                    title="Click: next | Double-click: quarter forward | Hold: last page"
+                    className={`relative overflow-hidden px-3 py-2 rounded-lg border-2 border-black/20 font-bold text-lg transition-colors select-none
+                      ${currentPage >= totalPages ? 'opacity-50 cursor-not-allowed bg-white/50' : 'bg-white/80 text-black/70 hover:bg-gray-100 hover:text-black'}`}
+                    title="Click: next | Double-click: quarter forward | Hold ~0.5s: last page"
                   >
-                    &gt;
+                    <span className="relative z-10">&gt;</span>
+                    {navHoldProgress.next > 0 && (
+                      <span
+                        className="absolute inset-0 bg-black/20 transition-all duration-75 ease-linear"
+                        style={{ width: `${navHoldProgress.next * 100}%` }}
+                        aria-hidden
+                      />
+                    )}
                   </button>
                 </div>
               );
