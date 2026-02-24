@@ -242,7 +242,7 @@ yttv2/
 
 #### `mission-hub.md`
 **Covers**: Gamified start screen, mission system, time bank productivity, tab management
-**Key Topics**: **Home Hub**, mission creation/reset, time-gating, persistence
+**Key Topics**: **Home Hub**, mission creation/reset, time-gating, **disable time restrictions** (Settings), persistence
 **Cross-References**: See `state-management.md` (missionStore), `ui-pages.md` (UI integration)
 
 #### `advanced-player-controller.md`
@@ -625,3 +625,5 @@ For detailed information about the application's theme system and recent color c
   - **Playlist cards in carousel**: `PlaylistCard` receives `inCarousel: true` (injected by `GroupPlaylistCarousel`). When `inCarousel`: no card or thumbnail border, `bg-white` to match carousel. Small mode keeps minimal layout (thumbnail on top, title below; no title bar, no mini strip, no folder/count/set-cover overlays).
   - **Scrolling**: Horizontal scroll only via bottom scrollbar; left/right arrow buttons removed from carousel sides.
   - **Scrollbar styling**: Universal scrollbar in `App.css` (14px, rectangular, slate track/thumb, diagonal stripe pattern) applied app-wide; WebView may not honor custom appearance. See `atlas/group-carousel.md` §5.
+- **Mission Hub – Disable time restrictions**: Settings button (top-right of hub) opens a panel with toggle "Disable time restrictions"; when on, launch is always allowed and the timer does not consume or auto-lock. Setting persisted in `missionStore` (`timerDisabled`). See `atlas/mission-hub.md` §2.6.
+- **Pokédex – Detail popup**: Clicking a fully unlocked Pokémon opens a light-theme popup with nameplate, official Pokédex entry (Pokémon Sun preferred, from PokeAPI species), and sprites table (Normal/Shiny × Gen 1–6 from Pokemon DB; Gen 1 Shiny cell shows em-dash placeholder). Lazy-loaded per Pokémon. See `atlas/pokedex-system.md` §4 and Asset Handling.

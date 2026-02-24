@@ -108,7 +108,8 @@ export const usePokedexStore = create(
                         id,
                         name,
                         pieces,
-                        isUnlocked: pieces.length === 4
+                        isUnlocked: pieces.length === 4,
+                        isFullyUnlocked: pieces.length === 4
                     };
                 });
             },

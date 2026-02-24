@@ -3,6 +3,41 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, Lock, Check, Grid, Search } from 'lucide-react';
 import { usePokedexStore } from '../store/pokedexStore';
 
+// Pokemon DB sprite URL pattern: https://img.pokemondb.net/sprites/{game}/{normal|shiny}/{slug}.png
+// One game per generation (Gen 1–6); table layout: rows = Normal, Shiny | cols = Gen 1…6
+const POKEMON_DB_GENS = [
+    { key: 'red-blue', gen: 1, label: 'Gen 1' },
+    { key: 'silver', gen: 2, label: 'Gen 2' },
+    { key: 'ruby-sapphire', gen: 3, label: 'Gen 3' },
+    { key: 'diamond-pearl', gen: 4, label: 'Gen 4' },
+    { key: 'black-white', gen: 5, label: 'Gen 5' },
+    { key: 'x-y', gen: 6, label: 'Gen 6' }
+];
+const SPRITE_VARIANTS = [
+    { key: 'normal', label: 'Normal' },
+    { key: 'shiny', label: 'Shiny' }
+];
+
+const GEN_1_SLUG_OVERRIDES = {
+    29: 'nidoran-f',
+    32: 'nidoran-m',
+    83: 'farfetchd',
+    122: 'mr-mime'
+};
+
+function getPokemonSlug(id, name) {
+    if (GEN_1_SLUG_OVERRIDES[id]) return GEN_1_SLUG_OVERRIDES[id];
+    return name.toLowerCase()
+        .replace(/[♀♂'.]/g, '')
+        .replace(/\s+/g, '-')
+        .replace(/-+/g, '-')
+        .replace(/^\-|\-$/g, '');
+}
+
+function getPokemonDbSpriteUrl(slug, gameKey, variant) {
+    return `https://img.pokemondb.net/sprites/${gameKey}/${variant}/${slug}.png`;
+}
+
 // Define clip paths for quadrants
 const CLIP_PATHS = [
     'polygon(0 0, 50% 0, 50% 50%, 0 50%)',       // TL (0)
@@ -11,22 +46,26 @@ const CLIP_PATHS = [
     'polygon(50% 50%, 100% 50%, 100% 100%, 50% 100%)' // BR (3)
 ];
 
-const PokemonCard = ({ pokemon }) => {
+const PokemonCard = ({ pokemon, onSelect }) => {
     const { id, name, isFullyUnlocked, pieces } = pokemon;
     // Use official artwork for better quality if possible, otherwise sprite
-    // Official artwork: https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${id}.png
-    // Pixel sprite: https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${id}.png
     const spriteUrl = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${id}.png`;
 
-    // Fallback to pixel sprite on error? Handled by img onError normally but let's stick to one source for now.
+    const handleClick = () => {
+        if (isFullyUnlocked && onSelect) onSelect(pokemon);
+    };
 
     return (
         <motion.div
             layout
+            onClick={handleClick}
+            role={isFullyUnlocked ? 'button' : undefined}
+            tabIndex={isFullyUnlocked ? 0 : undefined}
+            onKeyDown={e => { if (isFullyUnlocked && onSelect && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); onSelect(pokemon); } }}
             className={`
                 relative aspect-square rounded-xl overflow-hidden border-2 transition-all duration-300 group
                 ${isFullyUnlocked
-                    ? 'bg-blue-900/40 border-blue-500/50 shadow-[0_0_15px_rgba(59,130,246,0.3)] hover:scale-105 hover:z-10'
+                    ? 'bg-blue-900/40 border-blue-500/50 shadow-[0_0_15px_rgba(59,130,246,0.3)] hover:scale-105 hover:z-10 cursor-pointer'
                     : 'bg-white/5 border-white/10 hover:border-white/20'}
             `}
         >
@@ -102,6 +141,174 @@ const PokemonCard = ({ pokemon }) => {
     );
 };
 
+const POKEDEX_VERSION_PREFERRED = 'sun'; // Pokemon Sun entries (same as on Pokemon DB)
+
+function normalizeFlavorText(text) {
+    if (!text || typeof text !== 'string') return '';
+    return text.replace(/\f/g, ' ').replace(/\n/g, ' ').replace(/\s+/g, ' ').trim();
+}
+
+const PokemonDetailPopup = ({ pokemon, onClose }) => {
+    const { id, name } = pokemon;
+    const slug = getPokemonSlug(id, name);
+    const officialArtUrl = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${id}.png`;
+
+    const [pokedexEntry, setPokedexEntry] = useState(null);
+    const [pokedexVersion, setPokedexVersion] = useState(POKEDEX_VERSION_PREFERRED);
+    const [pokedexLoading, setPokedexLoading] = useState(true);
+
+    useEffect(() => {
+        let cancelled = false;
+        setPokedexLoading(true);
+        setPokedexEntry(null);
+        setPokedexVersion(POKEDEX_VERSION_PREFERRED);
+        fetch(`https://pokeapi.co/api/v2/pokemon-species/${id}`)
+            .then(res => res.ok ? res.json() : Promise.reject(new Error('Not ok')))
+            .then(data => {
+                if (cancelled) return;
+                const entries = data.flavor_text_entries || [];
+                const enSun = entries.find(e => e.language?.name === 'en' && e.version?.name === POKEDEX_VERSION_PREFERRED);
+                if (enSun) {
+                    setPokedexEntry(normalizeFlavorText(enSun.flavor_text));
+                    setPokedexVersion('Sun');
+                } else {
+                    const firstEn = entries.find(e => e.language?.name === 'en');
+                    if (firstEn) {
+                        setPokedexEntry(normalizeFlavorText(firstEn.flavor_text));
+                        const ver = firstEn.version?.name?.replace(/-/g, ' ') || 'other';
+                        setPokedexVersion(ver.replace(/\b\w/g, c => c.toUpperCase()));
+                    } else {
+                        setPokedexEntry('');
+                    }
+                }
+            })
+            .catch(() => {
+                if (!cancelled) setPokedexEntry('');
+            })
+            .finally(() => {
+                if (!cancelled) setPokedexLoading(false);
+            });
+        return () => { cancelled = true; };
+    }, [id]);
+
+    return (
+        <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[10002] flex items-center justify-center bg-blue-50/90 backdrop-blur-xl p-4"
+            onClick={onClose}
+        >
+            <motion.div
+                initial={{ scale: 0.92, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.92, opacity: 0 }}
+                transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+                className="relative w-full max-w-2xl max-h-[90vh] overflow-hidden rounded-2xl border border-blue-100 bg-white shadow-[0_20px_60px_rgba(59,130,246,0.15)] flex flex-col"
+                onClick={e => e.stopPropagation()}
+            >
+                <button
+                    type="button"
+                    onClick={onClose}
+                    className="absolute top-4 right-4 z-10 p-2 rounded-full bg-blue-50 hover:bg-blue-100 text-blue-600 transition-colors border border-blue-100"
+                    aria-label="Close"
+                >
+                    <X size={20} />
+                </button>
+
+                {/* Nameplate - light theme to match Pokedex/HomeHub */}
+                <div className="relative px-8 pt-8 pb-4 border-b border-blue-100 bg-blue-50/20">
+                    <div className="relative flex items-end justify-between gap-4 flex-wrap">
+                        <div>
+                            <p className="text-blue-900/40 font-mono text-xs uppercase tracking-[0.3em] mb-1">National №</p>
+                            <h2 className="text-4xl md:text-5xl font-black text-slate-800 tracking-tight">
+                                {name}
+                            </h2>
+                            <p className="text-slate-500 font-mono text-lg mt-1">#{String(id).padStart(3, '0')}</p>
+                        </div>
+                        <div className="w-24 h-24 md:w-28 md:h-28 rounded-xl border-2 border-blue-100 bg-white flex items-center justify-center overflow-hidden flex-shrink-0 shadow-sm">
+                            <img
+                                src={officialArtUrl}
+                                alt={name}
+                                className="w-full h-full object-contain"
+                            />
+                        </div>
+                    </div>
+                </div>
+
+                {/* Pokédex entry (Sun preferred; same official text as Pokemon DB) */}
+                <div className="px-6 pt-4 pb-4 border-b border-blue-100">
+                    <div className="flex items-center gap-2 mb-3">
+                        <h3 className="text-sm font-bold text-slate-800 uppercase tracking-widest">Pokédex entry</h3>
+                        <span className="text-blue-300/80 select-none" aria-hidden>•</span>
+                        <span className="text-xs font-mono text-blue-600/80 uppercase tracking-wider">Pokémon {pokedexVersion}</span>
+                    </div>
+                    <div className="relative rounded-xl border border-blue-100 bg-gradient-to-br from-blue-50/60 to-indigo-50/40 py-4 px-5 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.6)]">
+                        <div className="absolute left-0 top-0 bottom-0 w-1 rounded-l-xl bg-gradient-to-b from-blue-400 to-indigo-500 opacity-80" />
+                    {pokedexLoading ? (
+                        <p className="text-slate-400 italic text-sm pl-4">Loading…</p>
+                    ) : pokedexEntry ? (
+                        <p className="text-slate-700 text-sm leading-relaxed pl-4 font-medium tracking-wide">{pokedexEntry}</p>
+                    ) : (
+                        <p className="text-slate-400 italic text-sm pl-4">No entry available.</p>
+                    )}
+                    </div>
+                </div>
+
+                {/* Sprites table: rows = Normal, Shiny | columns = Gen 1–6 (like Pokemon DB) */}
+                <div className="flex-1 overflow-y-auto p-6">
+                    <h3 className="text-sm font-bold text-slate-800 uppercase tracking-widest mb-1">Sprites</h3>
+                    <p className="text-xs text-blue-900/40 font-mono mb-4">Source: Pokémon Database</p>
+                    <div className="overflow-x-auto rounded-xl border border-blue-100 bg-white shadow-sm">
+                        <table className="w-full border-collapse text-left">
+                            <thead>
+                                <tr className="border-b border-blue-100 bg-blue-50/50">
+                                    <th className="p-3 text-xs font-black text-slate-500 uppercase tracking-wider">Type</th>
+                                    {POKEMON_DB_GENS.map(({ label }) => (
+                                        <th key={label} className="p-3 text-xs font-black text-slate-600 uppercase tracking-wider text-center">
+                                            {label}
+                                        </th>
+                                    ))}
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {SPRITE_VARIANTS.map(({ key: variantKey, label: variantLabel }) => (
+                                    <tr key={variantKey} className="border-b border-blue-50 last:border-b-0">
+                                        <td className="p-3 text-xs font-bold text-slate-600 uppercase tracking-wider align-middle w-20">
+                                            {variantLabel}
+                                        </td>
+                                        {POKEMON_DB_GENS.map(({ key: gameKey, gen }) => {
+                                            const isGen1Shiny = variantKey === 'shiny' && gen === 1;
+                                            return (
+                                                <td key={gameKey} className="p-2 text-center align-middle">
+                                                    <div className="w-14 h-14 mx-auto rounded-lg bg-blue-50/50 border border-blue-100 flex items-center justify-center overflow-hidden">
+                                                        {isGen1Shiny ? (
+                                                            <span className="text-slate-300 font-light text-2xl tracking-[0.2em]" aria-hidden="true">—</span>
+                                                        ) : (
+                                                            <img
+                                                                src={getPokemonDbSpriteUrl(slug, gameKey, variantKey)}
+                                                                alt={`${name} ${variantLabel}`}
+                                                                className="w-full h-full object-contain pixel-art"
+                                                                loading="lazy"
+                                                            />
+                                                        )}
+                                                    </div>
+                                                </td>
+                                            );
+                                        })}
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div className="h-2 bg-gradient-to-r from-red-500 via-blue-500 to-indigo-600 opacity-100 shadow-[0_-4px_10px_rgba(59,130,246,0.1)]" />
+            </motion.div>
+        </motion.div>
+    );
+};
+
 const PokedexModal = ({ onClose }) => {
     // Get store data
     const {
@@ -114,6 +321,7 @@ const PokedexModal = ({ onClose }) => {
     const [pokemonList, setPokemonList] = useState([]);
     const [searchQuery, setSearchQuery] = useState('');
     const [isResetConfirming, setIsResetConfirming] = useState(false);
+    const [selectedPokemon, setSelectedPokemon] = useState(null);
 
     useEffect(() => {
         // Hydrate data
@@ -232,7 +440,11 @@ const PokedexModal = ({ onClose }) => {
                 <div className="flex-1 overflow-y-auto custom-scrollbar p-8">
                     <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-10 gap-4">
                         {filteredList.map(pokemon => (
-                            <PokemonCard key={pokemon.id} pokemon={pokemon} />
+                            <PokemonCard
+                                key={pokemon.id}
+                                pokemon={pokemon}
+                                onSelect={setSelectedPokemon}
+                            />
                         ))}
                     </div>
 
@@ -249,6 +461,17 @@ const PokedexModal = ({ onClose }) => {
                 {/* Decorative Footer */}
                 <div className="h-2 bg-gradient-to-r from-red-500 via-blue-500 to-indigo-600 opacity-100 shadow-[0_-4px_10px_rgba(59,130,246,0.1)]" />
             </div>
+
+            {/* Detail popup (only when an unlocked Pokémon is clicked) */}
+            <AnimatePresence>
+                {selectedPokemon && (
+                    <PokemonDetailPopup
+                        key={selectedPokemon.id}
+                        pokemon={selectedPokemon}
+                        onClose={() => setSelectedPokemon(null)}
+                    />
+                )}
+            </AnimatePresence>
         </motion.div >
     );
 };

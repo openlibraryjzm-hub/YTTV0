@@ -53,6 +53,14 @@ The **Mission Hub** (also known as "Home Hub" or "Mission Control") is a gamifie
 - **Opening Sequence**: A focused opening animation with a light-burst effect reveals high-resolution cards for puzzle shards or full entry unlocks.
 - **Mechanic**: Replaces placeholder rewards with a deep integration into the **Pokédex System**.
 
+### 2.6 Disable Time Restrictions (Settings)
+- **Location**: A **Settings** button (gear icon) fixed to the **top-right** of the Mission Hub viewport (to avoid overlapping the Add Task button).
+- **Control**: Clicking Settings opens a small panel with a single toggle: **"Disable time restrictions"**. When enabled:
+  - **Launch** is always allowed (no Time Bank requirement); the button label shows "Launch System (Unrestricted)" and the Time Bank area shows "Unrestricted".
+  - The app does **not** consume time or auto-lock when the bank would reach zero.
+- **Persistence**: The setting is stored in the same Mission Hub store (`mission-storage`) and persists across sessions.
+- **Purpose**: Allows using the app without the productivity gate when desired.
+
 ## 3. Architecture
 
 ### 3.1 State Management (`missionStore.js`)
@@ -63,6 +71,7 @@ The entire system is powered by a persistent Zustand store.
 {
   timeBank: 0,           // (number) Seconds remaining
   isAppLocked: true,     // (boolean) Current lock state
+  timerDisabled: false,  // (boolean) When true, no time gating or consumption
   categories: ['Daily'], // (string[]) List of tab names
   missions: [            // (object[]) List of mission objects
     {
@@ -77,10 +86,11 @@ The entire system is powered by a persistent Zustand store.
 ```
 
 **Key Actions:**
-- `addTime(seconds)` / `consumeTime(seconds)`: Manages the bank.
+- `addTime(seconds)` / `consumeTime(seconds)`: Manages the bank. `consumeTime` is a no-op when `timerDisabled` is true and does not set `isAppLocked`.
+- `setTimerDisabled(value)`: Toggles the "disable time restrictions" setting.
 - `addMission` / `removeMission` / `completeMission` / `resetMission`: Manages tasks.
 - `addCategory` / `removeCategory`: Manages tabs.
-- `unlockApp()`: Unlocks the app *only if* `timeBank > 0`.
+- `unlockApp()`: Unlocks the app when `timerDisabled` is true *or* `timeBank > 0`.
 
 **Persistence:**
 - Uses `persist` middleware to save state to `localStorage` under the key `mission-storage`.
@@ -92,9 +102,8 @@ The `App.jsx` component acts as the enforcer of the Mission Hub's rules.
 - **Lock Enforcement**: Conditionally renders `HomeHub` vs `LayoutShell` based on `isAppLocked`.
 - **Time Consumption**:
   - Uses a `useEffect` hook to set up a 1-second interval.
-  - Only runs when `!isAppLocked` and `timeBank > 0`.
-  - Calls `consumeTime(1)` every tick.
-  - The store's `consumeTime` action automatically sets `isAppLocked = true` when time hits 0, triggering the view switch in `App.jsx`.
+  - Only runs when `!timerDisabled` and `!isAppLocked` and `timeBank > 0` (so when time restrictions are disabled, the interval does not run).
+  - Calls `consumeTime(1)` every tick; the store's `consumeTime` sets `isAppLocked = true` when time hits 0 (unless `timerDisabled`).
 
 ## 4. User Guide
 

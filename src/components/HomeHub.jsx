@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useConfigStore } from '../store/configStore';
 import { useMissionStore } from '../store/missionStore';
-import { CheckCircle, Plus, Play, Lock, Clock, Trash2, RotateCcw, LayoutGrid, List, X, Package, Star, Zap, Shield, Gift, Hexagon, Grid, Target } from 'lucide-react';
+import { CheckCircle, Plus, Play, Lock, Clock, Trash2, RotateCcw, LayoutGrid, List, X, Package, Star, Zap, Shield, Gift, Hexagon, Grid, Target, Settings } from 'lucide-react';
 import PokedexModal from './PokedexModal';
 
 import { usePokedexStore } from '../store/pokedexStore';
@@ -566,6 +566,8 @@ const HomeHub = ({ onUnlock }) => {
         resetMission,
         resetDailyMissions,
         resetTimeBank,
+        timerDisabled,
+        setTimerDisabled,
     } = useMissionStore();
 
     const [activeTab, setActiveTab] = useState(categories[0] || 'Daily');
@@ -583,6 +585,20 @@ const HomeHub = ({ onUnlock }) => {
 
     const [isPokedexOpen, setIsPokedexOpen] = useState(false);
     const [categoryToDelete, setCategoryToDelete] = useState(null);
+    const [showSettings, setShowSettings] = useState(false);
+    const settingsRef = useRef(null);
+
+    // Close settings when clicking outside
+    useEffect(() => {
+        if (!showSettings) return;
+        const handleClick = (e) => {
+            if (settingsRef.current && !settingsRef.current.contains(e.target)) {
+                setShowSettings(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClick);
+        return () => document.removeEventListener('mousedown', handleClick);
+    }, [showSettings]);
 
     // Ensure active tab exists
     useEffect(() => {
@@ -622,10 +638,12 @@ const HomeHub = ({ onUnlock }) => {
     };
 
     const handleLaunch = () => {
-        if (timeBank > 0) {
+        if (timerDisabled || timeBank > 0) {
             onUnlock();
         }
     };
+
+    const canLaunch = timerDisabled || timeBank > 0;
 
     const openCrate = (type) => {
         setSelectedCrateType(type);
@@ -648,6 +666,47 @@ const HomeHub = ({ onUnlock }) => {
                     <div className="w-full h-full bg-gradient-to-br from-blue-100 via-white to-blue-50 opacity-100" />
                 )}
                 <div className="absolute inset-0 bg-white/40" />
+            </div>
+
+            {/* Settings button - fixed to viewport top-right (avoids overlapping Add Task) */}
+            <div ref={settingsRef} className="fixed top-8 right-8 z-20">
+                <button
+                    type="button"
+                    onClick={() => setShowSettings(s => !s)}
+                    className={`p-2.5 rounded-xl border transition-all flex items-center gap-2 ${showSettings ? 'bg-blue-100 border-blue-300 text-blue-700' : 'bg-white/60 border-blue-100 text-slate-600 hover:bg-white/80 hover:border-blue-200 hover:text-slate-800'}`}
+                    title="Hub settings"
+                >
+                    <Settings size={20} />
+                    <span className="text-xs font-bold uppercase tracking-wider hidden sm:inline">Settings</span>
+                </button>
+                {showSettings && (
+                    <motion.div
+                        initial={{ opacity: 0, y: -8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="absolute top-full right-0 mt-2 w-72 bg-white border border-blue-200 rounded-xl shadow-xl overflow-hidden z-30"
+                    >
+                        <div className="p-4 border-b border-blue-100">
+                            <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider">Hub settings</h3>
+                        </div>
+                        <div className="p-4">
+                            <label className="flex items-center justify-between gap-4 cursor-pointer group">
+                                <span className="text-sm text-slate-700 group-hover:text-slate-900">Disable time restrictions</span>
+                                <button
+                                    type="button"
+                                    role="switch"
+                                    aria-checked={timerDisabled}
+                                    onClick={() => setTimerDisabled(!timerDisabled)}
+                                    className={`relative inline-flex h-6 w-11 flex-shrink-0 rounded-full border-2 border-transparent transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${timerDisabled ? 'bg-blue-600' : 'bg-blue-100'}`}
+                                >
+                                    <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition-transform ${timerDisabled ? 'translate-x-5' : 'translate-x-1'}`} style={{ marginTop: 2 }} />
+                                </button>
+                            </label>
+                            <p className="text-xs text-slate-500 mt-2">
+                                Use the app without time limits. Launch is always allowed; timer is not consumed.
+                            </p>
+                        </div>
+                    </motion.div>
+                )}
             </div>
 
             {/* Content Container */}
@@ -700,7 +759,7 @@ const HomeHub = ({ onUnlock }) => {
                                 {formatTime(timeBank)}
                             </div>
                             <div className="mt-2 text-xs text-blue-900/40">
-                                {timeBank > 0 ? 'System Ready' : 'Insufficient Resources'}
+                                {timerDisabled ? 'Unrestricted' : (timeBank > 0 ? 'System Ready' : 'Insufficient Resources')}
                             </div>
 
                             {/* Coin Display */}
@@ -720,21 +779,21 @@ const HomeHub = ({ onUnlock }) => {
                     <div className="w-full max-w-sm space-y-4">
                         {/* Launch Button */}
                         <motion.button
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
+                            whileHover={{ scale: canLaunch ? 1.05 : 1 }}
+                            whileTap={{ scale: canLaunch ? 0.95 : 1 }}
                             onClick={handleLaunch}
-                            disabled={timeBank <= 0}
+                            disabled={!canLaunch}
                             className={`
                               relative w-full px-8 py-5 rounded-xl font-bold text-xl tracking-widest uppercase flex justify-center items-center gap-3 transition-all
-                              ${timeBank > 0
+                              ${canLaunch
                                     ? 'bg-blue-600 hover:bg-blue-500 text-white shadow-[0_10px_30px_rgba(37,99,235,0.3)] cursor-pointer border border-blue-400/30'
                                     : 'bg-blue-100 text-blue-300 border border-blue-200 cursor-not-allowed'}
                             `}
                         >
-                            {timeBank > 0 ? (
+                            {canLaunch ? (
                                 <>
                                     <Play size={24} fill="currentColor" />
-                                    Launch System
+                                    {timerDisabled ? 'Launch System (Unrestricted)' : 'Launch System'}
                                 </>
                             ) : (
                                 <>

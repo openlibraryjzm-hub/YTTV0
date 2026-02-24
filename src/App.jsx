@@ -61,18 +61,18 @@ function App() {
   const [currentThemeId, setCurrentThemeId] = useState('blue'); // Theme state lifted from PlayerController
 
   // Gamification / Mission Store
-  const { isAppLocked, timeBank, consumeTime, unlockApp } = useMissionStore();
+  const { isAppLocked, timeBank, consumeTime, unlockApp, timerDisabled } = useMissionStore();
 
-  // Timer Effect: Consume Time when App is Unlocked
+  // Timer Effect: Consume Time when App is Unlocked (skipped when time restrictions disabled)
   useEffect(() => {
     let interval;
-    if (!isAppLocked && timeBank > 0) {
+    if (!timerDisabled && !isAppLocked && timeBank > 0) {
       interval = setInterval(() => {
         consumeTime(1);
       }, 1000);
     }
     return () => clearInterval(interval);
-  }, [isAppLocked, timeBank, consumeTime]);
+  }, [timerDisabled, isAppLocked, timeBank, consumeTime]);
 
   // Mode 1 checkpoint - saves state before entering mode 2
   const [mode1Checkpoint, setMode1Checkpoint] = useState(null); // { videoUrl, playlistId, videoIndex, playlistItems }

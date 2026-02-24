@@ -34,11 +34,19 @@ The system intelligently generates rewards:
 A visual gallery tracking collection progress, featuring the **Atlas Blue** light theme.
 -   **Status Indicators**:
     -   **???**: Name hidden until all 4 pieces are collected.
-    -   **Silhouette**: Reduced opacity (`opacity-5`) silhouette with a blue-toned grid background.
+    -   **Silhouette**: Reduced opacity silhouette with a blue-toned grid background.
     -   **Shards**: Vivid colored shards overlay the minimal silhouette.
-    -   **Full Unlock**: Fully reconstructed entries feature a bold `blue-600` name label and a checkmark indicator.
--   **Search**: Real-time filtering by Name or ID with a expanded focus search bar.
+    -   **Full Unlock**: Fully reconstructed entries feature a bold `blue-600` name label and a checkmark indicator; cards are **clickable** to open the detail popup.
+-   **Search**: Real-time filtering by Name or ID with an expanded focus search bar.
 -   **Database Reset**: A confirmation-gated button to wipe progress, designed with a clean white/red safety UI.
+
+### 4. Pokémon Detail Popup (unlocked only)
+Clicking a **fully unlocked** Pokémon card opens a detail popup (light theme, aligned with Pokedex/Home Hub).
+
+-   **Nameplate**: National № label, large Pokémon name, `#XXX` ID, and official artwork thumbnail.
+-   **Pokédex entry**: Official in-game flavor text. **Pokémon Sun** is preferred; fetched from PokeAPI (`/pokemon-species/{id}`). If no Sun entry exists, the first available English entry is shown with the game name (e.g. Red, X). Styled as a data card with gradient background, left accent bar, and title line "POKÉDEX ENTRY • Pokémon Sun".
+-   **Sprites table**: Layout matches [Pokémon Database](https://pokemondb.net): one row for **Normal**, one for **Shiny**; columns **Gen 1–6**. Sprites are sourced from `img.pokemondb.net` (URL pattern: `.../sprites/{game}/{normal|shiny}/{slug}.png`). Games used: Red/Blue (Gen 1), Silver (Gen 2), Ruby/Sapphire (Gen 3), Diamond/Pearl (Gen 4), Black/White (Gen 5), X/Y (Gen 6). **Gen 1 Shiny** has no sprite on the source site; that cell shows a stylized em-dash placeholder instead of an image.
+-   **Lazy loading**: Sprites and Pokédex text load only when the popup opens (per Pokémon), avoiding bulk requests for all 151 entries.
 
 ## Technical Architecture
 
@@ -56,8 +64,8 @@ Uses `zustand` with `persist` middleware to save progress to local storage.
 -   **`HomeHub.jsx`**: Orchestrates the overlay states (`isShopOpen`, `isLootboxOpen`, `isPokedexOpen`).
 -   **`LootboxOverlay`**: Handles the opening animation, reward generation, and card rendering.
 -   **`LootboxShop`**: The UI for selecting crate tiers.
--   **`PokedexModal`**: The grid view of the collection.
+-   **`PokedexModal.jsx`**: Grid view of the collection; hosts **`PokemonCard`** (clickable when fully unlocked) and **`PokemonDetailPopup`** (nameplate, Pokédex entry, sprites table). Slug mapping for Pokemon DB URLs: Gen 1 name overrides for Nidoran♀/♂, Farfetch'd, Mr. Mime; otherwise derived from name (lowercase, hyphenated).
 
 ## Asset Handling
--   **Source**: Uses `PokeAPI` GitHub raw assets for images.
--   **Rendering**: Uses CSS `clip-path` to dynamically slice the official artwork into 4 puzzle quadrants without needing separate image assets.
+-   **Grid / puzzle**: PokeAPI GitHub raw assets for official artwork; CSS `clip-path` slices into 4 puzzle quadrants.
+-   **Detail popup**: Same PokeAPI artwork for the nameplate thumbnail; **Pokemon DB** (`img.pokemondb.net`) for Normal/Shiny sprites by generation (lazy-loaded when popup opens). **PokeAPI** `GET /pokemon-species/{id}` for Pokédex flavor text (Sun preferred, English).

@@ -10,6 +10,10 @@ export const useMissionStore = create(
             // Access State
             isAppLocked: true,
 
+            // When true, app can be used without time restrictions (no gating, no consumption)
+            timerDisabled: false,
+            setTimerDisabled: (value) => set({ timerDisabled: value }),
+
             // Mission System
             categories: ['Daily', 'Work', 'Health'],
             missions: [
@@ -23,6 +27,7 @@ export const useMissionStore = create(
             resetTimeBank: () => set({ timeBank: 0, isAppLocked: true }),
 
             consumeTime: (seconds) => set((state) => {
+                if (state.timerDisabled) return state; // Don't consume or auto-lock when timer disabled
                 const newTime = Math.max(0, state.timeBank - seconds);
                 return {
                     timeBank: newTime,
@@ -90,8 +95,8 @@ export const useMissionStore = create(
             })),
 
             unlockApp: () => {
-                const { timeBank } = get();
-                if (timeBank > 0) {
+                const { timeBank, timerDisabled } = get();
+                if (timerDisabled || timeBank > 0) {
                     set({ isAppLocked: false });
                     return true;
                 }
@@ -109,9 +114,13 @@ export const useMissionStore = create(
         }),
         {
             name: 'mission-storage', // unique name
-            version: 3, // version bump for migration
+            version: 4, // version bump for migration
             migrate: (persistedState, version) => {
                 let state = persistedState;
+
+                if (version < 4) {
+                    state = { ...state, timerDisabled: false };
+                }
 
                 if (version < 2) {
                     state = {
