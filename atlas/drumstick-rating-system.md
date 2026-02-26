@@ -19,7 +19,7 @@ The drumstick rating interface appears when hovering over any video card (Standa
 
 ### 1.1 Sticky Bar Integration
 
-The drumstick rating system is integrated into the Videos page sticky toolbar via **VideoSortFilters** (`VideoSortFilters.jsx`). A single drumstick icon appears in the bar; **hovering** it expands vertically to show five drumstick icons (1–5). Users can **multi-select** any combination; the grid filters to videos with any of the selected ratings. Unselected drumsticks appear greyed out. Sort order (default, date, progress, last viewed) is independent and controlled by the other toolbar icons.
+The drumstick rating system is integrated into the Videos page sticky toolbar via **VideoSortFilters** (`VideoSortFilters.jsx`). Inside the **Funnel** dropdown, a **Rating filter** section shows a horizontal row of five drumstick icons (1–5). Users can **multi-select** any combination; the grid filters to videos with any of the selected ratings. Unselected drumsticks appear greyed out. Sort order (default, date, progress, last viewed) is in the same dropdown and is independent of the rating filter.
 
 ---
 

@@ -47,10 +47,10 @@ The application uses **Zustand** (v5.0.9) for state management. Zustand is a lig
 - `inspectMode`: boolean - Inspect element mode (tooltip labels)
 - `playlistsPageShowTitles`: boolean - Show video titles on playlist cards (synced from localStorage by PlaylistsPage)
 - `showPlaylistUploader`: boolean - When true, PlaylistsPage opens uploader and clears (TopNavigation Add on Playlists)
-- `showVideosUploader`: boolean - When true, VideosPage opens Add/Config uploader and clears (TopNavigation Add on Videos)
-- `showSubscriptionManager`: boolean - Subscription manager modal visibility (TopNavigation right-click Subscriptions)
-- `requestSubscriptionRefresh`: boolean - One-shot; when true, VideosPage runs subscription refresh and clears (TopNavigation left-click Subscriptions)
-- `requestShowAutoTagModal`: boolean - One-shot; when true, VideosPage opens Auto-Tag modal and clears (TopNavigation right-click Bulk Tag)
+- `showVideosUploader`: boolean - When true, VideosPage opens Add/Config uploader and clears (Videos page sticky toolbar Add button)
+- `showSubscriptionManager`: boolean - Subscription manager modal visibility (Videos page sticky toolbar Refresh right-click)
+- `requestSubscriptionRefresh`: boolean - One-shot; when true, VideosPage runs subscription refresh and clears (Videos page sticky toolbar Refresh left-click)
+- `requestShowAutoTagModal`: boolean - One-shot; when true, VideosPage opens Auto-Tag modal and clears (Videos page sticky toolbar Bulk tag right-click)
 
 **Actions:**
 - `setViewMode(mode)` - Sets view mode, auto-disables menuQuarterMode when switching to 'full'

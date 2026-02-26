@@ -168,12 +168,13 @@ Users see a horizontal scrolling layout with two rows of video cards showing vid
     - **Playlist Name**: Fixed-width display with truncation
     - **Return Button**: Amber icon appears when navigated away from entry point, returns to reset point
 
-- **Sticky Toolbar**: Sits below the Page Banner and sticks to the top of the viewport when scrolling. **Full width**: The bar spans the full width of the video page (no side margins); reduced margin below (`mb-4`) to free vertical space for content.
-  - **Compact Layout**: Single-row design to maximize vertical space. Add, Subscriptions, and Bulk Tag actions have been moved to **TopNavigation** (left side, above playlist title) when on Videos page; the sticky toolbar shows only sort/filter and folder prism (no Save/Cancel—bulk tag uses instant assign).
+- **Sticky Toolbar**: Sits below the Page Banner and sticks to the top of the viewport when scrolling. **Full documentation**: See **`video-sort-filters.md`** for the VideoSortFilters component and folder prism in detail. **Full width**: The bar spans the full width of the video page (no side margins); reduced margin below (`mb-4`) to free vertical space for content.
+  - **Compact Layout**: Single-row design. **Left of prism**: VideoSortFilters (Home, Funnel) then **Add**, **Refresh** (subscriptions), **Bulk tag**. **Right of prism**: **Back** (when history or preview), **Close** (fullscreen). Bulk tag uses instant assign (no Save/Cancel). TopNavigation no longer shows Add, Subscriptions, Bulk tag, Back, or Close when on Videos page.
   - **Videos Page Layout** (left to right):
-    - **VideoSortFilters** (`VideoSortFilters.jsx`): Icon-based sort and rating filter. **Home** = default (shuffle). **Calendar** = date (click to cycle asc/desc, arrow indicator). **Bar chart** = progress (click to cycle direction). **Clock** = last viewed (click to cycle). **Drumstick** = single icon; hover expands vertically to show 1–5 drumsticks for multi-select rating filter (grey when unselected). Styling adapts to folder context (light when All, dark when Unsorted/folder).
-    - **Folder prism**: Single bar with **All** (1st, white) and **Unsorted** (2nd, black) showing **item counts** (not labels), then the 16 folder color segments (with counts). Layout is flexible so all segments fit; All/Unsorted use tight width for up to 4-digit numbers. **No folder nav arrows in the toolbar** (prism uses full width); prev/next remain in **TopNavigation** only. **Arrow button** (right of prism): toggles **populated-only mode**—when on (default when entering Videos page), only segments with ≥1 item are shown and share the bar width equally; when off, all 18 segments are shown. Tooltip describes the mode; chevron right = switch to populated-only, chevron left = show all segments.
-  - **TopNavigation (Videos page)**: When current page is Videos, the header shows a row **above the playlist title** with **Add** (opens uploader), **Subscriptions** (left-click = refresh, right-click = manage modal), and **Bulk Tag** (toggle mode; right-click = Auto-Tag modal). Driven by `layoutStore` flags; VideosPage reacts and clears one-shot flags.
+    - **VideoSortFilters** (`VideoSortFilters.jsx`): Icon-based sort and rating filter. **Home** = default (shuffle). **Funnel** = sort & rating dropdown: click opens options for **Sort by date**, **Sort by progress**, **Sort by last viewed** (select or cycle asc/desc), plus a horizontal **Rating filter** row (1–5 drumsticks, multi-select). Styling adapts to folder context (light when All, dark when Unsorted/folder). See `video-sort-filters.md`.
+    - **Add, Refresh, Bulk tag**: Same row, right of the filter; open uploader, refresh subscriptions (right-click = manage), toggle bulk tag (right-click = Auto-Tag). Driven by layoutStore; VideosPage clears one-shot flags.
+    - **Folder prism**: Single bar with **All** (1st, white) and **Unsorted** (2nd, black) showing **item counts** (not labels), then the 16 folder color segments (with counts). **Right-click on the prism** toggles **populated-only mode** (only segments with ≥1 item, equal width; default) vs all 18 segments. No separate arrow button.
+  - **TopNavigation (Videos page)**: When current page is Videos, the header shows only the **playlist/folder title** (and description). Add, Subscriptions, Bulk tag, Back, and Close have been **removed** from TopNavigation and live only in the Videos page sticky toolbar. The right side of the header shows only the **Twitter style toggle**.
   - **Playlists Page Layout**:
     - **Left**: Tab Bar navigation.
     - **Right**: Control cluster (Tab Presets, Folder Toggle, Add Playlist).
@@ -219,7 +220,7 @@ Users see a horizontal scrolling layout with two rows of video cards showing vid
 
 **UI/Components:**
 - `src/components/VideosPage.jsx`: Main videos grid page component
-- `src/components/VideoSortFilters.jsx`: Icon sort bar (Home/Date/Progress/Last Viewed) + hover-expand drumstick rating filter; used in Videos page sticky toolbar
+- `src/components/VideoSortFilters.jsx`: Icon sort bar (Home, Funnel dropdown with sort + rating filter); used in Videos page sticky toolbar
 - `src/components/VideoCard.jsx`: Individual video card component
 - `src/components/Card.jsx`: Base card component
 - `src/components/CardThumbnail.jsx`: Thumbnail component
@@ -332,7 +333,7 @@ Users see a horizontal scrolling layout with two rows of video cards showing vid
    - Vertical scrolling is disabled on the page container (`overflow-y-hidden`)
 
 4. **Bulk Tag Mode Flow:**
-   - User clicks "Bulk Tag" in TopNavigation → `setBulkTagMode(true)`
+   - User clicks "Bulk Tag" in the Videos page sticky toolbar → `setBulkTagMode(true)`
    - Cards enter bulk tag mode → Each card shows **BulkTagColorGrid** strip below thumbnail/title (fixed height `h-20`)
    - **Custom folder names displayed** → If a folder has a custom name (different from default color name), it appears as overlay text on the square
    - **Instant assign**: User clicks a color → `handleBulkTagColorClick(video, folderColor)` invokes the same logic as the 3-dot menu (assign/unassign). `assignVideoToFolder()` or `unassignVideoFromFolder()` is called immediately; `setVideoFolders()` updates the store; folder view refreshes if viewing that folder. No Save or Cancel; each click persists.

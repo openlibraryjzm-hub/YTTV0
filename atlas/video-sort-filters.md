@@ -1,0 +1,154 @@
+# VideoSortFilters & Videos Page Sticky Toolbar
+
+This document describes the **Videos page sticky toolbar**: the icon-based sort/rating bar (**VideoSortFilters**) and the **colored folder prism** that share one row. Together they provide sorting (default, date, progress, last viewed), rating filtering (drumstick 1–5), and folder filtering (All, Unsorted, 16 colors) with an optional “populated-only” prism mode.
+
+---
+
+## 1. Overview
+
+**Location**: The sticky toolbar sits at the top of the Videos page content area (`VideosPage.jsx`). When the user scrolls down, the bar sticks to the top of the viewport (sticky positioning) and gains a stronger backdrop/blur for visibility.
+
+**Layout (left to right)**:
+
+1. **Sort & rating filters** – `VideoSortFilters.jsx`: two toolbar buttons (Home, Funnel). Funnel dropdown contains sort options and rating filter.
+2. **Action buttons** – Add (uploader), Refresh (subscriptions; right-click = manage modal), Bulk tag (right-click = Auto-Tag). Same row, right of the filter; driven by `layoutStore`; VideosPage opens modals/refresh and clears one-shot flags.
+3. **Folder prism** – Inline in `VideosPage.jsx`: a colored segment bar (All, Unsorted, 16 folder colors) that fills the remaining width. **Right-click** anywhere on the prism toggles between populated-only and all-segments mode (no separate button).
+4. **Right side** – Back (when history or preview) and Close (fullscreen). These are the only Videos-page actions in the sticky bar on the right; **TopNavigation** no longer shows Add, Subscriptions, Bulk tag, Back, or Close when on Videos page (only the mini header title and the Twitter style toggle on the right remain there).
+
+**State ownership**: Sort mode, sort direction, selected ratings, and prism mode are local state in `VideosPage.jsx`. Folder selection is in `folderStore`; folder counts and segment data are derived in `VideosPage` from `videoFolderAssignments` and `activePlaylistItems`.
+
+---
+
+## 2. VideoSortFilters Component
+
+**File**: `src/components/VideoSortFilters.jsx`
+
+Icon-based sort and rating filter bar. **Home** and **Funnel** use Lucide icons; the rating filter in the dropdown uses the drumstick emoji (🍗). Styling switches between **light** (All selected: white/light bar) and **dark** (Unsorted or a folder selected: colored bar) via the `isLight` prop.
+
+### 2.1 The two toolbar buttons + dropdown contents
+
+| Control   | Icon        | Behavior |
+|----------|-------------|----------|
+| **Home** | `Home`      | **Default order.** Sets sort to `shuffle`. No direction. Restores the default video order (shuffle-state driven). |
+| **Funnel** | `Filter`  | **Sort & rating dropdown.** Click opens a dropdown with: (1) **Sort by date** (chronological), **Sort by progress** (bar chart), **Sort by last viewed** (clock)—select an option or click again to cycle asc/desc; (2) **Rating filter**—a horizontal row of five drumstick icons (1–5) for multi-select. The funnel button appears active when any of the three sorts is active or any rating is selected. Dropdown closes on outside click. |
+
+**Direction cycling**: For Date, Progress, and Last viewed (inside the funnel dropdown), when that mode is already active, clicking it again only toggles `sortDirection` between `'asc'` and `'desc'`.
+
+### 2.2 Props
+
+| Prop               | Type       | Description |
+|--------------------|------------|-------------|
+| `sortBy`           | `string`   | Current sort mode: `'shuffle'` \| `'chronological'` \| `'progress'` \| `'lastViewed'`. |
+| `setSortBy`        | `function` | Setter for sort mode. |
+| `sortDirection`    | `string`   | `'asc'` \| `'desc'`. Used for chronological, progress, lastViewed. |
+| `setSortDirection` | `function` | Setter for direction. |
+| `selectedRatings`  | `number[]` | Array of selected rating values (1–5). Empty = no rating filter. |
+| `onToggleRating`   | `function` | `(rating: number) => void`. Toggle that rating in/out of `selectedRatings`. |
+| `isLight`          | `boolean`  | Optional, default `true`. When `true`, bar uses light theme (white/gray buttons, black borders). When `false`, uses dark theme (white-on-dark) for Unsorted/folder context. |
+| `className`        | `string`   | Optional. Applied to the root flex container. |
+
+### 2.3 Styling and UX Details
+
+- **Buttons**: Rounded, border-2, padding; active = filled (black in light theme, white in dark); inactive = translucent with hover darkening.
+- **Funnel dropdown**: Opens below the funnel button; left-aligned. Contains (1) three sort rows (Date, Progress, Last viewed), each with icon + label; active row shows direction arrow (↑ asc, ↓ desc); clicking a row selects that sort (desc) or cycles direction if already selected. (2) **Rating filter** section with a label and a horizontal row of five drumstick buttons (1–5); multi-select toggles; selected state = full opacity + scale. Dropdown uses same light/dark styling; closes on outside mousedown.
+- ~~**Drumstick strip**~~: Rating filter is now inside the funnel dropdown as a horizontal row (see above).
+
+---
+
+## 3. Folder Prism (Colored Segment Bar)
+
+The **folder prism** is implemented inside `VideosPage.jsx`, not in `VideoSortFilters.jsx`. It occupies the middle and right part of the sticky toolbar row (flex-1, min-w-0). It shows segments for **All**, **Unsorted**, and the **16 folder colors** from `FOLDER_COLORS` (`src/utils/folderColors.js`). Clicking a segment sets the selected folder and filters the video grid (and updates header/folder context).
+
+### 3.1 Two Prism Modes (right-click toggle)
+
+**Right-click on the prism** toggles between:
+
+- **Populated-only (default)**  
+  - Only segments with **at least one item** are shown: All (always), Unsorted (if count ≥ 1), and each color that has count ≥ 1.  
+  - Segments are **equal width** (flex-1), so 2 segments or 7 segments are equally spaced in the allotted space.  
+  - Item counts are shown per segment.  
+  - Default when entering the Videos page: `prismOnlyPopulated === true`.
+
+- **All segments**  
+  - All 18 segments are shown: All, Unsorted, and all 16 colors.  
+  - Each segment is flex-1 with min/max width constraints; colors with 0 items still appear (count hidden when 0).  
+  - Same right-click switches back to populated-only.
+
+**Right-click on prism**: Toggles between populated-only and all segments. Tooltip on the prism: “Right-click: show all segments” / “Right-click: only segments with items”.
+
+### 3.2 Segment Types and Appearance
+
+- **All** (`selectedFolder === null`): White background, black text; shows total count (videos + assigned orbs + assigned banners).
+- **Unsorted** (`selectedFolder === 'unsorted'`): Black background, white text; shows count of videos with no folder assignment.
+- **Color segments**: Background from `FOLDER_COLORS[].hex`; text white with drop-shadow; shows count when visible (in “all segments” mode, count only shown when &gt; 0).
+
+Selected segment is emphasized with a ring (inset ring-2); All uses `after:ring-black/10`, Unsorted `after:ring-white/30`, colors `after:ring-white/50`.
+
+### 3.3 Data and State (VideosPage)
+
+- **Folder selection**: `selectedFolder`, `setSelectedFolder` from `folderStore` (null = All, `'unsorted'`, or a color id).
+- **Counts**:  
+  - `folderCounts`: per-color counts from `videoFolderAssignments`.  
+  - `allCount`: total items (playlist items + orbs + banners for current playlist).  
+  - `unsortedCount`: videos in current playlist with no folder assignment.
+- **Populated-only segments**: `prismPopulatedSegments` is a `useMemo`: All + Unsorted (if unsortedCount ≥ 1) + each color with count ≥ 1, in order. Used when `prismOnlyPopulated` is true.
+- **Prism mode**: `prismOnlyPopulated` (useState, default true); toggled by **right-clicking anywhere on the prism** (no separate button).
+
+Pagination and scroll position are reset when folder, sort, or rating filters change (including when switching prism mode if it changes which folder is conceptually “focused”; folder change itself triggers reset).
+
+---
+
+## 4. Sort and Filter Logic (VideosPage)
+
+Sort and rating filtering are applied in `VideosPage` after folder filtering:
+
+- **Rating filter**: If `selectedRatings.length > 0`, the visible list is filtered to items whose `drumstick_rating` is in `selectedRatings`. Orbs and banner presets are kept regardless.
+- **Sort**:  
+  - `shuffle`: Order by shuffle state (stable order from `shuffleStates[activePlaylistId]`).  
+  - `chronological`: Sort by `published_at` or `added_at`; direction from `sortDirection`.  
+  - `progress`: Sort by progress percentage (from `videoProgress`); optional filters “hide unwatched” and “show only completed” apply here; direction from `sortDirection`.  
+  - `lastViewed`: Sort by `last_updated` from progress data; direction from `sortDirection`.
+
+Progress and last-viewed data come from `getAllVideoProgress` / `getWatchedVideoIds` (and are refreshed on an interval and when the current video index changes).
+
+---
+
+## 5. File Manifest
+
+| File | Role |
+|------|------|
+| `src/components/VideoSortFilters.jsx` | Sort and rating UI (Home, Funnel dropdown with Date/Progress/Last viewed + horizontal rating filter 1–5). |
+| `src/components/VideosPage.jsx`       | Renders sticky toolbar; hosts VideoSortFilters, Add/Refresh/Bulk tag buttons, folder prism, Back/Close, and all sort/filter state and logic. |
+| `src/store/folderStore.js`            | `selectedFolder`, `setSelectedFolder`, `videoFolderAssignments`, `loadVideoFolders`. |
+| `src/store/shuffleStore.js`           | Shuffle state per playlist for default (shuffle) order. |
+| `src/store/paginationStore.js`        | Pagination; reset when folder/sort/rating change. |
+| `src/utils/folderColors.js`           | `FOLDER_COLORS` (16 colors with id, name, hex). |
+| `src/api/playlistApi.js`              | `getAllFolderAssignments`, `getVideosInFolder`, `getAllVideoProgress`, `getWatchedVideoIds`, etc. |
+
+---
+
+## 6. Cross-References
+
+- **Videos page and sticky bar**: `ui-pages.md` §4.1.2 (Videos Page, Sticky Toolbar).
+- **Drumstick rating system**: `drumstick-rating-system.md` (schema, API, card integration; toolbar filter described there briefly).
+- **Folder system and playlists**: `playlist&tab.md` (folders, assignments, tabs).
+- **State**: `state-management.md` (`folderStore`, `layoutStore`, `paginationStore`, `shuffleStore`).
+- **Database / API**: `database-schema.md`, `api-bridge.md` (folder assignments, progress, ratings).
+
+---
+
+## 7. Summary
+
+- **VideoSortFilters**: Two toolbar buttons—**Home** (default order) and **Funnel** (dropdown). Dropdown contains: sort options (Date, Progress, Last viewed; select or cycle asc/desc) and a horizontal **Rating filter** row (1–5 drumsticks, multi-select). Funnel appears active when any sort or rating filter is applied.
+- **Action buttons**: Add, Refresh (subscriptions), Bulk tag sit left of the prism (right of the filter); Back and Close on the far right. TopNavigation no longer shows these when on Videos page.
+- **Folder prism**: Colored segment bar (All, Unsorted, 16 colors) in the same row. **Right-click on the prism** toggles “only segments with ≥1 item (equal width)” vs “all segments”. Default is populated-only.
+- State for sort, direction, ratings, and prism mode lives in `VideosPage`; folder selection in `folderStore`. Sorting and rating filtering are applied in `VideosPage` after folder filtering; pagination resets when any of these change.
+
+---
+
+## 8. Change log
+
+- **VideoSortFilters consolidation**: Calendar (sort by date), Bar chart (sort by progress), and Clock (sort by last viewed) were consolidated into a single **Funnel** icon button; click opens a dropdown with those three sort options (each select or cycle asc/desc). **Drumstick** rating filter was moved into the same funnel dropdown as a horizontal row (1–5). Toolbar now shows only **Home** and **Funnel**.
+- **Folder prism**: The separate arrow button to the right of the prism was removed. **Right-click** anywhere on the prism toggles between populated-only (only segments with ≥1 item, equal width) and all segments. Tooltip on the prism reflects the current mode.
+- **Toolbar layout**: Add (uploader), Refresh (subscriptions), and Bulk tag were placed **left of the prism** (right of the filter). Back (when history or preview) and Close (fullscreen) remain on the **far right**. **TopNavigation** no longer shows Add, Subscriptions, Bulk tag, Back, or Close when on Videos page—only the mini header title and the Twitter style toggle on the right remain there.
+- **Sticky toolbar**: Container uses `overflow-visible` so the funnel dropdown is not clipped by the bar; dropdown uses `z-50`.

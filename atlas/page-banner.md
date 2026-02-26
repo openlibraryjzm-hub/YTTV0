@@ -19,10 +19,10 @@ The dynamic `PageBanner` component is currently **disabled** in `VideosPage.jsx`
 - **Component**: `TopNavigation.jsx` (serves as the global contextual header).
 - **Height**: `min-h-[100px]`.
 - **Layout**: Flex-end alignment (`items-end`) for title positioning. Content uses `pl-8` / `pr-8` for inset; when gradient is shown, the **gradient spans full width** of the side menu in splitscreen (no horizontal padding on the header container; see `LayoutShell.css` `.layout-shell__mini-header` with `padding: 8px 0` and App.jsx miniHeader wrapper without `px-4`).
-- **Videos page**: When current page is Videos, a row **above the playlist title** shows **Add** (opens uploader), **Subscriptions** (left-click refresh, right-click manage modal), and **Bulk Tag** (toggle; right-click Auto-Tag). These are driven by `layoutStore`; VideosPage opens modals/refresh and clears one-shot flags.
+- **Videos page**: When current page is Videos, the mini header shows only the playlist/folder title (and description). **Add**, **Subscriptions**, and **Bulk Tag** (and **Back**, **Close**) are no longer in TopNavigation; they live in the **Videos page sticky toolbar** (left of prism: Add, Refresh, Bulk tag; right: Back, Close). layoutStore flags drive modals/refresh; VideosPage opens them and clears one-shot flags.
 - **Context Awareness**: Detects **Visiting** context (previewing a playlist) vs. **Playing** context; prioritizes "Visiting" so the header matches what the user is looking at.
 - **Styling**: Background = linear gradient (transparent → 30% opacity of active folder/playlist/unsorted color). Typography = large bold title with drop shadow; title color matches active context hex.
-- **Sticky Toolbar Relationship**: The Sticky Toolbar (in `VideosPage`/`PlaylistsPage`) sits directly below; Add/Subs/Bulk Tag for Videos page live in TopNavigation, not the toolbar.
+- **Sticky Toolbar Relationship**: The Sticky Toolbar (in `VideosPage`/`PlaylistsPage`) sits directly below the mini header. On the Videos page, **Add**, **Refresh** (subscriptions), and **Bulk tag** are in the sticky toolbar (left of the folder prism); **Back** and **Close** are on the far right. TopNavigation does not show these when on Videos page.
 
 ---
 

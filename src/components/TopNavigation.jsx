@@ -3,7 +3,7 @@ import { useNavigationStore } from '../store/navigationStore';
 import { useLayoutStore } from '../store/layoutStore';
 import { usePlaylistStore } from '../store/playlistStore';
 import { useFolderStore } from '../store/folderStore';
-import { ChevronLeft, Twitter, Info, LayoutGrid, LayoutList, Minus, RotateCcw } from 'lucide-react';
+import { ChevronLeft, Twitter, Info, LayoutGrid, LayoutList, Minus } from 'lucide-react';
 import { THEMES } from '../utils/themes';
 import { FOLDER_COLORS } from '../utils/folderColors';
 import TabBar from './TabBar';
@@ -12,13 +12,13 @@ import { usePlaylistGroupStore } from '../store/playlistGroupStore';
 
 const TopNavigation = () => {
     const { currentPage, history, goBack, setCurrentPage } = useNavigationStore();
-    const { setViewMode, inspectMode, videoCardStyle, toggleVideoCardStyle, playlistsPageShowTitles, setPlaylistsPageShowTitles, setShowPlaylistUploader, setShowVideosUploader, setShowSubscriptionManager, setRequestSubscriptionRefresh, setRequestShowAutoTagModal } = useLayoutStore();
+    const { setViewMode, inspectMode, videoCardStyle, toggleVideoCardStyle, playlistsPageShowTitles, setPlaylistsPageShowTitles, setShowPlaylistUploader } = useLayoutStore();
     const setAllGroupCarouselModes = usePlaylistGroupStore((s) => s.setAllGroupCarouselModes);
     const { activeTabId } = useTabStore();
     // Consume previewPlaylistId to support "visiting" context vs "playing" context
     const { previewPlaylistId, clearPreview, currentPlaylistId, currentPlaylistTitle, allPlaylists } = usePlaylistStore();
     // Consume selectedFolder and showColoredFolders from folderStore
-    const { selectedFolder, showColoredFolders, setShowColoredFolders, bulkTagMode, setBulkTagMode } = useFolderStore();
+    const { selectedFolder, showColoredFolders, setShowColoredFolders } = useFolderStore();
 
     const [currentThemeId] = useState('blue'); // Defaulting to blue theme for consistency
     const theme = THEMES[currentThemeId];
@@ -34,7 +34,6 @@ const TopNavigation = () => {
 
     // On Playlists page, show "Playlists" and bar controls in header; otherwise use playlist/folder context
     const isPlaylistsPage = currentPage === 'playlists';
-    const isVideosPage = currentPage === 'videos';
 
     // Determine display content
     // Use currentPlaylistTitle only if we are in the "current" context (no preview)
@@ -110,49 +109,6 @@ const TopNavigation = () => {
                             title="Apply bar to all carousels"
                         >
                             <Minus size={16} />
-                        </button>
-                    </div>
-                )}
-                {isVideosPage && (
-                    <div className="flex items-center gap-1.5 mb-2">
-                        <button
-                            type="button"
-                            onClick={() => setShowVideosUploader(true)}
-                            className="p-1.5 bg-white hover:bg-gray-100 text-black rounded-md transition-all shadow border border-black/20 shrink-0"
-                            title="Add videos / config"
-                        >
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                            </svg>
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() => setRequestSubscriptionRefresh(true)}
-                            onContextMenu={(e) => {
-                                e.preventDefault();
-                                setShowSubscriptionManager(true);
-                            }}
-                            className="p-1.5 bg-white hover:bg-gray-100 text-black rounded-md transition-all shadow border border-black/20 shrink-0"
-                            title="Refresh subscriptions (right-click: manage)"
-                        >
-                            <RotateCcw className="w-4 h-4" />
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() => setBulkTagMode(!bulkTagMode)}
-                            onContextMenu={(e) => {
-                                e.preventDefault();
-                                setRequestShowAutoTagModal(true);
-                            }}
-                            className={`p-1.5 rounded-md transition-all shrink-0 border ${bulkTagMode
-                                ? 'bg-black text-white border-black shadow'
-                                : 'bg-white text-black hover:bg-gray-100 border-black/20'
-                            }`}
-                            title={bulkTagMode ? 'Exit bulk tagging' : 'Bulk tag (right-click for Auto-Tag)'}
-                        >
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
-                            </svg>
                         </button>
                     </div>
                 )}
@@ -233,7 +189,7 @@ const TopNavigation = () => {
                     </>
                 ) : (
                     <>
-                {/* Twitter/X Style Toggle */}
+                {/* Twitter/X Style Toggle (Videos page and other non-Playlists pages) */}
                 <button
                     onClick={toggleVideoCardStyle}
                     className={`flex items-center justify-center w-8 h-8 rounded-full shadow-sm border transition-all hover:scale-105 active:scale-90 ${videoCardStyle === 'twitter'
@@ -243,38 +199,6 @@ const TopNavigation = () => {
                     title={getInspectTitle(`Toggle ${videoCardStyle === 'twitter' ? 'YouTube' : 'Twitter/X'} Style`) || `Toggle ${videoCardStyle === 'twitter' ? 'YouTube' : 'Twitter/X'} Style`}
                 >
                     <Twitter size={15} />
-                </button>
-
-                {/* Back Button */}
-                {(history.length > 0 || previewPlaylistId) && (
-                    <button
-                        onClick={() => {
-                            if (previewPlaylistId) {
-                                clearPreview();
-                            }
-                            if (history.length > 0) {
-                                goBack();
-                            } else if (previewPlaylistId) {
-                                // Fallback if previewing but no history (e.g. direct load)
-                                setCurrentPage('playlists');
-                            }
-                        }}
-                        className={`flex items-center justify-center w-8 h-8 rounded-full shadow-sm border transition-all hover:scale-105 active:scale-90 ${theme.tabInactive}`}
-                        title={getInspectTitle('Go Back') || 'Go Back'}
-                    >
-                        <ChevronLeft size={18} />
-                    </button>
-                )}
-
-                {/* Close Side Menu Button */}
-                <button
-                    onClick={() => setViewMode('full')}
-                    className="flex items-center justify-center w-8 h-8 bg-rose-500 text-white rounded-lg hover:bg-rose-600 transition-colors shadow-md border border-rose-400 active:scale-90"
-                    title={getInspectTitle('Close menu (Full screen)') || 'Close menu (Full screen)'}
-                >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" />
-                    </svg>
                 </button>
                     </>
                 )}

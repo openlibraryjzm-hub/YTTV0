@@ -1,15 +1,18 @@
-import React from 'react';
-import { Home, CalendarDays, BarChart2, Clock, ArrowUp, ArrowDown } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { Home, Filter, CalendarDays, BarChart2, Clock, ArrowUp, ArrowDown } from 'lucide-react';
 
 const DRUMSTICK = '🍗';
+
+const SORT_OPTIONS = [
+  { mode: 'chronological', label: 'Sort by date', Icon: CalendarDays },
+  { mode: 'progress', label: 'Sort by progress', Icon: BarChart2 },
+  { mode: 'lastViewed', label: 'Sort by last viewed', Icon: Clock },
+];
 
 /**
  * Icon-based sort and rating filter bar for the Videos page sticky toolbar.
  * - Home = default (shuffle)
- * - Calendar = date, click cycles asc/desc with arrow indicator
- * - Bar chart = progress, click cycles asc/desc with arrow indicator
- * - Clock = last viewed, click cycles asc/desc with arrow indicator
- * - Drumsticks 1–5 = multi-select rating filter (grey when unselected)
+ * - Funnel = dropdown with Date, Progress, Last viewed + horizontal drumstick rating filter (1–5)
  */
 const VideoSortFilters = ({
   sortBy,
@@ -21,8 +24,14 @@ const VideoSortFilters = ({
   isLight = true, // true when All selected (white bar), false when Unsorted/folder (colored bar)
   className = '',
 }) => {
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const dropdownRef = useRef(null);
+
   const cycleDirection = () => setSortDirection(d => (d === 'asc' ? 'desc' : 'asc'));
-  const isActive = (mode) => sortBy === mode;
+  const isShuffleActive = sortBy === 'shuffle';
+  const isSortDropdownActive = ['chronological', 'progress', 'lastViewed'].includes(sortBy);
+  const hasRatingFilter = selectedRatings.length > 0;
+  const isFunnelActive = isSortDropdownActive || hasRatingFilter;
 
   const btnBase = 'p-1.5 rounded-md transition-all border-2 shrink-0 flex items-center justify-center gap-0.5';
   const btnInactive = isLight
@@ -37,105 +46,110 @@ const VideoSortFilters = ({
     return <Icon size={10} strokeWidth={2.5} className="opacity-90" />;
   };
 
+  const handleSortOptionClick = (mode) => {
+    if (sortBy === mode) {
+      cycleDirection();
+    } else {
+      setSortBy(mode);
+      setSortDirection('desc');
+    }
+  };
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setDropdownOpen(false);
+      }
+    };
+    if (dropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [dropdownOpen]);
+
   return (
     <div className={`flex items-center gap-1 ${className}`}>
       {/* Home = Default (shuffle) */}
       <button
         type="button"
         onClick={() => setSortBy('shuffle')}
-        className={`${btnBase} ${isActive('shuffle') ? btnActive : btnInactive}`}
+        className={`${btnBase} ${isShuffleActive ? btnActive : btnInactive}`}
         title="Default order"
       >
         <Home size={16} strokeWidth={2.5} />
       </button>
 
-      {/* Date: calendar icon, click to select or cycle direction */}
-      <button
-        type="button"
-        onClick={() => {
-          if (sortBy === 'chronological') cycleDirection();
-          else {
-            setSortBy('chronological');
-            setSortDirection('desc');
-          }
-        }}
-        className={`${btnBase} ${isActive('chronological') ? btnActive : btnInactive}`}
-        title="Sort by date (click to cycle direction)"
-      >
-        <CalendarDays size={16} strokeWidth={2.5} />
-        {isActive('chronological') && (
-          <Arrow up={sortDirection === 'asc'} />
-        )}
-      </button>
-
-      {/* Progress: bar chart, click to select or cycle direction */}
-      <button
-        type="button"
-        onClick={() => {
-          if (sortBy === 'progress') cycleDirection();
-          else {
-            setSortBy('progress');
-            setSortDirection('desc');
-          }
-        }}
-        className={`${btnBase} ${isActive('progress') ? btnActive : btnInactive}`}
-        title="Sort by progress (click to cycle direction)"
-      >
-        <BarChart2 size={16} strokeWidth={2.5} />
-        {isActive('progress') && (
-          <Arrow up={sortDirection === 'asc'} />
-        )}
-      </button>
-
-      {/* Last viewed: clock, click to select or cycle direction */}
-      <button
-        type="button"
-        onClick={() => {
-          if (sortBy === 'lastViewed') cycleDirection();
-          else {
-            setSortBy('lastViewed');
-            setSortDirection('desc');
-          }
-        }}
-        className={`${btnBase} ${isActive('lastViewed') ? btnActive : btnInactive}`}
-        title="Sort by last viewed (click to cycle direction)"
-      >
-        <Clock size={16} strokeWidth={2.5} />
-        {isActive('lastViewed') && (
-          <Arrow up={sortDirection === 'asc'} />
-        )}
-      </button>
-
-      {/* One drumstick: hover expands vertically to show all 5 for multi-select */}
-      <div className="relative group shrink-0 ml-1 pl-1 border-l border-black/20 flex items-center">
-        <div className={`flex items-center justify-center w-8 h-8 rounded transition-all ${isLight ? 'text-gray-600' : 'text-white/80'}`} title="Rating filter (hover to expand)">
-          {DRUMSTICK}
-        </div>
-        {/* Expanded strip: visible on hover, stacked vertically */}
-        <div className="absolute left-0 top-full pt-0.5 max-h-0 overflow-hidden opacity-0 group-hover:max-h-[220px] group-hover:opacity-100 transition-[max-height,opacity] duration-200 ease-out z-50">
-          <div className={`flex flex-col gap-0.5 py-1.5 px-1 rounded-lg border-2 shadow-lg ${isLight ? 'bg-white border-black/20' : 'bg-slate-800 border-white/20'}`}>
-            {[1, 2, 3, 4, 5].map((rating) => {
-              const selected = selectedRatings.includes(rating);
+      {/* Funnel = dropdown with Date, Progress, Last viewed */}
+      <div className="relative shrink-0" ref={dropdownRef}>
+        <button
+          type="button"
+          onClick={() => setDropdownOpen((o) => !o)}
+          className={`${btnBase} ${isFunnelActive ? btnActive : btnInactive}`}
+          title="Sort & rating filter"
+        >
+          <Filter size={16} strokeWidth={2.5} />
+        </button>
+        {dropdownOpen && (
+          <div
+            className={`absolute left-0 top-full pt-0.5 z-50 min-w-[180px] rounded-lg border-2 shadow-lg py-1 ${
+              isLight ? 'bg-white border-black/20' : 'bg-slate-800 border-white/20'
+            }`}
+          >
+            {SORT_OPTIONS.map(({ mode, label, Icon }) => {
+              const active = sortBy === mode;
               return (
                 <button
-                  key={rating}
+                  key={mode}
                   type="button"
-                  onClick={() => onToggleRating(rating)}
-                  className={`w-7 h-7 rounded flex items-center justify-center text-lg leading-none transition-all
-                    ${selected
-                      ? 'opacity-100 scale-110'
+                  onClick={() => handleSortOptionClick(mode)}
+                  className={`w-full flex items-center justify-between gap-2 px-3 py-2 text-left text-sm rounded-md transition-colors ${
+                    active
+                      ? isLight
+                        ? 'bg-black/10 font-medium'
+                        : 'bg-white/10 font-medium'
                       : isLight
-                        ? 'opacity-40 hover:opacity-70 text-gray-600'
-                        : 'opacity-40 hover:opacity-70 text-white/80'
-                    }`}
-                  title={`Rating ${rating} (toggle)`}
+                        ? 'hover:bg-gray-100 text-black/80'
+                        : 'hover:bg-white/10 text-white/80'
+                  }`}
+                  title={active ? 'Click to cycle direction' : label}
                 >
-                  {DRUMSTICK}
+                  <span className="flex items-center gap-2">
+                    <Icon size={14} strokeWidth={2.5} />
+                    {label}
+                  </span>
+                  {active && <Arrow up={sortDirection === 'asc'} />}
                 </button>
               );
             })}
+            {/* Rating filter: horizontal row of 1–5 drumsticks */}
+            <div className={`px-3 py-2 border-t ${isLight ? 'border-black/10' : 'border-white/10'}`}>
+              <div className="text-xs font-medium mb-1.5 opacity-70">Rating filter</div>
+              <div className="flex items-center justify-between gap-0.5">
+                {[1, 2, 3, 4, 5].map((rating) => {
+                  const selected = selectedRatings.includes(rating);
+                  return (
+                    <button
+                      key={rating}
+                      type="button"
+                      onClick={() => onToggleRating(rating)}
+                      className={`w-8 h-8 rounded flex items-center justify-center text-lg leading-none transition-all
+                        ${selected
+                          ? 'opacity-100 scale-110'
+                          : isLight
+                            ? 'opacity-40 hover:opacity-70 text-gray-600'
+                            : 'opacity-40 hover:opacity-70 text-white/80'
+                        }`}
+                      title={`Rating ${rating} (toggle)`}
+                    >
+                      {DRUMSTICK}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );

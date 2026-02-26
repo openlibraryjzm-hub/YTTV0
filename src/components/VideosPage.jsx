@@ -18,7 +18,7 @@ import PageBanner from './PageBanner';
 import EditPlaylistModal from './EditPlaylistModal';
 import UnifiedBannerBackground from './UnifiedBannerBackground';
 import { useNavigationStore } from '../store/navigationStore';
-import { Star, MoreVertical, Plus, Play, Check, X, ArrowUp, Clock, Heart, Pin, Settings, Cat, ChevronRight, ChevronLeft } from 'lucide-react';
+import { Star, MoreVertical, Plus, Play, Check, X, ArrowUp, Clock, Heart, Pin, Settings, Cat, ChevronLeft, RotateCcw } from 'lucide-react';
 import VideoCardSkeleton from './skeletons/VideoCardSkeleton';
 import { updatePlaylist, getAllPlaylists, getFolderMetadata, setFolderMetadata } from '../api/playlistApi';
 import { useConfigStore } from '../store/configStore';
@@ -44,6 +44,7 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
     setPreviewPlaylist,
     allPlaylists,
     setAllPlaylists,
+    clearPreview,
   } = usePlaylistStore();
   const [selectedVideoIndex, setSelectedVideoIndex] = useState(null);
   const {
@@ -74,7 +75,7 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
     setRequestShowAutoTagModal,
     setFullscreenInfoBlanked,
   } = useLayoutStore();
-  const { currentPage: currentNavTab, setCurrentPage: setCurrentNavTab, setSelectedTweet } = useNavigationStore();
+  const { currentPage: currentNavTab, setCurrentPage: setCurrentNavTab, setSelectedTweet, history, goBack } = useNavigationStore();
   const scrollContainerRef = useRef(null);
   const horizontalScrollRef = useRef(null);
 
@@ -1583,7 +1584,7 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
 
           {/* Sticky Toolbar */}
           <div
-            className={`sticky top-0 z-40 transition-all duration-500 cubic-bezier(0.4, 0, 0.2, 1) overflow-hidden
+            className={`sticky top-0 z-40 transition-all duration-500 cubic-bezier(0.4, 0, 0.2, 1) overflow-visible
             ${isStuck
                 ? 'backdrop-blur-xl border-y shadow-2xl mx-0 rounded-none mb-4 pt-2 pb-2 bg-slate-900/70'
                 : 'backdrop-blur-[2px] border-b border-x border-t border-white/10 shadow-xl mx-0 rounded-none mb-4 mt-0 pt-1 pb-0 bg-transparent'
@@ -1598,7 +1599,7 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
 
             <div className={`px-4 flex items-center justify-between transition-all duration-300 relative z-10 ${isStuck ? 'h-[52px]' : 'py-0.5'}`}>
 
-              {/* Sort & rating filters: Home, Date, Progress, Last Viewed, Drumsticks */}
+              {/* Sort & rating filters: Home, Funnel */}
               <VideoSortFilters
                 sortBy={sortBy}
                 setSortBy={setSortBy}
@@ -1610,9 +1611,60 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
                 className="shrink-0 mr-2"
               />
 
-              {/* Folder prism: full bar or "only populated" mode (equal-width segments); arrow toggles */}
-              <div className="flex items-center min-w-0 flex-1 mr-0 gap-1">
-                <div className="flex items-center h-7 min-w-0 flex-1 border-2 border-black rounded-lg overflow-hidden">
+              {/* Add, Refresh (sub), Bulk tag: left of prism, right of filter */}
+              <div className="flex items-center gap-1.5 shrink-0 mr-2">
+                <button
+                  type="button"
+                  onClick={() => setShowVideosUploader(true)}
+                  className="p-1.5 h-7 bg-white hover:bg-gray-100 text-black rounded-md transition-all shadow border border-black/20 shrink-0 flex items-center justify-center"
+                  title="Add videos / config"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                  </svg>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setRequestSubscriptionRefresh(true)}
+                  onContextMenu={(e) => {
+                    e.preventDefault();
+                    setShowSubscriptionManager(true);
+                  }}
+                  className="p-1.5 h-7 bg-white hover:bg-gray-100 text-black rounded-md transition-all shadow border border-black/20 shrink-0 flex items-center justify-center"
+                  title="Refresh subscriptions (right-click: manage)"
+                >
+                  <RotateCcw className="w-4 h-4" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setBulkTagMode(!bulkTagMode)}
+                  onContextMenu={(e) => {
+                    e.preventDefault();
+                    setRequestShowAutoTagModal(true);
+                  }}
+                  className={`p-1.5 h-7 rounded-md transition-all shrink-0 border flex items-center justify-center ${
+                    bulkTagMode
+                      ? 'bg-black text-white border-black shadow'
+                      : 'bg-white text-black hover:bg-gray-100 border-black/20'
+                  }`}
+                  title={bulkTagMode ? 'Exit bulk tagging' : 'Bulk tag (right-click for Auto-Tag)'}
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                  </svg>
+                </button>
+              </div>
+
+              {/* Folder prism: full bar or "only populated" mode; right-click on prism toggles mode */}
+              <div className="flex items-center min-w-0 flex-1 mr-0">
+                <div
+                  className="flex items-center h-7 min-w-0 flex-1 border-2 border-black rounded-lg overflow-hidden cursor-context-menu"
+                  onContextMenu={(e) => {
+                    e.preventDefault();
+                    setPrismOnlyPopulated((p) => !p);
+                  }}
+                  title={prismOnlyPopulated ? 'Right-click: show all segments' : 'Right-click: only segments with items'}
+                >
                   {prismOnlyPopulated ? (
                     /* Only segments with ≥1 item; equal width */
                     prismPopulatedSegments.map((seg, idx) => {
@@ -1691,18 +1743,34 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
                     </>
                   )}
                 </div>
-                <button
-                  type="button"
-                  onClick={() => setPrismOnlyPopulated(p => !p)}
-                  className="h-7 w-7 shrink-0 flex items-center justify-center rounded-md border-2 border-black bg-white/90 hover:bg-slate-100 text-black/70 hover:text-black transition-colors"
-                  title={prismOnlyPopulated ? 'Show all segments' : 'Show only segments with items (equal width)'}
-                >
-                  {prismOnlyPopulated ? <ChevronLeft size={14} strokeWidth={2.5} /> : <ChevronRight size={14} strokeWidth={2.5} />}
-                </button>
               </div>
 
-              {/* Right Side: Sort Dropdown + Actions */}
-              <div className="flex items-center gap-2 shrink-0 ml-auto">
+              {/* Right side: Back, Close */}
+              <div className="flex items-center gap-1.5 shrink-0 ml-auto">
+                {(history.length > 0 || previewPlaylistId) && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (previewPlaylistId) clearPreview();
+                      if (history.length > 0) goBack();
+                      else if (previewPlaylistId) setCurrentNavTab('playlists');
+                    }}
+                    className="flex items-center justify-center w-7 h-7 rounded-full shadow-sm border border-black/20 bg-white hover:bg-gray-100 text-black transition-all hover:scale-105 active:scale-90 shrink-0"
+                    title="Go Back"
+                  >
+                    <ChevronLeft size={18} />
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => setViewMode('full')}
+                  className="flex items-center justify-center w-7 h-7 bg-rose-500 text-white rounded-lg hover:bg-rose-600 transition-colors shadow-md border border-rose-400 active:scale-90 shrink-0"
+                  title="Close menu (Full screen)"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
               </div>
 
             </div>

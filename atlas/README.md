@@ -52,7 +52,7 @@ yttv2/
 │   │   ├── YouTubePlayer.jsx     # YouTube iframe player component
 │   │   ├── NativeVideoPlayer.jsx # Native mpv player for local videos
 │   │   ├── LocalVideoPlayer.jsx  # HTML5 fallback player (browser-compatible formats)
-│   │   ├── TopNavigation.jsx     # Contextual Mini Header; Playlists: TabBar + Info/Folder/Add; Videos: Add/Subs/Bulk tag above title; Back/Close
+│   │   ├── TopNavigation.jsx     # Contextual Mini Header; Playlists: TabBar + Info/Folder/Add + Back/Close; non-Playlists: title + Twitter style toggle only
 │   │   ├── PlaylistsPage.jsx     # Main playlists grid view
 │   │   ├── VideosPage.jsx        # Videos grid view for current playlist
 │   │   ├── VideoSortFilters.jsx # Icon sort bar (Home/Date/Progress/Last Viewed) + hover-expand drumstick rating filter for Videos toolbar
@@ -177,6 +177,7 @@ yttv2/
 │   ├── video-tweet-card-three-dot-menu.md  # All-in-one 3-dot menu (VideoCard & TweetCard)
 │   ├── popout-browser.md         # Documentation for standalone webview windows (e.g. Twitter)
 │   ├── fullscreen-video-info.md # Fullscreen right-margin video metadata panel (thumbnail, author, views, year)
+│   ├── video-sort-filters.md    # Videos page sticky toolbar: VideoSortFilters (sort/rating) + folder prism
 │   └── session-updates.md        # Development session logs
 │
 ├── dev-logs/                     # Development change logs
@@ -214,6 +215,7 @@ yttv2/
 | **Video Player** | `videoplayer.md` | `database-schema.md`, `api-bridge.md`, `state-management.md` |
 | **Fullscreen Video Info** | `fullscreen-video-info.md` | `ui-layout.md`, `videoplayer.md`, `state-management.md` (playlistStore) |
 | **Drumstick Rating** | `drumstick-rating-system.md` | `database-schema.md`, `api-bridge.md`, `ui-cards.md`, `video-tweet-card-three-dot-menu.md` |
+| **Videos Page Sort & Folder Prism** | `video-sort-filters.md` | `ui-pages.md` (§4.1.2), `drumstick-rating-system.md`, `playlist&tab.md`, `state-management.md` |
 | **Video/Tweet Card 3-Dot Menu** | `video-tweet-card-three-dot-menu.md` | `ui-cards.md`, `drumstick-rating-system.md`, `playlist&tab.md` |
 | **Local Videos** | `local-videos.md` | `videoplayer.md`, `database-schema.md`, `api-bridge.md`, `importexport.md` |
 | **Audio Visualizer** | `audio-visualizer.md` | `advanced-player-controller.md`, `api-bridge.md` |
@@ -290,6 +292,11 @@ yttv2/
 **Covers**: All-in-one 3-dot menu for VideoCard and TweetCard on the Videos page
 **Key Topics**: Horizontal menu layout (actions, pins/rating/sticky, folder grid), BulkTagColorGrid in menu and in bulk-tag strip, positioning above row, no hover clutter
 **Cross-References**: See `ui-cards.md` for card components, `drumstick-rating-system.md` for rating, `playlist&tab.md` for folder assignment
+
+#### `video-sort-filters.md`
+**Covers**: Videos page sticky toolbar—VideoSortFilters component (sort and rating filter) and colored folder prism
+**Key Topics**: Two toolbar buttons (Home/default, Funnel); funnel dropdown with sort options (Date/Progress/Last viewed, direction cycling) and horizontal rating filter (1–5 drumsticks); folder prism modes (populated-only equal-width vs all segments); state and data flow in VideosPage
+**Cross-References**: See `ui-pages.md` (§4.1.2), `drumstick-rating-system.md`, `playlist&tab.md`, `state-management.md`
 
 #### `videoplayer.md`
 **Covers**: YouTube iframe player, progress tracking, dual player system
@@ -373,7 +380,8 @@ yttv2/
 ### When Working On...
 
 **Videos Page Sticky Bar (Sort & Folder Prism):**
-- Primary: `ui-pages.md` (Section 4.1.2, Sticky Toolbar)
+- Primary: `video-sort-filters.md` (VideoSortFilters component + folder prism behavior)
+- Also: `ui-pages.md` (Section 4.1.2, Sticky Toolbar)
 - Components: `VideoSortFilters.jsx`, `VideosPage.jsx` (toolbar row)
 - State: `layoutStore` (Videos page UI triggers), `folderStore` (bulkTagMode, selectedFolder), `paginationStore`
 - Rating filter: `drumstick-rating-system.md`
@@ -476,6 +484,7 @@ For detailed information about the application's theme system and recent color c
 3. **Use cross-references** to navigate between related topics
 
 ### Update Log (Current Session)
+- **Videos Page Sticky Toolbar**: See **`video-sort-filters.md`** §8 (Change log) for VideoSortFilters funnel dropdown, prism right-click toggle, toolbar layout (Add/Refresh/Bulk tag left of prism, Back/Close right), and TopNavigation removals.
 - **Player Controller See-Through & Metadata**:
   - **Top Playlist Menu**: Removed video metadata (author, view count, year published) from the bottom bar; only navigation controls (Previous, Grid, Next) remain.
   - **Top Playlist & Top Video Menus**: Panels and bottom bars use transparent backgrounds (`bg-transparent`), no solid backdrop or rectangular border, so the App Banner is fully visible behind them; a soft box shadow (`shadow-2xl`) defines the rounded-rectangle shape. Implemented in `PlayerController.jsx`; documented in `advanced-player-controller.md` (§1.3, §1.4).
@@ -489,9 +498,9 @@ For detailed information about the application's theme system and recent color c
   - **VideoCard**: No thumbnail hover expansion (ImageHoverPreview removed; reserved for TweetCard). Video ID subtitle below title removed.
 - **App Banner (splitscreen spill)**: Spill hover uses simple full-banner opacity (`SPILL_HOVER_OPACITY` in `LayoutShell.jsx`, default 0.2) instead of cursor-following cutout; see `app-banner.md`.
 - **Videos Page Sticky Bar & Folder Prism**:
-  - **VideoSortFilters** (`VideoSortFilters.jsx`): Icon bar (Home, Calendar, Bar chart, Clock, Drumstick rating filter). Documented in `ui-pages.md` (4.1.2) and `drumstick-rating-system.md`.
-  - **Folder prism**: All and Unsorted show **item counts** (not "All"/"?"). Folder nav arrows **removed** from toolbar; prism uses full width. **Populated-only mode**: arrow button (right of prism) toggles showing only segments with ≥1 item (equal width); **default on** when entering Videos page. See `ui-pages.md` §4.1.2.
-  - **TopNavigation (Videos page)**: Add, Subscriptions, and Bulk Tag buttons moved from sticky toolbar to TopNavigation left side, **above** the playlist title. layoutStore flags (`showVideosUploader`, `showSubscriptionManager`, `requestSubscriptionRefresh`, `requestShowAutoTagModal`) drive modals/refresh; VideosPage reacts and clears.
+  - **VideoSortFilters** (`VideoSortFilters.jsx`): Icon bar (Home, Funnel dropdown for sort by date/progress/last viewed + horizontal rating filter 1–5). Documented in `video-sort-filters.md`, `ui-pages.md` (4.1.2), and `drumstick-rating-system.md`.
+  - **Folder prism**: All and Unsorted show **item counts** (not "All"/"?"). **Right-click on prism** toggles populated-only (only segments with ≥1 item, equal width) vs all segments; default is populated-only. No separate arrow button.
+  - **Videos page sticky toolbar**: **Add**, **Refresh** (subscriptions), and **Bulk tag** sit left of the prism (right of the filter); **Back** and **Close** on the far right. **TopNavigation** no longer shows Add, Subscriptions, Bulk tag, Back, or Close when on Videos page—only the mini header title and (on the right) the Twitter style toggle remain there. layoutStore flags drive modals/refresh; VideosPage reacts and clears.
   - **Mini header gradient**: Gradient spans full width in splitscreen; removed horizontal padding from `.layout-shell__mini-header` (LayoutShell.css) and from the miniHeader wrapper in App.jsx. Content inset preserved via TopNavigation `pl-8`/`pr-8`.
 - **Video Card & Bulk Tag UX**:
   - **Video card thumbnails**: Removed rounded corners and black outline from VideoCard thumbnails (YouTube and Twitter style). Card base component now supports an optional `rounded={false}` prop for square corners; VideoCard uses it so the full card and thumbnail area are square.
