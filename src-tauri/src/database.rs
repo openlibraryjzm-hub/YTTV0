@@ -322,6 +322,38 @@ impl Database {
             )?;
         }
 
+        // Migration: Add video metadata columns (duration, description, tags, likes, comments)
+        if !columns.contains(&"duration_seconds".to_string()) {
+            self.conn.execute(
+                "ALTER TABLE playlist_items ADD COLUMN duration_seconds INTEGER",
+                [],
+            )?;
+        }
+        if !columns.contains(&"description".to_string()) {
+            self.conn.execute(
+                "ALTER TABLE playlist_items ADD COLUMN description TEXT",
+                [],
+            )?;
+        }
+        if !columns.contains(&"tags".to_string()) {
+            self.conn.execute(
+                "ALTER TABLE playlist_items ADD COLUMN tags TEXT",
+                [],
+            )?;
+        }
+        if !columns.contains(&"like_count".to_string()) {
+            self.conn.execute(
+                "ALTER TABLE playlist_items ADD COLUMN like_count TEXT",
+                [],
+            )?;
+        }
+        if !columns.contains(&"comment_count".to_string()) {
+            self.conn.execute(
+                "ALTER TABLE playlist_items ADD COLUMN comment_count TEXT",
+                [],
+            )?;
+        }
+
         Ok(())
     }
 
@@ -369,7 +401,7 @@ impl Database {
         
         // First video (position 0 or min)
         let mut first_video_stmt = self.conn.prepare(
-             "SELECT id, playlist_id, video_url, video_id, title, thumbnail_url, position, added_at, is_local, author, view_count, published_at, profile_image_url, drumstick_rating 
+             "SELECT id, playlist_id, video_url, video_id, title, thumbnail_url, position, added_at, is_local, author, view_count, published_at, profile_image_url, drumstick_rating, duration_seconds, description, tags, like_count, comment_count 
               FROM playlist_items 
               WHERE playlist_id = ?1 
               ORDER BY position ASC 
@@ -378,7 +410,7 @@ impl Database {
 
         // Recent video logic: join video_progress and order by last_updated desc
         let mut recent_video_stmt = self.conn.prepare(
-             "SELECT pi.id, pi.playlist_id, pi.video_url, pi.video_id, pi.title, pi.thumbnail_url, pi.position, pi.added_at, pi.is_local, pi.author, pi.view_count, pi.published_at, pi.profile_image_url, pi.drumstick_rating 
+             "SELECT pi.id, pi.playlist_id, pi.video_url, pi.video_id, pi.title, pi.thumbnail_url, pi.position, pi.added_at, pi.is_local, pi.author, pi.view_count, pi.published_at, pi.profile_image_url, pi.drumstick_rating, pi.duration_seconds, pi.description, pi.tags, pi.like_count, pi.comment_count 
               FROM playlist_items pi
               INNER JOIN video_progress vp ON pi.video_id = vp.video_id
               WHERE pi.playlist_id = ?1
@@ -405,6 +437,11 @@ impl Database {
                     published_at: row.get(11).unwrap_or(None),
                     profile_image_url: row.get(12).unwrap_or(None),
                     drumstick_rating: row.get(13).unwrap_or(0),
+                    duration_seconds: row.get(14).unwrap_or(None),
+                    description: row.get(15).unwrap_or(None),
+                    tags: row.get(16).unwrap_or(None),
+                    like_count: row.get(17).unwrap_or(None),
+                    comment_count: row.get(18).unwrap_or(None),
                 })
             }) {
                 Ok(v) => Some(v),
@@ -428,6 +465,11 @@ impl Database {
                     published_at: row.get(11).unwrap_or(None),
                     profile_image_url: row.get(12).unwrap_or(None),
                     drumstick_rating: row.get(13).unwrap_or(0),
+                    duration_seconds: row.get(14).unwrap_or(None),
+                    description: row.get(15).unwrap_or(None),
+                    tags: row.get(16).unwrap_or(None),
+                    like_count: row.get(17).unwrap_or(None),
+                    comment_count: row.get(18).unwrap_or(None),
                 })
             }) {
                 Ok(v) => Some(v),
@@ -594,6 +636,11 @@ impl Database {
         view_count: Option<&str>,
         published_at: Option<&str>,
         profile_image_url: Option<&str>,
+        duration_seconds: Option<i64>,
+        description: Option<&str>,
+        tags: Option<&str>,
+        like_count: Option<&str>,
+        comment_count: Option<&str>,
     ) -> Result<i64> {
         // Get the next position (max position + 1)
         let position: i32 = self.conn.query_row(
@@ -604,9 +651,9 @@ impl Database {
 
         let now = Utc::now().to_rfc3339();
         self.conn.execute(
-            "INSERT INTO playlist_items (playlist_id, video_url, video_id, title, thumbnail_url, position, added_at, is_local, author, view_count, published_at, profile_image_url) 
-             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12)",
-            params![playlist_id, video_url, video_id, title, thumbnail_url, position, now, if is_local { 1 } else { 0 }, author, view_count, published_at, profile_image_url],
+            "INSERT INTO playlist_items (playlist_id, video_url, video_id, title, thumbnail_url, position, added_at, is_local, author, view_count, published_at, profile_image_url, duration_seconds, description, tags, like_count, comment_count) 
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17)",
+            params![playlist_id, video_url, video_id, title, thumbnail_url, position, now, if is_local { 1 } else { 0 }, author, view_count, published_at, profile_image_url, duration_seconds, description, tags, like_count, comment_count],
         )?;
 
         Ok(self.conn.last_insert_rowid())
@@ -614,7 +661,7 @@ impl Database {
 
     pub fn get_playlist_items(&self, playlist_id: i64) -> Result<Vec<PlaylistItem>> {
         let mut stmt = self.conn.prepare(
-            "SELECT id, playlist_id, video_url, video_id, title, thumbnail_url, position, added_at, is_local, author, view_count, published_at, profile_image_url, drumstick_rating 
+            "SELECT id, playlist_id, video_url, video_id, title, thumbnail_url, position, added_at, is_local, author, view_count, published_at, profile_image_url, drumstick_rating, duration_seconds, description, tags, like_count, comment_count 
              FROM playlist_items 
              WHERE playlist_id = ?1 
              ORDER BY position ASC"
@@ -637,6 +684,11 @@ impl Database {
                     published_at: row.get(11).unwrap_or(None),
                     profile_image_url: row.get(12).unwrap_or(None),
                     drumstick_rating: row.get(13).unwrap_or(0),
+                    duration_seconds: row.get(14).unwrap_or(None),
+                    description: row.get(15).unwrap_or(None),
+                    tags: row.get(16).unwrap_or(None),
+                    like_count: row.get(17).unwrap_or(None),
+                    comment_count: row.get(18).unwrap_or(None),
                 })
             })?
             .collect::<Result<Vec<_>, _>>()?;
@@ -650,7 +702,7 @@ impl Database {
         limit: i64,
     ) -> Result<Vec<PlaylistItem>> {
         let mut stmt = self.conn.prepare(
-            "SELECT id, playlist_id, video_url, video_id, title, thumbnail_url, position, added_at, is_local, author, view_count, published_at, profile_image_url, drumstick_rating 
+            "SELECT id, playlist_id, video_url, video_id, title, thumbnail_url, position, added_at, is_local, author, view_count, published_at, profile_image_url, drumstick_rating, duration_seconds, description, tags, like_count, comment_count 
              FROM playlist_items 
              WHERE playlist_id = ?1 
              ORDER BY position ASC
@@ -674,6 +726,11 @@ impl Database {
                     published_at: row.get(11).unwrap_or(None),
                     profile_image_url: row.get(12).unwrap_or(None),
                     drumstick_rating: row.get(13).unwrap_or(0),
+                    duration_seconds: row.get(14).unwrap_or(None),
+                    description: row.get(15).unwrap_or(None),
+                    tags: row.get(16).unwrap_or(None),
+                    like_count: row.get(17).unwrap_or(None),
+                    comment_count: row.get(18).unwrap_or(None),
                 })
             })?
             .collect::<Result<Vec<_>, _>>()?;
@@ -915,7 +972,7 @@ impl Database {
         folder_color: &str,
     ) -> Result<Vec<PlaylistItem>> {
         let mut stmt = self.conn.prepare(
-            "SELECT pi.id, pi.playlist_id, pi.video_url, pi.video_id, pi.title, pi.thumbnail_url, pi.position, pi.added_at, pi.is_local, pi.author, pi.view_count, pi.published_at, pi.profile_image_url, pi.drumstick_rating
+            "SELECT pi.id, pi.playlist_id, pi.video_url, pi.video_id, pi.title, pi.thumbnail_url, pi.position, pi.added_at, pi.is_local, pi.author, pi.view_count, pi.published_at, pi.profile_image_url, pi.drumstick_rating, pi.duration_seconds, pi.description, pi.tags, pi.like_count, pi.comment_count
              FROM playlist_items pi
              INNER JOIN video_folder_assignments vfa ON pi.id = vfa.item_id
              WHERE vfa.playlist_id = ?1 AND vfa.folder_color = ?2
@@ -939,6 +996,11 @@ impl Database {
                     published_at: row.get(11).unwrap_or(None),
                     profile_image_url: row.get(12).unwrap_or(None),
                     drumstick_rating: row.get(13).unwrap_or(0),
+                    duration_seconds: row.get(14).unwrap_or(None),
+                    description: row.get(15).unwrap_or(None),
+                    tags: row.get(16).unwrap_or(None),
+                    like_count: row.get(17).unwrap_or(None),
+                    comment_count: row.get(18).unwrap_or(None),
                 })
             })?
             .collect::<Result<Vec<_>, _>>()?;
@@ -1029,7 +1091,7 @@ impl Database {
             let first_video = if let Some(pos) = min_position {
                 // Get the first video in this folder (by position, then by id for consistency)
                 let mut video_stmt = self.conn.prepare(
-                    "SELECT pi.id, pi.playlist_id, pi.video_url, pi.video_id, pi.title, pi.thumbnail_url, pi.position, pi.added_at, pi.is_local, pi.author, pi.view_count, pi.published_at, pi.profile_image_url, pi.drumstick_rating
+                    "SELECT pi.id, pi.playlist_id, pi.video_url, pi.video_id, pi.title, pi.thumbnail_url, pi.position, pi.added_at, pi.is_local, pi.author, pi.view_count, pi.published_at, pi.profile_image_url, pi.drumstick_rating, pi.duration_seconds, pi.description, pi.tags, pi.like_count, pi.comment_count
                      FROM playlist_items pi
                      INNER JOIN video_folder_assignments vfa ON pi.id = vfa.item_id
                      WHERE vfa.playlist_id = ?1 AND vfa.folder_color = ?2 AND pi.position = ?3
@@ -1053,6 +1115,11 @@ impl Database {
                         published_at: row.get(11).unwrap_or(None),
                         profile_image_url: row.get(12).unwrap_or(None),
                         drumstick_rating: row.get(13).unwrap_or(0),
+                        duration_seconds: row.get(14).unwrap_or(None),
+                        description: row.get(15).unwrap_or(None),
+                        tags: row.get(16).unwrap_or(None),
+                        like_count: row.get(17).unwrap_or(None),
+                        comment_count: row.get(18).unwrap_or(None),
                     })
                 }) {
                     Ok(video) => Some(video),
@@ -1111,7 +1178,7 @@ impl Database {
             // Get the first video (lowest position) for this folder
             let first_video = if let Some(pos) = min_position {
                 let mut video_stmt = self.conn.prepare(
-                    "SELECT pi.id, pi.playlist_id, pi.video_url, pi.video_id, pi.title, pi.thumbnail_url, pi.position, pi.added_at, pi.is_local, pi.author, pi.view_count, pi.published_at, pi.profile_image_url, pi.drumstick_rating
+                    "SELECT pi.id, pi.playlist_id, pi.video_url, pi.video_id, pi.title, pi.thumbnail_url, pi.position, pi.added_at, pi.is_local, pi.author, pi.view_count, pi.published_at, pi.profile_image_url, pi.drumstick_rating, pi.duration_seconds, pi.description, pi.tags, pi.like_count, pi.comment_count
                      FROM playlist_items pi
                      INNER JOIN video_folder_assignments vfa ON pi.id = vfa.item_id
                      WHERE vfa.playlist_id = ?1 AND vfa.folder_color = ?2 AND pi.position = ?3
@@ -1135,6 +1202,11 @@ impl Database {
                         published_at: row.get(11).unwrap_or(None),
                         profile_image_url: row.get(12).unwrap_or(None),
                         drumstick_rating: row.get(13).unwrap_or(0),
+                        duration_seconds: row.get(14).unwrap_or(None),
+                        description: row.get(15).unwrap_or(None),
+                        tags: row.get(16).unwrap_or(None),
+                        like_count: row.get(17).unwrap_or(None),
+                        comment_count: row.get(18).unwrap_or(None),
                     })
                 }) {
                     Ok(video) => Some(video),

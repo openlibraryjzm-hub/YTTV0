@@ -61,7 +61,8 @@ The application employs a high-contrast, structured design with distinct borders
   - **Transparent Structure**: Features a fully transparent background with `padding: 0`. The visual "border" is provided solely by the shared Top Border Separator.
   - Scales responsively with view modes (Full/Half/Quarter).
   - **Fullscreen width**: In fullscreen mode, the player width is configurable (default 75% of content area) so a margin remains on the right, reducing letterboxing. Setting: **App → Player Borders → Fullscreen player width** (configStore: `fullscreenPlayerWidthPercent`). LayoutShell applies `--fullscreen-player-width` when `viewMode === 'full'`.
-  - **Fullscreen Video Info**: The right margin in fullscreen is filled by the **FullscreenVideoInfo** component (thumbnail, author, view count, year). See `fullscreen-video-info.md`.
+  - **Fullscreen Video Info**: The right margin in fullscreen is filled by the **FullscreenVideoInfo** component (thumbnail, author, view count, year, description, tags). See `fullscreen-video-info.md`.
+  - **Fullscreen ↔ Splitscreen transition**: A unified right column (`.layout-shell__right-column`) holds either FullscreenVideoInfo or the side menu. **AnimatePresence** with `mode="wait"` crossfades between them (fullscreen info fades out, side menu fades in) while the content grid animates (0.5s). Optionally, **fullscreen info blanks instantly** when opening splitscreen (`layoutStore.fullscreenInfoBlanked`) so the panel clears before the mode switch. Together these provide a marginal improvement to transition smoothness; the banner switch (fullscreen vs splitscreen banner) and layout resize remain the main visual change.
 
 - **Floating Metadata Bubbles**:
   - **Removed**: Video metadata (Author/View Count) and Playlist titles are now integrated directly into the Top Playlist/Video Menus for a cleaner, encapsulated look (see `advanced-player-controller.md`).

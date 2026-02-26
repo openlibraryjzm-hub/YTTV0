@@ -1,4 +1,5 @@
 import React from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
 import { useLayoutStore } from './store/layoutStore';
 import { useConfigStore } from './store/configStore';
 import WindowControls from './components/WindowControls';
@@ -403,51 +404,74 @@ const LayoutShell = ({
         </div>
 
         {/* Fullscreen only: video info panel in right margin (author, year, view count) */}
-        {viewMode === 'full' && !showDebugBounds && <FullscreenVideoInfo />}
-
         {/* Side Menu - Only visible in half/quarter modes */}
-        {(viewMode === 'half' || viewMode === 'quarter') && (
-          <div
-            className={`layout-shell__side-menu ${showDebugBounds ? 'debug-bounds debug-bounds--side-menu' : ''}`}
-            data-debug-label="Side Menu"
-          >
-            {/* Mini Header Slot */}
-            <div
-              className={`layout-shell__mini-header ${showDebugBounds ? 'debug-bounds debug-bounds--mini-header' : ''}`}
-              data-debug-label="Mini Header"
-            >
-              {!showDebugBounds && (
-                <>
-                  {miniHeader || (
-                    <div className="placeholder placeholder--mini-header">
-                      <span className="placeholder__label">Mini Header</span>
-                      <span className="placeholder__subtitle">Navigation Bar</span>
-                    </div>
-                  )}
-                </>
-              )}
-            </div>
+        {/* Unified right column: crossfade between FullscreenVideoInfo and side menu for smoother transition */}
+        <div className="layout-shell__right-column">
+          <AnimatePresence mode="wait">
+            {viewMode === 'full' && !showDebugBounds && (
+              <motion.div
+                key="fullscreen-video-info"
+                className="layout-shell__fullscreen-video-info-mount"
+                initial={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.2 }}
+              >
+                <FullscreenVideoInfo />
+              </motion.div>
+            )}
+            {(viewMode === 'half' || viewMode === 'quarter') && (
+              <motion.div
+                key="side-menu"
+                className="layout-shell__side-menu-mount"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.28 }}
+              >
+                <div
+                  className={`layout-shell__side-menu ${showDebugBounds ? 'debug-bounds debug-bounds--side-menu' : ''}`}
+                  data-debug-label="Side Menu"
+                >
+                  {/* Mini Header Slot */}
+                  <div
+                    className={`layout-shell__mini-header ${showDebugBounds ? 'debug-bounds debug-bounds--mini-header' : ''}`}
+                    data-debug-label="Mini Header"
+                  >
+                    {!showDebugBounds && (
+                      <>
+                        {miniHeader || (
+                          <div className="placeholder placeholder--mini-header">
+                            <span className="placeholder__label">Mini Header</span>
+                            <span className="placeholder__subtitle">Navigation Bar</span>
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </div>
 
-            {/* Side Menu Content */}
-            <div
-              className={`layout-shell__side-menu-content scrollbar-chevrons-wrapper ${showDebugBounds ? 'debug-bounds debug-bounds--side-menu-content' : ''}`}
-              data-debug-label="Side Menu Content"
-            >
-              {!showDebugBounds && (
-                <>
-                  {sideMenu || (
-                    <div className="placeholder placeholder--side-menu">
-                      <span className="placeholder__label">Side Menu</span>
-                      <span className="placeholder__subtitle">Playlists, File Nav, etc.</span>
-                    </div>
-                  )}
-                  {/* Scrollbar Navigation Chevrons */}
-                  <ScrollbarChevrons scrollbarWidth={10} />
-                </>
-              )}
-            </div>
-          </div>
-        )}
+                  {/* Side Menu Content */}
+                  <div
+                    className={`layout-shell__side-menu-content scrollbar-chevrons-wrapper ${showDebugBounds ? 'debug-bounds debug-bounds--side-menu-content' : ''}`}
+                    data-debug-label="Side Menu Content"
+                  >
+                    {!showDebugBounds && (
+                      <>
+                        {sideMenu || (
+                          <div className="placeholder placeholder--side-menu">
+                            <span className="placeholder__label">Side Menu</span>
+                            <span className="placeholder__subtitle">Playlists, File Nav, etc.</span>
+                          </div>
+                        )}
+                        {/* Scrollbar Navigation Chevrons */}
+                        <ScrollbarChevrons scrollbarWidth={10} />
+                      </>
+                    )}
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
       </div>
     </div>
   );

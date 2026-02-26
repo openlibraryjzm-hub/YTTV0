@@ -101,6 +101,13 @@ CREATE TABLE IF NOT EXISTS playlist_items (
 - `author` (TEXT) - Channel name/author
 - `view_count` (TEXT) - Video view count
 - `published_at` (TEXT) - ISO 8601 timestamp of video publication
+- `profile_image_url` (TEXT) - Optional profile image URL (e.g. for Twitter/social imports)
+- `drumstick_rating` (INTEGER NOT NULL DEFAULT 0) - 0–5 rating (0 = unrated)
+- `duration_seconds` (INTEGER) - Video length in seconds (populated by YouTube import when available)
+- `description` (TEXT) - Video description (populated by YouTube import when available)
+- `tags` (TEXT) - JSON array of tag strings (e.g. `["tag1","tag2"]`); populated by YouTube import when available
+- `like_count` (TEXT) - Like count (column present; not populated by current YouTube import)
+- `comment_count` (TEXT) - Comment count (column present; not populated by current YouTube import)
 
 **Indexes:**
 - `idx_playlist_items_playlist_id` - On `playlist_id` for faster playlist lookups

@@ -142,6 +142,11 @@ pub fn add_video_to_playlist(
     view_count: Option<String>,
     published_at: Option<String>,
     profile_image_url: Option<String>,
+    duration_seconds: Option<i64>,
+    description: Option<String>,
+    tags: Option<String>,
+    like_count: Option<String>,
+    comment_count: Option<String>,
 ) -> Result<i64, String> {
     let db = db.lock().map_err(|e| e.to_string())?;
     db.add_video_to_playlist(
@@ -155,6 +160,11 @@ pub fn add_video_to_playlist(
         view_count.as_deref(),
         published_at.as_deref(),
         profile_image_url.as_deref(),
+        duration_seconds,
+        description.as_deref(),
+        tags.as_deref(),
+        like_count.as_deref(),
+        comment_count.as_deref(),
     )
     .map_err(|e| e.to_string())
 }

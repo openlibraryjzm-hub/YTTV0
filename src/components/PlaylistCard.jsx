@@ -53,7 +53,7 @@ const PlaylistCard = ({
 }) => {
   const { currentPlaylistId, setPlaylistItems, setPreviewPlaylist } =
     usePlaylistStore();
-  const { viewMode, setViewMode, inspectMode } = useLayoutStore();
+  const { viewMode, setViewMode, inspectMode, setFullscreenInfoBlanked } = useLayoutStore();
   const { setCurrentPage } = useNavigationStore();
   const { getGroupIdsForPlaylist, removePlaylistFromGroup } = usePlaylistGroupStore();
   const groupIdsForPlaylist = getGroupIdsForPlaylist(playlist.id);
@@ -214,9 +214,14 @@ const PlaylistCard = ({
     try {
       const items = await getPlaylistItems(playlist.id);
       setPreviewPlaylist(items, playlist.id, null);
-      setCurrentPage("videos");
       if (viewMode === "full") {
-        setViewMode("half");
+        setFullscreenInfoBlanked(true);
+        requestAnimationFrame(() => {
+          setCurrentPage("videos");
+          setViewMode("half");
+        });
+      } else {
+        setCurrentPage("videos");
       }
     } catch (error) {
       console.error("Failed to load playlist items for preview:", error);

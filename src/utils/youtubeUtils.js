@@ -1,4 +1,18 @@
 /**
+ * Parses ISO 8601 duration (e.g. PT1H2M30S, PT15M51S) to total seconds.
+ * Returns null if invalid or missing.
+ */
+export const parseYouTubeDuration = (isoDuration) => {
+  if (!isoDuration || typeof isoDuration !== 'string') return null;
+  const match = isoDuration.match(/^PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?$/i);
+  if (!match) return null;
+  const hours = parseInt(match[1] || '0', 10);
+  const minutes = parseInt(match[2] || '0', 10);
+  const seconds = parseInt(match[3] || '0', 10);
+  return hours * 3600 + minutes * 60 + seconds;
+};
+
+/**
  * Extracts video ID from YouTube URL
  * Supports formats:
  * - https://www.youtube.com/watch?v=VIDEO_ID

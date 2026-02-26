@@ -129,7 +129,7 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
 
   const { currentPage, setCurrentPage } = useNavigationStore();
   const { pinnedVideos, togglePriorityPin, removePin, isPriorityPin, isPinned, isFollowerPin, togglePin } = usePinStore();
-  const { viewMode, setViewMode, inspectMode, toggleMenuQuarterMode, menuQuarterMode, showDebugBounds, toggleDebugBounds, toggleInspectMode, showRuler, toggleRuler, showDevToolbar, toggleDevToolbar } = useLayoutStore();
+  const { viewMode, setViewMode, inspectMode, toggleMenuQuarterMode, menuQuarterMode, showDebugBounds, toggleDebugBounds, toggleInspectMode, showRuler, toggleRuler, showDevToolbar, toggleDevToolbar, setFullscreenInfoBlanked } = useLayoutStore();
   const { showColoredFolders } = useFolderStore();
   const { tabs, activeTabId, setActiveTab } = useTabStore();
   const { presets, activePresetId, setActivePreset } = useTabPresetStore();
@@ -896,7 +896,8 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
     } else {
       setCurrentPage('playlists');
       if (viewMode === 'full') {
-        setViewMode('half');
+        setFullscreenInfoBlanked(true);
+        requestAnimationFrame(() => setViewMode('half'));
       }
     }
   };
@@ -922,7 +923,8 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
       } else {
         setCurrentPage('videos');
         if (viewMode === 'full') {
-          setViewMode('half');
+          setFullscreenInfoBlanked(true);
+          requestAnimationFrame(() => setViewMode('half'));
         }
       }
     }
@@ -2446,8 +2448,15 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
               {/* Orb Config Button (Top Left) */}
               <button
                 onClick={() => {
-                  if (viewMode === 'full') setViewMode('half');
-                  setCurrentPage('orb-config');
+                  if (viewMode === 'full') {
+                    setFullscreenInfoBlanked(true);
+                    requestAnimationFrame(() => {
+                      setViewMode('half');
+                      setCurrentPage('orb-config');
+                    });
+                  } else {
+                    setCurrentPage('orb-config');
+                  }
                 }}
                 className="absolute rounded-full flex items-center justify-center bg-white shadow-xl hover:scale-110 active:scale-95 group/btn z-50 border-2 border-sky-50 opacity-0 group-hover:opacity-100 transition-all duration-300"
                 style={{ left: '15%', top: '15%', transform: 'translate(-50%, -50%)', width: `28px`, height: `28px` }}
@@ -2457,7 +2466,17 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
               </button>
 
               {/* Settings Button (Top Right) */}
-              <button onClick={() => setCurrentPage('app')} className="absolute rounded-full flex items-center justify-center bg-white shadow-xl hover:scale-110 active:scale-95 group/btn z-50 border-2 border-sky-50 opacity-0 group-hover:opacity-100 transition-all duration-300" style={{ left: '85%', top: '15%', transform: 'translate(-50%, -50%)', width: `28px`, height: `28px` }} title={getInspectTitle('Settings') || 'Settings'}>
+              <button onClick={() => {
+                if (viewMode === 'full') {
+                  setFullscreenInfoBlanked(true);
+                  requestAnimationFrame(() => {
+                    setViewMode('half');
+                    setCurrentPage('app');
+                  });
+                } else {
+                  setCurrentPage('app');
+                }
+              }} className="absolute rounded-full flex items-center justify-center bg-white shadow-xl hover:scale-110 active:scale-95 group/btn z-50 border-2 border-sky-50 opacity-0 group-hover:opacity-100 transition-all duration-300" style={{ left: '85%', top: '15%', transform: 'translate(-50%, -50%)', width: `28px`, height: `28px` }} title={getInspectTitle('Settings') || 'Settings'}>
                 <Settings size={14} className="text-slate-800" strokeWidth={2.5} />
               </button>
 
@@ -2591,9 +2610,14 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
                           e.preventDefault();
                           e.stopPropagation();
                           if (viewMode === 'full') {
-                            setViewMode('half');
+                            setFullscreenInfoBlanked(true);
+                            requestAnimationFrame(() => {
+                              setViewMode('half');
+                              setCurrentPage('history');
+                            });
+                          } else {
+                            setCurrentPage('history');
                           }
-                          setCurrentPage('history');
                         }}
                         className="absolute left-1/2 top-1/2 flex items-center justify-center group/tool"
                         style={{ transform: `translate(calc(-50% - 120px), -50%)` }}
@@ -2725,8 +2749,15 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
                         onMouseLeave={handlePinMouseLeave}
                         onContextMenu={(e) => {
                           e.preventDefault();
-                          if (viewMode === 'full') setViewMode('half');
-                          setCurrentPage('pins');
+                          if (viewMode === 'full') {
+                            setFullscreenInfoBlanked(true);
+                            requestAnimationFrame(() => {
+                              setViewMode('half');
+                              setCurrentPage('pins');
+                            });
+                          } else {
+                            setCurrentPage('pins');
+                          }
                         }}
                         className="absolute left-1/2 top-1/2 flex items-center justify-center group/tool"
                         style={{ transform: `translate(calc(-50% + ${pinFirstButtonX}px), -50%)` }}
@@ -2790,8 +2821,15 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
                         onClick={handleLikeClick}
                         onContextMenu={(e) => {
                           e.preventDefault();
-                          if (viewMode === 'full') setViewMode('half');
-                          setCurrentPage('likes');
+                          if (viewMode === 'full') {
+                            setFullscreenInfoBlanked(true);
+                            requestAnimationFrame(() => {
+                              setViewMode('half');
+                              setCurrentPage('likes');
+                            });
+                          } else {
+                            setCurrentPage('likes');
+                          }
                         }}
                         className="absolute left-1/2 top-1/2 flex items-center justify-center group/tool"
                         style={{ transform: `translate(calc(-50% + ${likeButtonX}px), -50%)` }}

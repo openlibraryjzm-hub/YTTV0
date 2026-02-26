@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { createPlaylist, addVideoToPlaylist, assignVideoToFolder, getAllPlaylists, getPlaylistItems, getVideosInFolder, addPlaylistSource } from '../api/playlistApi';
-import { extractPlaylistId, extractVideoId } from '../utils/youtubeUtils';
+import { extractPlaylistId, extractVideoId, parseYouTubeDuration } from '../utils/youtubeUtils';
 import { FOLDER_COLORS } from '../utils/folderColors';
 import PlaylistFolderSelector from './PlaylistFolderSelector';
 
@@ -157,20 +157,27 @@ const PlaylistUploader = ({ onUploadComplete, onCancel, initialPlaylistId }) => 
 
       for (let i = 0; i < videoIds.length; i += 50) {
         const batch = videoIds.slice(i, i + 50);
-        const batchUrl = `https://www.googleapis.com/youtube/v3/videos?part=snippet,statistics&id=${batch.join(',')}&key=${API_KEY}`;
+        const batchUrl = `https://www.googleapis.com/youtube/v3/videos?part=snippet,statistics,contentDetails&id=${batch.join(',')}&key=${API_KEY}`;
         try {
           const batchRes = await fetch(batchUrl);
           if (batchRes.ok) {
             const batchData = await batchRes.json();
             if (batchData.items) {
               batchData.items.forEach(v => {
+                const durationIso = v.contentDetails?.duration;
+                const durationSeconds = durationIso ? parseYouTubeDuration(durationIso) : null;
+                const tagsArr = v.snippet?.tags;
+                const tagsStr = Array.isArray(tagsArr) && tagsArr.length > 0 ? JSON.stringify(tagsArr) : null;
                 videoDetails[v.id] = {
                   videoUrl: `https://www.youtube.com/watch?v=${v.id}`,
                   title: v.snippet.title,
                   thumbnailUrl: v.snippet.thumbnails?.medium?.url || v.snippet.thumbnails?.default?.url,
                   author: v.snippet.channelTitle,
                   viewCount: v.statistics?.viewCount,
-                  publishedAt: v.snippet.publishedAt
+                  publishedAt: v.snippet.publishedAt,
+                  durationSeconds: durationSeconds ?? undefined,
+                  description: v.snippet.description || undefined,
+                  tags: tagsStr ?? undefined
                 };
               });
             }
@@ -187,7 +194,6 @@ const PlaylistUploader = ({ onUploadComplete, onCancel, initialPlaylistId }) => 
           .map(item => {
             const vid = item.snippet.resourceId.videoId;
             const details = videoDetails[vid] || {};
-            // Fallback to playlistItem snippet if video detail missing (shouldn't happen often)
             return {
               videoId: vid,
               videoUrl: details.videoUrl || `https://www.youtube.com/watch?v=${vid}`,
@@ -195,14 +201,16 @@ const PlaylistUploader = ({ onUploadComplete, onCancel, initialPlaylistId }) => 
               thumbnailUrl: details.thumbnailUrl || item.snippet.thumbnails?.medium?.url,
               author: details.author || item.snippet.videoOwnerChannelTitle || 'Unknown',
               viewCount: details.viewCount || '0',
-              publishedAt: details.publishedAt || item.snippet.publishedAt // Fallback to playlist add date if needed, but ideally video date
+              publishedAt: details.publishedAt || item.snippet.publishedAt,
+              durationSeconds: details.durationSeconds,
+              description: details.description,
+              tags: details.tags
             };
           })
       };
     } else if (singleVideoId) {
       // --- SINGLE VIDEO IMPORT ---
-      // Fetch metadata for better title/thumb
-      const videoUrl = `https://www.googleapis.com/youtube/v3/videos?part=snippet,statistics&id=${singleVideoId}&key=${API_KEY}`;
+      const videoUrl = `https://www.googleapis.com/youtube/v3/videos?part=snippet,statistics,contentDetails&id=${singleVideoId}&key=${API_KEY}`;
       const res = await fetch(videoUrl);
       const data = await res.json();
       let title = 'Unknown Video';
@@ -210,15 +218,26 @@ const PlaylistUploader = ({ onUploadComplete, onCancel, initialPlaylistId }) => 
       let author = 'Unknown';
       let viewCount = '0';
       let publishedAt = null;
+      let durationSeconds = null;
+      let description = null;
+      let tags = null;
 
       if (data.items && data.items.length > 0) {
         const snippet = data.items[0].snippet;
         const statistics = data.items[0].statistics;
+        const contentDetails = data.items[0].contentDetails;
         title = snippet.title;
         thumbnailUrl = snippet.thumbnails?.medium?.url;
         author = snippet.channelTitle;
         viewCount = statistics?.viewCount || '0';
         publishedAt = snippet.publishedAt;
+        if (contentDetails?.duration) {
+          durationSeconds = parseYouTubeDuration(contentDetails.duration);
+        }
+        description = snippet.description || null;
+        if (Array.isArray(snippet.tags) && snippet.tags.length > 0) {
+          tags = JSON.stringify(snippet.tags);
+        }
       }
 
       return {
@@ -230,7 +249,10 @@ const PlaylistUploader = ({ onUploadComplete, onCancel, initialPlaylistId }) => 
           thumbnailUrl,
           author,
           viewCount,
-          publishedAt
+          publishedAt,
+          durationSeconds,
+          description,
+          tags
         }]
       };
     } else if (playlistUrl.includes('@')) {
@@ -271,7 +293,10 @@ const PlaylistUploader = ({ onUploadComplete, onCancel, initialPlaylistId }) => 
         thumbnailUrl: i.thumbnail_url,
         author: i.author || 'Unknown',
         viewCount: i.view_count || '0',
-        publishedAt: i.published_at || null
+        publishedAt: i.published_at || null,
+        durationSeconds: i.duration_seconds ?? undefined,
+        description: i.description ?? undefined,
+        tags: i.tags ?? undefined
       }))
     };
   };
@@ -287,7 +312,10 @@ const PlaylistUploader = ({ onUploadComplete, onCancel, initialPlaylistId }) => 
         thumbnailUrl: i.thumbnail_url,
         author: i.author || 'Unknown',
         viewCount: i.view_count || '0',
-        publishedAt: i.published_at || null
+        publishedAt: i.published_at || null,
+        durationSeconds: i.duration_seconds ?? undefined,
+        description: i.description ?? undefined,
+        tags: i.tags ?? undefined
       }))
     };
   };
@@ -517,7 +545,7 @@ const PlaylistUploader = ({ onUploadComplete, onCancel, initialPlaylistId }) => 
       for (let i = 0; i < allVideosToInsert.length; i++) {
         const v = allVideosToInsert[i];
         try {
-          const itemId = await addVideoToPlaylist(dbPlaylistId, v.videoUrl, v.videoId, v.title, v.thumbnailUrl, v.author, v.viewCount, v.publishedAt, false);
+          const itemId = await addVideoToPlaylist(dbPlaylistId, v.videoUrl, v.videoId, v.title, v.thumbnailUrl, v.author, v.viewCount, v.publishedAt, false, null, v.durationSeconds ?? null, v.description ?? null, v.tags ?? null, null, null);
           addedCount++;
 
           if (v.folderColor) {
@@ -592,7 +620,7 @@ const PlaylistUploader = ({ onUploadComplete, onCancel, initialPlaylistId }) => 
         const vid = v.videoId || v.video_id || extractVideoId(u);
         if (!vid) continue;
 
-        const itemId = await addVideoToPlaylist(dbId, u || `https://youtube.com/watch?v=${vid}`, vid, v.title, v.thumbnailUrl || v.thumbnail_url, v.author, v.viewCount, v.publishedAt || v.published_at, v.isLocal || false);
+        const itemId = await addVideoToPlaylist(dbId, u || `https://youtube.com/watch?v=${vid}`, vid, v.title, v.thumbnailUrl || v.thumbnail_url, v.author, v.viewCount, v.publishedAt || v.published_at, v.isLocal || false, null, v.durationSeconds ?? v.duration_seconds ?? null, v.description ?? null, v.tags ?? null, null, null);
 
         // Folder assignments
         if (v.folder_assignments && Array.isArray(v.folder_assignments)) {
@@ -754,7 +782,8 @@ const PlaylistUploader = ({ onUploadComplete, onCancel, initialPlaylistId }) => 
             String(tweet.views_count || 0), // view_count (convert to string)
             tweet.created_at, // published_at
             true, // is_local (since it's Twitter media, not YouTube)
-            tweet.profile_image_url || null // profile_image_url
+            tweet.profile_image_url || null, // profile_image_url
+            null, null, null, null, null // durationSeconds, description, tags, likeCount, commentCount
           );
 
           addedCount++;

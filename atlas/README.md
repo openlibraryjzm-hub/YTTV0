@@ -104,7 +104,7 @@ yttv2/
 │   │   ├── LikesPage.jsx               # Liked videos with distribution graph and pagination
 │   │   ├── PieGraph.jsx                # Animated SVG pie chart for likes distribution
 │   │   ├── DebugRuler.jsx              # Ruler overlay component (non-functional - see debug.md)
-│   │   ├── FullscreenVideoInfo.jsx     # Fullscreen right-margin panel (thumbnail, author, view count, year)
+│   │   ├── FullscreenVideoInfo.jsx     # Fullscreen right-margin panel (thumbnail, author, view count, year, description, tags)
 │   │   └── ScrollbarChevrons.jsx       # Scrollbar navigation controls (chevron-dot-chevron capsule)
 │   ├── store/                    # Zustand state management
 │   │   ├── configStore.js        # Theme and Profile configuration
@@ -297,9 +297,9 @@ yttv2/
 **Cross-References**: See `database-schema.md` for video_progress table, `api-bridge.md` for progress commands
 
 #### `fullscreen-video-info.md`
-**Covers**: Fullscreen right-margin panel showing current video thumbnail, author, view count (with 4-bar icon), and year
-**Key Topics**: Fullscreen-only layout, playlistStore (currentPlaylistItems, currentVideoIndex), LayoutShell grid slot
-**Cross-References**: See `ui-layout.md` for fullscreen grid and player width, `videoplayer.md`, `advanced-player-controller.md`
+**Covers**: Fullscreen right-margin panel showing current video thumbnail, author, view count (with 4-bar icon), year, description (truncated), and tags (pills). Instant blank when opening splitscreen.
+**Key Topics**: Fullscreen-only layout, playlistStore (currentPlaylistItems, currentVideoIndex), layoutStore (fullscreenInfoBlanked), LayoutShell grid slot
+**Cross-References**: See `ui-layout.md` for fullscreen grid, player width, and fullscreen↔splitscreen transition; `videoplayer.md`, `advanced-player-controller.md`
 
 #### `local-videos.md`
 **Covers**: Local video file playback, file upload, HTML5 video player
@@ -648,3 +648,7 @@ For detailed information about the application's theme system and recent color c
   - **Scrollbar styling**: Universal scrollbar in `App.css` (14px, rectangular, slate track/thumb, diagonal stripe pattern) applied app-wide; WebView may not honor custom appearance. See `atlas/group-carousel.md` §5.
 - **Mission Hub – Disable time restrictions**: Settings button (top-right of hub) opens a panel with toggle "Disable time restrictions"; when on, launch is always allowed and the timer does not consume or auto-lock. Setting persisted in `missionStore` (`timerDisabled`). See `atlas/mission-hub.md` §2.6.
 - **Pokédex – Detail popup**: Clicking a fully unlocked Pokémon opens a light-theme popup with nameplate (type badges, artwork with gender-ratio ring—blue/pink/gray dashed from `gen1PokemonPhysical.js`; image moved left for close-button space), quote-style Pokédex entry (Sun preferred, PokeAPI), optional Lore (`gen1PokemonLore.js`), and sprites table (Normal/Shiny × Gen 1–6 from Pokemon DB). Types and physical data are hardcoded; only flavor text is fetched from API. See `atlas/pokedex-system.md` §4 and Asset Handling.
+- **Fullscreen ↔ Splitscreen & Video Info**:
+  - **Transition**: Unified right column (`.layout-shell__right-column`) with AnimatePresence (`mode="wait"`) crossfades FullscreenVideoInfo out and side menu in; fullscreen info can blank instantly via `layoutStore.fullscreenInfoBlanked` when opening splitscreen from a control (PlayerController, PlaylistCard, etc.). Marginal improvement to transition smoothness observed.
+  - **Playlist import (YouTube)**: API requests use `part=snippet,statistics,contentDetails`. Extracted and stored in `playlist_items`: **duration_seconds** (from contentDetails.duration via `parseYouTubeDuration`), **description**, **tags** (JSON string). Likes and comments are **not** extracted; `like_count`/`comment_count` columns exist but are not populated on import.
+  - **FullscreenVideoInfo**: Displays thumbnail, author, view count, year, **description** (line-clamp-4, full text in title), **tags** (parsed from JSON, up to 12 pills). Does **not** show duration, likes, or comments. Blanks when `fullscreenInfoBlanked` is true (e.g. before switching to half/quarter). See `fullscreen-video-info.md`, `ui-layout.md`, `database-schema.md` (`playlist_items`), `importexport.md`.

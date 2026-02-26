@@ -1,8 +1,21 @@
 import React from 'react';
 import { usePlaylistStore } from '../store/playlistStore';
+import { useLayoutStore } from '../store/layoutStore';
+
+/** Parse tags from JSON string or return empty array */
+const parseTags = (tagsStr) => {
+  if (!tagsStr || typeof tagsStr !== 'string') return [];
+  try {
+    const parsed = JSON.parse(tagsStr);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+};
 
 const FullscreenVideoInfo = () => {
   const { currentPlaylistItems, currentVideoIndex } = usePlaylistStore();
+  const { fullscreenInfoBlanked } = useLayoutStore();
 
   const items = currentPlaylistItems || [];
   const hasValidIndex =
@@ -12,8 +25,10 @@ const FullscreenVideoInfo = () => {
     currentVideoIndex < items.length;
 
   const video = hasValidIndex ? items[currentVideoIndex] : null;
-  if (!video) return null;
 
+  return (
+    <div className="layout-shell__fullscreen-video-info" data-debug-label="Fullscreen Video Info">
+      {!fullscreenInfoBlanked && video && (() => {
   const thumbnailUrl = video.thumbnail_url || video.thumbnailUrl || null;
   const author = video.author || 'Unknown';
   const year = video.published_at ? new Date(video.published_at).getFullYear() : null;
@@ -28,8 +43,11 @@ const FullscreenVideoInfo = () => {
     viewCountText = safeNumber.toLocaleString();
   }
 
+  const description = video.description && String(video.description).trim() ? video.description : null;
+  const tagsList = parseTags(video.tags);
+
   return (
-    <div className="layout-shell__fullscreen-video-info" data-debug-label="Fullscreen Video Info">
+    <>
       {/* Thumbnail at very top */}
       {thumbnailUrl && (
         <div className="mb-2 rounded-xl overflow-hidden shadow-md">
@@ -41,7 +59,7 @@ const FullscreenVideoInfo = () => {
         </div>
       )}
 
-      {/* Author row - right under thumbnail, ~50% larger */}
+      {/* Author row */}
       <div
         className="text-sm font-semibold tracking-wide text-slate-500 uppercase mb-2 truncate"
         title={author}
@@ -49,7 +67,7 @@ const FullscreenVideoInfo = () => {
         {author}
       </div>
 
-      {/* View count row - above year, number + 4-bar icon */}
+      {/* View count row - number + 4-bar icon */}
       {viewCountText != null && (
         <div className="flex items-end gap-2 mb-2">
           <span className="text-5xl font-semibold text-[#052F4A]">{viewCountText}</span>
@@ -62,12 +80,42 @@ const FullscreenVideoInfo = () => {
         </div>
       )}
 
-      {/* Year row - substantially larger (3x) */}
+      {/* Year */}
       {year != null && (
         <div className="text-8xl font-black text-[#052F4A] leading-tight mb-2">
           {year}
         </div>
       )}
+
+      {/* Description - truncated, full text on hover */}
+      {description && (
+        <div
+          className="text-sm text-slate-600 leading-snug mb-2 line-clamp-4 break-words"
+          title={description}
+        >
+          {description}
+        </div>
+      )}
+
+      {/* Tags - when available */}
+      {tagsList.length > 0 && (
+        <div className="flex flex-wrap gap-1.5">
+          {tagsList.slice(0, 12).map((tag, i) => (
+            <span
+              key={i}
+              className="inline-block px-2 py-0.5 rounded-md bg-slate-200 text-slate-700 text-xs font-medium"
+            >
+              {tag}
+            </span>
+          ))}
+          {tagsList.length > 12 && (
+            <span className="text-xs text-slate-500 self-center">+{tagsList.length - 12}</span>
+          )}
+        </div>
+      )}
+    </>
+  );
+})()}
     </div>
   );
 };

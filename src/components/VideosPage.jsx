@@ -72,6 +72,7 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
     setRequestSubscriptionRefresh,
     requestShowAutoTagModal,
     setRequestShowAutoTagModal,
+    setFullscreenInfoBlanked,
   } = useLayoutStore();
   const { currentPage: currentNavTab, setCurrentPage: setCurrentNavTab, setSelectedTweet } = useNavigationStore();
   const scrollContainerRef = useRef(null);
@@ -99,10 +100,15 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
   ];
 
   const handleTabClick = (tabId) => {
-    setCurrentNavTab(tabId);
     const isNavigationTab = ['playlists', 'videos', 'history', 'likes', 'pins', 'settings', 'support'].includes(tabId);
     if (isNavigationTab && viewMode === 'full') {
-      setViewMode('half');
+      setFullscreenInfoBlanked(true);
+      requestAnimationFrame(() => {
+        setCurrentPage(tabId);
+        setViewMode('half');
+      });
+    } else {
+      setCurrentPage(tabId);
     }
   };
   const {

@@ -9,9 +9,16 @@ export const useLayoutStore = create((set) => ({
   showDevToolbar: true, // Visibility of the floating dev toolbar (full/half/quarter/etc buttons)
   videoCardStyle: 'youtube', // 'youtube' | 'twitter' - Card display style
 
+  // When true, FullscreenVideoInfo renders blank immediately (used when opening splitscreen from fullscreen)
+  fullscreenInfoBlanked: false,
+  setFullscreenInfoBlanked: (v) => set({ fullscreenInfoBlanked: !!v }),
+
   setViewMode: (mode) => {
     if (['full', 'half', 'quarter'].includes(mode)) {
-      set({ viewMode: mode });
+      set((state) => ({
+        viewMode: mode,
+        ...(mode === 'full' ? { fullscreenInfoBlanked: false } : {})
+      }));
       // Disable menu quarter mode when switching to full screen
       if (mode === 'full') {
         set({ menuQuarterMode: false });

@@ -139,7 +139,7 @@ const PlaylistsPage = ({ onVideoSelect }) => {
   const [imageLoadErrors, setImageLoadErrors] = useState(new Set());
   const { activeTabId } = useTabStore();
   const { groups: playlistGroups, getGroupIdsForPlaylist, addGroup, renameGroup, removeGroup, setActiveGroupId } = usePlaylistGroupStore();
-  const { setViewMode, viewMode, inspectMode } = useLayoutStore();
+  const { setViewMode, viewMode, inspectMode, setFullscreenInfoBlanked } = useLayoutStore();
   const { customPageBannerImage, bannerHeight, bannerBgSize } = useConfigStore();
   const { setCurrentPage } = useNavigationStore();
 
@@ -923,9 +923,14 @@ const PlaylistsPage = ({ onVideoSelect }) => {
                                           try {
                                             const items = await getVideosInFolder(folder.playlist_id, folder.folder_color);
                                             setPreviewPlaylist(items, folder.playlist_id, { playlist_id: folder.playlist_id, folder_color: folder.folder_color });
-                                            setCurrentPage('videos');
                                             if (viewMode === 'full') {
-                                              setViewMode('half');
+                                              setFullscreenInfoBlanked(true);
+                                              requestAnimationFrame(() => {
+                                                setCurrentPage('videos');
+                                                setViewMode('half');
+                                              });
+                                            } else {
+                                              setCurrentPage('videos');
                                             }
                                           } catch (error) {
                                             console.error('Failed to load folder items for preview:', error);
@@ -1466,9 +1471,14 @@ const PlaylistsPage = ({ onVideoSelect }) => {
                                         const items = await getVideosInFolder(folder.playlist_id, folder.folder_color);
                                         const playlistTitle = item.parentPlaylist ? item.parentPlaylist.name : null;
                                         setPreviewPlaylist(items, folder.playlist_id, { playlist_id: folder.playlist_id, folder_color: folder.folder_color });
-                                        setCurrentPage('videos');
                                         if (viewMode === 'full') {
-                                          setViewMode('half');
+                                          setFullscreenInfoBlanked(true);
+                                          requestAnimationFrame(() => {
+                                            setCurrentPage('videos');
+                                            setViewMode('half');
+                                          });
+                                        } else {
+                                          setCurrentPage('videos');
                                         }
                                       } catch (error) {
                                         console.error('Failed to load folder items for preview:', error);

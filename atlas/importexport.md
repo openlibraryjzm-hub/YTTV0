@@ -73,14 +73,16 @@ Users see a unified "Config Playlist" modal when clicking the "Config Playlist" 
 **API/Bridge:**
 - `src/api/playlistApi.js`:
   - `createPlaylist(name, description)` - Creates new playlist in database
-  - `addVideoToPlaylist(playlistId, videoUrl, videoId, title, thumbnailUrl)` - Adds video to playlist
+  - `addVideoToPlaylist(playlistId, videoUrl, videoId, title, thumbnailUrl, profileImageUrl?, durationSeconds?, description?, tags?, likeCount?, commentCount?)` - Adds video to playlist; optional fields used by YouTube import (duration, description, tags; likes/comments not populated on import)
   - `assignVideoToFolder(playlistId, itemId, folderColor)` - Assigns video to folder
 - External API:
   - YouTube Data API v3: `https://www.googleapis.com/youtube/v3/playlists` - Fetches playlist metadata
-  - YouTube Data API v3: `https://www.googleapis.com/youtube/v3/playlistItems` - Fetches playlist videos
+  - YouTube Data API v3: `https://www.googleapis.com/youtube/v3/playlistItems` - Fetches playlist videos (part: snippet)
+  - YouTube Data API v3: `https://www.googleapis.com/youtube/v3/videos` - Fetches video details (part: snippet, statistics, contentDetails) for single videos and for extra metadata during import
 - `src/utils/youtubeUtils.js`:
   - `extractPlaylistId(url)` - Extracts playlist ID from YouTube URL
   - `extractVideoId(url)` - Extracts video ID from YouTube URL
+  - `parseYouTubeDuration(isoDuration)` - Converts ISO 8601 duration (e.g. PT1H2M3S) to seconds
 
 **Backend:**
 - `src-tauri/src/commands.rs`: Tauri command handlers for playlist/video operations
@@ -102,8 +104,8 @@ Users see a unified "Config Playlist" modal when clicking the "Config Playlist" 
      - **Process Links**:
        - Iterates through all fields ("All" + 16 colors).
        - For each valid link:
-         - **YouTube Playlist**: Fetches all videos via `fetchPlaylistVideos()` (Source of Truth: YouTube API). Includes channel title and view counts.
-         - **Single Video**: Fetches video metadata (Title, Thumbnails, Channel, Views).
+         - **YouTube Playlist**: Fetches all videos via `fetchPlaylistVideos()` (Source of Truth: YouTube API). Includes channel title and view counts. For each video, optional **video details** (duration, description, tags) are fetched via Videos API (`part=snippet,statistics,contentDetails`) and passed to `addVideoToPlaylist`; likes and comment counts are **not** extracted.
+         - **Single Video**: Fetches video metadata (Title, Thumbnails, Channel, Views) and when available duration, description, tags.
          - **Local Reference**: Resolves local items.
      - **Add Videos**:
        - Adds videos to target playlist (`addVideoToPlaylist`).

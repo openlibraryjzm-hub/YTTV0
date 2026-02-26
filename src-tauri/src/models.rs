@@ -28,6 +28,11 @@ pub struct PlaylistItem {
     pub profile_image_url: Option<String>,
     #[serde(default)]
     pub drumstick_rating: i32,
+    pub duration_seconds: Option<i64>,
+    pub description: Option<String>,
+    pub tags: Option<String>,
+    pub like_count: Option<String>,
+    pub comment_count: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
