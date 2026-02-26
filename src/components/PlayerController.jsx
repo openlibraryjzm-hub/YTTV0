@@ -2112,7 +2112,7 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
                   )}
                 </div>
               </div>
-              <div className={`border-4 shadow-2xl flex flex-col relative overflow-visible transition-all duration-300 group/playlist ${isEditMode ? 'ring-4 ring-sky-400/30' : theme.orbBorder + ' ' + theme.menuBg + ' backdrop-blur-2xl rounded-2xl overflow-hidden'}`} style={{ width: `${menuWidth}px`, height: `${menuHeight}px` }}>
+              <div className={`shadow-2xl flex flex-col relative overflow-visible transition-all duration-300 group/playlist ${isEditMode ? 'ring-4 ring-sky-400/30' : 'bg-transparent rounded-2xl overflow-hidden'}`} style={{ width: `${menuWidth}px`, height: `${menuHeight}px` }}>
                 <div
                   className="flex-grow flex flex-col items-center justify-center px-4 relative z-10 overflow-x-visible overflow-y-hidden w-full h-full min-h-0"
                   onMouseDown={(e) => {
@@ -2267,45 +2267,9 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
                   );
                 })()}
 
-                <div className={`border-t flex items-center px-3 shrink-0 relative rounded-b-2xl ${theme.bottomBar}`} style={{ height: `${bottomBarHeight}px` }}>
+                <div className="border-t border-sky-300/50 flex items-center px-3 shrink-0 relative rounded-b-2xl bg-transparent" style={{ height: `${bottomBarHeight}px` }}>
                   <div className="w-full h-full relative">
-                    {/* Left Side: Video Metadata */}
-                    <div className={`absolute left-4 top-1/2 -translate-y-1/2 flex items-center ${shouldUseMergedView ? 'justify-between' : 'gap-1'} gap-1 ${theme.accent} font-bold uppercase tracking-widest opacity-80`} style={{ fontSize: `${metadataFontSize}px`, width: '210px' }}>
-                      <div className="flex items-center gap-1 min-w-0">
-                        <span className="truncate">{displayVideo.author}</span>
-                        {displayVideo.verified && <CheckCircle2 size={metadataFontSize} className="fill-current shrink-0" />}
-                      </div>
-                      {(hasViewCount || hasPublishedYear) ? (
-                        shouldUseMergedView ? (
-                          // Merged view: Cycle between view count and publish year (for long author names)
-                          <div className="flex items-center gap-1 shrink-0">
-                            <span className="opacity-50 shrink-0">|</span>
-                            <span
-                              className="shrink-0 transition-opacity ease-in-out"
-                              style={{ opacity: metadataOpacity, transitionDuration: '1200ms' }}
-                            >
-                              {showViewCount ? displayVideo.viewers : displayVideo.publishedYear}
-                            </span>
-                          </div>
-                        ) : (
-                          // Separate view: Show both view count and publish year side by side (for short author names)
-                          <div className="flex items-center gap-1 shrink-0">
-                            {hasViewCount && (
-                              <>
-                                <span className="mx-1 opacity-50 shrink-0">|</span>
-                                <span className="shrink-0">{displayVideo.viewers}</span>
-                              </>
-                            )}
-                            {hasPublishedYear && (
-                              <>
-                                <span className="mx-1 opacity-50 shrink-0">|</span>
-                                <span className="shrink-0">{displayVideo.publishedYear}</span>
-                              </>
-                            )}
-                          </div>
-                        )
-                      ) : null}
-                    </div>
+                    {/* Left Side: Metadata removed (view count, author, year) */}
 
                     {/* Right Components: Action & Navigation Buttons */}
                     {/* Right Components: Navigation Buttons (Tab Button moved to Video Menu, Shuffle Removed) */}
@@ -2511,7 +2475,7 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
           {/* VIDEO SECTION */}
           <div className="flex-1 flex items-center justify-start">
             <div className="flex items-center gap-4 relative z-10 flex-shrink-0">
-              <div className={`border-4 shadow-2xl flex flex-col relative overflow-visible transition-all duration-300 ${isEditMode ? 'ring-4 ring-sky-400/30' : theme.orbBorder + ' ' + theme.menuBg + ' backdrop-blur-2xl rounded-2xl'}`} style={{ width: `${menuWidth}px`, height: `${menuHeight}px` }}>
+              <div className={`shadow-2xl flex flex-col relative overflow-visible transition-all duration-300 ${isEditMode ? 'ring-4 ring-sky-400/30' : 'bg-transparent rounded-2xl'}`} style={{ width: `${menuWidth}px`, height: `${menuHeight}px` }}>
                 {showColorPicker && (<button onClick={() => { setShowColorPicker(null); setHoveredColorName(null); }} className="absolute -top-3 -right-3 w-7 h-7 bg-rose-500 text-white rounded-full flex items-center justify-center hover:bg-rose-600 z-50 shadow-lg border-2 border-white transition-all active:scale-90" title={getInspectTitle('Close color picker')}><X size={16} strokeWidth={3} /></button>)}
                 <div className="absolute top-0 left-0 w-full flex items-center -translate-y-1/2 z-40 px-2 pointer-events-none h-0">
                   {/* Normal pins track removed per user request */}
@@ -2588,7 +2552,7 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
                     </div>
                   )}
                 </div>
-                <div className={`border-t flex items-center px-3 shrink-0 relative rounded-b-2xl ${theme.bottomBar}`} style={{ height: `${bottomBarHeight}px` }}>
+                <div className="border-t border-sky-300/50 flex items-center px-3 shrink-0 relative rounded-b-2xl bg-transparent" style={{ height: `${bottomBarHeight}px` }}>
                   {showColorPicker ? (<div className="flex items-center justify-center w-full h-full animate-in fade-in slide-in-from-bottom-1 duration-300"><span className="text-[10px] font-black uppercase tracking-[0.3em] text-sky-700/80">{hoveredColorName || `Select ${showColorPicker} color`}</span></div>) : (
                     <div className="w-full h-full relative">
                       {/* Navigation Controls - Now Absolute Centered */}

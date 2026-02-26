@@ -109,7 +109,7 @@ It mirrors the design language of the Player Controller's Video Menu toolbar:
 
 #### ### 1.3 Top Video Menu
 
-The Top Video Menu is the right rectangle in the PlayerController, displaying video information (Title, Author, View Count) and controls for the currently playing video. Metadata is fetched from the database (populated via YouTube API during import).
+The Top Video Menu is the right rectangle in the PlayerController, displaying video information (Title) and controls for the currently playing video. **See-Through Styling**: Like the Top Playlist Menu, it uses a transparent background, no rectangular border, and `shadow-2xl` so the App Banner shows through; the rounded shape is defined by the shadow.
 
 **Note:** The action buttons (Star, Shuffle, Pin, Like, Menu) have been shifted right to create a cohesive cluster with the navigation controls. The 3x3 Grid button has been integrated into the navigation cluster.
 
@@ -412,23 +412,19 @@ The Top Playlist Menu is the left rectangle in the PlayerController. It has been
     *   **Active Preset**: (If not "All") An indigo badge showing the current preset name.
     *   **Active Tab**: (If not "All") A sky-blue badge showing the current tab name.
     *   **Folder**: (If video is in a folder) A colored badge displaying the folder name.
-*   **Bottom Control Bar**: Divided into two distinct zones:
-    *   **Left Side (Metadata)**: Displays the current video's author, view count, and published year with a dynamic layout system:
-      - **Short Author Names (≤18 characters)**: Shows all metadata separately: `Author | Views | Year`
-      - **Long Author Names (>18 characters)**: Merges view count and publish year into a single position that cycles between them every 12 seconds with smooth fade in/out animations (1200ms transition duration). Format: `Author | [Cycling Views/Year]`
-      - The author always remains visible on the left, while the view count and publish year are positioned on the far right
-    *   **Right Side (Controls)**: Contains only the Navigation buttons (Previous, Grid, Next). The Tab and Shuffle buttons have been moved or removed.
+*   **Bottom Control Bar**: Contains only the **Navigation buttons** (Previous playlist, Grid, Next playlist) on the right. Video metadata (author, view count, year published) has been removed from this menu for a cleaner look.
 *   **Playlist Title Interaction**:
     *   **Left-Click**: Opens the playlists grid view
     *   **Right-Click (Mega Shuffle)**: **[NON-FUNCTIONAL]** Intended to trigger "mega shuffle" - a double shuffle that picks a random playlist and a random video from that playlist. Currently not working - right-click events are not being captured. See Known Issues section.
 *   **Priority Pin Display**: The **Priority Pin** (if set) is displayed at the **top-right** of the menu.
 *   **Spacing**: The gap between this menu, the central orb, and the video menu (`orbMenuGap`) is 20px.
+*   **See-Through Styling**: The menu panel and its bottom bar use **transparent backgrounds** (`bg-transparent`) and **no rectangular border** so the App Banner is fully visible behind them. A soft **box shadow** (`shadow-2xl`) defines the rounded-rectangle shape. This applies to both the Top Playlist Menu (left) and the Top Video Menu (right).
 
 Users see:
 - **Main Display**: The playlist title text, centered and framed. Below it, badges appear: group carousel (violet, when applicable), preset, tab, and folder (colored) badges.
-- **Bottom Bar**: Metadata on the left, Navigation Controls on the right.
+- **Bottom Bar**: Navigation controls only (Previous, Grid, Next).
 - **Priority Pin**: If active, overlaid at top-right.
-- **Actions**: Bottom bar with navigation and tool buttons.
+- **Visual shape**: Subtle rounded rectangle from shadow; banner visible through transparent areas.
 
 
 
@@ -446,8 +442,6 @@ Users see:
 - `src/components/PlayerController.jsx` (lines 562-665): Playlist navigation handlers (`handleNextPlaylist`, `handlePreviousPlaylist`)
 - `src/components/PlayerController.jsx` (lines 787-834): Tab/preset navigation (`navigateTabs`, `navigatePlaylist`)
 - `src/components/PlayerController.jsx` (lines 1000-1006): Header mode toggle (`handleToggleHeader`)
-- `src/components/PlayerController.jsx` (lines 1497-1516): Metadata cycling logic (view count/publish year cycling for long author names)
-- `src/components/PlayerController.jsx` (lines 1688-1727): Dynamic metadata display (separate vs merged layout based on author name length)
 - `src/components/PlayerController.jsx` (lines 791-828): Mega shuffle handler (`handleShufflePlaylist`) - functional but not accessible via right-click
 
 **State Management:**
@@ -473,8 +467,6 @@ Users see:
   - `activeHeaderMode` (line 204): 'info' | 'tabs' | 'presets'
   - `activeLeftPin` (line 203): Currently selected tab/preset ID in header
   - `previewTabImage` (line 201): Preview image for tabs (currently unused)
-  - `showViewCount` (line 284): Boolean - toggles between view count and publish year in merged cycling view
-  - `metadataOpacity` (line 285): Number (0-1) - controls fade animation opacity for cycling metadata
   - `playlistTitleRef` (line 81): Ref to playlist title h1 element for event handling
 
 **API/Bridge:**
@@ -514,17 +506,7 @@ Users see:
    - **Mega Shuffle (Right-Click on Playlist Title)**: **[NON-FUNCTIONAL]** Intended to trigger `handleShufflePlaylist()` via right-click on playlist title. Right-click events are not being captured despite multiple implementation attempts (React event handlers, addEventListener with capture phase). The function itself works when called programmatically.
    - **Tab Menu**: User clicks top-left list icon -> Currently no action (Placeholder).
    - **(Removed)**: Header Mode Toggle (Info/Tabs/Presets) functionality has been removed.
-
-3. **Dynamic Metadata Display Flow:**
-   - On video change → Component calculates if author name is "long" (>18 characters)
-   - If long AND both view count and publish year available:
-     - Uses merged cycling view: Single position cycles between view count and publish year
-     - Every 12 seconds: Fades out (600ms) → Switches content → Fades in (600ms)
-     - State: `showViewCount` toggles, `metadataOpacity` controls fade animation
-   - If short OR only one metadata available:
-     - Uses separate view: Both view count and publish year shown side by side with separators
-     - No cycling, both always visible
-   - Layout uses `justify-between` for merged view (pushes metadata to right), regular `gap-1` for separate view
+   - **(Removed)**: Top Playlist Menu no longer displays video metadata (author, view count, year) in the bottom bar; that area shows only navigation controls.
 
 3. **Tab/Preset Navigation Flow:**
    - User clicks left/right arrows in tabs/presets mode → `navigateTabs(dir)` (line 787)
@@ -558,9 +540,6 @@ Users see:
 - When playlist navigation occurs → `currentNavigationIndex` updates → Header title updates to show current playlist/folder name
 - **Title Sync**: The playlist title dynamically updates based on `currentPlaylistId` (with robust fallback logic) to ensure it stays in sync even if navigation state lags. **Crucially, it ignores `previewPlaylistId`**, ensuring the top menu always reflects the *active* playback context, not transient browsing.
 - When `navigationItems` changes → Next/prev navigation uses new array → Navigation wraps around correctly
-- When video changes → Metadata display recalculates author name length → Switches between merged cycling view and separate view
-- When `showViewCount` toggles (in merged view) → Metadata content switches between view count and publish year
-- When `metadataOpacity` changes → CSS transition animates fade in/out (1200ms duration)
 
 ---
 

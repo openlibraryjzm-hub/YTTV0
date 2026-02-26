@@ -476,6 +476,9 @@ For detailed information about the application's theme system and recent color c
 3. **Use cross-references** to navigate between related topics
 
 ### Update Log (Current Session)
+- **Player Controller See-Through & Metadata**:
+  - **Top Playlist Menu**: Removed video metadata (author, view count, year published) from the bottom bar; only navigation controls (Previous, Grid, Next) remain.
+  - **Top Playlist & Top Video Menus**: Panels and bottom bars use transparent backgrounds (`bg-transparent`), no solid backdrop or rectangular border, so the App Banner is fully visible behind them; a soft box shadow (`shadow-2xl`) defines the rounded-rectangle shape. Implemented in `PlayerController.jsx`; documented in `advanced-player-controller.md` (§1.3, §1.4).
 - **Tasks Page & Pins Checklist**:
   - **Tasks Page** (`TasksPage.jsx`): Dedicated page for task checklists—creation bar (input + Add, Enter to add), tasks grouped by date (newest first), tick button (circle/check-in-circle) to mark done, 3-dot menu per task (Edit inline, Copy to clipboard, Delete). "Back to Pins" link and global Back return to Pins. State in `pinsPageChecklistStore` (localStorage).
   - **Pins Page**: "Tasks" link at top navigates to Tasks page; priority pin history carousel starts expanded. Checklist UI removed from Pins in favor of the dedicated Tasks page.
