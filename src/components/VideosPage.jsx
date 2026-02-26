@@ -128,6 +128,10 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
     bannerPresets,
     updateBannerPresetPlaylists,
     applyBannerPreset,
+    fullscreenBanner,
+    splitscreenBanner,
+    bannerPreviewMode,
+    bannerNavBannerId,
     //orb navigation state setters
     setOrbNavPlaylistId,
     setOrbNavOrbId,
@@ -135,6 +139,32 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
     setBannerNavPlaylistId,
     setBannerNavBannerId
   } = useConfigStore();
+
+  // Videos page always uses fullscreen app banner for blurred background (not splitscreen)
+  const effectiveBannerForBlur = (() => {
+    let effective = fullscreenBanner;
+    if (bannerNavBannerId && !bannerPreviewMode && bannerPresets?.length) {
+      const preset = bannerPresets.find(p => p.id === bannerNavBannerId);
+      if (preset?.fullscreenBanner) effective = preset.fullscreenBanner;
+    }
+    return effective;
+  })();
+  const blurBannerImage = effectiveBannerForBlur?.image || '/banner.PNG';
+  const blurBannerScale = effectiveBannerForBlur?.scale ?? 100;
+  const blurBannerVertical = effectiveBannerForBlur?.verticalPosition ?? 0;
+  const blurBannerHorizontal = effectiveBannerForBlur?.horizontalOffset ?? 0;
+  const blurredBannerStyle = {
+    position: 'absolute',
+    inset: 0,
+    zIndex: 0,
+    backgroundImage: `url(${blurBannerImage})`,
+    backgroundPosition: `${blurBannerHorizontal}% ${blurBannerVertical}%`,
+    backgroundRepeat: 'repeat-x',
+    backgroundSize: `${blurBannerScale}vw auto`,
+    filter: 'blur(28px)',
+    transform: 'scale(1.15)',
+    pointerEvents: 'none'
+  };
 
   // Helper to get inspect label
   const getInspectTitle = (label) => inspectMode ? label : undefined;
@@ -1778,7 +1808,10 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
 
           </div >
 
-          <div className="px-4 pb-8">
+          {/* Blurred app banner behind content only (excludes sticky toolbar / VideoSortFilters) */}
+          <div className="relative overflow-hidden">
+            <div aria-hidden="true" style={blurredBannerStyle} />
+            <div className="relative z-10 px-4 pb-8">
             {/* Edit Playlist/Folder Modal */}
             <EditPlaylistModal
               isOpen={showEditModal}
@@ -2189,6 +2222,7 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
                 </div>
               );
             })()}
+          </div>
           </div>
         </div >
       )

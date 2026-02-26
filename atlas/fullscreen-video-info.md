@@ -16,6 +16,8 @@ The Fullscreen Video Info panel is a dedicated component that appears in the rig
 
 When the app is in fullscreen view (no side menu), users see a right-hand margin next to the video player. In that margin (order top to bottom):
 
+- **Background:** A **heavily blurred** version of the current **fullscreen app banner** fills the panel behind the content. The same banner config as the top-of-app banner is used (fullscreen banner + preset override when banner nav is active); image, scale, and position match. Blur is applied via CSS `filter: blur(28px)` and a slight scale to avoid edge artifacts. The banner can be a static image or GIF (GIFs animate in the blur). See `app-banner.md` for banner configuration.
+
 - **Thumbnail**: Current video thumbnail at the very top (16:9, rounded, shadow). Uses `thumbnail_url` or `thumbnailUrl` from the playlist item.
 - **Author**: Channel/author name directly under the thumbnail (small, uppercase, slate). Truncates with full text on hover.
 - **View count**: Large numeric view count with a 4-bar icon (varying heights) instead of the word "views". Full number with locale formatting (e.g. `1,234,567`), no K/M/B shortening.
@@ -41,6 +43,7 @@ When the app is in fullscreen view (no side menu), users see a right-hand margin
 - `src/store/layoutStore.js`:
   - `fullscreenInfoBlanked`: When true, FullscreenVideoInfo renders an empty panel (used when opening splitscreen from fullscreen).
   - `setFullscreenInfoBlanked(v)`: Set by entry points that open the side menu; cleared when returning to full mode.
+- `src/store/configStore.js`: Fullscreen banner config (and preset override when `bannerNavBannerId` set) is read to render the blurred background; same resolution logic as LayoutShell.
 
 **API/Bridge:**
 - No Tauri commands — data comes from existing playlist state (populated by normal playback and import flows).
@@ -63,7 +66,8 @@ When the app is in fullscreen view (no side menu), users see a right-hand margin
 
 **4: Styling Summary**
 
-- Panel: Flex column, align start, padding (e.g. 25px top, 2rem sides, 1.5rem bottom). Class: `layout-shell__fullscreen-video-info`.
+- Panel: Flex column, align start, padding (e.g. 25px top, 2rem sides, 1.5rem bottom). Class: `layout-shell__fullscreen-video-info`. Root has `position: relative; overflow: hidden`; blurred banner layer is `position: absolute; inset: 0; z-index: 0`; content wrapper is `position: relative; z-index: 1`.
+- Blurred background: Fullscreen app banner image/position/scale; `filter: blur(28px)`; `transform: scale(1.15)`; `pointer-events: none`.
 - Thumbnail: `aspect-video`, `object-cover`, `rounded-xl`, `shadow-md`, small margin below.
 - Author: `text-sm`, uppercase, slate, truncate.
 - View count: Large (e.g. `text-5xl`), number + 4-bar icon (bars: `w-1.5`, rounded, heights e.g. h-3 / h-5 / h-8 / h-4).

@@ -89,6 +89,20 @@ const seededRandom = (seed) => {
 // Use folder colors from the app's folder system
 const COLORS = FOLDER_COLORS.map(color => ({ hex: color.hex, name: color.name, id: color.id }));
 
+// White icon with black outline (no circle) - use as wrapper style for toolbar icons
+const ICON_WHITE_OUTLINE = {
+  display: 'inline-flex',
+  color: 'white',
+  filter: 'drop-shadow(-1px -1px 0 #000) drop-shadow(1px -1px 0 #000) drop-shadow(-1px 1px 0 #000) drop-shadow(1px 1px 0 #000)'
+};
+
+// Badge text: white with black outline (no bubble container)
+const BADGE_TEXT_STYLE = {
+  color: 'white',
+  WebkitTextStroke: '1px #000',
+  textShadow: '-1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000'
+};
+
 // TAB_GROUPS removed - now using dynamic tabs and presets from stores
 
 export default function PlayerController({ onPlaylistSelect, onVideoSelect, activePlayer = 1, onActivePlayerChange, secondPlayerVideoUrl = null, secondPlayerVideoIndex = 0, onSecondPlayerVideoIndexChange, secondPlayerPlaylistId = null, secondPlayerPlaylistItems = [], currentThemeId = 'blue', onThemeChange }) {
@@ -2105,9 +2119,9 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
                   {/* Playlist Preview Navigation Menu */}
                   {showPreviewMenus && (
                     <div className={`w-8 ${theme.menuBg} border ${theme.menuBorder} rounded-lg shadow-sm flex flex-col justify-between items-center py-2 shrink-0 animate-in fade-in zoom-in-95 duration-200`} style={{ height: `${menuHeight}px` }}>
-                      <button onClick={() => handleAltNav('up', 'playlist')} className="text-sky-400 p-1" title={getInspectTitle('Previous playlist in preview')}><ChevronUp size={18} strokeWidth={3} /></button>
+                      <button onClick={() => handleAltNav('up', 'playlist')} className="text-black p-1" title={getInspectTitle('Previous playlist in preview')}><ChevronUp size={18} strokeWidth={3} /></button>
                       <div className={`w-full h-px ${theme.bottomBar} my-1`} />
-                      <button onClick={() => handleAltNav('down', 'playlist')} className="text-sky-400 p-1" title={getInspectTitle('Next playlist in preview')}><ChevronDown size={18} strokeWidth={3} /></button>
+                      <button onClick={() => handleAltNav('down', 'playlist')} className="text-black p-1" title={getInspectTitle('Next playlist in preview')}><ChevronDown size={18} strokeWidth={3} /></button>
                     </div>
                   )}
                 </div>
@@ -2132,8 +2146,14 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
                 >
                   <h1
                     ref={playlistTitleRef}
-                    className="font-black text-sky-950 text-center leading-tight line-clamp-3 tracking-tight transition-all pb-1 cursor-pointer hover:text-sky-700 select-none"
-                    style={{ fontSize: `${titleFontSize}px`, pointerEvents: 'auto' }}
+                    className="font-black text-center leading-tight line-clamp-3 tracking-tight transition-all pb-1 cursor-pointer hover:opacity-90 select-none"
+                    style={{
+                      fontSize: `${titleFontSize}px`,
+                      pointerEvents: 'auto',
+                      color: 'white',
+                      WebkitTextStroke: '1px #000',
+                      textShadow: '-1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000'
+                    }}
                     onClick={handlePlaylistsGrid}
                     title={`${playlistTitle} (Right-click for mega shuffle)`}
                   >
@@ -2142,23 +2162,25 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
 
                   {/* Badges Container */}
                   {(currentVideoFolders.length > 0 || activeTabId !== 'all' || activePresetId !== 'all' || singleGroupForBadge) && (
-                    <div className="flex flex-wrap justify-center gap-1 mb-0.5 animate-in fade-in zoom-in duration-300 overflow-visible min-w-0">
+                    <div className="flex flex-wrap justify-center items-center gap-x-2 gap-y-0 mb-0.5 animate-in fade-in zoom-in duration-300 overflow-visible min-w-0">
 
                       {/* Group Carousel Badge - single group; always show left/right arrows (disabled when only one group) */}
                       {singleGroupForBadge && (
-                        <span key={singleGroupForBadge.id} className="inline-flex items-center shrink-0 rounded-full border shadow-sm backdrop-blur-sm" style={{ borderColor: '#c4b5fd', backgroundColor: '#f5f3ffcc' }}>
+                        <span key={singleGroupForBadge.id} className="inline-flex items-center shrink-0 gap-0">
                           <button
                             type="button"
                             onClick={(e) => { e.preventDefault(); e.stopPropagation(); cycleGroupBadge('prev'); }}
                             disabled={!canCycleGroups}
-                            className="p-1 rounded-l-full text-[#6d28d9] hover:bg-violet-200/60 active:scale-95 disabled:opacity-40 disabled:cursor-default disabled:hover:bg-transparent"
+                            className="p-0.5 disabled:opacity-40 disabled:cursor-default"
                             title={canCycleGroups ? (getInspectTitle('Previous group carousel') || 'Previous group carousel') : 'Only one group carousel'}
                           >
-                            <ChevronLeft size={16} strokeWidth={3} />
+                            <span style={ICON_WHITE_OUTLINE}>
+                              <ChevronLeft size={14} color="white" strokeWidth={3} />
+                            </span>
                           </button>
                           <span
-                            className="text-[9px] font-black uppercase tracking-[0.15em] px-2 py-0.5"
-                            style={{ color: '#6d28d9' }}
+                            className="text-[11px] font-black uppercase tracking-[0.15em] px-1 inline-flex items-center leading-none"
+                            style={BADGE_TEXT_STYLE}
                             title={`Carousel: ${singleGroupForBadge.name}`}
                           >
                             {singleGroupForBadge.name}
@@ -2167,10 +2189,12 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
                             type="button"
                             onClick={(e) => { e.preventDefault(); e.stopPropagation(); cycleGroupBadge('next'); }}
                             disabled={!canCycleGroups}
-                            className="p-1 rounded-r-full text-[#6d28d9] hover:bg-violet-200/60 active:scale-95 disabled:opacity-40 disabled:cursor-default disabled:hover:bg-transparent"
+                            className="p-0.5 disabled:opacity-40 disabled:cursor-default"
                             title={canCycleGroups ? (getInspectTitle('Next group carousel') || 'Next group carousel') : 'Only one group carousel'}
                           >
-                            <ChevronRight size={16} strokeWidth={3} />
+                            <span style={ICON_WHITE_OUTLINE}>
+                              <ChevronRight size={14} color="white" strokeWidth={3} />
+                            </span>
                           </button>
                         </span>
                       )}
@@ -2182,12 +2206,8 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
                         return (
                           <span
                             key="badge-preset"
-                            className="text-[9px] font-black uppercase tracking-[0.15em] px-2 py-0.5 rounded-full border shadow-sm backdrop-blur-sm"
-                            style={{
-                              color: '#4338ca', // Indigo 700
-                              borderColor: '#a5b4fc', // Indigo 300
-                              backgroundColor: '#eef2ffcc' // Indigo 50 + alpha
-                            }}
+                            className="text-[11px] font-black uppercase tracking-[0.15em] px-1 inline-flex items-center leading-none"
+                            style={BADGE_TEXT_STYLE}
                           >
                             {activePreset.name}
                           </span>
@@ -2201,12 +2221,8 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
                         return (
                           <span
                             key="badge-tab"
-                            className="text-[9px] font-black uppercase tracking-[0.15em] px-2 py-0.5 rounded-full border shadow-sm backdrop-blur-sm"
-                            style={{
-                              color: '#0369a1', // Sky 700
-                              borderColor: '#7dd3fc', // Sky 300
-                              backgroundColor: '#f0f9ffcc' // Sky 50 + alpha
-                            }}
+                            className="text-[11px] font-black uppercase tracking-[0.15em] px-1 inline-flex items-center leading-none"
+                            style={BADGE_TEXT_STYLE}
                           >
                             {activeTab.name}
                           </span>
@@ -2221,12 +2237,8 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
                         return (
                           <span
                             key={folderId}
-                            className="text-[9px] font-black uppercase tracking-[0.15em] px-2 py-0.5 rounded-full border shadow-sm backdrop-blur-sm"
-                            style={{
-                              color: folderColor.hex,
-                              borderColor: folderColor.hex,
-                              backgroundColor: `${folderColor.hex}15`
-                            }}
+                            className="text-[11px] font-black uppercase tracking-[0.15em] px-1 inline-flex items-center leading-none"
+                            style={BADGE_TEXT_STYLE}
                           >
                             {customName || folderColor.name}
                           </span>
@@ -2247,7 +2259,7 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
                       <button
                         onClick={() => handlePinClick(priorityPinData.video)}
                         className={`rounded-lg flex items-center justify-center transition-all shadow-md overflow-hidden ${activePin === priorityPinData.id ? 'ring-2 ring-sky-400' : ''}`}
-                        style={{ width: '52px', height: '39px', border: '2px solid #334155' }}
+                        style={{ width: '52px', height: '39px', border: '2px solid #000' }}
                         title={`Priority Pin: ${priorityPinData.video.title || 'Untitled Video'}`}
                       >
                         {thumbnailUrl ? (
@@ -2278,7 +2290,7 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
                     {/* Previous Playlist - Left of Grid */}
                     <button
                       onClick={() => navigatePlaylist('down')}
-                      className="absolute left-1/2 top-1/2 p-0.5 text-sky-400"
+                      className="absolute left-1/2 top-1/2 p-0.5 text-black"
                       style={{ transform: `translate(calc(-50% + 92px), -50%)` }}
                       title={getInspectTitle('Previous playlist')}
                     >
@@ -2292,15 +2304,15 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
                       style={{ transform: `translate(calc(-50% + 120px), -50%)` }}
                       title={getInspectTitle('View playlists grid')}
                     >
-                      <div className="rounded-full flex items-center justify-center border-2 shadow-sm bg-white" style={{ width: `${bottomIconSize}px`, height: `${bottomIconSize}px`, borderColor: '#334155' }}>
-                        <Library size={Math.round(bottomIconSize * 0.5)} className="text-slate-600" strokeWidth={3} />
-                      </div>
+                      <span style={ICON_WHITE_OUTLINE}>
+                        <Library size={Math.round(bottomIconSize * 0.5)} color="white" strokeWidth={3} />
+                      </span>
                     </button>
 
                     {/* Next Playlist - Right of Grid */}
                     <button
                       onClick={() => navigatePlaylist('up')}
-                      className="absolute left-1/2 top-1/2 p-0.5 text-sky-400"
+                      className="absolute left-1/2 top-1/2 p-0.5 text-black"
                       style={{ transform: `translate(calc(-50% + 148px), -50%)` }}
                       title={getInspectTitle('Next playlist')}
                     >
@@ -2407,7 +2419,7 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
               <div className="absolute inset-0 bg-gradient-to-tr from-white/30 via-transparent to-transparent opacity-60 z-10 pointer-events-none rounded-full" />
 
               <input type="file" ref={fileInputRef} onChange={handleOrbImageUpload} accept="image/*" className="hidden" />
-              <button className="absolute left-1/2 top-0 -translate-x-1/2 -translate-y-1/2 rounded-full flex items-center justify-center bg-white shadow-xl hover:scale-110 active:scale-95 group/btn z-50 border-2 border-sky-100 opacity-0 group-hover:opacity-100 transition-all duration-300" style={{ width: `28px`, height: `28px` }} onClick={() => fileInputRef.current.click()} title={getInspectTitle('Upload orb image')}><Upload size={16} className={theme.accent} strokeWidth={3} /></button>
+              <button className="absolute left-1/2 top-0 -translate-x-1/2 -translate-y-1/2 rounded-full flex items-center justify-center bg-white shadow-xl hover:scale-110 active:scale-95 group/btn z-50 border-2 border-black opacity-0 group-hover:opacity-100 transition-all duration-300" style={{ width: `28px`, height: `28px` }} onClick={() => fileInputRef.current.click()} title={getInspectTitle('Upload orb image')}><Upload size={16} className={theme.accent} strokeWidth={3} /></button>
 
               {/* Orb Config Button (Top Left) */}
               <button
@@ -2422,11 +2434,11 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
                     setCurrentPage('orb-config');
                   }
                 }}
-                className="absolute rounded-full flex items-center justify-center bg-white shadow-xl hover:scale-110 active:scale-95 group/btn z-50 border-2 border-sky-50 opacity-0 group-hover:opacity-100 transition-all duration-300"
+                className="absolute rounded-full flex items-center justify-center bg-white shadow-xl hover:scale-110 active:scale-95 group/btn z-50 border-2 border-black opacity-0 group-hover:opacity-100 transition-all duration-300"
                 style={{ left: '15%', top: '15%', transform: 'translate(-50%, -50%)', width: `28px`, height: `28px` }}
                 title={getInspectTitle('Orb Config') || 'Orb Config'}
               >
-                <Circle size={14} className="text-slate-800" strokeWidth={2.5} />
+                <Circle size={14} className="text-black" strokeWidth={2.5} />
               </button>
 
               {/* Settings Button (Top Right) */}
@@ -2440,31 +2452,31 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
                 } else {
                   setCurrentPage('app');
                 }
-              }} className="absolute rounded-full flex items-center justify-center bg-white shadow-xl hover:scale-110 active:scale-95 group/btn z-50 border-2 border-sky-50 opacity-0 group-hover:opacity-100 transition-all duration-300" style={{ left: '85%', top: '15%', transform: 'translate(-50%, -50%)', width: `28px`, height: `28px` }} title={getInspectTitle('Settings') || 'Settings'}>
-                <Settings size={14} className="text-slate-800" strokeWidth={2.5} />
+              }} className="absolute rounded-full flex items-center justify-center bg-white shadow-xl hover:scale-110 active:scale-95 group/btn z-50 border-2 border-black opacity-0 group-hover:opacity-100 transition-all duration-300" style={{ left: '85%', top: '15%', transform: 'translate(-50%, -50%)', width: `28px`, height: `28px` }} title={getInspectTitle('Settings') || 'Settings'}>
+                <Settings size={14} className="text-black" strokeWidth={2.5} />
               </button>
 
               {/* Home Hub Button (Bottom Center) */}
-              <button onClick={lockApp} className="absolute rounded-full flex items-center justify-center bg-white shadow-xl hover:scale-110 active:scale-95 group/btn z-50 border-2 border-sky-50 opacity-0 group-hover:opacity-100 transition-all duration-300" style={{ left: '50%', top: '85%', transform: 'translate(-50%, -50%)', width: `28px`, height: `28px` }} title="Home Hub">
-                <Home size={14} className="text-slate-800" strokeWidth={2.5} />
+              <button onClick={lockApp} className="absolute rounded-full flex items-center justify-center bg-white shadow-xl hover:scale-110 active:scale-95 group/btn z-50 border-2 border-black opacity-0 group-hover:opacity-100 transition-all duration-300" style={{ left: '50%', top: '85%', transform: 'translate(-50%, -50%)', width: `28px`, height: `28px` }} title="Home Hub">
+                <Home size={14} className="text-black" strokeWidth={2.5} />
               </button>
 
               {/* Twitter Button (Bottom Left) */}
-              <button onClick={openTwitter} className="absolute rounded-full flex items-center justify-center bg-white shadow-xl hover:scale-110 active:scale-95 group/btn z-50 border-2 border-sky-50 opacity-0 group-hover:opacity-100 transition-all duration-300" style={{ left: '15%', top: '85%', transform: 'translate(-50%, -50%)', width: `28px`, height: `28px` }} title="Open X (Twitter)">
-                <Twitter size={14} className="text-slate-800" strokeWidth={2.5} />
+              <button onClick={openTwitter} className="absolute rounded-full flex items-center justify-center bg-white shadow-xl hover:scale-110 active:scale-95 group/btn z-50 border-2 border-black opacity-0 group-hover:opacity-100 transition-all duration-300" style={{ left: '15%', top: '85%', transform: 'translate(-50%, -50%)', width: `28px`, height: `28px` }} title="Open X (Twitter)">
+                <Twitter size={14} className="text-black" strokeWidth={2.5} />
               </button>
 
               {/* Navigation Mode Toggle (Bottom Right) */}
               <button
                 onClick={() => setActiveNavigationMode(activeNavigationMode === 'orb' ? 'banner' : 'orb')}
-                className={`absolute rounded-full flex items-center justify-center bg-white shadow-xl hover:scale-110 active:scale-95 group/btn z-50 border-2 ${activeNavigationMode === 'banner' ? 'border-sky-400 text-sky-600' : 'border-sky-50 text-slate-800'} opacity-0 group-hover:opacity-100 transition-all duration-300`}
+                className={`absolute rounded-full flex items-center justify-center bg-white shadow-xl hover:scale-110 active:scale-95 group/btn z-50 border-2 border-black text-black opacity-0 group-hover:opacity-100 transition-all duration-300`}
                 style={{ left: '85%', top: '85%', transform: 'translate(-50%, -50%)', width: `28px`, height: `28px` }}
                 title={activeNavigationMode === 'orb' ? "Switch to Banner Navigation" : "Switch to Orb Navigation"}
               >
                 {activeNavigationMode === 'orb' ? (
-                  <Circle size={14} className="text-slate-800" strokeWidth={2.5} />
+                  <Circle size={14} className="text-black" strokeWidth={2.5} />
                 ) : (
-                  <Layout size={14} className="text-sky-600" strokeWidth={2.5} />
+                  <Layout size={14} className="text-black" strokeWidth={2.5} />
                 )}
               </button>
 
@@ -2548,7 +2560,17 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
                     </div>
                   ) : (
                     <div className="w-full flex flex-col justify-center transition-all relative h-full">
-                      <h1 className="font-black text-sky-950 text-center leading-tight line-clamp-3 tracking-tight transition-all pb-1" style={{ fontSize: `${titleFontSize}px` }}>{displayVideo.title}</h1>
+                      <h1
+                        className="font-black text-center leading-tight line-clamp-3 tracking-tight transition-all pb-1"
+                        style={{
+                          fontSize: `${titleFontSize}px`,
+                          color: 'white',
+                          WebkitTextStroke: '1px #000',
+                          textShadow: '-1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000'
+                        }}
+                      >
+                        {displayVideo.title}
+                      </h1>
                     </div>
                   )}
                 </div>
@@ -2560,7 +2582,7 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
                       {/* Previous Video - Left of Grid */}
                       <button
                         onClick={handlePrevVideo}
-                        className="absolute left-1/2 top-1/2 p-0.5 text-sky-400"
+                        className="absolute left-1/2 top-1/2 p-0.5 text-black"
                         style={{ transform: `translate(calc(-50% - 148px), -50%)` }}
                         title={getInspectTitle('Previous video')}
                       >
@@ -2587,13 +2609,13 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
                         style={{ transform: `translate(calc(-50% - 120px), -50%)` }}
                         title={getInspectTitle('View videos grid (Right-click for history)')}
                       >
-                        <div className="rounded-full flex items-center justify-center border-2 shadow-sm bg-white" style={{ width: `${bottomIconSize}px`, height: `${bottomIconSize}px`, borderColor: '#334155' }}>
+                        <span style={ICON_WHITE_OUTLINE}>
                           <svg
                             width={Math.round(bottomIconSize * 0.55)}
                             height={Math.round(bottomIconSize * 0.55)}
                             viewBox="0 0 24 24"
                             fill="none"
-                            className="text-slate-600"
+                            style={{ color: 'white' }}
                           >
                             {/* 3x3 grid of dots like a dice face */}
                             <circle cx="6" cy="6" r="2" fill="currentColor" />
@@ -2606,13 +2628,13 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
                             <circle cx="12" cy="18" r="2" fill="currentColor" />
                             <circle cx="18" cy="18" r="2" fill="currentColor" />
                           </svg>
-                        </div>
+                        </span>
                       </button>
 
                       {/* Next Video - Right of Grid */}
                       <button
                         onClick={handleNextVideo}
-                        className="absolute left-1/2 top-1/2 p-0.5 text-sky-400"
+                        className="absolute left-1/2 top-1/2 p-0.5 text-black"
                         style={{ transform: `translate(calc(-50% - 92px), -50%)` }}
                         title={getInspectTitle('Next video')}
                       >
@@ -2642,19 +2664,19 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
                           const activeColorHex = activeColorData ? activeColorData.hex : '#cbd5e1';
                           const isColored = !!activeColorData;
 
-                          return (
-                            <div className="rounded-full flex items-center justify-center border-2 shadow-sm transition-all duration-300 bg-white"
-                              style={{
-                                width: `${bottomIconSize}px`,
-                                height: `${bottomIconSize}px`,
-                                borderColor: isColored ? activeColorHex : '#334155'
-                              }}>
+                          if (isColored) {
+                            return (
                               <Play size={Math.round(bottomIconSize * 0.5)}
-                                color={isColored ? activeColorHex : '#475569'}
-                                fill={isColored ? activeColorHex : '#475569'}
+                                color={activeColorHex}
+                                fill={activeColorHex}
                                 strokeWidth={0}
                               />
-                            </div>
+                            );
+                          }
+                          return (
+                            <span style={ICON_WHITE_OUTLINE}>
+                              <Play size={Math.round(bottomIconSize * 0.5)} color="white" fill="white" strokeWidth={0} />
+                            </span>
                           );
                         })()}
                       </button>
@@ -2669,12 +2691,17 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
                       >
                         {(() => {
                           const shuffleColorObj = quickShuffleColor === 'all'
-                            ? { hex: '#334155', name: 'All' }
+                            ? { hex: '#000', name: 'All' }
                             : (FOLDER_COLORS.find(c => c.id === quickShuffleColor) || FOLDER_COLORS.find(c => c.id === 'indigo'));
+                          if (shuffleColorObj.hex === '#000') {
+                            return (
+                              <span style={ICON_WHITE_OUTLINE}>
+                                <Shuffle size={Math.round(bottomIconSize * 0.5)} color="white" strokeWidth={3} />
+                              </span>
+                            );
+                          }
                           return (
-                            <div className="rounded-full flex items-center justify-center border-2 border-sky-200 shadow-sm bg-white" style={{ width: `${bottomIconSize}px`, height: `${bottomIconSize}px`, borderColor: shuffleColorObj.hex }}>
-                              <Shuffle size={Math.round(bottomIconSize * 0.5)} color={shuffleColorObj.hex} strokeWidth={3} />
-                            </div>
+                            <Shuffle size={Math.round(bottomIconSize * 0.5)} color={shuffleColorObj.hex} strokeWidth={3} />
                           );
                         })()}
                       </button>
@@ -2688,22 +2715,18 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
                       >
                         {(() => {
                           const firstFolder = currentVideoFolders.length > 0 ? currentVideoFolders[0] : null;
-                          const quickAssignColorObj = FOLDER_COLORS.find(c => c.id === quickAssignColor) || FOLDER_COLORS.find(c => c.id === 'sky');
                           const folderColorObj = firstFolder ? FOLDER_COLORS.find(c => c.id === firstFolder) : null;
 
                           if (folderColorObj) {
                             return (
-                              <div className="rounded-full flex items-center justify-center border-2 shadow-sm bg-white transition-all duration-300" style={{ width: `${bottomIconSize}px`, height: `${bottomIconSize}px`, borderColor: folderColorObj.hex }}>
-                                <Star size={Math.round(bottomIconSize * 0.5)} color={folderColorObj.hex} fill={folderColorObj.hex} strokeWidth={3} />
-                              </div>
-                            );
-                          } else {
-                            return (
-                              <div className="rounded-full flex items-center justify-center border-2 shadow-sm bg-white transition-all duration-300" style={{ width: `${bottomIconSize}px`, height: `${bottomIconSize}px`, borderColor: '#334155' }}>
-                                <Star size={Math.round(bottomIconSize * 0.5)} color="#475569" fill="transparent" strokeWidth={3} />
-                              </div>
+                              <Star size={Math.round(bottomIconSize * 0.5)} color={folderColorObj.hex} fill={folderColorObj.hex} strokeWidth={3} />
                             );
                           }
+                          return (
+                            <span style={ICON_WHITE_OUTLINE}>
+                              <Star size={Math.round(bottomIconSize * 0.5)} color="white" fill="transparent" strokeWidth={3} />
+                            </span>
+                          );
                         })()}
                       </button>
 
@@ -2736,10 +2759,10 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
                           // Visual Logic
                           // Priority: Amber border (#fbbf24), Amber fill
                           // Normal: Black border (#000000), Blue fill (#3b82f6)
-                          // Inactive: Slate border (#334155), Slate icon (#475569)
+                          // Inactive: Black border, black icon
 
-                          let borderColor = '#334155';
-                          let iconColor = '#475569';
+                          let borderColor = '#000';
+                          let iconColor = '#000';
                           let iconFill = 'transparent';
                           let strokeWidth = 2.5;
 
@@ -2758,25 +2781,29 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
                           const iconSize = Math.round(bottomIconSize * 0.5);
 
                           return (
-                            <div className="rounded-full flex items-center justify-center border-2 shadow-sm bg-white" style={{ width: `${bottomIconSize}px`, height: `${bottomIconSize}px`, borderColor }}>
+                            <>
                               {isFollower ? (
                                 /* Follower Pin Icon - 2 pins stacked diagonally */
                                 <svg width={iconSize} height={iconSize} viewBox="0 0 24 24" fill="none" stroke={iconColor} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round">
-                                  {/* Back pin (offset up-left) */}
                                   <g transform="translate(-3, -3) scale(0.75)">
                                     <path d="M12 17v5" fill={iconFill} />
                                     <path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6a3 3 0 0 0-6 0v4.76Z" fill={iconFill} />
                                   </g>
-                                  {/* Front pin (offset down-right) */}
                                   <g transform="translate(3, 3) scale(0.75)">
                                     <path d="M12 17v5" fill={iconFill} />
                                     <path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6a3 3 0 0 0-6 0v4.76Z" fill={iconFill} />
                                   </g>
                                 </svg>
                               ) : (
-                                <Pin size={iconSize} color={iconColor} fill={iconFill} strokeWidth={strokeWidth} />
+                                (borderColor === '#000' && iconColor === '#000' ? (
+                                  <span style={ICON_WHITE_OUTLINE}>
+                                    <Pin size={iconSize} color="white" fill="transparent" strokeWidth={strokeWidth} />
+                                  </span>
+                                ) : (
+                                  <Pin size={iconSize} color={iconColor} fill={iconFill} strokeWidth={strokeWidth} />
+                                ))
                               )}
-                            </div>
+                            </>
                           );
                         })()}
                       </button>
@@ -2799,9 +2826,13 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
                         style={{ transform: `translate(calc(-50% + ${likeButtonX}px), -50%)` }}
                         title={getInspectTitle('Like button (Right-click for Likes)')}
                       >
-                        <div className="rounded-full flex items-center justify-center border-2 border-sky-200 shadow-sm bg-white" style={{ width: `${bottomIconSize}px`, height: `${bottomIconSize}px`, borderColor: isVideoLiked ? likeColor : '#334155' }}>
-                          <ThumbsUp size={Math.round(bottomIconSize * 0.5)} color={isVideoLiked ? likeColor : '#475569'} fill={isVideoLiked ? likeColor : 'transparent'} strokeWidth={3} />
-                        </div>
+                        {isVideoLiked ? (
+                          <ThumbsUp size={Math.round(bottomIconSize * 0.5)} color={likeColor} fill={likeColor} strokeWidth={3} />
+                        ) : (
+                          <span style={ICON_WHITE_OUTLINE}>
+                            <ThumbsUp size={Math.round(bottomIconSize * 0.5)} color="white" fill="transparent" strokeWidth={3} />
+                          </span>
+                        )}
                       </button>
 
                       {/* Tooltip Button */}
@@ -2811,9 +2842,9 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
                           className="flex items-center justify-center group/tool relative"
                           title={getInspectTitle('Controls Help')}
                         >
-                          <div className="rounded-full flex items-center justify-center border-2 border-sky-200 shadow-sm bg-white" style={{ width: `${bottomIconSize}px`, height: `${bottomIconSize}px`, borderColor: '#334155' }}>
-                            <Info size={Math.round(bottomIconSize * 0.5)} className="text-slate-600" strokeWidth={3} />
-                          </div>
+                          <span style={ICON_WHITE_OUTLINE}>
+                            <Info size={Math.round(bottomIconSize * 0.5)} color="white" strokeWidth={3} />
+                          </span>
                         </button>
 
                         {isTooltipOpen && (
@@ -2927,9 +2958,9 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
                           className="flex items-center justify-center group/tool"
                           title={getInspectTitle('More options')}
                         >
-                          <div className="rounded-full flex items-center justify-center border-2 border-sky-200 shadow-sm bg-white" style={{ width: `${bottomIconSize}px`, height: `${bottomIconSize}px`, borderColor: '#94a3b8' }}>
-                            <MoreHorizontal size={Math.round(bottomIconSize * 0.5)} className="text-slate-500" strokeWidth={3} />
-                          </div>
+                          <span style={ICON_WHITE_OUTLINE}>
+                            <MoreHorizontal size={Math.round(bottomIconSize * 0.5)} color="white" strokeWidth={3} />
+                          </span>
                         </button>
                         {isMoreMenuOpen && (
                           <div className="absolute top-full right-0 mt-3 w-56 bg-sky-50 border border-sky-300 rounded-lg shadow-xl overflow-hidden z-[10001] animate-in fade-in zoom-in-95 duration-100 flex flex-col p-1" style={{ zIndex: 10001 }}>
@@ -2997,9 +3028,9 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
                   {/* Video Preview Navigation Menu */}
                   {showPreviewMenus && (
                     <div className={`w-8 ${theme.menuBg} border ${theme.menuBorder} rounded-lg shadow-sm flex flex-col justify-between items-center py-2 shrink-0 animate-in fade-in zoom-in-95 duration-200`} style={{ height: `${menuHeight}px` }}>
-                      <button onClick={() => handleAltNav('up', 'video')} className="text-sky-400 p-1" title={getInspectTitle('Previous video in preview')}><ChevronUp size={18} strokeWidth={3} /></button>
+                      <button onClick={() => handleAltNav('up', 'video')} className="text-black p-1" title={getInspectTitle('Previous video in preview')}><ChevronUp size={18} strokeWidth={3} /></button>
                       <div className={`w-full h-px ${theme.bottomBar} my-1`} />
-                      <button onClick={() => handleAltNav('down', 'video')} className="text-sky-400 p-1" title={getInspectTitle('Next video in preview')}><ChevronDown size={18} strokeWidth={3} /></button>
+                      <button onClick={() => handleAltNav('down', 'video')} className="text-black p-1" title={getInspectTitle('Next video in preview')}><ChevronDown size={18} strokeWidth={3} /></button>
                     </div>
                   )}
                   <div className="flex flex-col gap-3 w-9 h-24 items-center justify-center">

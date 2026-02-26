@@ -1,6 +1,7 @@
 import React from 'react';
 import { usePlaylistStore } from '../store/playlistStore';
 import { useLayoutStore } from '../store/layoutStore';
+import { useConfigStore } from '../store/configStore';
 
 /** Parse tags from JSON string or return empty array */
 const parseTags = (tagsStr) => {
@@ -16,6 +17,36 @@ const parseTags = (tagsStr) => {
 const FullscreenVideoInfo = () => {
   const { currentPlaylistItems, currentVideoIndex } = usePlaylistStore();
   const { fullscreenInfoBlanked } = useLayoutStore();
+  const {
+    fullscreenBanner,
+    bannerPreviewMode,
+    bannerNavBannerId,
+    bannerPresets
+  } = useConfigStore();
+
+  // Resolve effective fullscreen banner (same logic as LayoutShell: preset override when nav active)
+  let effectiveBanner = fullscreenBanner;
+  if (bannerNavBannerId && !bannerPreviewMode && bannerPresets?.length) {
+    const preset = bannerPresets.find(p => p.id === bannerNavBannerId);
+    if (preset?.fullscreenBanner) effectiveBanner = preset.fullscreenBanner;
+  }
+  const bannerImage = effectiveBanner?.image || '/banner.PNG';
+  const bannerScale = effectiveBanner?.scale ?? 100;
+  const bannerVertical = effectiveBanner?.verticalPosition ?? 0;
+  const bannerHorizontal = effectiveBanner?.horizontalOffset ?? 0;
+
+  const blurredBannerStyle = {
+    position: 'absolute',
+    inset: 0,
+    zIndex: 0,
+    backgroundImage: `url(${bannerImage})`,
+    backgroundPosition: `${bannerHorizontal}% ${bannerVertical}%`,
+    backgroundRepeat: 'repeat-x',
+    backgroundSize: `${bannerScale}vw auto`,
+    filter: 'blur(28px)',
+    transform: 'scale(1.15)',
+    pointerEvents: 'none'
+  };
 
   const items = currentPlaylistItems || [];
   const hasValidIndex =
@@ -27,7 +58,10 @@ const FullscreenVideoInfo = () => {
   const video = hasValidIndex ? items[currentVideoIndex] : null;
 
   return (
-    <div className="layout-shell__fullscreen-video-info" data-debug-label="Fullscreen Video Info">
+    <div className="layout-shell__fullscreen-video-info" data-debug-label="Fullscreen Video Info" style={{ position: 'relative', overflow: 'hidden' }}>
+      {/* Heavily blurred version of current app banner */}
+      <div aria-hidden="true" style={blurredBannerStyle} />
+      <div style={{ position: 'relative', zIndex: 1 }}>
       {!fullscreenInfoBlanked && video && (() => {
   const thumbnailUrl = video.thumbnail_url || video.thumbnailUrl || null;
   const author = video.author || 'Unknown';
@@ -116,6 +150,7 @@ const FullscreenVideoInfo = () => {
     </>
   );
 })()}
+    </div>
     </div>
   );
 };

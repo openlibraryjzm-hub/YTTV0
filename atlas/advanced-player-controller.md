@@ -111,6 +111,11 @@ It mirrors the design language of the Player Controller's Video Menu toolbar:
 
 The Top Video Menu is the right rectangle in the PlayerController, displaying video information (Title) and controls for the currently playing video. **See-Through Styling**: Like the Top Playlist Menu, it uses a transparent background, no rectangular border, and `shadow-2xl` so the App Banner shows through; the rounded shape is defined by the shadow.
 
+**Title and toolbar visual style (black-and-white schema):**
+- **Playlist title** (Top Playlist Menu) and **video title** (Top Video Menu): White text with a black outline (1px stroke + 4-direction text-shadow) for readability on any banner. Implemented via inline styles; no circular or bubble container.
+- **Toolbar icons** (Grid, Play, Shuffle, Star, Pin, Like, Info, More; nav chevrons; orb overlay buttons): No circular button containers. Icons are **white with a black outline** (drop-shadow filter, `ICON_WHITE_OUTLINE`). Colored states (folder-assigned star/shuffle, liked, pin type) keep their semantic color without a circle.
+- **Badges** (group carousel, active preset, active tab, folder): No bubble or pill containers. Badge text uses **white with black outline** (`BADGE_TEXT_STYLE`), 11px font, horizontally aligned (`items-center`). Group badge retains left/right arrow buttons with the same white-outline icon style.
+
 **Note:** The action buttons (Star, Shuffle, Pin, Like, Menu) have been shifted right to create a cohesive cluster with the navigation controls. The 3x3 Grid button has been integrated into the navigation cluster.
 
 ##### ### 1.3.1 Pins

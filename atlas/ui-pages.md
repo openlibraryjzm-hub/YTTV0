@@ -179,6 +179,8 @@ Users see a horizontal scrolling layout with two rows of video cards showing vid
     - **Left**: Tab Bar navigation.
     - **Right**: Control cluster (Tab Presets, Folder Toggle, Add Playlist).
 
+- **Content area background**: The scrollable content area (video grid, stickies, pagination) — but **not** the sticky toolbar or TopNavigation — uses a **heavily blurred** version of the **fullscreen app banner** as its background. VideosPage always uses the fullscreen banner config (with preset override when banner nav is active), not the splitscreen banner. The blur layer is behind the content only; toolbar and filters sit on a non-blurred background. See `app-banner.md` for banner configuration.
+
 - **Pagination Controls**: For performance, videos are paginated (50 videos per page). **Bottom of Grid** (primary):
   - **Styling**: Light theme matching VideoSortFilters (white/light gray buttons, black borders; active page = black fill).
   - **Layout**: Prev arrow | up to **5 numbered page buttons** (sliding window when total pages > 5) | Next arrow.
