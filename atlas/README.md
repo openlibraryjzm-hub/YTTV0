@@ -60,6 +60,7 @@ yttv2/
 │   │   ├── HistoryPage.jsx       # Watch history display (last 100 videos)
 │   │   ├── LikesPage.jsx         # Liked videos grid view
 │   │   ├── PinsPage.jsx          # Pinned videos grid view
+│   │   ├── TasksPage.jsx        # Dedicated tasks/checklist page (date-grouped, tick + 3-dot menu)
 │   │   ├── PlaylistList.jsx      # Sidebar playlist list component
 │   │   ├── PlaylistView.jsx      # Individual playlist video grid
 │   │   ├── PlaylistUploader.jsx  # Config Playlist Modal (Unified Add/Import/JSON)
@@ -114,6 +115,7 @@ yttv2/
 │   │   ├── tabPresetStore.js     # Tab preset state management
 │   │   ├── playlistGroupStore.js # Group carousels: groups, per-carousel modes (large/small/bar), assign/rename/delete (persisted)
 │   │   ├── pinStore.js           # Pin state management (persisted)
+│   │   ├── pinsPageChecklistStore.js  # Tasks page checklist (persisted to localStorage)
 │   │   ├── stickyStore.js        # Sticky video state management (persisted)
 │   │   ├── shuffleStore.js       # Shuffle state for video ordering
 │   │   └── paginationStore.js    # Pagination state (shared between VideosPage and TopNav)
@@ -149,6 +151,7 @@ yttv2/
 │   ├── ui.md                     # UI documentation index
 │   ├── ui-layout.md              # Layout & Side Menu
 │   ├── ui-pages.md               # Page components (main pages)
+│   ├── tasks-page.md             # Tasks page (checklist, date-grouped, 3-dot menu)
 │   ├── orb-page.md               # OrbPage configuration documentation
    ├── orb-navigation.md         # Orb Navigation System documentation
 │   ├── you-page.md               # YouPage configuration documentation
@@ -220,6 +223,7 @@ yttv2/
 | **Group Badge & Playlist Nav (Player Controller)** | `group-badge-player-controller.md` | `group-carousel.md`, `advanced-player-controller.md` |
 | **Subscription Manager** | `subscription-manager.md` | `api-bridge.md`, `database-schema.md` |
 | **Pokedex System** | `pokedex-system.md` | `gen1-pokemon-reference.md`, `state-management.md`, `ui-pages.md`, `database-schema.md` |
+| **Tasks Page** | `tasks-page.md` | `ui-pages.md` (Pins §4.1.4, Tasks §4.1.5), `state-management.md` (pinsPageChecklistStore) |
 | **Debug/Testing** | `debug.md` | `ui.md` (inspect mode, debug bounds) |
 
 ### By Technical Domain
@@ -269,6 +273,10 @@ yttv2/
 **Covers**: Watch history tracking, history page display
 **Key Topics**: Last 100 videos, deduplication, **list layout**, history cards
 **Cross-References**: See `database-schema.md` for watch_history table, `api-bridge.md` for history commands
+
+#### `tasks-page.md`
+**Covers**: Dedicated Tasks page for bullet-point checklists (date-grouped, tick-to-complete, 3-dot menu: Edit, Copy, Delete). Entry from Pins page; Back to Pins; persistence via pinsPageChecklistStore (localStorage).
+**Cross-References**: See `ui-pages.md` (Pins §4.1.4, Tasks §4.1.5), `state-management.md` for store pattern
 
 #### `drumstick-rating-system.md`
 **Covers**: 5-drumstick rating system, persistence, UI integration
@@ -460,6 +468,10 @@ For detailed information about the application's theme system and recent color c
 3. **Use cross-references** to navigate between related topics
 
 ### Update Log (Current Session)
+- **Tasks Page & Pins Checklist**:
+  - **Tasks Page** (`TasksPage.jsx`): Dedicated page for task checklists—creation bar (input + Add, Enter to add), tasks grouped by date (newest first), tick button (circle/check-in-circle) to mark done, 3-dot menu per task (Edit inline, Copy to clipboard, Delete). "Back to Pins" link and global Back return to Pins. State in `pinsPageChecklistStore` (localStorage).
+  - **Pins Page**: "Tasks" link at top navigates to Tasks page; priority pin history carousel starts expanded. Checklist UI removed from Pins in favor of the dedicated Tasks page.
+  - **Documentation**: Added `atlas/tasks-page.md`; updated `ui-pages.md` (§4.1.4 Pins, new §4.1.5 Tasks) and `README.md` (structure, Quick Reference, Document Descriptions).
 - **Videos Page & Video Card UX**:
   - **Sticky toolbar**: Full width (no side margins), reduced margin below (`mb-4`) so the bar spans the video page and content area gains vertical space.
   - **Pagination**: Light theme (VideoSortFilters-style); up to 5 numbered page buttons with sliding window; prev/next with 500ms long-press for first/last page and charge-up animation.

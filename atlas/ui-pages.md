@@ -580,9 +580,11 @@ Users see a dedicated page for pinned videos, separating "Priority Pins" from "R
 
 - **Priority Pins Carousel**: The top section displays priority pins (videos pinned via the yellow star/pin button).
   - **Collapsible History**: The carousel is wrapped in a collapsible section labeled "Priority Pins - History".
-  - **Default State**: Starts collapsed (showing only a thin bar with item count) to reduce visual clutter.
+  - **Default State**: Starts **expanded** (open) when the page loads.
   - **Content**: When expanded, displays priority pins in a horizontal carousel (StickyVideoCarousel).
   - **Sorting**: Always sorted by most recently pinned first.
+
+- **Tasks Link**: A "Tasks" button (list icon + label + chevron) at the top of the page navigates to the dedicated **Tasks Page** (`currentPage === 'tasks'`), where users manage a separate checklist of tasks (date-grouped, tick-to-complete, 3-dot menu). See **Section 4.1.5** and [`tasks-page.md`](tasks-page.md).
 
 - **Regular Pins Grid (Date Grouped)**: The main section displays normal pins (videos pinned via the standard pin button).
   - **Date Grouping**: Videos are grouped by the date they were pinned (e.g., "30th January, 2026").
@@ -616,6 +618,30 @@ Users see a dedicated page for pinned videos, separating "Priority Pins" from "R
    - Sorts `priorityVideos` by index in `priorityPinIds`.
    - Sorts `regularVideos` by `pinnedAt` descending (newest first).
    - Renders Carousel for priority, Grid for regular.
+
+---
+#### ### 4.1.5 Tasks Page
+
+**1: User-Perspective Description**
+
+A dedicated page for a bullet-point task checklist, reachable from the Pins page. Tasks are grouped by date (newest first), can be ticked off (circle/check-in-circle button), and managed via a 3-dot menu (Edit, Copy, Delete). Copy writes the task text to the clipboard. Edit is inline (input replaces label; Enter/blur save, Escape cancel). A "Back to Pins" link returns to the Pins page. Task creation bar at top (input + Add; Enter to add). State is persisted in localStorage via `pinsPageChecklistStore`.
+
+> **See Dedicated Documentation:** For full details, file manifest, and state chain, see [`tasks-page.md`](tasks-page.md).
+
+**2: File Manifest**
+
+**UI/Components:**
+- `src/components/TasksPage.jsx`: Tasks page (creation bar, date-grouped list, tick buttons, 3-dot menus, Back to Pins)
+- `src/components/PinsPage.jsx`: "Tasks" link that navigates to Tasks page
+
+**State Management:**
+- `src/store/pinsPageChecklistStore.js`: `items`, `addItem`, `toggleChecked`, `removeItem`, `setItemText` (persisted to localStorage)
+- `src/store/navigationStore.js`: `setCurrentPage` for `'tasks'` / `'pins'`
+
+**3: Logic & State Chain**
+
+- Entry: Pins page → "Tasks" button → `setCurrentPage('tasks')`. Return: "Back to Pins" or global Back → `setCurrentPage('pins')`.
+- Add/toggle/edit/delete/copy update or read from `pinsPageChecklistStore`; no backend. Source of truth: `pinsPageChecklistStore.items` (localStorage key `pins-page-checklist-storage`).
 
 ---
 #### ### 4.1.6 Likes Page

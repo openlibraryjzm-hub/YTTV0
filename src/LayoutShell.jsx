@@ -65,7 +65,7 @@ const LayoutShell = ({
 
   // Spill Over Interaction: when hovering the spill area, dim the primary banner so you can see through (single opacity, no cursor tracking)
   const [isHoveringSpill, setIsHoveringSpill] = React.useState(false);
-  const SPILL_HOVER_OPACITY = 0.2; // 0 = fully see-through, 1 = no change; tune if full transparency is too strong
+  const SPILL_HOVER_OPACITY = 1; // 1 = no change (transparency effect disabled); set to e.g. 0.2 to re-enable see-through on spill hover
 
   // Ray-casting algorithm for point-in-polygon check
   const isPointInPolygon = (point, vs) => {

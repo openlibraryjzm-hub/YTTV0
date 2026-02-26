@@ -2,16 +2,18 @@ import React, { useMemo, useState } from 'react';
 import { usePinStore } from '../store/pinStore';
 import { usePlaylistStore } from '../store/playlistStore';
 import { useLayoutStore } from '../store/layoutStore';
+import { useNavigationStore } from '../store/navigationStore';
 import VideoCard from './VideoCard';
 
 import StickyVideoCarousel, { SplatterIcon } from './StickyVideoCarousel';
-import { ChevronDown, ChevronUp } from 'lucide-react';
+import { ChevronDown, ChevronUp, ListTodo, ChevronRight } from 'lucide-react';
 
 const PinsPage = ({ onVideoSelect }) => {
     const { pinnedVideos, priorityPinIds } = usePinStore();
     const { currentVideoIndex, currentPlaylistItems } = usePlaylistStore();
     const { inspectMode } = useLayoutStore();
-    const [isPriorityExpanded, setIsPriorityExpanded] = useState(false);
+    const { setCurrentPage } = useNavigationStore();
+    const [isPriorityExpanded, setIsPriorityExpanded] = useState(true);
 
     // Helper to get inspect label
     const getInspectTitle = (label) => inspectMode ? label : undefined;
@@ -195,7 +197,16 @@ const PinsPage = ({ onVideoSelect }) => {
     return (
         <div className="w-full h-full flex flex-col bg-transparent">
             <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">
-
+                {/* Link to Tasks page */}
+                <button
+                    type="button"
+                    onClick={() => setCurrentPage('tasks')}
+                    className="flex items-center gap-2 mb-6 px-4 py-3 rounded-lg bg-white/10 hover:bg-white/20 border border-black/10 text-[#052F4A] font-medium transition-colors w-full sm:w-auto"
+                >
+                    <ListTodo size={20} />
+                    <span>Tasks</span>
+                    <ChevronRight size={18} className="opacity-70" />
+                </button>
 
                 {renderContent()}
             </div>
