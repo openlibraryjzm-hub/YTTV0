@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { usePlaylistStore } from '../store/playlistStore';
 import { useFolderStore } from '../store/folderStore';
 import { useLayoutStore } from '../store/layoutStore';
-import { assignVideoToFolder, unassignVideoFromFolder, getVideoFolderAssignments, getAllFolderAssignments, getVideosInFolder, removeVideoFromPlaylist, getWatchedVideoIds, getAllVideoProgress } from '../api/playlistApi';
+import { assignVideoToFolder, unassignVideoFromFolder, getAllFolderAssignments, getVideosInFolder, removeVideoFromPlaylist, getWatchedVideoIds, getAllVideoProgress } from '../api/playlistApi';
 import { FOLDER_COLORS, getFolderColorById } from '../utils/folderColors';
 import { extractVideoId } from '../utils/youtubeUtils';
 import VideoCard from './VideoCard';
@@ -56,8 +56,6 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
     setQuickAssignFolder,
     bulkTagMode,
     setBulkTagMode,
-    bulkTagSelections,
-    toggleBulkTagSelection,
     clearBulkTagSelections,
   } = useFolderStore();
   const { shuffleStates, getShuffleState } = useShuffleStore();
@@ -135,7 +133,6 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
   const getInspectTitle = (label) => inspectMode ? label : undefined;
   const [displayedVideos, setDisplayedVideos] = useState([]);
   const [loadingFolders, setLoadingFolders] = useState(true); // Start true to show skeletons immediately
-  const [savingBulkTags, setSavingBulkTags] = useState(false);
   const [sortBy, setSortBy] = useState('shuffle'); // 'shuffle', 'chronological', 'progress', 'lastViewed'
   const [sortDirection, setSortDirection] = useState('desc'); // 'asc', 'desc'
   const [selectedRatings, setSelectedRatings] = useState([]); // 1-5 multi-select for rating filter
@@ -829,100 +826,8 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
   };
 
   const handleBulkTagColorClick = (video, folderColor) => {
-    toggleBulkTagSelection(video.id, folderColor);
-  };
-
-  const handleSaveBulkTags = async () => {
-    if (!activePlaylistId) return;
-
-    const selections = Object.entries(bulkTagSelections);
-    if (selections.length === 0) {
-      alert('No selections to save');
-      return;
-    }
-
-    setSavingBulkTags(true);
-    try {
-      let successCount = 0;
-      let errorCount = 0;
-
-      for (const [videoId, folderColors] of selections) {
-        const videoIdNum = parseInt(videoId);
-        const folders = Array.from(folderColors);
-
-        // Get current folder assignments for this video
-        const currentFolders = videoFolderAssignments[videoIdNum] || [];
-
-        // Determine which folders to add and which to remove
-        const foldersToAdd = folders.filter(f => !currentFolders.includes(f));
-        const foldersToRemove = currentFolders.filter(f => !folders.includes(f));
-
-        // Add new assignments
-        for (const folderColor of foldersToAdd) {
-          try {
-            await assignVideoToFolder(activePlaylistId, videoIdNum, folderColor);
-            successCount++;
-          } catch (error) {
-            console.error(`Failed to assign video ${videoIdNum} to folder ${folderColor}:`, error);
-            errorCount++;
-          }
-        }
-
-        // Remove old assignments
-        for (const folderColor of foldersToRemove) {
-          try {
-            await unassignVideoFromFolder(activePlaylistId, videoIdNum, folderColor);
-            successCount++;
-          } catch (error) {
-            console.error(`Failed to unassign video ${videoIdNum} from folder ${folderColor}:`, error);
-            errorCount++;
-          }
-        }
-
-        // Update local state
-        setVideoFolders(videoIdNum, folders);
-      }
-
-      // Refresh folder assignments
-      const assignments = {};
-      for (const video of activePlaylistItems) {
-        try {
-          const folders = await getVideoFolderAssignments(activePlaylistId, video.id);
-          assignments[video.id] = Array.isArray(folders) && folders.length > 0 ? folders : [];
-        } catch (error) {
-          console.error(`Failed to load folders for video ${video.id}:`, error);
-          assignments[video.id] = [];
-        }
-      }
-      loadVideoFolders(assignments);
-
-      // Refresh folder view if viewing a colored folder (unsorted is handled by useEffect)
-      if (selectedFolder !== null && selectedFolder !== 'unsorted') {
-        const videos = await getVideosInFolder(activePlaylistId, selectedFolder);
-        setDisplayedVideos(videos || []);
-      }
-      // For unsorted, the useEffect will automatically update when videoFolderAssignments changes
-
-      // Clear selections and exit bulk tag mode
-      clearBulkTagSelections();
-      setBulkTagMode(false);
-
-      if (errorCount > 0) {
-        alert(`Saved ${successCount} assignments, but ${errorCount} failed. Check console for details.`);
-      } else {
-        alert(`Successfully saved ${successCount} folder assignments!`);
-      }
-    } catch (error) {
-      console.error('Failed to save bulk tags:', error);
-      alert(`Failed to save bulk tags: ${error.message || 'Unknown error'}`);
-    } finally {
-      setSavingBulkTags(false);
-    }
-  };
-
-  const handleCancelBulkTags = () => {
-    clearBulkTagSelections();
-    setBulkTagMode(false);
+    // Instant assign/unassign (same as 3-dot menu or star click)
+    handleStarColorLeftClick(video, folderColor);
   };
 
   const handleToggleRating = (rating) => {
@@ -1378,11 +1283,6 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
     setTotalPages(newTotalPages);
   }, [regularVideos.length, itemsPerPage, setTotalPages]);
 
-  const bulkTagSelectionCount = Object.values(bulkTagSelections).reduce(
-    (total, folders) => total + folders.size,
-    0
-  );
-
   // Helper to get banner info
   const activeObject = useMemo(() => {
     if (selectedFolder) {
@@ -1797,30 +1697,6 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
 
               {/* Right Side: Sort Dropdown + Actions */}
               <div className="flex items-center gap-2 shrink-0 ml-auto">
-
-
-                {/* Save and Cancel buttons - only show in bulk tag mode */}
-                {bulkTagMode && (
-                  <>
-                    <button
-                      onClick={handleSaveBulkTags}
-                      disabled={savingBulkTags}
-                      className="px-2.5 py-1 bg-white hover:bg-gray-100 disabled:opacity-50 text-black rounded-md transition-all shadow-lg border-2 border-black text-[10px] font-bold uppercase tracking-wider"
-                      title="Save Bulk Tags"
-                    >
-                      {savingBulkTags ? 'Saving...' : 'Save'}
-                    </button>
-                    <button
-                      onClick={handleCancelBulkTags}
-                      disabled={savingBulkTags}
-                      className="px-2.5 py-1 bg-white hover:bg-gray-100 disabled:opacity-50 text-black rounded-md transition-all shadow-lg border-2 border-black text-[10px] font-bold uppercase tracking-wider"
-                      title="Cancel Bulk Tagging"
-                    >
-                      Cancel
-                    </button>
-                  </>
-                )}
-
               </div>
 
             </div>
@@ -1873,7 +1749,7 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
                           }}
                           onQuickAssign={handleStarClick}
                           bulkTagMode={bulkTagMode}
-                          bulkTagSelections={bulkTagSelections[video.id] || new Set()}
+                          bulkTagSelections={new Set(videoFolderAssignments[video.id] || [])}
                           onBulkTagColorClick={(color) => handleBulkTagColorClick(video, color)}
                           onPinClick={() => { }} // Handled internally in VideoCard via store
                           isStickied={true} // It is stickied in this list
@@ -1949,7 +1825,7 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
                       },
                       onQuickAssign: handleStarClick,
                       bulkTagMode,
-                      bulkTagSelections: bulkTagSelections[video.id] || new Set(),
+                      bulkTagSelections: new Set(videoFolderAssignments[video.id] || []),
                       onBulkTagColorClick: (color) => handleBulkTagColorClick(video, color),
                       onPinClick: () => { },
                       isStickied: isContextStickied,

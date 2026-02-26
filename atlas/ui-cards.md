@@ -320,9 +320,9 @@ Users see video cards built using the Card component system with video-specific 
     - **Hover Overlay**: 
       - **Top Right**: Pin button and Star button appear
       - **Bottom Right**: 3-dot menu appears
-    - **Bulk Tag Strip**: When in bulk tag mode, a 4x4 color grid appears **below the thumbnail** (between thumbnail and title), in a fixed-height strip (`h-20`), always visible—no overlay on the thumbnail
+    - **Bulk Tag Strip**: When in bulk tag mode, a 4x4 color grid appears **below the thumbnail** (between thumbnail and title), in a fixed-height strip (`h-20`), always visible—no overlay on the thumbnail. **Clicking a color instantly assigns or unassigns** that video to that folder (same as 3-dot menu or star); no Save step.
     - **Custom Folder Names**: If a folder has a custom name (different from default color name), it appears as overlay text on the square
-    - **Bulk Tag Border**: When folders are selected in bulk tag mode, thumbnail border color changes to match the first selected folder color
+    - **Bulk Tag Border**: In bulk tag mode, thumbnail border color matches the first **assigned** folder color (reflects current assignments, not pending selections)
     - **Star Color Picker Overlay**: When hovering over star icon for 1.2 seconds, a grid of 16 colored stars appears centered at the top of the thumbnail
 
 - **Content Area**:
@@ -333,7 +333,7 @@ Users see video cards built using the Card component system with video-specific 
   - **Default**: Gray border, thumbnail and title visible
   - **Selected**: Blue border (when video is selected)
   - **Playing**: **Vibrant Red Glow** (thick `ring-red-500` border + dual-layer shadow bleeding into/out of thumbnail)
-  - **Bulk Tag Selected**: Colored border matching first selected folder color (when in bulk tag mode with selections)
+  - **Bulk Tag Selected**: Colored border matching first assigned folder color (when in bulk tag mode; grid shows current assignments and each click persists immediately)
   - **Hover**: Lighter background, top-right controls (Pin/Star), bottom-right menu
 
 - **Interactive Elements**:
@@ -384,7 +384,7 @@ Users see video cards built using the Card component system with video-specific 
 - `src/store/folderStore.js`:
   - `quickAssignFolder`: Default folder color for quick assign
   - `bulkTagMode`: Boolean for bulk tagging mode
-  - `bulkTagSelections`: Map of video ID to Set of folder colors
+  - Cards receive current assignments for grid display (VideosPage passes `bulkTagSelections={new Set(videoFolderAssignments[video.id] || [])}`); no batch Save—each grid click persists immediately
 - `src/store/pinStore.js`:
   - `pinnedVideos`: Array of pinned videos (persisted)
   - `priorityPinIds`: Array of priority pin IDs (persisted)
@@ -505,12 +505,8 @@ Users see video cards built using the Card component system with video-specific 
    - `BulkTagColorGrid` appears below the thumbnail (between thumbnail and title) in a fixed-height strip → Shows 4x4 grid (16 colors), always visible when in bulk mode
    - **Grid Layout**: `grid-cols-4 grid-rows-4` with `gap-0`, each square uses `w-full h-full` to fill cell
    - **Custom Names**: Folder metadata loaded → Custom names displayed as overlay text on squares (only if different from default)
-   - User clicks color → `onBulkTagColorClick(video, folderColor)` (line 287)
-   - Toggles selection → `toggleBulkTagSelection(video.id, folderColor)`
-   - Visual feedback → Checkmark appears on selected colors
-   - **Border Update**: Thumbnail border color changes to match first selected folder color (via `getBulkTagBorderColor()`)
-   - User clicks "Save" in toolbar → Parent handles bulk save (see VideosPage flow)
-   - User clicks "Cancel" in toolbar → Clears selections and exits bulk tag mode
+   - **Instant assign**: User clicks color → `onBulkTagColorClick(video, folderColor)` → same handler as 3-dot menu assign/unassign (`handleStarColorLeftClick`). Persists immediately via `assignVideoToFolder()` / `unassignVideoFromFolder()`; `setVideoFolders()` updates store; checkmarks and border reflect current assignments
+   - User toggles Bulk Tag off in header → Exits bulk tag mode; `clearBulkTagSelections()` on exit
 
 **Source of Truth:**
 - Database `video_folder_assignments` table - Source of Truth for folder assignments

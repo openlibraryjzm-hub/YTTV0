@@ -162,7 +162,6 @@ const TweetCard = ({
                             />
                         </ImageHoverPreview>
 
-                        {/* 3-dot menu (same as VideoCard) */}
                         {!bulkTagMode && (
                             <div className="absolute bottom-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                                 <VideoCardThreeDotMenu
@@ -187,7 +186,6 @@ const TweetCard = ({
                             </div>
                         )}
 
-                        {/* Watched Badge */}
                         {!isCurrentlyPlaying && isWatched && (
                             <div className="absolute top-2 left-2 bg-green-500 text-white p-1 rounded-full shadow-lg">
                                 <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={4}>
@@ -197,22 +195,22 @@ const TweetCard = ({
                         )}
 
                     </div>
-
-                    {/* Bulk tag: below thumbnail when bulk tag mode is active */}
-                    {bulkTagMode && (
-                        <div className="relative w-full h-20 flex-shrink-0 overflow-hidden mt-2" data-card-action="true">
-                            <BulkTagColorGrid
-                                videoId={video.id}
-                                currentFolders={videoFolders}
-                                selectedFolders={bulkTagSelections}
-                                onColorClick={onBulkTagColorClick}
-                                playlistId={playlistId}
-                                folderMetadata={folderMetadata}
-                                onRenameFolder={onRenameFolder}
-                            />
-                        </div>
-                    )}
                 </div>
+
+                {/* Bulk tag: below thumbnail when bulk tag mode is active */}
+                {bulkTagMode && (
+                    <div className="relative w-full h-20 flex-shrink-0 overflow-hidden mt-2 px-3 pb-3" data-card-action="true">
+                        <BulkTagColorGrid
+                            videoId={video.id}
+                            currentFolders={videoFolders}
+                            selectedFolders={bulkTagSelections}
+                            onColorClick={onBulkTagColorClick}
+                            playlistId={playlistId}
+                            folderMetadata={folderMetadata}
+                            onRenameFolder={onRenameFolder}
+                        />
+                    </div>
+                )}
             </div>
 
             <style jsx>{`

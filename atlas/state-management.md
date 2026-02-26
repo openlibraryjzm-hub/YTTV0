@@ -144,7 +144,7 @@ The application uses **Zustand** (v5.0.9) for state management. Zustand is a lig
 - `videoFolderAssignments`: Object - Map of video ID to array of folder colors
 - `showColoredFolders`: boolean - Toggle for showing folders in playlist grid (persisted to localStorage)
 - `bulkTagMode`: boolean - Bulk tagging mode toggle
-- `bulkTagSelections`: Object - Map of video ID to Set of folder colors
+- `bulkTagSelections`: Object - Map of video ID to Set of folder colors (cleared on mode exit; in bulk mode cards receive current assignments from parent for grid display)
 
 **Actions:**
 - `setSelectedFolder(folder)` - Sets selected folder filter (null = all)
@@ -154,10 +154,7 @@ The application uses **Zustand** (v5.0.9) for state management. Zustand is a lig
 - `clearAssignments()` - Clears all folder assignments
 - `setShowColoredFolders(enabled)` - Toggles folder display (persists to localStorage)
 - `setBulkTagMode(enabled)` - Toggles bulk tagging mode
-- `addBulkTagSelection(videoId, folderColor)` - Adds folder color to bulk selection
-- `removeBulkTagSelection(videoId, folderColor)` - Removes folder color from bulk selection
-- `toggleBulkTagSelection(videoId, folderColor)` - Toggles folder color in bulk selection
-- `clearBulkTagSelections()` - Clears all bulk tag selections
+- `clearBulkTagSelections()` - Clears bulk tag selections (called when exiting bulk tag mode)
 
 **Persistence:**
 - `quickAssignFolder` persisted to localStorage: `quickAssignFolder`
@@ -167,8 +164,8 @@ The application uses **Zustand** (v5.0.9) for state management. Zustand is a lig
 - When `selectedFolder` changes → VideosPage filters videos → Grid shows only folder videos
 - When `videoFolderAssignments` changes → VideoCard star icons update → Visual feedback
 - When `videoFolderAssignments` changes (unsorted view) → VideosPage re-filters unsorted videos → Assigned videos removed, next unsorted videos backfilled
-- When `bulkTagMode` changes → VideoCard hover behavior changes → Color grid appears
-- When `bulkTagSelections` changes → Visual feedback updates → Checkmarks appear
+- When `bulkTagMode` changes → VideoCard shows/hides bulk grid strip; clicking a color instantly assigns/unassigns (no Save step)
+- When folder assigned via bulk grid → `videoFolderAssignments` updated → Checkmarks and border reflect current state
 
 ---
 
@@ -443,12 +440,10 @@ The application uses **Zustand** (v5.0.9) for state management. Zustand is a lig
 
 1. User enters bulk tag mode → `setBulkTagMode(true)` called
 2. `folderStore.bulkTagMode` updates
-3. `VideoCard` components detect change → Hover shows color grid
-4. User selects colors → `toggleBulkTagSelection()` called
-5. `bulkTagSelections` updates → Visual feedback (checkmarks)
-6. User saves → Loops through selections → `assignVideoToFolder()` / `unassignVideoFromFolder()`
-7. Folder assignments updated → `loadVideoFolders()` refreshes store
-8. Bulk tag mode exited → `setBulkTagMode(false)`, `clearBulkTagSelections()`
+3. VideoCard/TweetCard show BulkTagColorGrid strip below thumbnail/title; grid displays current assignments (from `videoFolderAssignments`)
+4. User clicks a color → Same assign/unassign as 3-dot menu; `assignVideoToFolder()` / `unassignVideoFromFolder()` and `setVideoFolders()` called immediately (instant assign)
+5. Folder view refreshes if viewing that folder; checkmarks and border reflect current state
+6. User toggles Bulk Tag off → `setBulkTagMode(false)`, `clearBulkTagSelections()`
 
 ---
 

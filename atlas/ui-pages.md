@@ -169,11 +169,10 @@ Users see a horizontal scrolling layout with two rows of video cards showing vid
     - **Return Button**: Amber icon appears when navigated away from entry point, returns to reset point
 
 - **Sticky Toolbar**: Sits below the Page Banner and sticks to the top of the viewport when scrolling. **Full width**: The bar spans the full width of the video page (no side margins); reduced margin below (`mb-4`) to free vertical space for content.
-  - **Compact Layout**: Single-row design to maximize vertical space. Add, Subscriptions, and Bulk Tag actions have been moved to **TopNavigation** (left side, above playlist title) when on Videos page; only Save/Cancel remain in the toolbar when bulk tag mode is active.
+  - **Compact Layout**: Single-row design to maximize vertical space. Add, Subscriptions, and Bulk Tag actions have been moved to **TopNavigation** (left side, above playlist title) when on Videos page; the sticky toolbar shows only sort/filter and folder prism (no Save/Cancel—bulk tag uses instant assign).
   - **Videos Page Layout** (left to right):
     - **VideoSortFilters** (`VideoSortFilters.jsx`): Icon-based sort and rating filter. **Home** = default (shuffle). **Calendar** = date (click to cycle asc/desc, arrow indicator). **Bar chart** = progress (click to cycle direction). **Clock** = last viewed (click to cycle). **Drumstick** = single icon; hover expands vertically to show 1–5 drumsticks for multi-select rating filter (grey when unselected). Styling adapts to folder context (light when All, dark when Unsorted/folder).
     - **Folder prism**: Single bar with **All** (1st, white) and **Unsorted** (2nd, black) showing **item counts** (not labels), then the 16 folder color segments (with counts). Layout is flexible so all segments fit; All/Unsorted use tight width for up to 4-digit numbers. **No folder nav arrows in the toolbar** (prism uses full width); prev/next remain in **TopNavigation** only. **Arrow button** (right of prism): toggles **populated-only mode**—when on (default when entering Videos page), only segments with ≥1 item are shown and share the bar width equally; when off, all 18 segments are shown. Tooltip describes the mode; chevron right = switch to populated-only, chevron left = show all segments.
-    - **Right**: Save and Cancel buttons only when bulk tag mode is on.
   - **TopNavigation (Videos page)**: When current page is Videos, the header shows a row **above the playlist title** with **Add** (opens uploader), **Subscriptions** (left-click = refresh, right-click = manage modal), and **Bulk Tag** (toggle mode; right-click = Auto-Tag modal). Driven by `layoutStore` flags; VideosPage reacts and clears one-shot flags.
   - **Playlists Page Layout**:
     - **Left**: Tab Bar navigation.
@@ -250,7 +249,7 @@ Users see a horizontal scrolling layout with two rows of video cards showing vid
   - `selectedFolder`: Currently selected folder color (null = all)
   - `videoFolderAssignments`: Map of video ID to array of folder colors
   - `bulkTagMode`: Boolean for bulk tagging mode
-  - `bulkTagSelections`: Map of video ID to Set of folder colors
+  - `clearBulkTagSelections`: Called when exiting bulk tag mode (selections no longer used for batch save; grid shows current assignments and each click persists immediately)
 - `src/store/shuffleStore.js`:
   - `shuffleStates`: Map of playlist ID to shuffle mapping (VideoID → Rank)
   - `getShuffleState`: Generates or retrieves consistent shuffle order for session
@@ -271,7 +270,6 @@ Users see a horizontal scrolling layout with two rows of video cards showing vid
   - `watchedVideoIds`: Set of video IDs with ≥85% progress
   - `videoProgress`: Map of video ID to progress data (includes `percentage`, `hasFullyWatched`, `last_updated`)
   - `allFolderMetadata`: Map of folder color ID to metadata object (`{ name, description }`) - Loaded when playlist changes for custom name display in bulk tag grid
-  - `savingBulkTags`: Boolean indicating bulk tag save operation in progress
   - `resetPointId`: Playlist ID to return to when using playlist navigator return button
   - `isChevronNavRef`: Ref to track if navigation is from chevrons (prevents reset point update)
 
@@ -334,19 +332,12 @@ Users see a horizontal scrolling layout with two rows of video cards showing vid
    - Vertical scrolling is disabled on the page container (`overflow-y-hidden`)
 
 4. **Bulk Tag Mode Flow:**
-   - User clicks "Bulk Tag Mode" → `setBulkTagMode(true)` (line 30)
-   - Cards enter bulk tag mode → Hover shows color grid overlay
-   - **Save/Cancel buttons appear** in toolbar → Provides clear workflow actions
-   - User hovers video → `BulkTagColorGrid` appears (4x4 grid perfectly covering thumbnail)
+   - User clicks "Bulk Tag" in TopNavigation → `setBulkTagMode(true)`
+   - Cards enter bulk tag mode → Each card shows **BulkTagColorGrid** strip below thumbnail/title (fixed height `h-20`)
    - **Custom folder names displayed** → If a folder has a custom name (different from default color name), it appears as overlay text on the square
-   - User clicks colors → `toggleBulkTagSelection(videoId, folderColor)` (line 288)
-   - Updates `bulkTagSelections` → Visual feedback (checkmarks on selected squares)
-   - **Thumbnail border updates** → Border color changes to match selected folder color (first selected if multiple)
-   - User clicks "Save" → `handleSaveBulkTags()` (line 571)
-   - Loops through selections → `assignVideoToFolder()` / `unassignVideoFromFolder()`
-   - Refreshes folder assignments → Grid updates
-   - Exits bulk tag mode → `setBulkTagMode(false)`, Save/Cancel buttons hidden
-   - User clicks "Cancel" → `handleCancelBulkTags()` (line 658) → Clears selections and exits mode
+   - **Instant assign**: User clicks a color → `handleBulkTagColorClick(video, folderColor)` invokes the same logic as the 3-dot menu (assign/unassign). `assignVideoToFolder()` or `unassignVideoFromFolder()` is called immediately; `setVideoFolders()` updates the store; folder view refreshes if viewing that folder. No Save or Cancel; each click persists.
+   - Grid checkmarks and thumbnail border reflect **current** folder assignments (from `videoFolderAssignments`); cards receive `bulkTagSelections={new Set(videoFolderAssignments[video.id] || [])}` for display only
+   - User toggles "Bulk Tag" again → `setBulkTagMode(false)`; `clearBulkTagSelections()` on exit
 
 5. **Video Click Flow:**
    - User clicks video card → `handleVideoClick(video, index)` (line 278)

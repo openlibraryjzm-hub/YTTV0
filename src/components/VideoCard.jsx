@@ -3,6 +3,7 @@ import Card from './Card';
 import CardThumbnail from './CardThumbnail';
 import CardContent from './CardContent';
 import BulkTagColorGrid from './BulkTagColorGrid';
+import DrumstickRating from './DrumstickRating';
 import { getThumbnailUrl } from '../utils/youtubeUtils';
 import { FOLDER_COLORS, getFolderColorById } from '../utils/folderColors';
 import { usePinStore } from '../store/pinStore';
@@ -208,57 +209,8 @@ const VideoCard = ({
         rounded={false}
       >
         <div className={`relative group ${bulkTagMode ? 'overflow-visible' : 'overflow-hidden'}`}>
-          {/* Twitter/X Header Section (Top 1/5th) */}
-          <div className="flex items-start gap-3 p-3 pb-2">
-            {/* Profile Picture Circle */}
-            <div className="flex-shrink-0">
-              {video.profile_image_url ? (
-                <img
-                  src={video.profile_image_url}
-                  alt="Profile"
-                  className="w-10 h-10 rounded-full object-cover shadow-md"
-                  onError={(e) => {
-                    // Fallback to letter avatar if image fails to load
-                    e.target.style.display = 'none';
-                    e.target.nextSibling.style.display = 'flex';
-                  }}
-                />
-              ) : null}
-              <div
-                className="w-10 h-10 rounded-full bg-gradient-to-br from-sky-400 to-blue-600 flex items-center justify-center text-white font-bold text-sm shadow-md overflow-hidden"
-                style={{ display: video.profile_image_url ? 'none' : 'flex' }}
-              >
-                {/* Extract first letter of name for avatar */}
-                {video.author ? video.author.charAt(0).toUpperCase() : 'T'}
-              </div>
-            </div>
-
-            {/* Username, Handle, and Tweet Text */}
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-1.5 mb-0.5">
-                {(() => {
-                  // Parse author field: "Name (@handle)" format
-                  const authorMatch = video.author?.match(/^(.+?)\s*\(@(.+?)\)$/);
-                  if (authorMatch) {
-                    return (
-                      <>
-                        <span className="font-bold text-[#052F4A] text-sm">{authorMatch[1]}</span>
-                        <span className="text-slate-500 text-xs">@{authorMatch[2]}</span>
-                      </>
-                    );
-                  }
-                  // Fallback if format doesn't match
-                  return <span className="font-bold text-[#052F4A] text-sm">{video.author || 'Twitter User'}</span>;
-                })()}
-              </div>
-              <p className="text-slate-700 text-xs leading-relaxed line-clamp-2">
-                {video.title || "Check out this amazing content!"}
-              </p>
-            </div>
-          </div>
-
-          {/* Shrunken Thumbnail with Margins */}
-          <div className="px-3 pb-3">
+          {/* Thumbnail first */}
+          <div className="px-3 pt-3 pb-0">
             <CardThumbnail
               src={thumbnailUrl}
               alt={video.title || `Video ${index + 1}`}
@@ -268,22 +220,64 @@ const VideoCard = ({
               className={`overflow-hidden ${bulkTagBorderColor ? 'border-2' : ''} ${isCurrentlyPlaying ? 'ring-4 ring-red-500 ring-offset-2 ring-offset-white shadow-[0_0_40px_rgba(239,68,68,1),inset_0_0_40px_rgba(239,68,68,0.8)]' : ''}`}
               style={bulkTagBorderColor ? { borderColor: bulkTagBorderColor, borderWidth: '2px' } : undefined}
             />
-
-            {/* Bulk tag: below thumbnail, above card bottom, when bulk tag mode is active */}
-            {bulkTagMode && (
-              <div className="relative w-full h-20 flex-shrink-0 overflow-hidden mt-2" data-card-action="true">
-                <BulkTagColorGrid
-                  videoId={video.id}
-                  currentFolders={videoFolders}
-                  selectedFolders={bulkTagSelections}
-                  onColorClick={onBulkTagColorClick}
-                  playlistId={playlistId}
-                  folderMetadata={folderMetadata}
-                  onRenameFolder={onRenameFolder}
-                />
-              </div>
-            )}
           </div>
+
+          {/* Twitter/X Header Section (title) */}
+          <div className="flex items-start gap-3 p-3 pb-2">
+            <div className="flex-shrink-0">
+              {video.profile_image_url ? (
+                <img
+                  src={video.profile_image_url}
+                  alt="Profile"
+                  className="w-10 h-10 rounded-full object-cover shadow-md"
+                  onError={(e) => {
+                    e.target.style.display = 'none';
+                    e.target.nextSibling.style.display = 'flex';
+                  }}
+                />
+              ) : null}
+              <div
+                className="w-10 h-10 rounded-full bg-gradient-to-br from-sky-400 to-blue-600 flex items-center justify-center text-white font-bold text-sm shadow-md overflow-hidden"
+                style={{ display: video.profile_image_url ? 'none' : 'flex' }}
+              >
+                {video.author ? video.author.charAt(0).toUpperCase() : 'T'}
+              </div>
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-1.5 mb-0.5">
+                {(() => {
+                  const authorMatch = video.author?.match(/^(.+?)\s*\(@(.+?)\)$/);
+                  if (authorMatch) {
+                    return (
+                      <>
+                        <span className="font-bold text-[#052F4A] text-sm">{authorMatch[1]}</span>
+                        <span className="text-slate-500 text-xs">@{authorMatch[2]}</span>
+                      </>
+                    );
+                  }
+                  return <span className="font-bold text-[#052F4A] text-sm">{video.author || 'Twitter User'}</span>;
+                })()}
+              </div>
+              <p className="text-slate-700 text-xs leading-relaxed line-clamp-2">
+                {video.title || "Check out this amazing content!"}
+              </p>
+            </div>
+          </div>
+
+          {/* Bulk tag: below thumbnail and title */}
+          {bulkTagMode && (
+            <div className="relative w-full h-20 flex-shrink-0 overflow-hidden mt-2 px-3 pb-3" data-card-action="true">
+              <BulkTagColorGrid
+                videoId={video.id}
+                currentFolders={videoFolders}
+                selectedFolders={bulkTagSelections}
+                onColorClick={onBulkTagColorClick}
+                playlistId={playlistId}
+                folderMetadata={folderMetadata}
+                onRenameFolder={onRenameFolder}
+              />
+            </div>
+          )}
         </div>
       </Card>
     );
@@ -311,9 +305,15 @@ const VideoCard = ({
         />
       </div>
 
-      {/* Bulk tag: below thumbnail, above title, when bulk tag mode is active */}
+      <CardContent
+        title={video.title || `Video ${index + 1}`}
+        padding="p-0 pt-3"
+        headerActions={null}
+      />
+
+      {/* Bulk tag: below thumbnail and title, when bulk tag mode is active */}
       {bulkTagMode && (
-        <div className="relative w-full h-20 flex-shrink-0 overflow-hidden" data-card-action="true">
+        <div className="relative w-full h-20 flex-shrink-0 overflow-hidden mt-2" data-card-action="true">
           <BulkTagColorGrid
             videoId={video.id}
             currentFolders={videoFolders}
@@ -325,12 +325,6 @@ const VideoCard = ({
           />
         </div>
       )}
-
-      <CardContent
-        title={video.title || `Video ${index + 1}`}
-        padding="p-0 pt-3"
-        headerActions={null}
-      />
     </Card>
   );
 };

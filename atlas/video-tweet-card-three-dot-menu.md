@@ -75,7 +75,8 @@ The menu receives:
 
 When the user enables **bulk tag mode** on the Videos page:
 
-- **VideoCard** and **TweetCard** show a **BulkTagColorGrid** strip **below the thumbnail** (between thumbnail and title), in a fixed-height band (`h-20`), always visible when bulk tag mode is on. The strip does not overlay the thumbnail. Save/Cancel are in the page toolbar.
+- **VideoCard** and **TweetCard** show a **BulkTagColorGrid** strip **below the thumbnail** (between thumbnail and title), in a fixed-height band (`h-20`), always visible when bulk tag mode is on. The strip does not overlay the thumbnail.
+- **Instant folder assignment**: Clicking a color in the grid **immediately** assigns or unassigns that video to that folder (same behavior as the 3-dot menu Folder section or star left-click). No Save or Cancel step; each click persists to the database and updates the card.
 - The **3-dot menu is not shown** in bulk tag mode so that the same grid is not duplicated and the UX stays focused on the strip.
 
 This matches the “TweetCard-style” bulk experience: one consistent strip on both video and tweet cards.

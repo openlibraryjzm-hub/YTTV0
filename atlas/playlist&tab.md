@@ -217,7 +217,7 @@ Users see colored folders as a way to organize videos within playlists:
 - `src/components/PlaylistsPage.jsx` (lines 812-990): Inline folder card rendering (when playlist expanded)
 - `src/components/FolderCard.jsx`: Folder card component (used in PlaylistList sidebar, may be deprecated)
 - `src/components/FolderSelector.jsx`: 16-color folder filter selector
-- `src/components/BulkTagColorGrid.jsx`: Color grid for bulk tagging
+- `src/components/BulkTagColorGrid.jsx`: 16-color folder grid for bulk tagging (click = instant assign/unassign; also used in 3-dot menu)
 - `src/components/VideoCard.jsx`: Video card with folder assignment UI
 
 **State Management:**
@@ -227,7 +227,7 @@ Users see colored folders as a way to organize videos within playlists:
   - `videoFolderAssignments`: Map of video ID to array of folder colors
   - `quickAssignFolder`: Default folder color for quick assign (persisted to localStorage)
   - `bulkTagMode`: Boolean for bulk tagging mode
-  - `bulkTagSelections`: Map of video ID to Set of folder colors
+  - `bulkTagSelections`: Cleared on bulk mode exit; in bulk mode cards receive current assignments for grid display (instant assign on click)
 - `src/components/PlaylistsPage.jsx` (local state):
   - `folders`: Array of folder objects from `getAllFoldersWithVideos()`
   - `stuckFolders`: Set of "playlistId:folderColor" strings
