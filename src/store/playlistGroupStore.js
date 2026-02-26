@@ -1,16 +1,19 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { FOLDER_COLORS } from '../utils/folderColors';
 
 const generateId = () => 'g' + Date.now() + '-' + Math.random().toString(36).slice(2, 9);
 
 /**
- * Playlist Group Store - Multiple named group carousels on the Playlists Page.
- * Each group is one carousel row; playlists are assigned to groups via the card 3-dot menu.
+ * Playlist Group Store - Group carousels each bound to a colored folder (FOLDER_COLORS).
+ * Assigning a playlist to a "colored folder" creates or uses that group carousel on the Playlists page bar.
  */
 export const usePlaylistGroupStore = create(
     persist(
-        (set, get) => ({
-            // Array of { id, name, playlistIds }
+        (set, get) => {
+            const getGroupByColorId = (colorId) => get().groups.find((g) => g.folderColorId === colorId);
+            return {
+            // Array of { id, name, playlistIds, folderColorId } — folderColorId ties group to prism color
             groups: [],
 
             /** Per-group carousel display mode: { [groupId]: 'large' | 'small' | 'bar' }. Defaults to 'large' when missing. */
@@ -37,12 +40,25 @@ export const usePlaylistGroupStore = create(
             activeGroupId: null,
             setActiveGroupId: (id) => set({ activeGroupId: id == null ? null : id }),
 
-            addGroup: (name) => {
+            /** Get the group that uses this folder color, or null. */
+            getGroupByColorId,
+
+            /** Add a new group for the given folder color. Returns the new group id. */
+            addGroup: (name, folderColorId) => {
                 const id = generateId();
+                const color = FOLDER_COLORS.find((c) => c.id === folderColorId);
+                const displayName = name || (color ? color.name : 'New group');
                 set({
-                    groups: [...get().groups, { id, name: name || 'New group', playlistIds: [] }],
+                    groups: [...get().groups, { id, name: displayName, playlistIds: [], folderColorId: folderColorId || null }],
                 });
                 return id;
+            },
+
+            /** Get the first FOLDER_COLORS id that does not yet have a group (for "New carousel" button). */
+            getNextAvailableColorId: () => {
+                const used = new Set(get().groups.map((g) => g.folderColorId).filter(Boolean));
+                const next = FOLDER_COLORS.find((c) => !used.has(c.id));
+                return next ? next.id : null;
             },
 
             removeGroup: (groupId) => {
@@ -88,11 +104,12 @@ export const usePlaylistGroupStore = create(
                     groups: get().groups.map((g) => (g.id !== groupId ? g : { ...g, name })),
                 });
             },
-        }),
+            };
+        },
         {
             name: 'playlist-group-storage',
-            version: 3,
-            migrate: (state) => {
+            version: 4,
+            migrate: (state, version) => {
                 if (!state) return { groups: [], activeGroupId: null, groupCarouselModes: {} };
                 const next = {
                     groups: state.groups || [],
@@ -102,8 +119,14 @@ export const usePlaylistGroupStore = create(
                 if (!Array.isArray(next.groups)) {
                     const legacy = state.groupPlaylistIds;
                     next.groups = Array.isArray(legacy) && legacy.length > 0
-                        ? [{ id: generateId(), name: 'Featured playlists', playlistIds: legacy }]
+                        ? [{ id: generateId(), name: 'Featured playlists', playlistIds: legacy, folderColorId: FOLDER_COLORS[0]?.id ?? null }]
                         : [];
+                }
+                if (version < 4) {
+                    next.groups = next.groups.map((g, i) => ({
+                        ...g,
+                        folderColorId: g.folderColorId ?? (FOLDER_COLORS[i] ? FOLDER_COLORS[i].id : null),
+                    }));
                 }
                 return next;
             },

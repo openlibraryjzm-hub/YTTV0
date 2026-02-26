@@ -1,15 +1,22 @@
 import React, { useEffect, useRef } from 'react';
-import { Layers, X, Check } from 'lucide-react';
+import { Layers, X, Check, Plus } from 'lucide-react';
 import { usePlaylistGroupStore } from '../store/playlistGroupStore';
+import { FOLDER_COLORS } from '../utils/folderColors';
 
 /**
- * Full-screen column overlay listing group carousels. Click a group to assign
- * the current playlist to that carousel (or remove if already assigned).
- * Mirrors PlaylistFolderColumn UX for consistency.
+ * Full-screen column overlay for assigning a playlist to a colored folder (group carousel).
+ * Shows 16 slots in FOLDER_COLORS order: existing groups as cards (with that color), or a colored placeholder
+ * that creates a new group for that color when clicked.
  */
 const PlaylistGroupColumn = ({ playlist, onClose, playlists = [], playlistThumbnails = {} }) => {
     const columnRef = useRef(null);
-    const { groups, addPlaylistToGroup, removePlaylistFromGroup, isPlaylistInGroup } = usePlaylistGroupStore();
+    const {
+        getGroupByColorId,
+        addGroup,
+        addPlaylistToGroup,
+        removePlaylistFromGroup,
+        isPlaylistInGroup,
+    } = usePlaylistGroupStore();
 
     useEffect(() => {
         if (columnRef.current) {
@@ -29,6 +36,12 @@ const PlaylistGroupColumn = ({ playlist, onClose, playlists = [], playlistThumbn
         } else {
             addPlaylistToGroup(group.id, playlist.id);
         }
+    };
+
+    const handlePlaceholderClick = (e, color) => {
+        e.stopPropagation();
+        const newGroupId = addGroup(color.name, color.id);
+        addPlaylistToGroup(newGroupId, playlist.id);
     };
 
     return (
@@ -55,17 +68,58 @@ const PlaylistGroupColumn = ({ playlist, onClose, playlists = [], playlistThumbn
                 style={{ scrollbarWidth: 'none' }}
             >
                 <div className="text-white/90 text-center px-4 mb-2">
-                    <p className="text-sm font-medium">Assign playlist to a carousel</p>
+                    <p className="text-sm font-medium">Assign to colored folder</p>
                     <p className="text-xs text-slate-400 truncate max-w-md mt-1">{playlist?.name}</p>
                 </div>
 
-                {groups.length === 0 && (
-                    <div className="text-white text-xl font-medium p-8 bg-slate-800/80 rounded-xl backdrop-blur-md border border-slate-700">
-                        No carousels yet. Create one from the GROUPS page.
-                    </div>
-                )}
+                {FOLDER_COLORS.map((color) => {
+                    const group = getGroupByColorId(color.id);
+                    const isPlaceholder = !group;
 
-                {groups.map((group) => {
+                    if (isPlaceholder) {
+                        return (
+                            <div
+                                key={color.id}
+                                onClick={(e) => handlePlaceholderClick(e, color)}
+                                className="group relative flex-shrink-0 transition-all duration-300 transform hover:scale-[1.02] cursor-pointer"
+                                style={{ width: '500px' }}
+                            >
+                                <div
+                                    className="border-2 rounded-xl p-2 shadow-2xl transition-all h-full flex flex-col relative overflow-hidden border-white/20 hover:border-white/50"
+                                    style={{ backgroundColor: color.hex + '40' }}
+                                >
+                                    <div className="mb-3 px-2 flex items-center justify-between gap-2 z-10">
+                                        <div className="flex items-center gap-2 min-w-0">
+                                            <Layers className="w-5 h-5 flex-shrink-0 opacity-80" style={{ color: color.hex }} />
+                                            <h3 className="font-bold text-xl truncate text-white/90 drop-shadow-md" style={{ color: 'inherit' }}>
+                                                {color.name}
+                                            </h3>
+                                        </div>
+                                        <span className="flex items-center gap-1 text-white/80 text-sm font-medium flex-shrink-0">
+                                            <Plus size={18} strokeWidth={2.5} />
+                                            Add playlist
+                                        </span>
+                                    </div>
+                                    <div
+                                        className="rounded-lg overflow-hidden relative mt-auto z-10 border-2 border-white/20 flex items-center justify-center"
+                                        style={{
+                                            width: '100%',
+                                            paddingBottom: '56.25%',
+                                            backgroundColor: color.hex + '30',
+                                        }}
+                                    >
+                                        <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">
+                                            <span className="text-4xl font-bold text-white/90 drop-shadow-lg">+</span>
+                                            <span className="text-xs font-medium text-white/80 uppercase tracking-wide">
+                                                Create {color.name} carousel
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        );
+                    }
+
                     const inGroup = playlist && isPlaylistInGroup(playlist.id, group.id);
                     const count = group.playlistIds?.length ?? 0;
                     const firstPlaylistId = group.playlistIds?.[0];
@@ -80,27 +134,26 @@ const PlaylistGroupColumn = ({ playlist, onClose, playlists = [], playlistThumbn
                             style={{ width: '500px' }}
                         >
                             <div
-                                className={`border-2 rounded-xl p-2 shadow-2xl transition-all h-full flex flex-col relative overflow-hidden
-                                    ${inGroup
-                                        ? 'border-sky-500/80 bg-sky-500/10'
-                                        : 'border-slate-700/50 bg-slate-100/90 hover:border-sky-500/80'
-                                    }`}
+                                className="border-2 rounded-xl p-2 shadow-2xl transition-all h-full flex flex-col relative overflow-hidden"
+                                style={{
+                                    borderColor: inGroup ? color.hex : 'rgba(255,255,255,0.25)',
+                                    backgroundColor: inGroup ? color.hex + '25' : color.hex + '12',
+                                }}
                             >
-                                {/* Glow behind card */}
                                 <div
-                                    className="absolute inset-0 opacity-0 group-hover:opacity-20 transition-opacity duration-500 pointer-events-none"
-                                    style={{ background: 'radial-gradient(circle at center, #0ea5e9, transparent 70%)' }}
+                                    className="absolute inset-0 opacity-0 group-hover:opacity-15 transition-opacity duration-500 pointer-events-none"
+                                    style={{ background: `radial-gradient(circle at center, ${color.hex}, transparent 70%)` }}
                                 />
 
                                 <div className="mb-3 px-2 flex items-center justify-between gap-2 z-10">
                                     <div className="flex items-center gap-2 min-w-0">
-                                        <Layers className="w-5 h-5 text-sky-500 flex-shrink-0" />
-                                        <h3 className="font-bold text-xl truncate text-[#052F4A] group-hover:text-sky-600 transition-colors">
+                                        <Layers className="w-5 h-5 flex-shrink-0" style={{ color: color.hex }} />
+                                        <h3 className="font-bold text-xl truncate text-[#052F4A] group-hover:opacity-90 transition-colors">
                                             {group.name}
                                         </h3>
                                     </div>
                                     {inGroup && (
-                                        <span className="flex items-center gap-1 text-sky-600 text-sm font-medium flex-shrink-0">
+                                        <span className="flex items-center gap-1 text-sm font-medium flex-shrink-0" style={{ color: color.hex }}>
                                             <Check size={18} strokeWidth={3} />
                                             In carousel
                                         </span>
@@ -112,7 +165,7 @@ const PlaylistGroupColumn = ({ playlist, onClose, playlists = [], playlistThumbn
                                     style={{
                                         width: '100%',
                                         paddingBottom: '56.25%',
-                                        backgroundColor: inGroup ? 'rgba(14, 165, 233, 0.15)' : '#e2e8f0',
+                                        backgroundColor: thumbnailUrl ? undefined : color.hex + '20',
                                     }}
                                 >
                                     {thumbnailUrl ? (

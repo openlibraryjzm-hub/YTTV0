@@ -24,6 +24,7 @@ import { usePlaylistGroupStore } from '../store/playlistGroupStore';
 import UnifiedBannerBackground from './UnifiedBannerBackground';
 import PlaylistCardSkeleton from './skeletons/PlaylistCardSkeleton';
 import ImageHoverPreview from './ImageHoverPreview';
+import PlaylistBar from './PlaylistBar';
 
 const PlaylistsPage = ({ onVideoSelect }) => {
   const [playlists, setPlaylists] = useState([]);
@@ -62,6 +63,9 @@ const PlaylistsPage = ({ onVideoSelect }) => {
   // Global info toggle: driven by layoutStore (synced from localStorage on mount, persisted on change)
   const { playlistsPageShowTitles, setPlaylistsPageShowTitles, showPlaylistUploader, setShowPlaylistUploader } = useLayoutStore();
   const globalInfoToggle = playlistsPageShowTitles;
+
+  // Prism folder selection: null = All carousels, color id = single carousel by index (one group per color)
+  const [selectedPrismFolder, setSelectedPrismFolder] = useState(null);
 
   // Keep ref in sync with state
   pieDataRef.current.hoveredPieSegment = hoveredPieSegment;
@@ -138,7 +142,7 @@ const PlaylistsPage = ({ onVideoSelect }) => {
   const { showColoredFolders, setShowColoredFolders } = useFolderStore();
   const [imageLoadErrors, setImageLoadErrors] = useState(new Set());
   const { activeTabId } = useTabStore();
-  const { groups: playlistGroups, getGroupIdsForPlaylist, addGroup, renameGroup, removeGroup, setActiveGroupId } = usePlaylistGroupStore();
+  const { groups: playlistGroups, getGroupIdsForPlaylist, getGroupByColorId, getNextAvailableColorId, addGroup, renameGroup, removeGroup, setActiveGroupId } = usePlaylistGroupStore();
   const { setViewMode, viewMode, inspectMode, setFullscreenInfoBlanked } = useLayoutStore();
   const { customPageBannerImage, bannerHeight, bannerBgSize } = useConfigStore();
   const { setCurrentPage } = useNavigationStore();
@@ -727,16 +731,127 @@ const PlaylistsPage = ({ onVideoSelect }) => {
 
           {/* Playlist Grid - Horizontal Scrolling (bar moved to TopNavigation when on Playlists page) */}
           <div ref={scrollContainerRef} className="flex-1 overflow-y-auto overflow-x-hidden bg-transparent relative">
+            <PlaylistBar
+              onAddClick={() => setShowPlaylistUploader(true)}
+              groupColorIds={playlistGroups.map((g) => g.folderColorId).filter(Boolean)}
+              allPlaylistCount={playlists.length}
+              unsortedCount={playlists.filter((p) => getGroupIdsForPlaylist(p.id).length === 0).length}
+              selectedFolder={selectedPrismFolder}
+              onFolderSelect={setSelectedPrismFolder}
+            />
+
             <div className="px-4 pt-4 pb-8">
-              {/* GROUPS view: only group carousels, one per row */}
+              {/* GROUPS view: All (white) = grid of all playlist cards; Unsorted (black) = grid of unassigned; color = single carousel */}
+              {activeTabId === 'groups' && selectedPrismFolder === null && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                  {playlists.map((playlist) => {
+                    const thumbData = playlistThumbnails[playlist.id];
+                    const playlistImageKey = `playlist-${playlist.id}`;
+                    const useFallback = imageLoadErrors.has(playlistImageKey);
+                    const combined = combinedPreviewItems[playlist.id] || [];
+                    const firstItem = combined[0];
+                    let activeThumbnailUrl = thumbData ? (useFallback ? thumbData.standard : thumbData.max) : null;
+                    if (!playlist.custom_thumbnail_url && firstItem) {
+                      if (firstItem.isOrb && firstItem.customOrbImage) activeThumbnailUrl = firstItem.customOrbImage;
+                      else if (firstItem.isBannerPreset) activeThumbnailUrl = firstItem.splitscreenBanner?.image || firstItem.customBannerImage || firstItem.fullscreenBanner?.image || firstItem.image || null;
+                    }
+                    const videoCount = playlistItemCounts[playlist.id] || 0;
+                    const orbCount = combined.filter((i) => i.isOrb).length;
+                    const bannerCount = combined.filter((i) => i.isBannerPreset).length;
+                    const itemCount = videoCount + orbCount + bannerCount;
+                    const folders = playlistFolders[playlist.id] || [];
+                    const initialPreviewVideos = combined;
+                    return (
+                      <PlaylistCard
+                        key={playlist.id}
+                        playlist={playlist}
+                        folders={folders}
+                        activeThumbnailUrl={activeThumbnailUrl}
+                        itemCount={itemCount}
+                        videoCount={videoCount}
+                        orbCount={orbCount}
+                        bannerCount={bannerCount}
+                        initialPreviewVideos={initialPreviewVideos}
+                        globalInfoToggle={globalInfoToggle}
+                        folderMetadata={folderMetadata}
+                        deletingPlaylistId={deletingPlaylistId}
+                        expandedPlaylists={expandedPlaylists}
+                        onVideoSelect={onVideoSelect}
+                        togglePlaylistExpand={togglePlaylistExpand}
+                        handleExportPlaylist={handleExportPlaylist}
+                        handleDeletePlaylist={handleDeletePlaylist}
+                        loadPlaylists={loadPlaylists}
+                        onAssignToGroupClick={() => setAssignToGroupPlaylistId(playlist.id)}
+                        onEnterFromGroup={() => setActiveGroupId(null)}
+                      />
+                    );
+                  })}
+                </div>
+              )}
+
+              {activeTabId === 'groups' && selectedPrismFolder === 'unsorted' && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                  {playlists
+                    .filter((p) => getGroupIdsForPlaylist(p.id).length === 0)
+                    .map((playlist) => {
+                      const thumbData = playlistThumbnails[playlist.id];
+                      const playlistImageKey = `playlist-${playlist.id}`;
+                      const useFallback = imageLoadErrors.has(playlistImageKey);
+                      const combined = combinedPreviewItems[playlist.id] || [];
+                      const firstItem = combined[0];
+                      let activeThumbnailUrl = thumbData ? (useFallback ? thumbData.standard : thumbData.max) : null;
+                      if (!playlist.custom_thumbnail_url && firstItem) {
+                        if (firstItem.isOrb && firstItem.customOrbImage) activeThumbnailUrl = firstItem.customOrbImage;
+                        else if (firstItem.isBannerPreset) activeThumbnailUrl = firstItem.splitscreenBanner?.image || firstItem.customBannerImage || firstItem.fullscreenBanner?.image || firstItem.image || null;
+                      }
+                      const videoCount = playlistItemCounts[playlist.id] || 0;
+                      const orbCount = combined.filter((i) => i.isOrb).length;
+                      const bannerCount = combined.filter((i) => i.isBannerPreset).length;
+                      const itemCount = videoCount + orbCount + bannerCount;
+                      const folders = playlistFolders[playlist.id] || [];
+                      const initialPreviewVideos = combined;
+                      return (
+                        <PlaylistCard
+                          key={playlist.id}
+                          playlist={playlist}
+                          folders={folders}
+                          activeThumbnailUrl={activeThumbnailUrl}
+                          itemCount={itemCount}
+                          videoCount={videoCount}
+                          orbCount={orbCount}
+                          bannerCount={bannerCount}
+                          initialPreviewVideos={initialPreviewVideos}
+                          globalInfoToggle={globalInfoToggle}
+                          folderMetadata={folderMetadata}
+                          deletingPlaylistId={deletingPlaylistId}
+                          expandedPlaylists={expandedPlaylists}
+                          onVideoSelect={onVideoSelect}
+                          togglePlaylistExpand={togglePlaylistExpand}
+                          handleExportPlaylist={handleExportPlaylist}
+                          handleDeletePlaylist={handleDeletePlaylist}
+                          loadPlaylists={loadPlaylists}
+                          onAssignToGroupClick={() => setAssignToGroupPlaylistId(playlist.id)}
+                          onEnterFromGroup={() => setActiveGroupId(null)}
+                        />
+                      );
+                    })}
+                </div>
+              )}
+
               {activeTabId === 'groups' &&
-                playlistGroups.map((group) => (
+                selectedPrismFolder !== 'unsorted' &&
+                selectedPrismFolder !== null &&
+                (() => {
+                  const group = getGroupByColorId(selectedPrismFolder);
+                  if (!group) return null;
+                  return (
                     <GroupPlaylistCarousel
                       key={group.id}
                       title={group.name}
                       groupId={group.id}
                       onRename={renameGroup}
                       onDelete={removeGroup}
+                      effectiveSizeOverride="large"
                     >
                       {group.playlistIds
                         .map((id) => playlists.find((p) => Number(p.id) === Number(id)))
@@ -785,16 +900,22 @@ const PlaylistsPage = ({ onVideoSelect }) => {
                           );
                         })}
                     </GroupPlaylistCarousel>
-                  ))}
+                  );
+                })()}
 
-              {/* New carousel button - below last carousel on GROUPS view */}
-              {activeTabId === 'groups' && (
+              {/* New carousel button - below carousels on GROUPS view (hidden when viewing Unsorted grid) */}
+              {activeTabId === 'groups' && selectedPrismFolder !== 'unsorted' && (
                 <div className="mt-4 mb-8 flex justify-center">
                   <button
                     type="button"
                     onClick={() => {
-                      const name = window.prompt('Carousel name', 'New carousel');
-                      if (name != null && name.trim()) addGroup(name.trim());
+                      const nextColorId = getNextAvailableColorId();
+                      if (nextColorId) {
+                        const color = FOLDER_COLORS.find((c) => c.id === nextColorId);
+                        addGroup(color?.name ?? 'New carousel', nextColorId);
+                      } else {
+                        window.alert('All 16 colored folders already have a carousel.');
+                      }
                     }}
                     className="rounded-xl border-2 border-dashed border-slate-400 text-slate-500 hover:border-sky-500 hover:text-sky-500 hover:bg-sky-500/5 px-6 py-4 font-medium text-sm uppercase tracking-wide transition-colors flex items-center gap-2"
                   >

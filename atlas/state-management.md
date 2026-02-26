@@ -294,15 +294,18 @@ The application uses **Zustand** (v5.0.9) for state management. Zustand is a lig
 
 ### 8. playlistGroupStore (`src/store/playlistGroupStore.js`)
 
-**Purpose**: Persisted state for the group carousel system on the Playlists page. Holds multiple named groups; each group is one carousel row. Playlists are assigned to groups (not stored in DB). See **group-carousel.md** for full behavior.
+**Purpose**: Persisted state for the group carousel system on the Playlists page. Each group is bound to one of 16 folder colors (`folderColorId`); at most one group per color. Playlists are assigned to groups (not stored in DB). See **group-carousel.md** and **playlist-bar.md** for full behavior.
 
 **State:**
-- `groups`: Array of `{ id, name, playlistIds }`
+- `groups`: Array of `{ id, name, playlistIds, folderColorId }`
+- `groupCarouselModes`: `{ [groupId]: 'large' | 'small' | 'bar' }`
+- `activeGroupId`: `string | null` (entered-from group for Player Controller badge/nav)
 
 **Actions:**
-- `addGroup(name)`, `removeGroup(groupId)`, `renameGroup(groupId, name)`
+- `getGroupByColorId(colorId)`, `addGroup(name, folderColorId)`, `getNextAvailableColorId()`, `removeGroup(groupId)`, `renameGroup(groupId, name)`
 - `addPlaylistToGroup(groupId, playlistId)`, `removePlaylistFromGroup(groupId, playlistId)`
 - `isPlaylistInGroup(playlistId, groupId)`, `getGroupIdsForPlaylist(playlistId)`
+- `setGroupCarouselMode(groupId, mode)`, `setAllGroupCarouselModes(mode)`, `setActiveGroupId(id)`
 
 **Persistence:** localStorage key `playlist-group-storage`.
 

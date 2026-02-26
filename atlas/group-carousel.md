@@ -1,8 +1,8 @@
 # Group Carousel System (Playlists Page)
 
-The group carousel system lets users organize playlists into named, horizontal carousel rows on the Playlists page (GROUPS view). Carousels are stored in local state (Zustand + localStorage); no database tables are used. The Playlists **view switcher and actions** (tabs, Info/Folder/Add) live in the **TopNavigation** header when the Playlists page is active, freeing vertical space for carousel content.
+The group carousel system lets users organize playlists into **colored-folder carousels** on the Playlists page. Each carousel is bound to one of **16 folder colors** (`FOLDER_COLORS`); at most one group exists per color. Carousels are stored in local state (Zustand + localStorage); no database tables are used. The **PlaylistBar** (sticky toolbar in the page content) provides a **folder prism** to switch between All grid, Unsorted grid, or a single carousel by color. The Playlists **view switcher and actions** (tabs, Info/Folder/Add) live in **TopNavigation** when the Playlists page is active.
 
-**Related:** The **group badge** on the Player Controller’s Top Playlist Menu and **restriction of playlist navigation** (up/down) to the current group are documented in **`group-badge-player-controller.md`**.
+**Related:** The **group badge** on the Player Controller’s Top Playlist Menu and **restriction of playlist navigation** (up/down) to the current group are documented in **`group-badge-player-controller.md`**. The **PlaylistBar** (prism, Add, Back/Close) is documented in **`playlist-bar.md`**.
 
 ---
 
@@ -24,28 +24,29 @@ The Playlists page has three view modes:
   - **Small:** Thumbnail-sized cards (~3 visible); PlaylistCard gets `size="small"` and `inCarousel: true` (injected by carousel) and uses a **minimal layout**: main-slot thumbnail on top, playlist title below (VideoCard-style). No title bar above the thumbnail; no 4 mini preview strip; no folder/count/set-as-cover overlays on the thumbnail (3-dot menu remains). Card wrapper `min-w-[140px]`, `w-[min(180px,calc(33vw-1rem))]`; gap `gap-4`; scroll via **bottom scrollbar only**; compact top bar (`px-3 py-1`); box `mb-1.5`, white background.
   - **Bar:** Thin bar only: Layers icon, title, inline scroll left/right, rename, delete. No thumbnails; hidden scroll strip keeps scroll position. Box `mb-3`, dark styling, compact bar.
 
-### 1.2 Playlists bar (TopNavigation)
+### 1.2 Playlists bar (TopNavigation) and PlaylistBar (page content)
 
-When the current page is **Playlists**, the **TopNavigation** mini header (above main content) shows:
+**TopNavigation** (mini header): When the current page is **Playlists**, it shows:
 
-- **Apply to all (GROUPS only):** Three buttons left and above the title: Large, Small, Bar. **One-shot commands** – each click sets every carousel's mode via `playlistGroupStore.setAllGroupCarouselModes(mode)`. No persistent override; after applying, mix again with each carousel's own mode buttons.
+- **Apply to all (GROUPS only):** Three buttons left and above the title: Large, Small, Bar. **One-shot commands** – each click sets every carousel's mode via `playlistGroupStore.setAllGroupCarouselModes(mode)`.
 - **Title:** “Playlists”.
 - **Tabs:** `TabBar` (ALL | UNSORTED | GROUPS).
 - **Actions:** Info (show/hide video titles on cards), Folder (show/hide colored folders), Add (open playlist uploader).
 - **Navigation:** Back (when applicable), Close (full screen / close menu).
 
-This bar is **not** rendered on the Playlists page content area; it lives in the shared header so the content area has more vertical space for carousels and grid.
+**PlaylistBar** (sticky toolbar in the **page content**, not the header): Rendered at the top of the Playlists page body. It includes VideoSortFilters, Add/Refresh/Bulk tag buttons, the **folder prism**, and Back/Close. The prism has segments for **All**, **Unsorted** (if any playlists are in no group), and **each folder color that has a group carousel**. Clicking a color segment sets the selected folder; when a color is selected, PlaylistsPage shows only that group’s carousel (single large carousel). See **`playlist-bar.md`** for props (`groupColorIds`, `selectedFolder`, `onFolderSelect`) and populated-only vs all-segments prism modes.
 
 ### 1.3 Creating and managing carousels
 
-- **New carousel (GROUPS view):** “New carousel” button below the last carousel opens a prompt for the name, then creates an empty group. Empty carousels still appear as a bounded box with a placeholder (“No playlists in this carousel”).
+- **Colored folder model:** There are **16 folder colors** (see `src/utils/folderColors.js`: red, orange, amber, yellow, lime, green, emerald, teal, cyan, sky, blue, indigo, violet, purple, fuchsia, pink). Each **group** has a `folderColorId`; at most **one group per color**. The prism in PlaylistBar shows only colors that have a group (in populated-only mode).
+- **New carousel (GROUPS view):** “New carousel” button below the last carousel uses `getNextAvailableColorId()` to pick the first unused color, then creates a group with `addGroup(color.name, nextColorId)`. If all 16 colors are used, an alert is shown and no group is created. Empty carousels still appear as a bounded box with a placeholder (“No playlists in this carousel”).
 - **Per-carousel mode:** Each carousel's **top bar** has three mode buttons (Large / Small / Bar). The active mode is highlighted; clicking sets that carousel's mode only (`playlistGroupStore.groupCarouselModes[groupId]`). New groups default to Large.
 - **Rename:** In the carousel **top bar**, a pencil icon opens a rename prompt. Only available when the carousel is rendered with `groupId` and `onRename` (i.e. on GROUPS).
 - **Delete:** A trash icon in the top bar opens a confirmation: “Delete carousel “[name]”? Playlists will be unassigned from this carousel but not removed from the app.” Confirming removes the group and unassigns all playlists from it; playlists themselves are not deleted.
 
 ### 1.4 Assigning playlists to carousels
 
-- **Assign to group (playlist card 3-dot menu):** Opens the **PlaylistGroupColumn** overlay (full-screen, scrollable list of carousel cards). Clicking a carousel card adds the current playlist to that carousel (or removes it if already in that carousel). Same UX pattern as **PlaylistFolderColumn** (folders).
+- **Assign to colored folder (playlist card 3-dot menu):** Opens the **PlaylistGroupColumn** overlay (full-screen, scrollable). The column shows **16 slots in `FOLDER_COLORS` order**. For each color: if a group exists for that color, a **colored group card** is shown (name, thumbnail from first playlist, “In carousel” when the current playlist is in that group); clicking toggles the playlist in/out of that group. If **no group** exists for that color, a **colored placeholder** is shown (“Create [Color] carousel”); clicking creates a new group for that color and adds the current playlist to it. Header text: “Assign to colored folder.”
 - **Remove from carousel (playlist card 3-dot menu):** Shown only when the playlist is in at least one carousel. Label is “Remove from carousel” (one) or “Remove from carousels” (multiple). Removes the playlist from every carousel it’s in; playlists are not deleted.
 
 ---
@@ -54,8 +55,9 @@ This bar is **not** rendered on the Playlists page content area; it lives in the
 
 | Area | Files |
 |------|--------|
-| **Components** | `GroupPlaylistCarousel.jsx`, `PlaylistGroupColumn.jsx`, `PlaylistCard.jsx` (menu + remove), `PlaylistsPage.jsx` (views, carousels, column), `TabBar.jsx` (ALL / UNSORTED / GROUPS), `TopNavigation.jsx` (Playlists bar when `currentPage === 'playlists'`) |
-| **State** | `playlistGroupStore.js` (Zustand, persisted: groups, groupCarouselModes, activeGroupId; setGroupCarouselMode, setAllGroupCarouselModes), `tabStore.js` (view mode), `layoutStore.js` (playlistsPageShowTitles, showPlaylistUploader for header actions) |
+| **Components** | `PlaylistBar.jsx` (sticky toolbar + prism), `GroupPlaylistCarousel.jsx`, `PlaylistGroupColumn.jsx` (assign to colored folder), `PlaylistCard.jsx` (menu + remove), `PlaylistsPage.jsx` (views, carousels, column, prism state), `TabBar.jsx` (ALL / UNSORTED / GROUPS), `TopNavigation.jsx` (Playlists bar when `currentPage === 'playlists'`) |
+| **State** | `playlistGroupStore.js` (Zustand, persisted: groups with `folderColorId`, groupCarouselModes, activeGroupId; getGroupByColorId, getNextAvailableColorId, addGroup(name, folderColorId)), `tabStore.js` (view mode), `layoutStore.js` (playlistsPageShowTitles, showPlaylistUploader) |
+| **Utils** | `folderColors.js` (FOLDER_COLORS, getFolderColorById) |
 | **Store (view mode)** | `tabStore.js` (activeTabId: `'all' \| 'unsorted' \| 'groups'`) |
 
 ---
@@ -65,9 +67,11 @@ This bar is **not** rendered on the Playlists page content area; it lives in the
 ### 3.1 playlistGroupStore
 
 - **Storage:** Zustand with `persist` middleware; key `playlist-group-storage` in localStorage.
-- **State:** `groups: Array<{ id: string, name: string, playlistIds: number[] }>`, `groupCarouselModes: { [groupId]: 'large' | 'small' | 'bar' }` (defaults to `'large'` when missing), `activeGroupId: string | null`.
+- **State:** `groups: Array<{ id: string, name: string, playlistIds: number[], folderColorId: string | null }>` (each group is bound to one of the 16 folder colors), `groupCarouselModes: { [groupId]: 'large' | 'small' | 'bar' }` (defaults to `'large'` when missing), `activeGroupId: string | null`.
 - **Actions:**
-  - `addGroup(name)` – appends a new group, returns its `id`.
+  - `getGroupByColorId(colorId)` – returns the group that has `folderColorId === colorId`, or `null`.
+  - `addGroup(name, folderColorId)` – creates a new group for the given folder color; returns the new group `id`. Name defaults to the color’s display name from `FOLDER_COLORS` if not provided.
+  - `getNextAvailableColorId()` – returns the first `FOLDER_COLORS` id that does not yet have a group (for “New carousel”); returns `null` if all 16 are used.
   - `removeGroup(groupId)` – removes the group (playlists are unassigned, not deleted); clears `activeGroupId` if it was this group.
   - `setGroupCarouselMode(groupId, mode)` – sets this group’s carousel display mode (`'large' | 'small' | 'bar'`). Used by each carousel’s top-bar mode buttons.
   - `setAllGroupCarouselModes(mode)` – one-shot: sets every group’s carousel mode to `mode`. Used by TopNavigation “apply to all” buttons.
@@ -77,7 +81,7 @@ This bar is **not** rendered on the Playlists page content area; it lives in the
   - `getGroupIdsForPlaylist(playlistId)` – returns array of group IDs that contain the playlist.
   - `renameGroup(groupId, name)` – renames the group.
   - `setActiveGroupId(id)` – sets or clears the "entered from" group (used by Player Controller badge and playlist navigation range). Set when user opens a playlist from a carousel card; cleared when opening from the main grid.
-- **Migration:** Legacy single-list format (`groupPlaylistIds`) is migrated to one group named "Featured playlists". Version 2 adds `activeGroupId` (default `null`). Version 3 adds `groupCarouselModes` (default `{}`).
+- **Migration:** Legacy single-list format (`groupPlaylistIds`) is migrated to one group named "Featured playlists" with a default color. Version 2 adds `activeGroupId` (default `null`). Version 3 adds `groupCarouselModes` (default `{}`). Version 4 adds `folderColorId` to each group (existing groups get color by index in `FOLDER_COLORS`).
 
 ### 3.2 tabStore (view mode)
 
@@ -102,11 +106,12 @@ This bar is **not** rendered on the Playlists page content area; it lives in the
 
 ### 4.2 PlaylistsPage
 
-- **GROUPS view:** Renders one `GroupPlaylistCarousel` per group (including empty ones). Each carousel receives `title={group.name}`, `groupId={group.id}`, `onRename={renameGroup}`, `onDelete={removeGroup}`. Playlist cards in carousels get the same props as in the grid (including `onAssignToGroupClick`). There is **no** sticky toolbar or TabBar on the page itself; the content area starts with carousels (or grid for ALL/UNSORTED) to maximize space.
+- **PlaylistBar:** Renders `PlaylistBar` at the top of the content with `groupColorIds={playlistGroups.map(g => g.folderColorId).filter(Boolean)}`, `allPlaylistCount`, `unsortedCount`, `selectedFolder={selectedPrismFolder}`, `onFolderSelect={setSelectedPrismFolder}`, `onAddClick` (opens uploader). When user selects a prism segment, `selectedPrismFolder` is set to `null` (All), `'unsorted'`, or a color id; this drives whether the page shows the full grid, unsorted grid, or a single carousel (see below).
+- **GROUPS view:** Renders one `GroupPlaylistCarousel` per group (including empty ones). Each carousel receives `title={group.name}`, `groupId={group.id}`, `onRename={renameGroup}`, `onDelete={removeGroup}`. When **a single folder is selected via the prism** (`selectedPrismFolder` is a color id), the page shows only the carousel for that color: the group is resolved with `getGroupByColorId(selectedPrismFolder)` and a single carousel is rendered (large carousel layout). Otherwise (All or Unsorted selected), no carousels are shown in the main area—only the grid.
 - **ALL / UNSORTED view:** Renders the main grid. Filter:
   - ALL: all playlists.
   - UNSORTED: `getGroupIdsForPlaylist(playlist.id).length === 0`.
-- **Assign column:** When `assignToGroupPlaylistId` is set, renders `PlaylistGroupColumn` with that playlist, `playlists`, `playlistThumbnails`, and `onClose`. Column uses the store to add/remove the playlist from groups and shows thumbnails from the first playlist in each group when available.
+- **Assign column:** When `assignToGroupPlaylistId` is set, renders `PlaylistGroupColumn` with that playlist, `playlists`, `playlistThumbnails`, and `onClose`. Column uses the store (`getGroupByColorId`, `addGroup(color.name, color.id)`, `addPlaylistToGroup`, `removePlaylistFromGroup`, `isPlaylistInGroup`) and shows 16 slots in `FOLDER_COLORS` order: existing groups as colored cards, or placeholders that create a new group for that color on click.
 - **Uploader:** When `showPlaylistUploader` from layoutStore is true, a `useEffect` opens the uploader (sets local `showUploader(true)`) and then calls `setShowPlaylistUploader(false)`.
 
 ### 4.3 GroupPlaylistCarousel
@@ -134,9 +139,11 @@ App-wide scrollbar styling is defined in `App.css` (universal `*::-webkit-scroll
 
 ## 6. Cross-references
 
+- **PlaylistBar (sticky toolbar + prism):** `playlist-bar.md` (props, prism segments by `groupColorIds`, relation to PlaylistsPage).
 - **Group badge and playlist navigation (Player Controller):** `group-badge-player-controller.md` (single badge, “entered from” group, nav restricted to group).
 - **Playlist cards:** `playlist-cards.md` (card UI and folder integration).
 - **Playlists page layout:** `ui-pages.md`, `ui.md`.
 - **TopNavigation / Mini Header:** `page-banner.md` (Mini Header section), `ui-layout.md`.
+- **Folder colors:** `src/utils/folderColors.js`, `playlist&tab.md`.
 - **State:** `state-management.md` (playlistGroupStore, tabStore, layoutStore).
 - **Legacy tabs:** The previous tab/preset system has been retired in favor of ALL / UNSORTED / GROUPS and group carousels; see `playlist&tab.md` for historical context only.

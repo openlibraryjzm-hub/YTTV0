@@ -7,13 +7,17 @@ import { usePlaylistGroupStore } from '../store/playlistGroupStore';
  * Used on Playlists Page (GROUPS view). Bounded box, top bar (name + mode buttons + rename + delete), scrollbar near cards.
  * Mode is per-carousel (playlistGroupStore.groupCarouselModes[groupId]). Top nav "apply to all" updates every group at once.
  * Modes: 'large', 'small' (~3 visible), 'bar' (thin bar, no thumbnails).
+ * When effectiveSizeOverride is set (All vs colored-folder prism context), it overrides stored mode for layout: 'small' on All page, 'large' when viewing a single colored folder.
  */
-const GroupPlaylistCarousel = ({ children, title = 'Featured playlists', groupId, onRename, onDelete, mode: modeProp }) => {
+const GroupPlaylistCarousel = ({ children, title = 'Featured playlists', groupId, onRename, onDelete, mode: modeProp, effectiveSizeOverride }) => {
     const scrollContainerRef = useRef(null);
 
     const storedMode = usePlaylistGroupStore((s) => (groupId != null ? s.groupCarouselModes?.[groupId] ?? 'large' : 'large'));
     const setGroupCarouselMode = usePlaylistGroupStore((s) => s.setGroupCarouselMode);
-    const mode = groupId != null ? storedMode : (modeProp ?? 'large');
+    let mode = groupId != null ? storedMode : (modeProp ?? 'large');
+    if (effectiveSizeOverride === 'large' || effectiveSizeOverride === 'small') {
+        mode = effectiveSizeOverride;
+    }
 
     const count = React.Children.count(children);
 

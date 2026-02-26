@@ -89,7 +89,8 @@ yttv2/
 │   │   ├── PlaylistSelectionModal.jsx  # Modal for selecting playlist (Move/Copy actions)
 │   │   ├── StickyVideoCarousel.jsx     # Carousel/Grid for stickied videos
 │   │   ├── GroupPlaylistCarousel.jsx   # Horizontal carousel row for playlist group (GROUPS view)
-│   │   ├── PlaylistGroupColumn.jsx     # Full-screen overlay to assign playlist to a carousel
+│   │   ├── PlaylistGroupColumn.jsx     # Full-screen overlay to assign playlist to colored folder (carousel)
+│   │   ├── PlaylistBar.jsx              # Playlists page sticky toolbar: VideoSortFilters + Add/Refresh/Bulk + folder prism + Back/Close
 │   │   ├── InfiniteScrollWrapper.jsx   # Infinite/Looping horizontal scroll wrapper
 │   │   ├── PageBanner.jsx              # Banner with metadata, media carousel (continue/pinned/ASCII), animated patterns
 │   │   ├── EditPlaylistModal.jsx       # Modal for editing playlist/folder metadata
@@ -161,7 +162,8 @@ yttv2/
 │   ├── app-page.md               # AppPage configuration documentation
 │   ├── ui-cards.md               # Card components
 │   ├── playlist-cards.md         # Detailed documentation for Playlist Cards
-│   ├── group-carousel.md         # Group carousel system (Playlists page: ALL/UNSORTED/GROUPS, assign/rename/delete)
+│   ├── group-carousel.md         # Group carousel system (colored folders, 16 colors, PlaylistBar prism, assign/rename/delete)
+│   ├── playlist-bar.md           # PlaylistBar: Playlists page sticky toolbar and folder prism
 │   ├── group-badge-player-controller.md  # Group badge + arrow cycling (all carousels) + playlist nav restricted to group
 │   ├── ui-modals.md              # Modal components
 │   ├── history.md
@@ -224,7 +226,8 @@ yttv2/
 | **App Banner** | `app-banner.md` | `advanced-player-controller.md`, `ui-layout.md`, `state-management.md` |
 | **Page Banner** | `page-banner.md` | `ui-pages.md`, `ui-layout.md`, `state-management.md` |
 | **Playlist Cards** | `playlist-cards.md` | `playlist&tab.md`, `ui.md`, `api-bridge.md` |
-| **Group Carousel (Playlists Page)** | `group-carousel.md` | `playlist-cards.md`, `state-management.md`, `ui-pages.md`, `page-banner.md` (TopNavigation) |
+| **Group Carousel (Playlists Page)** | `group-carousel.md` | `playlist-bar.md`, `playlist-cards.md`, `state-management.md`, `ui-pages.md`, `page-banner.md` (TopNavigation) |
+| **PlaylistBar (Playlists toolbar + prism)** | `playlist-bar.md` | `group-carousel.md`, `video-sort-filters.md`, `state-management.md` |
 | **Group Badge & Playlist Nav (Player Controller)** | `group-badge-player-controller.md` | `group-carousel.md`, `advanced-player-controller.md` |
 | **Subscription Manager** | `subscription-manager.md` | `api-bridge.md`, `database-schema.md` |
 | **Pokedex System** | `pokedex-system.md` | `gen1-pokemon-reference.md`, `state-management.md`, `ui-pages.md`, `database-schema.md` |
@@ -339,9 +342,14 @@ yttv2/
 **Cross-References**: See `orb-page.md`, `page-page.md` for specific asset details
 
 #### `group-carousel.md`
-**Covers**: Group carousel system on the Playlists page (successor to legacy tabs)
-**Key Topics**: ALL / UNSORTED / GROUPS views; per-carousel display mode (Large / Small / Bar) with mode buttons on each carousel's top bar; TopNavigation "apply to all" one-shot (setAllGroupCarouselModes); bounded carousel boxes, horizontal scroll; playlistGroupStore (groups, groupCarouselModes, setGroupCarouselMode, setAllGroupCarouselModes), tabStore, layoutStore (playlistsPageShowTitles, showPlaylistUploader)
-**Cross-References**: See `group-badge-player-controller.md`, `playlist-cards.md`, `state-management.md` (playlistGroupStore, tabStore, layoutStore), `ui-pages.md`, `page-banner.md` (TopNavigation)
+**Covers**: Group carousel system on the Playlists page with colored-folder model (16 colors, one group per color)
+**Key Topics**: ALL / UNSORTED / GROUPS views; folder prism in PlaylistBar; per-carousel display mode (Large / Small / Bar); PlaylistGroupColumn “assign to colored folder” (placeholders vs group cards); playlistGroupStore (folderColorId, getGroupByColorId, getNextAvailableColorId); TopNavigation “apply to all”
+**Cross-References**: See `playlist-bar.md`, `group-badge-player-controller.md`, `playlist-cards.md`, `state-management.md` (playlistGroupStore, tabStore, layoutStore), `ui-pages.md`, `page-banner.md` (TopNavigation)
+
+#### `playlist-bar.md`
+**Covers**: Playlists page sticky toolbar (PlaylistBar.jsx): VideoSortFilters, Add/Refresh/Bulk tag, folder prism, Back/Close
+**Key Topics**: Props (groupColorIds, selectedFolder, onFolderSelect, allPlaylistCount, unsortedCount); prism segments (All, Unsorted, colors with a group); populated-only vs all-segments (right-click); relation to PlaylistsPage and group carousels
+**Cross-References**: See `group-carousel.md`, `video-sort-filters.md`, `state-management.md`, `playlist&tab.md`
 
 #### `group-badge-player-controller.md`
 **Covers**: Group carousel badge on the Player Controller Top Playlist Menu, left/right arrow cycling through all group carousels, and restriction of playlist navigation (up/down) to the selected group
@@ -389,7 +397,8 @@ yttv2/
 **Group Carousel (Playlists):**
 - Primary: `group-carousel.md`
 - State: `state-management.md` (playlistGroupStore, tabStore, layoutStore playlistsPageShowTitles/showPlaylistUploader)
-- UI: `TopNavigation.jsx` (Playlists bar when on Playlists page), `PlaylistsPage.jsx`, `GroupPlaylistCarousel.jsx`, `PlaylistGroupColumn.jsx`, `PlaylistCard.jsx` (menu)
+- UI: `TopNavigation.jsx` (Playlists bar when on Playlists page), `PlaylistsPage.jsx`, `PlaylistBar.jsx` (sticky toolbar + prism), `GroupPlaylistCarousel.jsx`, `PlaylistGroupColumn.jsx`, `PlaylistCard.jsx` (menu)
+- Toolbar + prism: `playlist-bar.md`
 
 **Group Badge & Playlist Nav (Player Controller):**
 - Primary: `group-badge-player-controller.md`
