@@ -3,6 +3,7 @@ import { useLayoutStore } from './store/layoutStore';
 import { useConfigStore } from './store/configStore';
 import WindowControls from './components/WindowControls';
 import ScrollbarChevrons from './components/ScrollbarChevrons';
+import FullscreenVideoInfo from './components/FullscreenVideoInfo';
 
 import './LayoutShell.css';
 
@@ -22,6 +23,7 @@ const LayoutShell = ({
     fullscreenBanner,
     splitscreenBanner,
     playerBorderPattern, // Shared
+    fullscreenPlayerWidthPercent,
     bannerCropModeActive, // Shared
     bannerCropLivePreview, // Shared
     bannerPreviewMode, // From AppPage (override viewMode)
@@ -276,7 +278,14 @@ const LayoutShell = ({
       )}
 
       {/* Main Content Area */}
-      <div className="layout-shell__content">
+      <div
+        className="layout-shell__content"
+        style={
+          viewMode === 'full' && fullscreenPlayerWidthPercent != null
+            ? { '--fullscreen-player-width': `${Math.min(100, Math.max(20, fullscreenPlayerWidthPercent))}%` }
+            : undefined
+        }
+      >
 
         {/* Empty Spacer - Only in Quarter mode for top-left empty space */}
         {viewMode === 'quarter' && (
@@ -392,6 +401,9 @@ const LayoutShell = ({
             </div>
           )}
         </div>
+
+        {/* Fullscreen only: video info panel in right margin (author, year, view count) */}
+        {viewMode === 'full' && !showDebugBounds && <FullscreenVideoInfo />}
 
         {/* Side Menu - Only visible in half/quarter modes */}
         {(viewMode === 'half' || viewMode === 'quarter') && (

@@ -910,6 +910,10 @@ export const useConfigStore = create(
             playerBorderPattern: 'diagonal',
             setPlayerBorderPattern: (val) => set({ playerBorderPattern: val }),
 
+            // Fullscreen player width (percent of content area; remainder is margin on the right)
+            fullscreenPlayerWidthPercent: 75,
+            setFullscreenPlayerWidthPercent: (val) => set({ fullscreenPlayerWidthPercent: val }),
+
             // Visualizer Gradient
             visualizerGradient: true,
             setVisualizerGradient: (val) => set({ visualizerGradient: val }),

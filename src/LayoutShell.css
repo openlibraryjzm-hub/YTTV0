@@ -140,15 +140,28 @@
    FULL SCREEN MODE
    ============================================ */
 .layout-shell--full .layout-shell__content {
-  grid-template-columns: 1fr;
+  grid-template-columns: var(--fullscreen-player-width, 75%) 1fr;
   grid-template-rows: 1fr;
 }
 
+/* Fullscreen player: fills first column only. */
 .layout-shell--full .layout-shell__player {
   grid-column: 1;
   grid-row: 1;
   width: 100%;
   height: 100%;
+}
+
+/* Fullscreen right panel: video info (author, year, view count) */
+.layout-shell--full .layout-shell__fullscreen-video-info {
+  grid-column: 2;
+  grid-row: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  padding: 25px 2rem 1.5rem;
+  overflow: hidden;
+  background: transparent;
 }
 
 /* ============================================

@@ -104,6 +104,7 @@ yttv2/
 │   │   ├── LikesPage.jsx               # Liked videos with distribution graph and pagination
 │   │   ├── PieGraph.jsx                # Animated SVG pie chart for likes distribution
 │   │   ├── DebugRuler.jsx              # Ruler overlay component (non-functional - see debug.md)
+│   │   ├── FullscreenVideoInfo.jsx     # Fullscreen right-margin panel (thumbnail, author, view count, year)
 │   │   └── ScrollbarChevrons.jsx       # Scrollbar navigation controls (chevron-dot-chevron capsule)
 │   ├── store/                    # Zustand state management
 │   │   ├── configStore.js        # Theme and Profile configuration
@@ -175,6 +176,7 @@ yttv2/
 │   ├── navigation-routing.md
 │   ├── video-tweet-card-three-dot-menu.md  # All-in-one 3-dot menu (VideoCard & TweetCard)
 │   ├── popout-browser.md         # Documentation for standalone webview windows (e.g. Twitter)
+│   ├── fullscreen-video-info.md # Fullscreen right-margin video metadata panel (thumbnail, author, views, year)
 │   └── session-updates.md        # Development session logs
 │
 ├── dev-logs/                     # Development change logs
@@ -210,6 +212,7 @@ yttv2/
 | **UI Components** | `ui.md` | `state-management.md`, `navigation-routing.md` |
 | **Watch History** | `history.md` | `database-schema.md`, `api-bridge.md`, `state-management.md` |
 | **Video Player** | `videoplayer.md` | `database-schema.md`, `api-bridge.md`, `state-management.md` |
+| **Fullscreen Video Info** | `fullscreen-video-info.md` | `ui-layout.md`, `videoplayer.md`, `state-management.md` (playlistStore) |
 | **Drumstick Rating** | `drumstick-rating-system.md` | `database-schema.md`, `api-bridge.md`, `ui-cards.md`, `video-tweet-card-three-dot-menu.md` |
 | **Video/Tweet Card 3-Dot Menu** | `video-tweet-card-three-dot-menu.md` | `ui-cards.md`, `drumstick-rating-system.md`, `playlist&tab.md` |
 | **Local Videos** | `local-videos.md` | `videoplayer.md`, `database-schema.md`, `api-bridge.md`, `importexport.md` |
@@ -292,6 +295,11 @@ yttv2/
 **Covers**: YouTube iframe player, progress tracking, dual player system
 **Key Topics**: YouTube IFrame API, progress persistence, watch status (unwatched/partially watched/watched)
 **Cross-References**: See `database-schema.md` for video_progress table, `api-bridge.md` for progress commands
+
+#### `fullscreen-video-info.md`
+**Covers**: Fullscreen right-margin panel showing current video thumbnail, author, view count (with 4-bar icon), and year
+**Key Topics**: Fullscreen-only layout, playlistStore (currentPlaylistItems, currentVideoIndex), LayoutShell grid slot
+**Cross-References**: See `ui-layout.md` for fullscreen grid and player width, `videoplayer.md`, `advanced-player-controller.md`
 
 #### `local-videos.md`
 **Covers**: Local video file playback, file upload, HTML5 video player

@@ -23,6 +23,7 @@ export default function AppPage({ onBack, currentThemeId, onThemeChange, onNavig
         bannerCropModeActive, setBannerCropModeActive,
         setBannerPreviewMode,
         playerBorderPattern, setPlayerBorderPattern,
+        fullscreenPlayerWidthPercent, setFullscreenPlayerWidthPercent,
         bannerPresets, addBannerPreset
     } = useConfigStore();
 
@@ -646,6 +647,24 @@ export default function AppPage({ onBack, currentThemeId, onThemeChange, onNavig
                                         </button>
                                     );
                                 })}
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-xs font-semibold text-slate-600 flex items-center justify-between">
+                                    <span>Fullscreen player width</span>
+                                    <span className="text-slate-400 font-normal">{fullscreenPlayerWidthPercent}%</span>
+                                </label>
+                                <input
+                                    type="range"
+                                    min={40}
+                                    max={100}
+                                    step={5}
+                                    value={fullscreenPlayerWidthPercent}
+                                    onChange={(e) => setFullscreenPlayerWidthPercent(Number(e.target.value))}
+                                    className="w-full h-2 rounded-full appearance-none bg-slate-100 accent-sky-500"
+                                />
+                                <p className="text-[10px] text-slate-400 px-1">
+                                    In fullscreen mode, player uses this % of width; the rest is margin on the right (reduces letterboxing).
+                                </p>
                             </div>
                         </ConfigSection>
                     </div>
