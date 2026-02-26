@@ -69,21 +69,47 @@ const TopNavigation = () => {
 
     // Dynamic styles matching VideosPage Mini Header
     const containerStyle = hasActiveContext ? {
-        background: `linear-gradient(to bottom, transparent, ${bannerHex}30)`,
+        background: `linear-gradient(to bottom, ${bannerHex}80, ${bannerHex}E6)`,
     } : {};
 
     const titleStyle = hasActiveContext ? {
         textShadow: '0 2px 4px rgba(0,0,0,0.5)',
-        color: bannerHex
+        color: selectedFolder === 'unsorted' ? '#000000' : '#ffffff',
+        WebkitTextStroke: selectedFolder === 'unsorted' ? '1px #ffffff' : '1px #000000'
     } : { color: '#ffffff' };
 
     return (
         <div
-            className={`w-full flex items-end justify-between pb-4 transition-all duration-300 min-h-[100px] ${!hasActiveContext ? `${theme.menuBg} ${theme.menuBorder} backdrop-blur-md border rounded-xl px-8` : ''}`}
+            className={`relative w-full flex items-end justify-between pb-4 transition-all duration-300 min-h-[100px] overflow-hidden ${!hasActiveContext ? `${theme.menuBg} ${theme.menuBorder} backdrop-blur-md border rounded-xl px-8` : ''}`}
             style={containerStyle}
         >
+            {hasActiveContext && (
+                <>
+                    <style>
+                        {`
+                            @keyframes slide-mesh {
+                                0% { transform: translateY(0); }
+                                100% { transform: translateY(60px); }
+                            }
+                            .animated-mesh-pattern {
+                                background-image: 
+                                    linear-gradient(to right, rgba(255,255,255,0.25) 3px, transparent 3px),
+                                    linear-gradient(to bottom, rgba(255,255,255,0.25) 3px, transparent 3px);
+                                background-size: 60px 60px;
+                                animation: slide-mesh 4s linear infinite;
+                            }
+                        `}
+                    </style>
+                    <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none" style={{ mixBlendMode: 'overlay', perspective: '600px' }}>
+                        <div className="absolute" style={{ width: '400%', height: '400%', left: '-150%', top: '-150%', transform: 'rotateX(65deg) rotateZ(20deg)', transformOrigin: 'center center' }}>
+                            <div className="absolute inset-0 animated-mesh-pattern"></div>
+                        </div>
+                    </div>
+                </>
+            )}
+
             {/* Left side: Override-for-all carousel mode (GROUPS) / Videos actions (Add, Subscriptions, Bulk tag) + Playlist/Folder Info */}
-            <div className="flex flex-col justify-end min-w-0 flex-1 pl-8">
+            <div className="relative z-10 flex flex-col justify-end min-w-0 flex-1 pl-8">
                 {isPlaylistsPage && activeTabId === 'groups' && (
                     <div className="flex items-center gap-1 mb-2">
                         <button
@@ -126,7 +152,7 @@ const TopNavigation = () => {
             </div>
 
             {/* Right side actions: on Playlists page = TabBar + Info/Folder/Add; else = Twitter/Back/Close */}
-            <div className="flex items-center gap-2 pl-4 pr-8 mb-1 shrink-0 min-w-0">
+            <div className="relative z-10 flex items-center gap-2 pl-4 pr-8 mb-1 shrink-0 min-w-0">
                 {isPlaylistsPage ? (
                     <>
                         <div className="flex-1 min-w-0 overflow-x-auto no-scrollbar max-w-[280px]">
@@ -137,7 +163,7 @@ const TopNavigation = () => {
                             className={`p-1.5 rounded-md transition-all shrink-0 ${playlistsPageShowTitles
                                 ? 'bg-sky-600 text-white shadow-sm'
                                 : 'bg-slate-800/80 text-slate-400 hover:bg-slate-700 hover:text-white border border-white/10'
-                            }`}
+                                }`}
                             title={playlistsPageShowTitles ? 'Hide All Video Titles' : 'Show All Video Titles'}
                         >
                             <Info size={16} />
@@ -147,7 +173,7 @@ const TopNavigation = () => {
                             className={`p-1.5 rounded-md transition-all shrink-0 ${showColoredFolders
                                 ? 'bg-sky-600 text-white shadow-sm'
                                 : 'bg-slate-800/80 text-slate-400 hover:bg-slate-700 hover:text-white border border-white/10'
-                            }`}
+                                }`}
                             title={showColoredFolders ? 'Hide Folders' : 'Show Folders'}
                         >
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -189,17 +215,17 @@ const TopNavigation = () => {
                     </>
                 ) : (
                     <>
-                {/* Twitter/X Style Toggle (Videos page and other non-Playlists pages) */}
-                <button
-                    onClick={toggleVideoCardStyle}
-                    className={`flex items-center justify-center w-8 h-8 rounded-full shadow-sm border transition-all hover:scale-105 active:scale-90 ${videoCardStyle === 'twitter'
-                        ? 'bg-sky-500 text-white border-sky-400'
-                        : 'bg-white border-slate-400 text-slate-600 hover:bg-slate-50'
-                        }`}
-                    title={getInspectTitle(`Toggle ${videoCardStyle === 'twitter' ? 'YouTube' : 'Twitter/X'} Style`) || `Toggle ${videoCardStyle === 'twitter' ? 'YouTube' : 'Twitter/X'} Style`}
-                >
-                    <Twitter size={15} />
-                </button>
+                        {/* Twitter/X Style Toggle (Videos page and other non-Playlists pages) */}
+                        <button
+                            onClick={toggleVideoCardStyle}
+                            className={`flex items-center justify-center w-8 h-8 rounded-full shadow-sm border transition-all hover:scale-105 active:scale-90 ${videoCardStyle === 'twitter'
+                                ? 'bg-sky-500 text-white border-sky-400'
+                                : 'bg-white border-slate-400 text-slate-600 hover:bg-slate-50'
+                                }`}
+                            title={getInspectTitle(`Toggle ${videoCardStyle === 'twitter' ? 'YouTube' : 'Twitter/X'} Style`) || `Toggle ${videoCardStyle === 'twitter' ? 'YouTube' : 'Twitter/X'} Style`}
+                        >
+                            <Twitter size={15} />
+                        </button>
                     </>
                 )}
             </div>

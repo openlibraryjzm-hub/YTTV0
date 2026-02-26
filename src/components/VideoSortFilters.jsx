@@ -92,9 +92,8 @@ const VideoSortFilters = ({
         </button>
         {dropdownOpen && (
           <div
-            className={`absolute left-0 top-full pt-0.5 z-50 min-w-[180px] rounded-lg border-2 shadow-lg py-1 ${
-              isLight ? 'bg-white border-black/20' : 'bg-slate-800 border-white/20'
-            }`}
+            className={`absolute left-0 top-full pt-0.5 z-50 min-w-[180px] rounded-lg border-2 shadow-lg py-1 ${isLight ? 'bg-white border-black/20' : 'bg-slate-800 border-white/20'
+              }`}
           >
             {SORT_OPTIONS.map(({ mode, label, Icon }) => {
               const active = sortBy === mode;
@@ -103,15 +102,14 @@ const VideoSortFilters = ({
                   key={mode}
                   type="button"
                   onClick={() => handleSortOptionClick(mode)}
-                  className={`w-full flex items-center justify-between gap-2 px-3 py-2 text-left text-sm rounded-md transition-colors ${
-                    active
-                      ? isLight
-                        ? 'bg-black/10 font-medium'
-                        : 'bg-white/10 font-medium'
-                      : isLight
-                        ? 'hover:bg-gray-100 text-black/80'
-                        : 'hover:bg-white/10 text-white/80'
-                  }`}
+                  className={`w-full flex items-center justify-between gap-2 px-3 py-2 text-left text-sm rounded-md transition-colors ${active
+                    ? isLight
+                      ? 'bg-black/10 font-medium'
+                      : 'bg-white/10 font-medium'
+                    : isLight
+                      ? 'hover:bg-gray-100 text-black/80'
+                      : 'hover:bg-white/10 text-white/80'
+                    }`}
                   title={active ? 'Click to cycle direction' : label}
                 >
                   <span className="flex items-center gap-2">

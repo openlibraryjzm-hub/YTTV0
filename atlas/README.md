@@ -153,6 +153,7 @@ yttv2/
 │   ├── ui.md                     # UI documentation index
 │   ├── ui-layout.md              # Layout & Side Menu
 │   ├── ui-pages.md               # Page components (main pages)
+│   ├── top-navigation.md         # Top Navigation contextual mini-header
 │   ├── tasks-page.md             # Tasks page (checklist, date-grouped, 3-dot menu)
 │   ├── orb-page.md               # OrbPage configuration documentation
    ├── orb-navigation.md         # Orb Navigation System documentation

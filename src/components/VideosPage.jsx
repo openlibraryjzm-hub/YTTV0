@@ -1626,7 +1626,6 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
             }}
           >
 
-
             <div className={`px-4 flex items-center justify-between transition-all duration-300 relative z-10 ${isStuck ? 'h-[52px]' : 'py-0.5'}`}>
 
               {/* Sort & rating filters: Home, Funnel */}
@@ -1672,11 +1671,10 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
                     e.preventDefault();
                     setRequestShowAutoTagModal(true);
                   }}
-                  className={`p-1.5 h-7 rounded-md transition-all shrink-0 border flex items-center justify-center ${
-                    bulkTagMode
-                      ? 'bg-black text-white border-black shadow'
-                      : 'bg-white text-black hover:bg-gray-100 border-black/20'
-                  }`}
+                  className={`p-1.5 h-7 rounded-md transition-all shrink-0 border flex items-center justify-center ${bulkTagMode
+                    ? 'bg-black text-white border-black shadow'
+                    : 'bg-white text-black hover:bg-gray-100 border-black/20'
+                    }`}
                   title={bulkTagMode ? 'Exit bulk tagging' : 'Bulk tag (right-click for Auto-Tag)'}
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1812,417 +1810,417 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
           <div className="relative overflow-hidden">
             <div aria-hidden="true" style={blurredBannerStyle} />
             <div className="relative z-10 px-4 pb-8">
-            {/* Edit Playlist/Folder Modal */}
-            <EditPlaylistModal
-              isOpen={showEditModal}
-              onClose={() => setShowEditModal(false)}
-              onSave={handleUpdateMetadata}
-              initialData={modalInitialData}
-            />
+              {/* Edit Playlist/Folder Modal */}
+              <EditPlaylistModal
+                isOpen={showEditModal}
+                onClose={() => setShowEditModal(false)}
+                onSave={handleUpdateMetadata}
+                initialData={modalInitialData}
+              />
 
-            {loadingFolders ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-2 animate-pulse">
-                {[...Array(12)].map((_, i) => (
-                  <VideoCardSkeleton key={i} />
-                ))}
-              </div>
-            ) : sortedVideos.length > 0 ? (
-              <>
-                {/* Sticky Carousel Section - Hide on Unsorted page */}
-                {stickiedVideos.length > 0 && selectedFolder !== 'unsorted' && (
-                  <StickyVideoCarousel>
-                    {stickiedVideos.map((video, index) => {
+              {loadingFolders ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-2 animate-pulse">
+                  {[...Array(12)].map((_, i) => (
+                    <VideoCardSkeleton key={i} />
+                  ))}
+                </div>
+              ) : sortedVideos.length > 0 ? (
+                <>
+                  {/* Sticky Carousel Section - Hide on Unsorted page */}
+                  {stickiedVideos.length > 0 && selectedFolder !== 'unsorted' && (
+                    <StickyVideoCarousel>
+                      {stickiedVideos.map((video, index) => {
+                        const originalIndex = activePlaylistItems.findIndex(v => v.id === video.id);
+                        return (
+                          <VideoCard
+                            key={video.id}
+                            video={video}
+                            index={index}
+                            originalIndex={originalIndex}
+                            isSelected={selectedVideoIndex === originalIndex}
+                            isCurrentlyPlaying={currentVideoIndex === originalIndex}
+                            videoFolders={videoFolderAssignments[video.id] || []}
+                            selectedFolder={selectedFolder}
+                            onVideoClick={() => handleVideoClick(video, index)}
+                            onStarClick={(e) => handleStarClick(e, video)}
+                            onStarColorLeftClick={handleStarColorLeftClick}
+                            onStarColorRightClick={handleStarColorRightClick}
+                            onMenuOptionClick={(option) => {
+                              if (option.action === 'toggleSticky') {
+                                handleToggleSticky(activePlaylistId, video.id);
+                              } else {
+                                handleMenuOptionClick(option, video);
+                              }
+                            }}
+                            onQuickAssign={handleStarClick}
+                            bulkTagMode={bulkTagMode}
+                            bulkTagSelections={new Set(videoFolderAssignments[video.id] || [])}
+                            onBulkTagColorClick={(color) => handleBulkTagColorClick(video, color)}
+                            onPinClick={() => { }} // Handled internally in VideoCard via store
+                            isStickied={true} // It is stickied in this list
+                            playlistId={activePlaylistId}
+                            folderMetadata={allFolderMetadata}
+                            onRenameFolder={handleRenameFolder}
+                            cardStyle={videoCardStyle}
+                            progress={(() => {
+                              const videoId = extractVideoId(video.video_url) || video.video_id;
+                              const data = videoProgress.get(videoId);
+                              return data ? (typeof data === 'number' ? data : data.percentage) : 0;
+                            })()}
+                            isWatched={(() => {
+                              const videoId = extractVideoId(video.video_url) || video.video_id;
+                              return watchedVideoIds.has(videoId);
+                            })()}
+                          />
+                        );
+                      })}
+                    </StickyVideoCarousel>
+                  )}
+
+                  {/* Vertical Video Grid - 3 per row (matches LikesPage) */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-2 animate-fade-in">
+                    {regularVideos.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map((video, idx) => {
+                      const isTweet = video.is_local || video.video_url?.includes('twitter.com') || video.video_url?.includes('x.com') || video.thumbnail_url?.includes('twimg.com');
                       const originalIndex = activePlaylistItems.findIndex(v => v.id === video.id);
+                      const folderKey = selectedFolder === null ? 'root' : selectedFolder;
+                      const key = `${activePlaylistId}::${folderKey}`;
+                      const isContextStickied = (allStickiedVideos[key] || []).includes(video.id);
+
+                      const handleRenameFolder = async (folderColor, newName) => {
+                        if (!activePlaylistId) return;
+                        try {
+                          // Keep existing description if present
+                          const currentMeta = allFolderMetadata[folderColor] || {};
+                          const description = currentMeta.description || '';
+
+                          await setFolderMetadata(activePlaylistId, folderColor, newName, description);
+
+                          // Update local state
+                          setAllFolderMetadata(prev => ({
+                            ...prev,
+                            [folderColor]: { ...prev[folderColor], name: newName }
+                          }));
+                        } catch (error) {
+                          console.error('Failed to rename folder:', error);
+                          alert('Failed to rename folder');
+                        }
+                      };
+
+                      // ... (render)
+
+                      // Common props for both card types
+                      const commonProps = {
+                        video,
+                        index: (currentPage - 1) * itemsPerPage + idx,
+                        originalIndex,
+                        isSelected: selectedVideoIndex === originalIndex,
+                        isCurrentlyPlaying: currentVideoIndex === originalIndex,
+                        videoFolders: videoFolderAssignments[video.id] || [],
+                        selectedFolder,
+                        onVideoClick: () => handleVideoClick(video, (currentPage - 1) * itemsPerPage + idx),
+                        onStarClick: (e) => handleStarClick(e, video),
+                        onStarColorLeftClick: handleStarColorLeftClick,
+                        onStarColorRightClick: handleStarColorRightClick,
+                        onMenuOptionClick: (option) => {
+                          if (option.action === 'toggleSticky') {
+                            handleToggleSticky(activePlaylistId, video.id);
+                          } else {
+                            handleMenuOptionClick(option, video);
+                          }
+                        },
+                        onQuickAssign: handleStarClick,
+                        bulkTagMode,
+                        bulkTagSelections: new Set(videoFolderAssignments[video.id] || []),
+                        onBulkTagColorClick: (color) => handleBulkTagColorClick(video, color),
+                        onPinClick: () => { },
+                        isStickied: isContextStickied,
+                        playlistId: activePlaylistId,
+                        folderMetadata: allFolderMetadata,
+                        onRenameFolder: handleRenameFolder,
+                        progress: (() => {
+                          const data = videoProgress.get(video.id) || videoProgress.get(extractVideoId(video.video_url));
+                          return data ? (typeof data === 'number' ? data : data.percentage) : 0;
+                        })(),
+                        isWatched: watchedVideoIds.has(extractVideoId(video.video_url) || video.video_id)
+                      };
+
+                      if (isTweet) {
+                        return (
+                          <div key={video.id} className="h-full">
+                            <TweetCard
+                              {...commonProps}
+                              onVideoClick={() => {
+                                setSelectedTweet(video);
+                                setCurrentNavTab('tweet');
+                              }}
+                            />
+                          </div>
+                        );
+                      }
+
+                      if (video.isOrb) {
+                        return (
+                          <div key={video.id} className="h-full">
+                            <OrbCard
+                              orb={{ ...video, id: video.originalId || parseInt(video.id.replace('orb-', '')) }}
+                              allPlaylists={allPlaylists}
+                              onUpdatePlaylists={updateOrbFavoritePlaylists}
+                              minimal={true}
+                              onClick={() => {
+                                applyOrbFavorite(video);
+                                // Sync Navigation
+                                if (activePlaylistId) {
+                                  setOrbNavPlaylistId(activePlaylistId);
+                                }
+                                setOrbNavOrbId(video.originalId || parseInt(video.id.replace('orb-', '')));
+                              }}
+                              currentPlaylistId={activePlaylistId}
+                            />
+                          </div>
+                        );
+
+                      }
+
+                      if (video.isBannerPreset) {
+                        return (
+                          <div key={video.id} className="h-full">
+                            <BannerPresetCard
+                              preset={{ ...video, id: video.originalId || video.id.replace('banner-', '') }}
+                              allPlaylists={allPlaylists}
+                              onUpdatePlaylists={updateBannerPresetPlaylists}
+                              onClick={() => {
+                                applyBannerPreset(video);
+                                // Sync Navigation
+                                if (activePlaylistId) {
+                                  setBannerNavPlaylistId(activePlaylistId);
+                                }
+                                setBannerNavBannerId(video.originalId || video.id.replace('banner-', ''));
+                              }}
+                              currentPlaylistId={activePlaylistId}
+                            />
+                          </div>
+                        );
+                      }
+
                       return (
-                        <VideoCard
-                          key={video.id}
-                          video={video}
-                          index={index}
-                          originalIndex={originalIndex}
-                          isSelected={selectedVideoIndex === originalIndex}
-                          isCurrentlyPlaying={currentVideoIndex === originalIndex}
-                          videoFolders={videoFolderAssignments[video.id] || []}
-                          selectedFolder={selectedFolder}
-                          onVideoClick={() => handleVideoClick(video, index)}
-                          onStarClick={(e) => handleStarClick(e, video)}
-                          onStarColorLeftClick={handleStarColorLeftClick}
-                          onStarColorRightClick={handleStarColorRightClick}
-                          onMenuOptionClick={(option) => {
-                            if (option.action === 'toggleSticky') {
-                              handleToggleSticky(activePlaylistId, video.id);
-                            } else {
-                              handleMenuOptionClick(option, video);
-                            }
-                          }}
-                          onQuickAssign={handleStarClick}
-                          bulkTagMode={bulkTagMode}
-                          bulkTagSelections={new Set(videoFolderAssignments[video.id] || [])}
-                          onBulkTagColorClick={(color) => handleBulkTagColorClick(video, color)}
-                          onPinClick={() => { }} // Handled internally in VideoCard via store
-                          isStickied={true} // It is stickied in this list
-                          playlistId={activePlaylistId}
-                          folderMetadata={allFolderMetadata}
-                          onRenameFolder={handleRenameFolder}
-                          cardStyle={videoCardStyle}
-                          progress={(() => {
-                            const videoId = extractVideoId(video.video_url) || video.video_id;
-                            const data = videoProgress.get(videoId);
-                            return data ? (typeof data === 'number' ? data : data.percentage) : 0;
-                          })()}
-                          isWatched={(() => {
-                            const videoId = extractVideoId(video.video_url) || video.video_id;
-                            return watchedVideoIds.has(videoId);
-                          })()}
-                        />
+                        <div key={video.id} className="w-full h-full flex flex-col justify-center">
+                          <VideoCard
+                            {...commonProps}
+                            cardStyle={videoCardStyle}
+                          />
+                        </div>
                       );
                     })}
-                  </StickyVideoCarousel>
-                )}
-
-                {/* Vertical Video Grid - 3 per row (matches LikesPage) */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-2 animate-fade-in">
-                  {regularVideos.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map((video, idx) => {
-                    const isTweet = video.is_local || video.video_url?.includes('twitter.com') || video.video_url?.includes('x.com') || video.thumbnail_url?.includes('twimg.com');
-                    const originalIndex = activePlaylistItems.findIndex(v => v.id === video.id);
-                    const folderKey = selectedFolder === null ? 'root' : selectedFolder;
-                    const key = `${activePlaylistId}::${folderKey}`;
-                    const isContextStickied = (allStickiedVideos[key] || []).includes(video.id);
-
-                    const handleRenameFolder = async (folderColor, newName) => {
-                      if (!activePlaylistId) return;
-                      try {
-                        // Keep existing description if present
-                        const currentMeta = allFolderMetadata[folderColor] || {};
-                        const description = currentMeta.description || '';
-
-                        await setFolderMetadata(activePlaylistId, folderColor, newName, description);
-
-                        // Update local state
-                        setAllFolderMetadata(prev => ({
-                          ...prev,
-                          [folderColor]: { ...prev[folderColor], name: newName }
-                        }));
-                      } catch (error) {
-                        console.error('Failed to rename folder:', error);
-                        alert('Failed to rename folder');
-                      }
-                    };
-
-                    // ... (render)
-
-                    // Common props for both card types
-                    const commonProps = {
-                      video,
-                      index: (currentPage - 1) * itemsPerPage + idx,
-                      originalIndex,
-                      isSelected: selectedVideoIndex === originalIndex,
-                      isCurrentlyPlaying: currentVideoIndex === originalIndex,
-                      videoFolders: videoFolderAssignments[video.id] || [],
-                      selectedFolder,
-                      onVideoClick: () => handleVideoClick(video, (currentPage - 1) * itemsPerPage + idx),
-                      onStarClick: (e) => handleStarClick(e, video),
-                      onStarColorLeftClick: handleStarColorLeftClick,
-                      onStarColorRightClick: handleStarColorRightClick,
-                      onMenuOptionClick: (option) => {
-                        if (option.action === 'toggleSticky') {
-                          handleToggleSticky(activePlaylistId, video.id);
-                        } else {
-                          handleMenuOptionClick(option, video);
-                        }
-                      },
-                      onQuickAssign: handleStarClick,
-                      bulkTagMode,
-                      bulkTagSelections: new Set(videoFolderAssignments[video.id] || []),
-                      onBulkTagColorClick: (color) => handleBulkTagColorClick(video, color),
-                      onPinClick: () => { },
-                      isStickied: isContextStickied,
-                      playlistId: activePlaylistId,
-                      folderMetadata: allFolderMetadata,
-                      onRenameFolder: handleRenameFolder,
-                      progress: (() => {
-                        const data = videoProgress.get(video.id) || videoProgress.get(extractVideoId(video.video_url));
-                        return data ? (typeof data === 'number' ? data : data.percentage) : 0;
-                      })(),
-                      isWatched: watchedVideoIds.has(extractVideoId(video.video_url) || video.video_id)
-                    };
-
-                    if (isTweet) {
-                      return (
-                        <div key={video.id} className="h-full">
-                          <TweetCard
-                            {...commonProps}
-                            onVideoClick={() => {
-                              setSelectedTweet(video);
-                              setCurrentNavTab('tweet');
-                            }}
-                          />
-                        </div>
-                      );
-                    }
-
-                    if (video.isOrb) {
-                      return (
-                        <div key={video.id} className="h-full">
-                          <OrbCard
-                            orb={{ ...video, id: video.originalId || parseInt(video.id.replace('orb-', '')) }}
-                            allPlaylists={allPlaylists}
-                            onUpdatePlaylists={updateOrbFavoritePlaylists}
-                            minimal={true}
-                            onClick={() => {
-                              applyOrbFavorite(video);
-                              // Sync Navigation
-                              if (activePlaylistId) {
-                                setOrbNavPlaylistId(activePlaylistId);
-                              }
-                              setOrbNavOrbId(video.originalId || parseInt(video.id.replace('orb-', '')));
-                            }}
-                            currentPlaylistId={activePlaylistId}
-                          />
-                        </div>
-                      );
-
-                    }
-
-                    if (video.isBannerPreset) {
-                      return (
-                        <div key={video.id} className="h-full">
-                          <BannerPresetCard
-                            preset={{ ...video, id: video.originalId || video.id.replace('banner-', '') }}
-                            allPlaylists={allPlaylists}
-                            onUpdatePlaylists={updateBannerPresetPlaylists}
-                            onClick={() => {
-                              applyBannerPreset(video);
-                              // Sync Navigation
-                              if (activePlaylistId) {
-                                setBannerNavPlaylistId(activePlaylistId);
-                              }
-                              setBannerNavBannerId(video.originalId || video.id.replace('banner-', ''));
-                            }}
-                            currentPlaylistId={activePlaylistId}
-                          />
-                        </div>
-                      );
-                    }
-
-                    return (
-                      <div key={video.id} className="w-full h-full flex flex-col justify-center">
-                        <VideoCard
-                          {...commonProps}
-                          cardStyle={videoCardStyle}
-                        />
-                      </div>
-                    );
-                  })}
-                </div>
-
-              </>
-            ) : (
-              <div className="text-center text-slate-400 py-8">
-                No videos found in this playlist.
-              </div>
-            )}
-
-            {/* Pagination Controls - Based on Regular Videos only, since Stickies are always shown */}
-            {totalPages > 1 && (() => {
-              // Quarter jump targets for double-click
-              const useQuarterJumps = totalPages > 4;
-              const quarterMarks = useQuarterJumps
-                ? [
-                  Math.max(1, Math.round(totalPages * 0.25)),
-                  Math.max(1, Math.round(totalPages * 0.5)),
-                  Math.max(1, Math.round(totalPages * 0.75)),
-                  totalPages
-                ]
-                : [];
-              const getNextQuarter = () => {
-                if (!useQuarterJumps) return Math.min(currentPage + 1, totalPages);
-                const next = quarterMarks.find(q => q > currentPage);
-                return next || totalPages;
-              };
-              const getPrevQuarter = () => {
-                if (!useQuarterJumps) return Math.max(currentPage - 1, 1);
-                const prev = [...quarterMarks].reverse().find(q => q < currentPage);
-                return prev || 1;
-              };
-
-              const LONG_PRESS_MS = 500;
-              const DOUBLE_CLICK_MS = 300;
-              const TICK_MS = 40;
-              const progressPerTick = TICK_MS / LONG_PRESS_MS;
-
-              const clearHoldProgress = (which) => {
-                if (navHoldIntervalRef.current) {
-                  clearInterval(navHoldIntervalRef.current);
-                  navHoldIntervalRef.current = null;
-                }
-                navHoldTargetRef.current = null;
-                setNavHoldProgress((p) => ({ ...p, [which]: 0 }));
-              };
-
-              const createCombinedHandlers = (which, singleAction, doubleAction, longAction) => ({
-                onMouseDown: () => {
-                  navDidLongClickRef.current = false;
-                  setNavHoldProgress((p) => ({ ...p, [which]: 0 }));
-                  navHoldTargetRef.current = which;
-                  navHoldIntervalRef.current = setInterval(() => {
-                    setNavHoldProgress((p) => {
-                      const next = Math.min(1, p[which] + progressPerTick);
-                      if (next >= 1) {
-                        if (navHoldIntervalRef.current) {
-                          clearInterval(navHoldIntervalRef.current);
-                          navHoldIntervalRef.current = null;
-                        }
-                        navDidLongClickRef.current = true;
-                        longAction();
-                        return { ...p, [which]: 0 };
-                      }
-                      return { ...p, [which]: next };
-                    });
-                  }, TICK_MS);
-                },
-                onMouseUp: () => {
-                  clearHoldProgress(which);
-                  if (navDidLongClickRef.current) return;
-                  const now = Date.now();
-                  const timeSinceLastClick = now - navLastClickTimeRef.current;
-                  if (timeSinceLastClick < DOUBLE_CLICK_MS) {
-                    if (navSingleClickTimerRef.current) clearTimeout(navSingleClickTimerRef.current);
-                    navLastClickTimeRef.current = 0;
-                    doubleAction();
-                  } else {
-                    navLastClickTimeRef.current = now;
-                    navSingleClickTimerRef.current = setTimeout(() => {
-                      singleAction();
-                      navLastClickTimeRef.current = 0;
-                    }, DOUBLE_CLICK_MS);
-                  }
-                },
-                onMouseLeave: () => clearHoldProgress(which),
-                onTouchStart: () => {
-                  navDidLongClickRef.current = false;
-                  setNavHoldProgress((p) => ({ ...p, [which]: 0 }));
-                  navHoldTargetRef.current = which;
-                  navHoldIntervalRef.current = setInterval(() => {
-                    setNavHoldProgress((p) => {
-                      const next = Math.min(1, p[which] + progressPerTick);
-                      if (next >= 1) {
-                        if (navHoldIntervalRef.current) {
-                          clearInterval(navHoldIntervalRef.current);
-                          navHoldIntervalRef.current = null;
-                        }
-                        navDidLongClickRef.current = true;
-                        longAction();
-                        return { ...p, [which]: 0 };
-                      }
-                      return { ...p, [which]: next };
-                    });
-                  }, TICK_MS);
-                },
-                onTouchEnd: (e) => {
-                  clearHoldProgress(which);
-                  if (navDidLongClickRef.current) {
-                    e.preventDefault();
-                    return;
-                  }
-                  const now = Date.now();
-                  const timeSinceLastClick = now - navLastClickTimeRef.current;
-                  if (timeSinceLastClick < DOUBLE_CLICK_MS) {
-                    if (navSingleClickTimerRef.current) clearTimeout(navSingleClickTimerRef.current);
-                    navLastClickTimeRef.current = 0;
-                    doubleAction();
-                  } else {
-                    navLastClickTimeRef.current = now;
-                    navSingleClickTimerRef.current = setTimeout(() => {
-                      singleAction();
-                      navLastClickTimeRef.current = 0;
-                    }, DOUBLE_CLICK_MS);
-                  }
-                  e.preventDefault();
-                },
-              });
-
-              const prevHandlers = createCombinedHandlers(
-                'prev',
-                () => setCurrentPage(Math.max(currentPage - 1, 1)),
-                () => setCurrentPage(getPrevQuarter()),
-                () => setCurrentPage(1)
-              );
-              const nextHandlers = createCombinedHandlers(
-                'next',
-                () => setCurrentPage(Math.min(currentPage + 1, totalPages)),
-                () => setCurrentPage(getNextQuarter()),
-                () => setCurrentPage(totalPages)
-              );
-
-              // Up to 5 numbered page buttons; sliding window when totalPages > 5
-              const maxNumberedButtons = 5;
-              const startPage = totalPages <= maxNumberedButtons
-                ? 1
-                : Math.max(1, Math.min(currentPage - 2, totalPages - maxNumberedButtons + 1));
-              const endPage = Math.min(totalPages, startPage + maxNumberedButtons - 1);
-              const pageNumbers = [];
-              for (let p = startPage; p <= endPage; p++) pageNumbers.push(p);
-
-              const btnBase = 'p-1.5 rounded-md transition-all border-2 shrink-0 flex items-center justify-center min-w-[2rem] font-bold select-none';
-              const btnInactive = 'bg-white/80 text-black/60 hover:bg-gray-100 hover:text-black border-black/20';
-              const btnActive = 'bg-black text-white border-black shadow-md';
-
-              return (
-                <div className="flex justify-center items-center gap-2 mt-8 mb-4 flex-wrap">
-                  {/* Previous: click=prev, double-click=quarter back, hold=first (with charge animation) */}
-                  <button
-                    {...prevHandlers}
-                    disabled={currentPage === 1}
-                    className={`relative overflow-hidden px-3 py-2 rounded-lg border-2 border-black/20 font-bold text-lg transition-colors select-none
-                      ${currentPage === 1 ? 'opacity-50 cursor-not-allowed bg-white/50' : 'bg-white/80 text-black/70 hover:bg-gray-100 hover:text-black'}`}
-                    title="Click: previous | Double-click: quarter back | Hold ~0.5s: first page"
-                  >
-                    <span className="relative z-10">&lt;</span>
-                    {navHoldProgress.prev > 0 && (
-                      <span
-                        className="absolute inset-0 bg-black/20 transition-all duration-75 ease-linear"
-                        style={{ width: `${navHoldProgress.prev * 100}%` }}
-                        aria-hidden
-                      />
-                    )}
-                  </button>
-
-                  {/* Numbered page buttons (up to 8) */}
-                  <div className="flex items-center gap-1 flex-wrap justify-center">
-                    {pageNumbers.map((p) => (
-                      <button
-                        key={p}
-                        type="button"
-                        onClick={() => setCurrentPage(p)}
-                        className={`${btnBase} ${p === currentPage ? btnActive : btnInactive}`}
-                        title={`Page ${p}`}
-                      >
-                        {p}
-                      </button>
-                    ))}
                   </div>
 
-                  {/* Next: click=next, double-click=quarter forward, hold=last (with charge animation) */}
-                  <button
-                    {...nextHandlers}
-                    disabled={currentPage >= totalPages}
-                    className={`relative overflow-hidden px-3 py-2 rounded-lg border-2 border-black/20 font-bold text-lg transition-colors select-none
-                      ${currentPage >= totalPages ? 'opacity-50 cursor-not-allowed bg-white/50' : 'bg-white/80 text-black/70 hover:bg-gray-100 hover:text-black'}`}
-                    title="Click: next | Double-click: quarter forward | Hold ~0.5s: last page"
-                  >
-                    <span className="relative z-10">&gt;</span>
-                    {navHoldProgress.next > 0 && (
-                      <span
-                        className="absolute inset-0 bg-black/20 transition-all duration-75 ease-linear"
-                        style={{ width: `${navHoldProgress.next * 100}%` }}
-                        aria-hidden
-                      />
-                    )}
-                  </button>
+                </>
+              ) : (
+                <div className="text-center text-slate-400 py-8">
+                  No videos found in this playlist.
                 </div>
-              );
-            })()}
-          </div>
+              )}
+
+              {/* Pagination Controls - Based on Regular Videos only, since Stickies are always shown */}
+              {totalPages > 1 && (() => {
+                // Quarter jump targets for double-click
+                const useQuarterJumps = totalPages > 4;
+                const quarterMarks = useQuarterJumps
+                  ? [
+                    Math.max(1, Math.round(totalPages * 0.25)),
+                    Math.max(1, Math.round(totalPages * 0.5)),
+                    Math.max(1, Math.round(totalPages * 0.75)),
+                    totalPages
+                  ]
+                  : [];
+                const getNextQuarter = () => {
+                  if (!useQuarterJumps) return Math.min(currentPage + 1, totalPages);
+                  const next = quarterMarks.find(q => q > currentPage);
+                  return next || totalPages;
+                };
+                const getPrevQuarter = () => {
+                  if (!useQuarterJumps) return Math.max(currentPage - 1, 1);
+                  const prev = [...quarterMarks].reverse().find(q => q < currentPage);
+                  return prev || 1;
+                };
+
+                const LONG_PRESS_MS = 500;
+                const DOUBLE_CLICK_MS = 300;
+                const TICK_MS = 40;
+                const progressPerTick = TICK_MS / LONG_PRESS_MS;
+
+                const clearHoldProgress = (which) => {
+                  if (navHoldIntervalRef.current) {
+                    clearInterval(navHoldIntervalRef.current);
+                    navHoldIntervalRef.current = null;
+                  }
+                  navHoldTargetRef.current = null;
+                  setNavHoldProgress((p) => ({ ...p, [which]: 0 }));
+                };
+
+                const createCombinedHandlers = (which, singleAction, doubleAction, longAction) => ({
+                  onMouseDown: () => {
+                    navDidLongClickRef.current = false;
+                    setNavHoldProgress((p) => ({ ...p, [which]: 0 }));
+                    navHoldTargetRef.current = which;
+                    navHoldIntervalRef.current = setInterval(() => {
+                      setNavHoldProgress((p) => {
+                        const next = Math.min(1, p[which] + progressPerTick);
+                        if (next >= 1) {
+                          if (navHoldIntervalRef.current) {
+                            clearInterval(navHoldIntervalRef.current);
+                            navHoldIntervalRef.current = null;
+                          }
+                          navDidLongClickRef.current = true;
+                          longAction();
+                          return { ...p, [which]: 0 };
+                        }
+                        return { ...p, [which]: next };
+                      });
+                    }, TICK_MS);
+                  },
+                  onMouseUp: () => {
+                    clearHoldProgress(which);
+                    if (navDidLongClickRef.current) return;
+                    const now = Date.now();
+                    const timeSinceLastClick = now - navLastClickTimeRef.current;
+                    if (timeSinceLastClick < DOUBLE_CLICK_MS) {
+                      if (navSingleClickTimerRef.current) clearTimeout(navSingleClickTimerRef.current);
+                      navLastClickTimeRef.current = 0;
+                      doubleAction();
+                    } else {
+                      navLastClickTimeRef.current = now;
+                      navSingleClickTimerRef.current = setTimeout(() => {
+                        singleAction();
+                        navLastClickTimeRef.current = 0;
+                      }, DOUBLE_CLICK_MS);
+                    }
+                  },
+                  onMouseLeave: () => clearHoldProgress(which),
+                  onTouchStart: () => {
+                    navDidLongClickRef.current = false;
+                    setNavHoldProgress((p) => ({ ...p, [which]: 0 }));
+                    navHoldTargetRef.current = which;
+                    navHoldIntervalRef.current = setInterval(() => {
+                      setNavHoldProgress((p) => {
+                        const next = Math.min(1, p[which] + progressPerTick);
+                        if (next >= 1) {
+                          if (navHoldIntervalRef.current) {
+                            clearInterval(navHoldIntervalRef.current);
+                            navHoldIntervalRef.current = null;
+                          }
+                          navDidLongClickRef.current = true;
+                          longAction();
+                          return { ...p, [which]: 0 };
+                        }
+                        return { ...p, [which]: next };
+                      });
+                    }, TICK_MS);
+                  },
+                  onTouchEnd: (e) => {
+                    clearHoldProgress(which);
+                    if (navDidLongClickRef.current) {
+                      e.preventDefault();
+                      return;
+                    }
+                    const now = Date.now();
+                    const timeSinceLastClick = now - navLastClickTimeRef.current;
+                    if (timeSinceLastClick < DOUBLE_CLICK_MS) {
+                      if (navSingleClickTimerRef.current) clearTimeout(navSingleClickTimerRef.current);
+                      navLastClickTimeRef.current = 0;
+                      doubleAction();
+                    } else {
+                      navLastClickTimeRef.current = now;
+                      navSingleClickTimerRef.current = setTimeout(() => {
+                        singleAction();
+                        navLastClickTimeRef.current = 0;
+                      }, DOUBLE_CLICK_MS);
+                    }
+                    e.preventDefault();
+                  },
+                });
+
+                const prevHandlers = createCombinedHandlers(
+                  'prev',
+                  () => setCurrentPage(Math.max(currentPage - 1, 1)),
+                  () => setCurrentPage(getPrevQuarter()),
+                  () => setCurrentPage(1)
+                );
+                const nextHandlers = createCombinedHandlers(
+                  'next',
+                  () => setCurrentPage(Math.min(currentPage + 1, totalPages)),
+                  () => setCurrentPage(getNextQuarter()),
+                  () => setCurrentPage(totalPages)
+                );
+
+                // Up to 5 numbered page buttons; sliding window when totalPages > 5
+                const maxNumberedButtons = 5;
+                const startPage = totalPages <= maxNumberedButtons
+                  ? 1
+                  : Math.max(1, Math.min(currentPage - 2, totalPages - maxNumberedButtons + 1));
+                const endPage = Math.min(totalPages, startPage + maxNumberedButtons - 1);
+                const pageNumbers = [];
+                for (let p = startPage; p <= endPage; p++) pageNumbers.push(p);
+
+                const btnBase = 'p-1.5 rounded-md transition-all border-2 shrink-0 flex items-center justify-center min-w-[2rem] font-bold select-none';
+                const btnInactive = 'bg-white/80 text-black/60 hover:bg-gray-100 hover:text-black border-black/20';
+                const btnActive = 'bg-black text-white border-black shadow-md';
+
+                return (
+                  <div className="flex justify-center items-center gap-2 mt-8 mb-4 flex-wrap">
+                    {/* Previous: click=prev, double-click=quarter back, hold=first (with charge animation) */}
+                    <button
+                      {...prevHandlers}
+                      disabled={currentPage === 1}
+                      className={`relative overflow-hidden px-3 py-2 rounded-lg border-2 border-black/20 font-bold text-lg transition-colors select-none
+                      ${currentPage === 1 ? 'opacity-50 cursor-not-allowed bg-white/50' : 'bg-white/80 text-black/70 hover:bg-gray-100 hover:text-black'}`}
+                      title="Click: previous | Double-click: quarter back | Hold ~0.5s: first page"
+                    >
+                      <span className="relative z-10">&lt;</span>
+                      {navHoldProgress.prev > 0 && (
+                        <span
+                          className="absolute inset-0 bg-black/20 transition-all duration-75 ease-linear"
+                          style={{ width: `${navHoldProgress.prev * 100}%` }}
+                          aria-hidden
+                        />
+                      )}
+                    </button>
+
+                    {/* Numbered page buttons (up to 8) */}
+                    <div className="flex items-center gap-1 flex-wrap justify-center">
+                      {pageNumbers.map((p) => (
+                        <button
+                          key={p}
+                          type="button"
+                          onClick={() => setCurrentPage(p)}
+                          className={`${btnBase} ${p === currentPage ? btnActive : btnInactive}`}
+                          title={`Page ${p}`}
+                        >
+                          {p}
+                        </button>
+                      ))}
+                    </div>
+
+                    {/* Next: click=next, double-click=quarter forward, hold=last (with charge animation) */}
+                    <button
+                      {...nextHandlers}
+                      disabled={currentPage >= totalPages}
+                      className={`relative overflow-hidden px-3 py-2 rounded-lg border-2 border-black/20 font-bold text-lg transition-colors select-none
+                      ${currentPage >= totalPages ? 'opacity-50 cursor-not-allowed bg-white/50' : 'bg-white/80 text-black/70 hover:bg-gray-100 hover:text-black'}`}
+                      title="Click: next | Double-click: quarter forward | Hold ~0.5s: last page"
+                    >
+                      <span className="relative z-10">&gt;</span>
+                      {navHoldProgress.next > 0 && (
+                        <span
+                          className="absolute inset-0 bg-black/20 transition-all duration-75 ease-linear"
+                          style={{ width: `${navHoldProgress.next * 100}%` }}
+                          aria-hidden
+                        />
+                      )}
+                    </button>
+                  </div>
+                );
+              })()}
+            </div>
           </div>
         </div >
       )
