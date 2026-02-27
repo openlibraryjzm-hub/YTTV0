@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
-import { Plus, Check, Trash2 } from 'lucide-react';
+import { Plus, Check, Trash2, Image as ImageIcon } from 'lucide-react';
 
 const OrbCard = ({ orb, allPlaylists, onUpdatePlaylists, minimal = false, onClick, currentPlaylistId }) => {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -49,265 +49,144 @@ const OrbCard = ({ orb, allPlaylists, onUpdatePlaylists, minimal = false, onClic
             .join(", ");
     }, [orb.playlistIds, allPlaylists]);
 
-    // --- Minimal Mode Render ---
-    if (minimal) {
-        return (
-            <div
-                className="group relative w-full h-full flex flex-col items-center justify-center cursor-pointer"
-                onClick={onClick}
-            >
-                {/* Floating Action Buttons (Visible on Hover) */}
-                <div className="absolute top-2 right-2 z-50 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col gap-2">
-                    {/* Remove Button (Only if in a playlist context) */}
-                    {currentPlaylistId && (
-                        <button
-                            onClick={handleRemoveFromCurrentPlaylist}
-                            className="p-2 rounded-full transition-colors bg-red-500/80 hover:bg-red-600 backdrop-blur-md text-white border border-white/20 shadow-sm"
-                            title="Remove from this playlist"
-                        >
-                            <Trash2 size={14} />
-                        </button>
-                    )}
-
-                    {/* Playlist Assign Menu */}
-                    <div className="relative">
-                        <button
-                            ref={buttonRef}
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                setIsMenuOpen(!isMenuOpen);
-                            }}
-                            className={`p-2 rounded-full transition-colors bg-white/10 hover:bg-white/20 backdrop-blur-md text-white border border-white/20`}
-                            title="Assign Playlists"
-                        >
-                            {orb.playlistIds?.length > 0 ? <Check size={14} /> : <Plus size={14} />}
-                        </button>
-
-                        {isMenuOpen && (
-                            <div
-                                ref={menuRef}
-                                className="absolute right-0 top-full mt-2 w-56 bg-white dark:bg-slate-900 rounded-xl shadow-xl border border-slate-200 dark:border-white/10 z-50 overflow-hidden text-sm"
-                                onClick={(e) => e.stopPropagation()}
-                            >
-                                <div className="p-2 border-b border-slate-100 dark:border-white/5 bg-slate-50 dark:bg-white/5">
-                                    <span className="font-bold text-xs uppercase text-slate-500 pl-2">Assign to Playlists</span>
-                                </div>
-                                <div className="max-h-60 overflow-y-auto p-1">
-                                    {allPlaylists.map(playlist => {
-                                        const isSelected = orb.playlistIds?.includes(playlist.id);
-                                        return (
-                                            <button
-                                                key={playlist.id}
-                                                onClick={() => togglePlaylist(playlist.id)}
-                                                className={`w-full text-left px-3 py-2 rounded-lg flex items-center justify-between transition-colors ${isSelected
-                                                    ? 'bg-sky-50 dark:bg-sky-500/10 text-sky-600 dark:text-sky-400'
-                                                    : 'hover:bg-slate-50 dark:hover:bg-white/5 text-slate-700 dark:text-slate-300'
-                                                    }`}
-                                            >
-                                                <span className="truncate">{playlist.name}</span>
-                                                {isSelected && <Check size={14} />}
-                                            </button>
-                                        );
-                                    })}
-                                </div>
-                            </div>
-                        )}
-                    </div>
-                </div>
-
-                {/* Main Orb Image (Scaled up slightly for minimal view?) */}
-                {/* Using duplicate structure but without bg/padding/border */}
-                <div className="relative w-full h-full flex items-center justify-center overflow-visible">
-                    <div className="relative w-40 h-40 transition-transform duration-300 group-hover:scale-105">
-                        {orb.customOrbImage ? (
-                            <>
-                                <img
-                                    src={orb.customOrbImage}
-                                    className="absolute inset-0 w-full h-full object-cover origin-center"
-                                    style={{
-                                        transform: `scale(${orb.orbImageScale}) translate(${orb.orbImageXOffset * 0.3}px, ${orb.orbImageYOffset * 0.3}px)`,
-                                        clipPath: `url(#${uniqueId})`
-                                    }}
-                                    alt={orb.name}
-                                />
-                                <svg width="0" height="0" className="absolute">
-                                    <defs>
-                                        <clipPath id={uniqueId} clipPathUnits="objectBoundingBox">
-                                            <circle cx="0.5" cy="0.5" r="0.5" />
-                                            {/* Advanced Masks Logic matching OrbPage */}
-                                            {['tl', 'tr', 'bl', 'br'].map(q => {
-                                                if (!orb.orbSpill?.[q]) return null;
-
-                                                const defaults = {
-                                                    tl: { x: -1.0, y: -0.5, w: 1.5, h: 1.0 },
-                                                    tr: { x: 0.5, y: -0.5, w: 1.0, h: 1.0 },
-                                                    bl: { x: -1.0, y: 0.5, w: 1.5, h: 1.5 },
-                                                    br: { x: 0.5, y: 0.5, w: 1.0, h: 1.5 }
-                                                };
-
-                                                if (!orb.orbAdvancedMasks?.[q]) {
-                                                    const d = defaults[q];
-                                                    return <rect key={q} x={d.x} y={d.y} width={d.w} height={d.h} />;
-                                                }
-
-                                                const mode = orb.orbMaskModes?.[q] || 'rect';
-
-                                                if (mode === 'path') {
-                                                    const points = orb.orbMaskPaths?.[q] || [];
-                                                    if (points.length < 3) return <rect key={q} x={defaults[q].x} y={defaults[q].y} width={defaults[q].w} height={defaults[q].h} />;
-                                                    const pts = points.map(p => `${p.x / 100},${p.y / 100}`).join(' ');
-                                                    return <polygon key={q} points={pts} />;
-                                                } else {
-                                                    const r = orb.orbMaskRects?.[q] || { x: 0, y: 0, w: 50, h: 50 };
-                                                    return <rect key={q} x={r.x / 100} y={r.y / 100} width={r.w / 100} height={r.h / 100} />;
-                                                }
-                                            })}
-                                        </clipPath>
-                                    </defs>
-                                </svg>
-                            </>
-                        ) : (
-                            <div className="w-full h-full rounded-full bg-slate-200 dark:bg-slate-700/50 flex items-center justify-center backdrop-blur-sm">
-                                <span className="text-xs text-slate-400 font-medium">No Image</span>
-                            </div>
-                        )}
-                    </div>
-                </div>
-            </div >
-        );
-    }
 
     // --- Standard Card Render ---
-    return (
-        <div className="group relative bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-white/10 shadow-sm hover:shadow-md transition-all overflow-visible flex flex-col h-full">
-            {/* Header / Title */}
-            <div className="p-4 border-b border-slate-100 dark:border-white/5 flex items-center justify-between">
-                <div>
-                    <h3 className="font-bold text-slate-800 dark:text-white leading-tight">{orb.name}</h3>
-                    <p className="text-xs text-slate-500 truncate max-w-[150px]" title={activePlaylistNames}>
-                        {activePlaylistNames}
-                    </p>
-                </div>
+    const visualizerBars = 113;
 
-                {/* Actions */}
-                <div className="flex items-center gap-1">
-                    {/* Remove Button (Only if in a playlist context) */}
-                    {currentPlaylistId && (
-                        <button
-                            onClick={handleRemoveFromCurrentPlaylist}
-                            className="p-2 rounded-full transition-colors text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20"
-                            title="Remove from this playlist"
-                        >
-                            <Trash2 size={16} />
-                        </button>
+    // Calculate SVG path once for all bars to reduce DOM node count by 113x
+    const visualizerPath = useMemo(() => {
+        let d = "";
+        for (let i = 0; i < visualizerBars; i++) {
+            const angle = (i / visualizerBars) * Math.PI * 2;
+            // Center is (100, 100). Inner point relative radius 80, outer 86.
+            // Rotated starting from top (-90 degrees inherently if mapped this way)
+            const x1 = 100 + 80 * Math.sin(angle);
+            const y1 = 100 - 80 * Math.cos(angle);
+            const x2 = 100 + 86 * Math.sin(angle);
+            const y2 = 100 - 86 * Math.cos(angle);
+            d += `M ${x1.toFixed(2)} ${y1.toFixed(2)} L ${x2.toFixed(2)} ${y2.toFixed(2)} `;
+        }
+        return d;
+    }, []);
+
+    return (
+        <div className="w-full h-full flex items-center justify-center p-4">
+            <div
+                className={`group relative aspect-square w-[75%] max-w-[200px] mx-auto rounded-full overflow-visible transition-all flex items-center justify-center cursor-pointer`}
+                onClick={onClick}
+            >
+                {/* Dormant Visualizer Border */}
+                <svg viewBox="0 0 200 200" className="absolute inset-[-15%] w-[130%] h-[130%] pointer-events-none transform -rotate-[90deg] z-0">
+                    <path
+                        d={visualizerPath}
+                        stroke="currentColor"
+                        strokeWidth="2.2"
+                        strokeLinecap="round"
+                        className="text-black dark:text-white/80 opacity-80 group-hover:opacity-100 group-hover:dark:text-white transition-all duration-300 drop-shadow-sm"
+                    />
+                </svg>
+
+                {/* Circular mask for the background */}
+                <div className="absolute inset-0 rounded-full overflow-hidden bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-white/10 shadow-md group-hover:shadow-lg transition-shadow z-10">
+                    {orb.customOrbImage ? (
+                        <img
+                            src={orb.customOrbImage}
+                            alt={orb.name || "Orb Preset"}
+                            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                        />
+                    ) : (
+                        <div className="w-full h-full flex flex-col items-center justify-center text-slate-400 dark:text-slate-600">
+                            <ImageIcon size={32} className="mb-2 opacity-50" />
+                            <span className="text-[10px] font-bold uppercase tracking-widest">No Image</span>
+                        </div>
                     )}
 
-                    {/* Playlist Dropdown */}
-                    <div className="relative">
-                        <button
-                            ref={buttonRef}
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                setIsMenuOpen(!isMenuOpen);
-                            }}
-                            className={`p-2 rounded-full transition-colors ${isMenuOpen
-                                ? 'bg-sky-500 text-white'
-                                : 'text-slate-400 hover:bg-slate-100 dark:hover:bg-white/5'
-                                }`}
-                        >
-                            {orb.playlistIds?.length > 0 ? <Check size={16} /> : <Plus size={16} />}
-                        </button>
-
-                        {isMenuOpen && (
-                            <div
-                                ref={menuRef}
-                                className="absolute right-0 top-full mt-2 w-64 bg-white dark:bg-slate-900 rounded-xl shadow-xl border border-slate-200 dark:border-white/10 z-50 overflow-hidden text-sm"
-                                onClick={(e) => e.stopPropagation()}
-                            >
-                                <div className="p-2 border-b border-slate-100 dark:border-white/5 bg-slate-50 dark:bg-white/5">
-                                    <span className="font-bold text-xs uppercase text-slate-500 pl-2">Assign to Playlists</span>
-                                </div>
-                                <div className="max-h-60 overflow-y-auto p-1">
-                                    {allPlaylists.map(playlist => {
-                                        const isSelected = orb.playlistIds?.includes(playlist.id);
-                                        return (
-                                            <button
-                                                key={playlist.id}
-                                                onClick={() => togglePlaylist(playlist.id)}
-                                                className={`w-full text-left px-3 py-2 rounded-lg flex items-center justify-between transition-colors ${isSelected
-                                                    ? 'bg-sky-50 dark:bg-sky-500/10 text-sky-600 dark:text-sky-400'
-                                                    : 'hover:bg-slate-50 dark:hover:bg-white/5 text-slate-700 dark:text-slate-300'
-                                                    }`}
-                                            >
-                                                <span className="truncate">{playlist.name}</span>
-                                                {isSelected && <Check size={14} />}
-                                            </button>
-                                        );
-                                    })}
-                                </div>
-                            </div>
+                    {/* Overlay Gradient for Text/Actions on hover */}
+                    <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex flex-col justify-center items-center text-center p-4">
+                        <h3 className="font-bold text-white text-sm leading-tight truncate w-full mb-1 drop-shadow-md">
+                            {orb.name || "Untitled Orb"}
+                        </h3>
+                        {activePlaylistNames !== "No Playlists" && (
+                            <p className="text-[10px] text-white/80 truncate w-full mb-2 drop-shadow-md" title={activePlaylistNames}>
+                                {activePlaylistNames}
+                            </p>
                         )}
                     </div>
                 </div>
-            </div>
 
-            {/* Orb Preview Content */}
-            <div className="p-6 flex items-center justify-center bg-slate-50/50 dark:bg-black/20 flex-1 min-h-[200px] rounded-b-2xl relative overflow-hidden">
-                <div className="relative w-32 h-32">
-                    {orb.customOrbImage ? (
-                        <>
-                            <img
-                                src={orb.customOrbImage}
-                                className="absolute inset-0 w-full h-full object-cover transition-transform duration-300 origin-center"
-                                style={{
-                                    transform: `scale(${orb.orbImageScale}) translate(${orb.orbImageXOffset * 0.3}px, ${orb.orbImageYOffset * 0.3}px)`,
-                                    clipPath: `url(#${uniqueId})`
+                {/* Actions overlay container, set above the hidden layer to allow menu dropdown overflows */}
+                <div className="absolute inset-x-0 bottom-[-10px] z-20 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex justify-center pb-2">
+                    <div className="flex items-center gap-2 pointer-events-auto">
+                        {/* Remove Button (Only if in a playlist context) */}
+                        {currentPlaylistId && (
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleRemoveFromCurrentPlaylist(e);
                                 }}
-                                alt={orb.name}
-                            />
-                            {/* SVG Definitions for this specific card */}
-                            <svg width="0" height="0" className="absolute">
-                                <defs>
-                                    <clipPath id={uniqueId} clipPathUnits="objectBoundingBox">
-                                        <circle cx="0.5" cy="0.5" r="0.5" />
+                                className="p-2 rounded-full transition-colors bg-red-500/80 hover:bg-red-600 text-white shadow-sm border border-black/10"
+                                title="Remove from this playlist"
+                            >
+                                <Trash2 size={14} />
+                            </button>
+                        )}
 
-                                        {/* Advanced Masks Logic matching OrbPage */}
-                                        {['tl', 'tr', 'bl', 'br'].map(q => {
-                                            if (!orb.orbSpill?.[q]) return null;
+                        {/* Playlist Assignment Menu */}
+                        <div className="relative flex justify-center">
+                            <button
+                                ref={buttonRef}
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    setIsMenuOpen(!isMenuOpen);
+                                }}
+                                className={`p-2 rounded-full transition-colors backdrop-blur-md shadow-sm border border-white/20 ${isMenuOpen
+                                    ? 'bg-sky-500 text-white'
+                                    : 'bg-white/20 hover:bg-white/30 text-white'
+                                    }`}
+                                title="Assign to Playlists"
+                            >
+                                {orb.playlistIds?.length > 0 ? <Check size={14} /> : <Plus size={14} />}
+                            </button>
 
-                                            const defaults = {
-                                                tl: { x: -1.0, y: -0.5, w: 1.5, h: 1.0 },
-                                                tr: { x: 0.5, y: -0.5, w: 1.0, h: 1.0 },
-                                                bl: { x: -1.0, y: 0.5, w: 1.5, h: 1.5 },
-                                                br: { x: 0.5, y: 0.5, w: 1.0, h: 1.5 }
-                                            };
-
-                                            if (!orb.orbAdvancedMasks?.[q]) {
-                                                const d = defaults[q];
-                                                return <rect key={q} x={d.x} y={d.y} width={d.w} height={d.h} />;
-                                            }
-
-                                            const mode = orb.orbMaskModes?.[q] || 'rect';
-
-                                            if (mode === 'path') {
-                                                const points = orb.orbMaskPaths?.[q] || [];
-                                                if (points.length < 3) return <rect key={q} x={defaults[q].x} y={defaults[q].y} width={defaults[q].w} height={defaults[q].h} />;
-                                                const pts = points.map(p => `${p.x / 100},${p.y / 100}`).join(' ');
-                                                return <polygon key={q} points={pts} />;
-                                            } else {
-                                                const r = orb.orbMaskRects?.[q] || { x: 0, y: 0, w: 50, h: 50 };
-                                                return <rect key={q} x={r.x / 100} y={r.y / 100} width={r.w / 100} height={r.h / 100} />;
-                                            }
+                            {isMenuOpen && (
+                                <div
+                                    ref={menuRef}
+                                    className="absolute left-1/2 -translate-x-1/2 bottom-full mb-3 w-48 bg-white dark:bg-slate-900 rounded-xl shadow-xl border border-slate-200 dark:border-white/10 z-50 overflow-hidden text-sm text-left"
+                                    onClick={(e) => e.stopPropagation()}
+                                >
+                                    <div className="p-2 border-b border-slate-100 dark:border-white/5 bg-slate-50 dark:bg-white/5">
+                                        <span className="font-bold text-xs uppercase text-slate-500 pl-2">Assign to Playlists</span>
+                                    </div>
+                                    <div className="max-h-60 overflow-y-auto p-1">
+                                        {allPlaylists.map(playlist => {
+                                            const isSelected = orb.playlistIds?.includes(playlist.id);
+                                            return (
+                                                <button
+                                                    key={playlist.id}
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        togglePlaylist(playlist.id);
+                                                    }}
+                                                    className={`w-full text-left px-3 py-2 rounded-lg flex items-center justify-between transition-colors ${isSelected
+                                                        ? 'bg-sky-50 dark:bg-sky-500/10 text-sky-600 dark:text-sky-400'
+                                                        : 'hover:bg-slate-50 dark:hover:bg-white/5 text-slate-700 dark:text-slate-300'
+                                                        }`}
+                                                >
+                                                    <span className="truncate">{playlist.name}</span>
+                                                    {isSelected && <Check size={14} />}
+                                                </button>
+                                            );
                                         })}
-                                    </clipPath>
-                                </defs>
-                            </svg>
-                        </>
-                    ) : (
-                        <div className="w-full h-full rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center">
-                            <span className="text-xs text-slate-400">No Image</span>
+                                        {allPlaylists.length === 0 && (
+                                            <div className="px-3 py-4 text-center text-slate-400 italic text-xs">
+                                                No playlists found
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
                         </div>
-                    )}
+                    </div>
                 </div>
             </div>
         </div>

@@ -169,7 +169,7 @@ const VideoCard = ({
     },
 
     // 3-Dot Menu - Bottom Right (overhauled: Pins, Folder, Rating, and actions)
-    !bulkTagMode && {
+    !bulkTagMode && cardStyle === 'twitter' && {
       component: (
         <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200">
           <VideoCardThreeDotMenu
@@ -285,35 +285,76 @@ const VideoCard = ({
 
   // Default YouTube style rendering
   return (
-    <Card
+    <div
+      className={`group relative bg-white dark:bg-slate-800 rounded-2xl border border-black dark:border-black shadow-sm hover:shadow-md transition-all flex flex-col h-full ${isSelected ? 'ring-2 ring-sky-500' : ''
+        } ${isCurrentlyPlaying ? 'ring-4 ring-red-500' : ''} ${bulkTagMode ? 'overflow-visible cursor-default' : 'overflow-visible cursor-pointer'
+        }`}
       onClick={bulkTagMode ? undefined : onVideoClick}
-      selected={isSelected}
-      playing={isCurrentlyPlaying}
-      className={bulkTagMode ? 'cursor-default' : ''}
-      variant="minimal"
-      rounded={false}
+      style={bulkTagBorderColor ? { borderColor: bulkTagBorderColor, borderWidth: '2px' } : undefined}
     >
-      <div className={`relative group ${bulkTagMode ? 'overflow-visible' : 'overflow-hidden'}`}>
+      {/* Thumbnail Section */}
+      <div className="relative aspect-video w-full flex-shrink-0 overflow-hidden rounded-t-2xl bg-slate-100 dark:bg-slate-900 border-b border-slate-100 dark:border-white/5">
         <CardThumbnail
           src={thumbnailUrl}
           alt={video.title || `Video ${index + 1}`}
           overlay={playOverlay}
           badges={badges}
           progress={progress}
-          className={`overflow-hidden ${bulkTagBorderColor ? 'border-2' : ''} ${isCurrentlyPlaying ? 'ring-4 ring-red-500 ring-offset-2 ring-offset-black shadow-[0_0_40px_rgba(239,68,68,1),inset_0_0_40px_rgba(239,68,68,0.8)]' : ''}`}
-          style={bulkTagBorderColor ? { borderColor: bulkTagBorderColor } : undefined}
+          className={`w-full h-full object-cover transition-transform duration-300 group-hover:scale-105 ${isCurrentlyPlaying
+            ? 'shadow-[0_0_40px_rgba(239,68,68,1),inset_0_0_40px_rgba(239,68,68,0.8)]'
+            : ''
+            }`}
         />
       </div>
 
-      <CardContent
-        title={video.title || `Video ${index + 1}`}
-        padding="p-0 pt-3"
-        headerActions={null}
-      />
+      {/* Content Section (White bar at bottom) */}
+      <div
+        className={`p-3 flex flex-col justify-center bg-white dark:bg-slate-800 flex-1 ${bulkTagMode ? '' : 'rounded-b-2xl'
+          }`}
+      >
+        <div className="flex items-center justify-between min-h-[28px]">
+          <div className="min-w-0 flex-1 mr-2">
+            <h3
+              className="font-bold text-sm text-slate-800 dark:text-white leading-tight line-clamp-2"
+              title={video.title}
+            >
+              {video.title || `Video ${index + 1}`}
+            </h3>
+          </div>
+
+          {/* Actions: 3-dot menu */}
+          {!bulkTagMode && (
+            <div className="flex items-center gap-1 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+              <VideoCardThreeDotMenu
+                video={video}
+                playlistId={playlistId}
+                isPinned={isPinnedVideo}
+                isPriority={isPriority}
+                isFollower={isFollower}
+                onTogglePin={(v) => { togglePin(v); if (onPinClick) onPinClick(v); }}
+                onTogglePriorityPin={togglePriorityPin}
+                onRemovePin={(id) => { removePin(id); if (onPinClick) onPinClick(video); }}
+                videoFolders={videoFolders}
+                folderMetadata={folderMetadata}
+                onStarColorLeftClick={onStarColorLeftClick}
+                onRenameFolder={onRenameFolder}
+                drumstickRating={drumstickRating}
+                onDrumstickRate={handleDrumstickRate}
+                menuOptions={menuOptions}
+                onMenuOptionClick={(option) => onMenuOptionClick?.(option, video)}
+                triggerClassName="text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/10"
+              />
+            </div>
+          )}
+        </div>
+      </div>
 
       {/* Bulk tag: below thumbnail and title, when bulk tag mode is active */}
       {bulkTagMode && (
-        <div className="relative w-full h-20 flex-shrink-0 overflow-hidden mt-2" data-card-action="true">
+        <div
+          className="relative w-full h-20 flex-shrink-0 overflow-hidden px-3 pb-3 rounded-b-2xl bg-white dark:bg-slate-800"
+          data-card-action="true"
+        >
           <BulkTagColorGrid
             videoId={video.id}
             currentFolders={videoFolders}
@@ -325,7 +366,7 @@ const VideoCard = ({
           />
         </div>
       )}
-    </Card>
+    </div>
   );
 };
 

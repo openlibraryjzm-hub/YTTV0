@@ -577,11 +577,10 @@ These cards represent non-video content integrated into the playlist view, allow
 
 **4.1.2.3a Orb Card (Preset)**
 - **Purpose**: Displays a saved Orb configuration as a selectable item within playlists.
-- **Visuals**: Shows the custom Orb image with all applied masks (SVG clip-path), scale using `transform`, and position settings.
-  - **Minimal Mode**: Used in the Orb Page preset grid (hover interactions only).
-  - **Playlist Mode**: Integrated into standard playlists with a header and title.
+- **Visuals**: Displays the custom Orb image uniformly as a perfect circle (`aspect-square` `rounded-full`) framed by a dormant audio visualizer border SVG. Unlike standard video/preset cards, the title and metadata appear only as a hover overlay. Advanced SVG masks and spilling effects are reserved for the loaded active state (Player Controller), not the card thumbnail.
 - **Interactions**:
   - **Click**: Applies the saved Orb configuration to the active Player Controller.
+  - **Hover**: Fades in a dark gradient overlay revealing the Orb title, assigned playlists, and action buttons.
   - **Playlist Assignment**: 
     - **Plus/Check Button**: Opens a dropdown to assign/unassign the preset to other playlists.
     - **Trash Button**: Only visible in playlist context. Removes the preset from the *current* playlist (unassigns it).
@@ -590,6 +589,7 @@ These cards represent non-video content integrated into the playlist view, allow
 - **Purpose**: Displays a saved App Banner configuration alongside videos.
 - **Visuals**:
   - **Thumbnail**: 16:9 preview of the banner image.
+  - **Border**: Features a solid dark border (`border-black`) aligning it with the general uniform card aesthetic.
   - **Overlay**: Gradient overlay on hover for better text readability.
   - **Header**: Shows preset name and a truncated list of assigned playlist names on hover.
 - **Interactions**:

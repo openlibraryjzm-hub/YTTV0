@@ -65,7 +65,7 @@ const BannerPresetCard = ({
 
     return (
         <div
-            className={`group relative bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-white/10 shadow-sm hover:shadow-md transition-all overflow-visible flex flex-col h-full ${isSelected ? 'ring-2 ring-sky-500' : ''} ${className}`}
+            className={`group relative bg-white dark:bg-slate-800 rounded-2xl border border-black dark:border-black shadow-sm hover:shadow-md transition-all overflow-visible flex flex-col h-full ${isSelected ? 'ring-2 ring-sky-500' : ''} ${className}`}
             onClick={onClick}
         >
             {/* Thumbnail Section */}
