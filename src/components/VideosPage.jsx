@@ -140,31 +140,7 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
     setBannerNavBannerId
   } = useConfigStore();
 
-  // Videos page always uses fullscreen app banner for blurred background (not splitscreen)
-  const effectiveBannerForBlur = (() => {
-    let effective = fullscreenBanner;
-    if (bannerNavBannerId && !bannerPreviewMode && bannerPresets?.length) {
-      const preset = bannerPresets.find(p => p.id === bannerNavBannerId);
-      if (preset?.fullscreenBanner) effective = preset.fullscreenBanner;
-    }
-    return effective;
-  })();
-  const blurBannerImage = effectiveBannerForBlur?.image || '/banner.PNG';
-  const blurBannerScale = effectiveBannerForBlur?.scale ?? 100;
-  const blurBannerVertical = effectiveBannerForBlur?.verticalPosition ?? 0;
-  const blurBannerHorizontal = effectiveBannerForBlur?.horizontalOffset ?? 0;
-  const blurredBannerStyle = {
-    position: 'absolute',
-    inset: 0,
-    zIndex: 0,
-    backgroundImage: `url(${blurBannerImage})`,
-    backgroundPosition: `${blurBannerHorizontal}% ${blurBannerVertical}%`,
-    backgroundRepeat: 'repeat-x',
-    backgroundSize: `${blurBannerScale}vw auto`,
-    filter: 'blur(28px)',
-    transform: 'scale(1.15)',
-    pointerEvents: 'none'
-  };
+
 
   // Helper to get inspect label
   const getInspectTitle = (label) => inspectMode ? label : undefined;
@@ -1614,21 +1590,20 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
 
           {/* Sticky Toolbar */}
           <div
-            className={`sticky top-0 z-40 transition-all duration-500 cubic-bezier(0.4, 0, 0.2, 1) overflow-visible
+            className={`sticky top-0 z-40 transition-all duration-500 cubic-bezier(0.4, 0, 0.2, 1) overflow-visible bg-[#cde5fa]
             ${isStuck
-                ? 'backdrop-blur-xl border-y shadow-2xl mx-0 rounded-none mb-4 pt-2 pb-2 bg-slate-900/70'
-                : 'backdrop-blur-[2px] border-b border-x border-t border-white/10 shadow-xl mx-0 rounded-none mb-4 mt-0 pt-1 pb-0 bg-transparent'
+                ? 'pt-2 pb-2'
+                : 'mb-4 mt-0 pt-1 pb-0'
               }
             `}
             style={{
-              backgroundColor: isStuck ? undefined : 'transparent', // Fully transparent resting state
               marginTop: '0px' // banner removed, no overlap needed
             }}
           >
 
             <div className={`px-4 flex items-center justify-between transition-all duration-300 relative z-10 ${isStuck ? 'h-[52px]' : 'py-0.5'}`}>
 
-              {/* Sort & rating filters: Home, Funnel */}
+              {/* Sort & rating filters & actions: Home, Funnel, Plus dropdown */}
               <VideoSortFilters
                 sortBy={sortBy}
                 setSortBy={setSortBy}
@@ -1638,50 +1613,17 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
                 onToggleRating={handleToggleRating}
                 isLight={selectedFolder === null}
                 className="shrink-0 mr-2"
+                onAddClick={() => setShowVideosUploader(true)}
+                onRefreshClick={() => setShowSubscriptionManager(true)}
+                onRefreshRightClick={(e) => setRequestSubscriptionRefresh(true)}
+                onBulkTagClick={() => setBulkTagMode(!bulkTagMode)}
+                onBulkTagRightClick={(e) => setRequestShowAutoTagModal(true)}
+                bulkTagMode={bulkTagMode}
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPrevPage={() => setCurrentPage(Math.max(currentPage - 1, 1))}
+                onNextPage={() => setCurrentPage(Math.min(currentPage + 1, totalPages))}
               />
-
-              {/* Add, Refresh (sub), Bulk tag: left of prism, right of filter */}
-              <div className="flex items-center gap-1.5 shrink-0 mr-2">
-                <button
-                  type="button"
-                  onClick={() => setShowVideosUploader(true)}
-                  className="p-1.5 h-7 bg-white hover:bg-gray-100 text-black rounded-md transition-all shadow border border-black/20 shrink-0 flex items-center justify-center"
-                  title="Add videos / config"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                  </svg>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setRequestSubscriptionRefresh(true)}
-                  onContextMenu={(e) => {
-                    e.preventDefault();
-                    setShowSubscriptionManager(true);
-                  }}
-                  className="p-1.5 h-7 bg-white hover:bg-gray-100 text-black rounded-md transition-all shadow border border-black/20 shrink-0 flex items-center justify-center"
-                  title="Refresh subscriptions (right-click: manage)"
-                >
-                  <RotateCcw className="w-4 h-4" />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setBulkTagMode(!bulkTagMode)}
-                  onContextMenu={(e) => {
-                    e.preventDefault();
-                    setRequestShowAutoTagModal(true);
-                  }}
-                  className={`p-1.5 h-7 rounded-md transition-all shrink-0 border flex items-center justify-center ${bulkTagMode
-                    ? 'bg-black text-white border-black shadow'
-                    : 'bg-white text-black hover:bg-gray-100 border-black/20'
-                    }`}
-                  title={bulkTagMode ? 'Exit bulk tagging' : 'Bulk tag (right-click for Auto-Tag)'}
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
-                  </svg>
-                </button>
-              </div>
 
               {/* Folder prism: full bar or "only populated" mode; right-click on prism toggles mode */}
               <div className="flex items-center min-w-0 flex-1 mr-0">
@@ -1783,20 +1725,28 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
                       if (history.length > 0) goBack();
                       else if (previewPlaylistId) setCurrentNavTab('playlists');
                     }}
-                    className="flex items-center justify-center w-7 h-7 rounded-full shadow-sm border border-black/20 bg-white hover:bg-gray-100 text-black transition-all hover:scale-105 active:scale-90 shrink-0"
+                    className="flex items-center justify-center w-7 h-7 bg-transparent transition-all hover:scale-110 active:scale-90 shrink-0 opacity-85 hover:opacity-100"
+                    style={{
+                      color: 'white',
+                      filter: 'drop-shadow(-1px -1px 0 #000) drop-shadow(1px -1px 0 #000) drop-shadow(-1px 1px 0 #000) drop-shadow(1px 1px 0 #000)'
+                    }}
                     title="Go Back"
                   >
-                    <ChevronLeft size={18} />
+                    <ChevronLeft size={24} strokeWidth={2.5} />
                   </button>
                 )}
                 <button
                   type="button"
                   onClick={() => setViewMode('full')}
-                  className="flex items-center justify-center w-7 h-7 bg-rose-500 text-white rounded-lg hover:bg-rose-600 transition-colors shadow-md border border-rose-400 active:scale-90 shrink-0"
+                  className="flex items-center justify-center w-7 h-7 bg-transparent transition-all hover:scale-110 active:scale-90 shrink-0 opacity-85 hover:opacity-100"
+                  style={{
+                    color: 'white',
+                    filter: 'drop-shadow(-1px -1px 0 #000) drop-shadow(1px -1px 0 #000) drop-shadow(-1px 1px 0 #000) drop-shadow(1px 1px 0 #000)'
+                  }}
                   title="Close menu (Full screen)"
                 >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" />
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
                   </svg>
                 </button>
               </div>
@@ -1808,7 +1758,6 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
 
           {/* Blurred app banner behind content only (excludes sticky toolbar / VideoSortFilters) */}
           <div className="relative overflow-hidden">
-            <div aria-hidden="true" style={blurredBannerStyle} />
             <div className="relative z-10 px-4 pb-8">
               {/* Edit Playlist/Folder Modal */}
               <EditPlaylistModal

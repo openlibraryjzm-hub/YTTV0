@@ -67,46 +67,18 @@ const TopNavigation = () => {
         bannerHex = '#3b82f6'; // Default Blue
     }
 
-    // Dynamic styles matching VideosPage Mini Header
-    const containerStyle = hasActiveContext ? {
-        background: `linear-gradient(to bottom, ${bannerHex}80, ${bannerHex}E6)`,
-    } : {};
+    // Simplified styles matching the native app theme color
+    const containerStyle = {};
 
-    const titleStyle = hasActiveContext ? {
-        textShadow: '0 2px 4px rgba(0,0,0,0.5)',
-        color: selectedFolder === 'unsorted' ? '#000000' : '#ffffff',
-        WebkitTextStroke: selectedFolder === 'unsorted' ? '1px #ffffff' : '1px #000000'
-    } : { color: '#ffffff' };
+    const titleStyle = {
+        color: '#052F4A'
+    };
 
     return (
         <div
             className={`relative w-full flex items-end justify-between pb-4 transition-all duration-300 min-h-[100px] overflow-hidden ${!hasActiveContext ? `${theme.menuBg} ${theme.menuBorder} backdrop-blur-md border rounded-xl px-8` : ''}`}
             style={containerStyle}
         >
-            {hasActiveContext && (
-                <>
-                    <style>
-                        {`
-                            @keyframes slide-mesh {
-                                0% { transform: translateY(0); }
-                                100% { transform: translateY(60px); }
-                            }
-                            .animated-mesh-pattern {
-                                background-image: 
-                                    linear-gradient(to right, rgba(255,255,255,0.25) 3px, transparent 3px),
-                                    linear-gradient(to bottom, rgba(255,255,255,0.25) 3px, transparent 3px);
-                                background-size: 60px 60px;
-                                animation: slide-mesh 4s linear infinite;
-                            }
-                        `}
-                    </style>
-                    <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none" style={{ mixBlendMode: 'overlay', perspective: '600px' }}>
-                        <div className="absolute" style={{ width: '400%', height: '400%', left: '-150%', top: '-150%', transform: 'rotateX(65deg) rotateZ(20deg)', transformOrigin: 'center center' }}>
-                            <div className="absolute inset-0 animated-mesh-pattern"></div>
-                        </div>
-                    </div>
-                </>
-            )}
 
             {/* Left side: Override-for-all carousel mode (GROUPS) / Videos actions (Add, Subscriptions, Bulk tag) + Playlist/Folder Info */}
             <div className="relative z-10 flex flex-col justify-end min-w-0 flex-1 pl-8">

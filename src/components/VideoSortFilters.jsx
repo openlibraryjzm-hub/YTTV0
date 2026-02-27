@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Home, Filter, CalendarDays, BarChart2, Clock, ArrowUp, ArrowDown } from 'lucide-react';
+import { Home, Filter, CalendarDays, BarChart2, Clock, ArrowUp, ArrowDown, Plus, RotateCcw, Tag, ChevronLeft, ChevronRight } from 'lucide-react';
 
 const DRUMSTICK = '🍗';
 
@@ -13,6 +13,7 @@ const SORT_OPTIONS = [
  * Icon-based sort and rating filter bar for the Videos page sticky toolbar.
  * - Home = default (shuffle)
  * - Funnel = dropdown with Date, Progress, Last viewed + horizontal drumstick rating filter (1–5)
+ * - Plus = dropdown with Add, Refresh, Bulk Tag actions
  */
 const VideoSortFilters = ({
   sortBy,
@@ -23,9 +24,21 @@ const VideoSortFilters = ({
   onToggleRating,
   isLight = true, // true when All selected (white bar), false when Unsorted/folder (colored bar)
   className = '',
+  onAddClick,
+  onRefreshClick,
+  onRefreshRightClick,
+  onBulkTagClick,
+  onBulkTagRightClick,
+  bulkTagMode,
+  currentPage = 1,
+  totalPages = 1,
+  onPrevPage,
+  onNextPage,
 }) => {
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [actionDropdownOpen, setActionDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
+  const actionDropdownRef = useRef(null);
 
   const cycleDirection = () => setSortDirection(d => (d === 'asc' ? 'desc' : 'asc'));
   const isShuffleActive = sortBy === 'shuffle';
@@ -33,13 +46,14 @@ const VideoSortFilters = ({
   const hasRatingFilter = selectedRatings.length > 0;
   const isFunnelActive = isSortDropdownActive || hasRatingFilter;
 
-  const btnBase = 'p-1.5 rounded-md transition-all border-2 shrink-0 flex items-center justify-center gap-0.5';
-  const btnInactive = isLight
-    ? 'bg-white/80 text-black/60 hover:bg-gray-100 hover:text-black border-black/20'
-    : 'bg-white/10 text-white/60 hover:bg-white/20 hover:text-white border-white/20';
-  const btnActive = isLight
-    ? 'bg-black text-white border-black shadow-md'
-    : 'bg-white text-black border-white shadow-md';
+  const ICON_WHITE_OUTLINE = {
+    color: 'white',
+    filter: 'drop-shadow(-1px -1px 0 #000) drop-shadow(1px -1px 0 #000) drop-shadow(-1px 1px 0 #000) drop-shadow(1px 1px 0 #000)'
+  };
+
+  const btnBase = 'p-1.5 transition-all shrink-0 flex items-center justify-center';
+  const btnInactive = 'opacity-85 hover:opacity-100 hover:scale-110';
+  const btnActive = 'opacity-100 scale-110';
 
   const Arrow = ({ up }) => {
     const Icon = up ? ArrowUp : ArrowDown;
@@ -55,18 +69,21 @@ const VideoSortFilters = ({
     }
   };
 
-  // Close dropdown when clicking outside
+  // Close dropdowns when clicking outside
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
         setDropdownOpen(false);
       }
+      if (actionDropdownRef.current && !actionDropdownRef.current.contains(e.target)) {
+        setActionDropdownOpen(false);
+      }
     };
-    if (dropdownOpen) {
+    if (dropdownOpen || actionDropdownOpen) {
       document.addEventListener('mousedown', handleClickOutside);
     }
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [dropdownOpen]);
+  }, [dropdownOpen, actionDropdownOpen]);
 
   return (
     <div className={`flex items-center gap-1 ${className}`}>
@@ -75,24 +92,26 @@ const VideoSortFilters = ({
         type="button"
         onClick={() => setSortBy('shuffle')}
         className={`${btnBase} ${isShuffleActive ? btnActive : btnInactive}`}
+        style={ICON_WHITE_OUTLINE}
         title="Default order"
       >
-        <Home size={16} strokeWidth={2.5} />
+        <Home size={20} strokeWidth={2.5} />
       </button>
 
       {/* Funnel = dropdown with Date, Progress, Last viewed */}
       <div className="relative shrink-0" ref={dropdownRef}>
         <button
           type="button"
-          onClick={() => setDropdownOpen((o) => !o)}
+          onClick={() => { setDropdownOpen((o) => !o); setActionDropdownOpen(false); }}
           className={`${btnBase} ${isFunnelActive ? btnActive : btnInactive}`}
+          style={ICON_WHITE_OUTLINE}
           title="Sort & rating filter"
         >
-          <Filter size={16} strokeWidth={2.5} />
+          <Filter size={20} strokeWidth={2.5} />
         </button>
         {dropdownOpen && (
           <div
-            className={`absolute left-0 top-full pt-0.5 z-50 min-w-[180px] rounded-lg border-2 shadow-lg py-1 ${isLight ? 'bg-white border-black/20' : 'bg-slate-800 border-white/20'
+            className={`absolute left-0 top-full pt-2 z-50 min-w-[180px] rounded-lg border-2 shadow-lg py-1 ${isLight ? 'bg-white border-black/20' : 'bg-slate-800 border-white/20'
               }`}
           >
             {SORT_OPTIONS.map(({ mode, label, Icon }) => {
@@ -149,6 +168,89 @@ const VideoSortFilters = ({
           </div>
         )}
       </div>
+
+      {/* Actions = dropdown with Add, Refresh, Bulk Tag */}
+      <div className="relative shrink-0" ref={actionDropdownRef}>
+        <button
+          type="button"
+          onClick={() => { setActionDropdownOpen((o) => !o); setDropdownOpen(false); }}
+          className={`${btnBase} ${actionDropdownOpen || bulkTagMode ? btnActive : btnInactive}`}
+          style={ICON_WHITE_OUTLINE}
+          title="Actions"
+        >
+          <Plus size={20} strokeWidth={2.5} />
+        </button>
+        {actionDropdownOpen && (
+          <div
+            className={`absolute left-0 top-full pt-0.5 z-50 min-w-[200px] rounded-lg border-2 shadow-lg py-1 ${isLight ? 'bg-white border-black/20' : 'bg-slate-800 border-white/20'
+              }`}
+          >
+            <button
+              type="button"
+              onClick={() => { onAddClick?.(); setActionDropdownOpen(false); }}
+              className={`w-full flex items-center gap-2 px-3 py-2 text-left text-sm transition-colors ${isLight ? 'hover:bg-gray-100 text-black/80' : 'hover:bg-white/10 text-white/80'}`}
+              title="Add videos / config"
+            >
+              <Plus size={14} strokeWidth={2.5} />
+              Add Videos
+            </button>
+            <button
+              type="button"
+              onClick={() => { onRefreshClick?.(); setActionDropdownOpen(false); }}
+              onContextMenu={(e) => { e.preventDefault(); onRefreshRightClick?.(e); setActionDropdownOpen(false); }}
+              className={`w-full flex items-center gap-2 px-3 py-2 text-left text-sm transition-colors ${isLight ? 'hover:bg-gray-100 text-black/80' : 'hover:bg-white/10 text-white/80'}`}
+              title="Manage subscriptions (right-click: refresh)"
+            >
+              <RotateCcw size={14} strokeWidth={2.5} />
+              Subscriptions
+            </button>
+            <button
+              type="button"
+              onClick={() => { onBulkTagClick?.(); setActionDropdownOpen(false); }}
+              onContextMenu={(e) => { e.preventDefault(); onBulkTagRightClick?.(e); setActionDropdownOpen(false); }}
+              className={`w-full flex items-center gap-2 px-3 py-2 text-left text-sm transition-colors ${bulkTagMode ? (isLight ? 'bg-black/10 font-medium text-black' : 'bg-white/10 font-medium text-white') : (isLight ? 'hover:bg-gray-100 text-black/80' : 'hover:bg-white/10 text-white/80')}`}
+              title="Bulk tag (right-click for Auto-Tag)"
+            >
+              <Tag size={14} strokeWidth={2.5} />
+              Bulk Tag
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Pagination Controls */}
+      {totalPages > 1 && (
+        <div className="flex items-center shrink-0 ml-1">
+          <button
+            type="button"
+            onClick={onPrevPage}
+            disabled={currentPage <= 1}
+            className={`transition-all flex items-center justify-center ${currentPage <= 1 ? 'opacity-30 cursor-not-allowed' : 'opacity-85 hover:opacity-100 hover:scale-110'}`}
+            style={ICON_WHITE_OUTLINE}
+            title="Previous page"
+          >
+            <ChevronLeft size={20} strokeWidth={2.5} />
+          </button>
+
+          <span
+            className="text-xs font-bold min-w-[1.5rem] text-center"
+            style={ICON_WHITE_OUTLINE}
+          >
+            {currentPage}
+          </span>
+
+          <button
+            type="button"
+            onClick={onNextPage}
+            disabled={currentPage >= totalPages}
+            className={`transition-all flex items-center justify-center ${currentPage >= totalPages ? 'opacity-30 cursor-not-allowed' : 'opacity-85 hover:opacity-100 hover:scale-110'}`}
+            style={ICON_WHITE_OUTLINE}
+            title="Next page"
+          >
+            <ChevronRight size={20} strokeWidth={2.5} />
+          </button>
+        </div>
+      )}
     </div>
   );
 };

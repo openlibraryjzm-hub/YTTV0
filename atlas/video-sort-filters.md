@@ -139,16 +139,23 @@ Progress and last-viewed data come from `getAllVideoProgress` / `getWatchedVideo
 
 ## 7. Summary
 
-- **VideoSortFilters**: Two toolbar buttons—**Home** (default order) and **Funnel** (dropdown). Dropdown contains: sort options (Date, Progress, Last viewed; select or cycle asc/desc) and a horizontal **Rating filter** row (1–5 drumsticks, multi-select). Funnel appears active when any sort or rating filter is applied.
-- **Action buttons**: Add, Refresh (subscriptions), Bulk tag sit left of the prism (right of the filter); Back and Close on the far right. TopNavigation no longer shows these when on Videos page.
+- **VideoSortFilters**: A unified toolbar cluster containing:
+  - **Home** (default order)
+  - **Funnel** (dropdown): sort options (Date, Progress, Last viewed; select or cycle asc/desc) and horizontal **Rating filter** row (1–5 drumsticks).
+  - **Plus / Actions** (dropdown): Consolidated Add (uploader), Refresh (subscriptions), and Bulk tag functionalities.
+  - **Pagination**: Left and Right chevron buttons flanking the current page number.
+- **Styling**: The buttons employ a floating `ICON_WHITE_OUTLINE` style (white fill with solid black drop-shadow) without boxy backgrounds. The sticky toolbar backdrop in `VideosPage` utilizes a solid light blue (`#cde5fa`) native app theme color completely replacing the prior transparency/backdrop-blur scroll effect.
 - **Folder prism**: Colored segment bar (All, Unsorted, 16 colors) in the same row. **Right-click on the prism** toggles “only segments with ≥1 item (equal width)” vs “all segments”. Default is populated-only.
-- State for sort, direction, ratings, and prism mode lives in `VideosPage`; folder selection in `folderStore`. Sorting and rating filtering are applied in `VideosPage` after folder filtering; pagination resets when any of these change.
+- State for sort, direction, ratings, pagination, and prism mode lives in `VideosPage`; folder selection in `folderStore`. Sorting and rating filtering are applied in `VideosPage` after folder filtering; pagination resets when any of these change.
 
 ---
 
 ## 8. Change log
 
-- **VideoSortFilters consolidation**: Calendar (sort by date), Bar chart (sort by progress), and Clock (sort by last viewed) were consolidated into a single **Funnel** icon button; click opens a dropdown with those three sort options (each select or cycle asc/desc). **Drumstick** rating filter was moved into the same funnel dropdown as a horizontal row (1–5). Toolbar now shows only **Home** and **Funnel**.
+- **VideoSortFilters consolidation**: Calendar (sort by date), Bar chart (sort by progress), and Clock (sort by last viewed) were consolidated into a single **Funnel** icon button; click opens a dropdown with those three sort options (each select or cycle asc/desc). **Drumstick** rating filter was moved into the same funnel dropdown as a horizontal row (1–5). 
+- **Action Button Consolidation**: Add Videos, Subscriptions, and Bulk Tag tools were wrapped into a single **Plus** button dropdown within `VideoSortFilters` mirroring the Funnel structure.
+- **Pagination Addition**: Simple `ChevronLeft` and `ChevronRight` page navigation buttons and a page number indicator were appended immediately following the Plus dropdown natively inside `VideoSortFilters`, accepting `currentPage` and `totalPages` props.
+- **Aesthetic Refinements**: `VideoSortFilters` buttons alongside the Go Back and Close buttons stripped out backdrop boundaries, strictly employing white icons cleanly outlined with a thick black drop-shadow (`ICON_WHITE_OUTLINE`).
+- **Sticky toolbar backdrop**: The shifting transparency and `backdrop-blur` UI effect on scrolling was flattened completely into a static solid light blue backdrop color (`#cde5fa`) matching the native app theme uniformly.
 - **Folder prism**: The separate arrow button to the right of the prism was removed. **Right-click** anywhere on the prism toggles between populated-only (only segments with ≥1 item, equal width) and all segments. Tooltip on the prism reflects the current mode.
-- **Toolbar layout**: Add (uploader), Refresh (subscriptions), and Bulk tag were placed **left of the prism** (right of the filter). Back (when history or preview) and Close (fullscreen) remain on the **far right**. **TopNavigation** no longer shows Add, Subscriptions, Bulk tag, Back, or Close when on Videos page—only the mini header title and the Twitter style toggle on the right remain there.
-- **Sticky toolbar**: Container uses `overflow-visible` so the funnel dropdown is not clipped by the bar; dropdown uses `z-50`.
+- **Sticky toolbar setup**: Container uses `overflow-visible` so the funnel and actions dropdowns are not clipped; dropdowns use `z-50`.
