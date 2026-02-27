@@ -50,6 +50,7 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
   const {
     selectedFolder,
     setSelectedFolder,
+    setHoveredFolder,
     setVideoFolders,
     videoFolderAssignments,
     loadVideoFolders,
@@ -58,6 +59,8 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
     bulkTagMode,
     setBulkTagMode,
     clearBulkTagSelections,
+    allFolderMetadata,
+    setAllFolderMetadata,
   } = useFolderStore();
   const { shuffleStates, getShuffleState } = useShuffleStore();
   const {
@@ -162,7 +165,6 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
   const [showUploader, setShowUploader] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [folderMetadata, setFolderMetadataState] = useState(null); // { custom_name, description }
-  const [allFolderMetadata, setAllFolderMetadata] = useState({}); // Map: folderColor -> { name, description }
 
   // Use preview items if available, otherwise use current playlist items
   const activePlaylistItems = previewPlaylistItems || currentPlaylistItems;
@@ -1651,6 +1653,8 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
                         <button
                           key={seg.type + (seg.id ?? 'all')}
                           onClick={() => setSelectedFolder(seg.id)}
+                          onMouseEnter={() => setHoveredFolder(seg.id)}
+                          onMouseLeave={() => setHoveredFolder(undefined)}
                           className={`h-full flex-1 min-w-0 flex items-center justify-center transition-all tabular-nums px-0.5 text-[10px] font-bold leading-none ${isSelected
                             ? `opacity-100 z-10 relative after:content-[""] after:absolute after:inset-0 after:ring-2 after:ring-inset ${ringClass}`
                             : 'opacity-60 hover:opacity-100'
@@ -1667,6 +1671,8 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
                       {/* All */}
                       <button
                         onClick={() => setSelectedFolder(null)}
+                        onMouseEnter={() => setHoveredFolder(null)}
+                        onMouseLeave={() => setHoveredFolder(undefined)}
                         className={`h-full min-w-[2.25rem] flex-1 flex items-center justify-center transition-all rounded-l-md tabular-nums px-px max-w-[3rem] ${selectedFolder === null
                           ? 'opacity-100 z-10 relative after:content-[""] after:absolute after:inset-0 after:ring-2 after:ring-inset after:ring-black/10'
                           : 'opacity-60 hover:opacity-100'
@@ -1678,6 +1684,8 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
                       {/* Unsorted */}
                       <button
                         onClick={() => setSelectedFolder('unsorted')}
+                        onMouseEnter={() => setHoveredFolder('unsorted')}
+                        onMouseLeave={() => setHoveredFolder(undefined)}
                         className={`h-full min-w-[2.25rem] flex-1 flex items-center justify-center transition-all tabular-nums px-px max-w-[3rem] ${selectedFolder === 'unsorted'
                           ? 'opacity-100 z-10 relative after:content-[""] after:absolute after:inset-0 after:ring-2 after:ring-inset after:ring-white/30'
                           : 'opacity-60 hover:opacity-100'
@@ -1695,6 +1703,8 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
                           <button
                             key={color.id}
                             onClick={() => setSelectedFolder(color.id)}
+                            onMouseEnter={() => setHoveredFolder(color.id)}
+                            onMouseLeave={() => setHoveredFolder(undefined)}
                             className={`h-full flex-1 min-w-0 flex items-center justify-center transition-all tabular-nums px-0.5 ${isSelected
                               ? 'opacity-100 z-10 relative after:content-[""] after:absolute after:inset-0 after:ring-2 after:ring-inset after:ring-white/50'
                               : 'opacity-60 hover:opacity-100'

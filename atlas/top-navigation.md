@@ -20,9 +20,11 @@ The Top Navigation is split into a left section (Title & Group Carousel Actions)
 ### Left Section (Context & Carousel Controls)
 
 *   **Playlists Page (Groups Mode):** Displays quick-action buttons to override the visual style of *all* group carousels at once (Large, Small, or Bar layouts).
-*   **Title and Description:** 
-    *   On the Playlists page, it simply shows "Playlists".
-    *   On a specific playlist or folder, it securely truncates and displays the specific Playlist Name, optionally appending the active Folder Name (e.g., "My Playlist - Emerald"). It also displays an optional single-line description below the title.
+*   **Floating Context Title:** 
+    *   Instead of a static layout, the active context (current playlist, active colored folder, or specifically hovered elements) is displayed as a prominent **floating title** using a React Portal (spanning over other UI elements like the App Banner).
+    *   This floating title tracks the user's focus dynamically. When hovering over colored folder options in the `PlaylistBar` prism, `GroupPlaylistCarousel` boxes, or the `PlaylistGroupColumn` (assign to folder), the title instantly updates its text and styling to match the hovered color context (falling back to user-defined custom carousels names if hovering over an existing group). 
+    *   **Aesthetics:** The font uses a heavy weight (`font-black`) with a high-contrast text stroke/shadow (white text with a thick black outline, or inverted black text with a white stroke for "Unsorted" views).
+    *   **Splatter Glow Backdrop:** The background relies on a massive, dual-layered dynamic glow rather than a hard rectangular box. A wide, soft diffuse glow (50px blur) provides atmosphere, while an intense core glow (30px blur, higher opacity) sits directly behind the text. Both glows use the active folder's hex color so the title radiates its context vibrantly.
 
 ### Right Section (Actions)
 

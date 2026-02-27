@@ -494,6 +494,11 @@ For detailed information about the application's theme system and recent color c
 3. **Use cross-references** to navigate between related topics
 
 ### Update Log (Current Session)
+- **Floating Title & Glow Effect**:
+  - **Dynamic Title Tracking**: Built a new active floating title into `TopNavigation.jsx` using a React Portal. The title dynamically tracks hovered colored folders across the `PlaylistBar` prism, `GroupPlaylistCarousel`s, and `PlaylistGroupColumn` (assign overlays), immediately updating the display text based on the contextual folder or custom carousel name.
+  - **Splattered Aura Glow**: Replaced the static box backdrop with a massive, vibrant splatter glow using stacked, offset box shadows (a diffuse wide aura at 50px blur / 70% opacity and an intense core at 30px / 85% opacity). The glow instantly translates colors from the hovered or active colored folder.
+  - **Text Styling Enhancement**: Switched the title typography to a thick `font-black`, outlined aesthetic to sharply punch through the bright, colored glow layout.
+  - **Documentation**: Updated `atlas/top-navigation.md` to detail the Portal floating element and spline background glow behavior.
 - **Videos Page Sticky Toolbar**: See **`video-sort-filters.md`** §8 (Change log) for VideoSortFilters funnel dropdown, prism right-click toggle, toolbar layout (Add/Refresh/Bulk tag left of prism, Back/Close right), and TopNavigation removals.
 - **Player Controller See-Through & Metadata**:
   - **Top Playlist Menu**: Removed video metadata (author, view count, year published) from the bottom bar; only navigation controls (Previous, Grid, Next) remain.

@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { Layers, X, Check, Plus } from 'lucide-react';
 import { usePlaylistGroupStore } from '../store/playlistGroupStore';
+import { useFolderStore } from '../store/folderStore';
 import { FOLDER_COLORS } from '../utils/folderColors';
 
 /**
@@ -17,6 +18,7 @@ const PlaylistGroupColumn = ({ playlist, onClose, playlists = [], playlistThumbn
         removePlaylistFromGroup,
         isPlaylistInGroup,
     } = usePlaylistGroupStore();
+    const { setHoveredFolder } = useFolderStore();
 
     useEffect(() => {
         if (columnRef.current) {
@@ -81,6 +83,8 @@ const PlaylistGroupColumn = ({ playlist, onClose, playlists = [], playlistThumbn
                             <div
                                 key={color.id}
                                 onClick={(e) => handlePlaceholderClick(e, color)}
+                                onMouseEnter={() => setHoveredFolder(color.id)}
+                                onMouseLeave={() => setHoveredFolder(undefined)}
                                 className="group relative flex-shrink-0 transition-all duration-300 transform hover:scale-[1.02] cursor-pointer"
                                 style={{ width: '500px' }}
                             >
@@ -130,6 +134,8 @@ const PlaylistGroupColumn = ({ playlist, onClose, playlists = [], playlistThumbn
                         <div
                             key={group.id}
                             onClick={(e) => handleGroupClick(e, group)}
+                            onMouseEnter={() => setHoveredFolder(color.id)}
+                            onMouseLeave={() => setHoveredFolder(undefined)}
                             className="group relative flex-shrink-0 transition-all duration-300 transform hover:scale-[1.02] cursor-pointer"
                             style={{ width: '500px' }}
                         >

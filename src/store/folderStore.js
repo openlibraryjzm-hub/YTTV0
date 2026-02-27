@@ -23,17 +23,20 @@ const saveQuickAssignFolder = (folderId) => {
 const useFolderStore = create((set) => ({
   selectedFolder: null, // null means "all videos", otherwise a color id
   setSelectedFolder: (folder) => set({ selectedFolder: folder }),
-  
+
+  hoveredFolder: undefined, // undefined means not hovering anything. Can be null ('all'), 'unsorted', or color id
+  setHoveredFolder: (folder) => set({ hoveredFolder: folder }),
+
   // Quick assign folder preference (defaults to first color)
   quickAssignFolder: loadQuickAssignFolder(),
   setQuickAssignFolder: (folderId) => {
     saveQuickAssignFolder(folderId);
     set({ quickAssignFolder: folderId });
   },
-  
+
   // Map of item_id -> array of folder colors
   videoFolderAssignments: {},
-  
+
   // Set folder assignments for a video
   setVideoFolders: (itemId, folders) => set((state) => ({
     videoFolderAssignments: {
@@ -41,7 +44,7 @@ const useFolderStore = create((set) => ({
       [itemId]: folders,
     },
   })),
-  
+
   // Load folder assignments for multiple videos
   loadVideoFolders: (assignments) => {
     const map = {};
@@ -50,18 +53,24 @@ const useFolderStore = create((set) => ({
     });
     set({ videoFolderAssignments: map });
   },
-  
+
   // Clear all assignments
   clearAssignments: () => set({ videoFolderAssignments: {} }),
-  
+
   // Show colored folders in playlist menu
   showColoredFolders: false,
   setShowColoredFolders: (enabled) => set({ showColoredFolders: enabled }),
-  
+
+  // Custom metadata for folders in active context
+  allFolderMetadata: {},
+  setAllFolderMetadata: (data) => typeof data === 'function'
+    ? set((state) => ({ allFolderMetadata: data(state.allFolderMetadata) }))
+    : set({ allFolderMetadata: data }),
+
   // Bulk tag mode
   bulkTagMode: false,
   setBulkTagMode: (enabled) => set({ bulkTagMode: enabled }),
-  
+
   // Bulk tag selections: Map of videoId -> Set of folder colors
   bulkTagSelections: {},
   addBulkTagSelection: (videoId, folderColor) => set((state) => {

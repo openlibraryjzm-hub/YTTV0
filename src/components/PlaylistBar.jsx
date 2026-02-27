@@ -5,6 +5,7 @@ import VideoSortFilters from './VideoSortFilters';
 import { useNavigationStore } from '../store/navigationStore';
 import { useLayoutStore } from '../store/layoutStore';
 import { usePlaylistStore } from '../store/playlistStore';
+import { useFolderStore } from '../store/folderStore';
 
 /**
  * Sticky toolbar for the Playlists page: VideoSortFilters + Add/Refresh/Bulk tag + folder prism + Back/Close.
@@ -21,6 +22,7 @@ const PlaylistBar = ({
   const { history, goBack, setCurrentPage } = useNavigationStore();
   const { setViewMode } = useLayoutStore();
   const { previewPlaylistId, clearPreview } = usePlaylistStore();
+  const { allFolderMetadata, setHoveredFolder } = useFolderStore();
   const [sortBy, setSortBy] = useState('shuffle');
   const [sortDirection, setSortDirection] = useState('desc');
   const [selectedRatings, setSelectedRatings] = useState([]);
@@ -54,7 +56,6 @@ const PlaylistBar = ({
     });
     return segments;
   }, [groupColorIdSet, allPlaylistCount, unsortedCount]);
-  const allFolderMetadataPrism = {};
 
   return (
     <>
@@ -137,12 +138,14 @@ const PlaylistBar = ({
                       key={seg.type + (seg.id ?? 'all')}
                       type="button"
                       onClick={() => onFolderSelect(seg.id)}
+                      onMouseEnter={() => setHoveredFolder(seg.id)}
+                      onMouseLeave={() => setHoveredFolder(undefined)}
                       className={`h-full flex-1 min-w-0 flex items-center justify-center transition-all tabular-nums px-0.5 text-[10px] font-bold leading-none ${isSelected
                         ? `opacity-100 z-10 relative after:content-[""] after:absolute after:inset-0 after:ring-2 after:ring-inset ${ringClass}`
                         : 'opacity-60 hover:opacity-100'
                         } ${isFirst ? 'rounded-l-md' : ''} ${isLast ? 'rounded-r-md' : ''} ${bg}`}
                       style={seg.hex ? { backgroundColor: seg.hex } : undefined}
-                      title={isAll ? `Show All (${seg.count})` : isUnsorted ? `Unsorted (${seg.count})` : `${allFolderMetadataPrism[seg.id]?.name || seg.label} (${seg.count})`}
+                      title={isAll ? `Show All (${seg.count})` : isUnsorted ? `Unsorted (${seg.count})` : `${allFolderMetadata[seg.id]?.name || seg.label} (${seg.count})`}
                     >
                       <span className={seg.hex ? 'text-white/90 drop-shadow-md' : ''}>{seg.count}</span>
                     </button>
@@ -153,6 +156,8 @@ const PlaylistBar = ({
                   <button
                     type="button"
                     onClick={() => onFolderSelect(null)}
+                    onMouseEnter={() => setHoveredFolder(null)}
+                    onMouseLeave={() => setHoveredFolder(undefined)}
                     className={`h-full min-w-[2.25rem] flex-1 flex items-center justify-center transition-all rounded-l-md tabular-nums px-px max-w-[3rem] ${selectedFolder === null
                       ? 'opacity-100 z-10 relative after:content-[""] after:absolute after:inset-0 after:ring-2 after:ring-inset after:ring-black/10'
                       : 'opacity-60 hover:opacity-100'
@@ -164,6 +169,8 @@ const PlaylistBar = ({
                   <button
                     type="button"
                     onClick={() => onFolderSelect('unsorted')}
+                    onMouseEnter={() => setHoveredFolder('unsorted')}
+                    onMouseLeave={() => setHoveredFolder(undefined)}
                     className={`h-full min-w-[2.25rem] flex-1 flex items-center justify-center transition-all tabular-nums px-px max-w-[3rem] ${selectedFolder === 'unsorted'
                       ? 'opacity-100 z-10 relative after:content-[""] after:absolute after:inset-0 after:ring-2 after:ring-inset after:ring-white/30'
                       : 'opacity-60 hover:opacity-100'
@@ -181,12 +188,14 @@ const PlaylistBar = ({
                         key={color.id}
                         type="button"
                         onClick={() => onFolderSelect(color.id)}
+                        onMouseEnter={() => setHoveredFolder(color.id)}
+                        onMouseLeave={() => setHoveredFolder(undefined)}
                         className={`h-full flex-1 min-w-0 flex items-center justify-center transition-all tabular-nums px-0.5 ${isSelected
                           ? 'opacity-100 z-10 relative after:content-[""] after:absolute after:inset-0 after:ring-2 after:ring-inset after:ring-white/50'
                           : 'opacity-60 hover:opacity-100'
                           } ${isLast ? 'rounded-r-md' : ''}`}
                         style={{ backgroundColor: color.hex }}
-                        title={`${allFolderMetadataPrism[color.id]?.name || color.name} (${count})`}
+                        title={`${allFolderMetadata[color.id]?.name || color.name} (${count})`}
                       >
                         {count > 0 && (
                           <span className="text-[10px] font-bold text-white/90 drop-shadow-md truncate max-w-full">

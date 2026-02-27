@@ -139,7 +139,7 @@ const PlaylistsPage = ({ onVideoSelect }) => {
     if (!currentPlaylistItems || currentPlaylistItems.length === 0) return null;
     return currentPlaylistItems[currentVideoIndex] || currentPlaylistItems[0];
   }, [currentPlaylistId, playlists, playlistThumbnails, currentPlaylistItems, currentVideoIndex]);
-  const { showColoredFolders, setShowColoredFolders } = useFolderStore();
+  const { showColoredFolders, setShowColoredFolders, setHoveredFolder } = useFolderStore();
   const [imageLoadErrors, setImageLoadErrors] = useState(new Set());
   const { activeTabId } = useTabStore();
   const { groups: playlistGroups, getGroupIdsForPlaylist, getGroupByColorId, getNextAvailableColorId, addGroup, renameGroup, removeGroup, setActiveGroupId } = usePlaylistGroupStore();
@@ -852,6 +852,8 @@ const PlaylistsPage = ({ onVideoSelect }) => {
                       onDelete={removeGroup}
                       effectiveSizeOverride="large"
                       enableGlobalScrollLock={true}
+                      onMouseEnter={() => setHoveredFolder(group.folderColorId)}
+                      onMouseLeave={() => setHoveredFolder(undefined)}
                     >
                       {group.playlistIds
                         .map((id) => playlists.find((p) => Number(p.id) === Number(id)))

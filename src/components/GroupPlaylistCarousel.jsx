@@ -9,7 +9,7 @@ import { usePlaylistGroupStore } from '../store/playlistGroupStore';
  * Modes: 'large', 'small' (~3 visible), 'bar' (thin bar, no thumbnails).
  * When effectiveSizeOverride is set (All vs colored-folder prism context), it overrides stored mode for layout: 'small' on All page, 'large' when viewing a single colored folder.
  */
-const GroupPlaylistCarousel = ({ children, title = 'Featured playlists', groupId, onRename, onDelete, mode: modeProp, effectiveSizeOverride, enableGlobalScrollLock = false }) => {
+const GroupPlaylistCarousel = ({ children, title = 'Featured playlists', groupId, onRename, onDelete, mode: modeProp, effectiveSizeOverride, enableGlobalScrollLock = false, onMouseEnter, onMouseLeave }) => {
     const scrollContainerRef = useRef(null);
 
     const storedMode = usePlaylistGroupStore((s) => (groupId != null ? s.groupCarouselModes?.[groupId] ?? 'large' : 'large'));
@@ -72,7 +72,7 @@ const GroupPlaylistCarousel = ({ children, title = 'Featured playlists', groupId
     // Empty carousel
     if (count === 0) {
         return (
-            <div className="px-4">
+            <div className="px-4" onMouseEnter={onMouseEnter} onMouseLeave={onMouseLeave}>
                 <div className={boxClassName}>
                     {topBar}
                     {!isBarMode && (
@@ -88,7 +88,7 @@ const GroupPlaylistCarousel = ({ children, title = 'Featured playlists', groupId
     // Bar mode: only top bar (with inline scroll buttons); hidden strip with fixed-width slots so scroll works
     if (isBarMode) {
         return (
-            <div className="px-4">
+            <div className="px-4" onMouseEnter={onMouseEnter} onMouseLeave={onMouseLeave}>
                 <div className={`${boxClassName} relative`}>
                     {topBar}
                     <div
@@ -113,7 +113,7 @@ const GroupPlaylistCarousel = ({ children, title = 'Featured playlists', groupId
     const gapClass = isSmallMode ? 'gap-4' : 'gap-10';
 
     return (
-        <div className="px-4">
+        <div className="px-4" onMouseEnter={onMouseEnter} onMouseLeave={onMouseLeave}>
             <div className={boxClassName}>
                 {topBar}
                 <div className="relative min-w-0">
