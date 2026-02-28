@@ -44,6 +44,15 @@ const VideoCard = ({
 }) => {
   const { quickAssignFolder } = useFolderStore();
 
+  const menuRef = useRef(null);
+
+  const handleContextMenu = (e) => {
+    e.preventDefault();
+    if (!bulkTagMode && menuRef.current) {
+      menuRef.current.openAt(e.clientX, e.clientY);
+    }
+  };
+
   // Drumstick rating state (used by 3-dot menu)
   const [drumstickRating, setDrumstickRatingState] = useState(video.drumstick_rating || 0);
 
@@ -95,6 +104,17 @@ const VideoCard = ({
 
   // Flattened splatter icon path for re-use
   const splatterPath = "M47.5,12.2c0,0-2.3,16.2-7.8,19.3c-5.5,3.1-17.7-6.2-17.7-6.2s3.8,11.2-1.7,16.5c-5.5,5.3-20.2-2.1-20.2-2.1 s12.5,9.6,9.2,16.5c-3.3,6.9-10.7,5.5-10.7,5.5s12.9,5.7,12.5,14.7c-0.4,9-10.6,15.6-10.6,15.6s15.3-1.6,20.2,4.2 c4.9,5.8-0.9,13.8-0.9,13.8s9.4-9,16.9-5.3c7.5,3.7,5.9,14.6,5.9,14.6s5.9-11.8,13.6-10.6c7.7,1.2,13.6,9.5,13.6,9.5 s-1.8-13.6,5.3-16.7c7.1-3.1,16.5,2.7,16.5,2.7s-8.1-13.6-1.5-18.9c6.6-5.3,18.8,0.7,18.8,0.7s-13.2-8.1-11.1-16.7 C99.2,40.4,100,28.8,100,28.8s-12,8.8-17.7,3.1c-5.7-5.7-1.3-18.8-1.3-18.8s-9,11.6-16.5,9.4c-7.5-2.2-11.1-12.2-11.1-12.2 S50.4,14.5,47.5,12.2z";
+
+  const formatDuration = (totalSeconds) => {
+    if (!totalSeconds) return '';
+    const h = Math.floor(totalSeconds / 3600);
+    const m = Math.floor((totalSeconds % 3600) / 60);
+    const s = Math.floor(totalSeconds % 60);
+    if (h > 0) {
+      return `${h}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+    }
+    return `${m}:${s.toString().padStart(2, '0')}`;
+  };
 
   // Quick action - star for folder assignment (must be defined before badges)
   const quickActions = [];
@@ -156,23 +176,33 @@ const VideoCard = ({
   // Badges for thumbnail (now can safely use quickActions, menuOptions, submenuOptions)
   const badges = [
 
-    // Watched badge (only if NOT playing)
-    !isCurrentlyPlaying && isWatched && {
+    // Watched badge and Duration badge (Top Left)
+    (!isCurrentlyPlaying && isWatched) || video.duration_seconds ? {
       component: (
-        <div className="text-green-500 drop-shadow-md flex items-center justify-center filter drop-shadow-lg">
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={4}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-          </svg>
+        <div className="flex items-center gap-1.5">
+          {!isCurrentlyPlaying && isWatched && (
+            <div className="text-green-500 drop-shadow-md flex items-center justify-center filter drop-shadow-lg">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={4}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+          )}
+          {video.duration_seconds ? (
+            <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-black/80 text-white text-xs font-semibold px-1.5 py-0.5 rounded pointer-events-none whitespace-nowrap">
+              {formatDuration(video.duration_seconds)}
+            </div>
+          ) : null}
         </div>
       ),
       position: 'top-left',
-    },
+    } : null,
 
     // 3-Dot Menu - Bottom Right (overhauled: Pins, Folder, Rating, and actions)
     !bulkTagMode && cardStyle === 'twitter' && {
       component: (
         <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200">
           <VideoCardThreeDotMenu
+            ref={menuRef}
             video={video}
             playlistId={playlistId}
             isPinned={isPinnedVideo}
@@ -202,9 +232,10 @@ const VideoCard = ({
     return (
       <Card
         onClick={bulkTagMode ? undefined : onVideoClick}
+        onContextMenu={handleContextMenu}
         selected={isSelected}
         playing={isCurrentlyPlaying}
-        className={bulkTagMode ? 'cursor-default' : ''}
+        className={bulkTagMode ? 'cursor-default' : 'cursor-context-menu'}
         variant="minimal"
         rounded={false}
       >
@@ -287,9 +318,10 @@ const VideoCard = ({
   return (
     <div
       className={`group relative bg-white dark:bg-slate-800 rounded-2xl border border-black dark:border-black shadow-sm hover:shadow-md transition-all flex flex-col h-full ${isSelected ? 'ring-2 ring-sky-500' : ''
-        } ${isCurrentlyPlaying ? 'ring-4 ring-red-500' : ''} ${bulkTagMode ? 'overflow-visible cursor-default' : 'overflow-visible cursor-pointer'
+        } ${isCurrentlyPlaying ? 'ring-4 ring-red-500' : ''} ${bulkTagMode ? 'overflow-visible cursor-default' : 'overflow-visible cursor-context-menu'
         }`}
       onClick={bulkTagMode ? undefined : onVideoClick}
+      onContextMenu={handleContextMenu}
       style={bulkTagBorderColor ? { borderColor: bulkTagBorderColor, borderWidth: '2px' } : undefined}
     >
       {/* Thumbnail Section */}
@@ -326,6 +358,7 @@ const VideoCard = ({
           {!bulkTagMode && (
             <div className="flex items-center gap-1 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
               <VideoCardThreeDotMenu
+                ref={menuRef}
                 video={video}
                 playlistId={playlistId}
                 isPinned={isPinnedVideo}

@@ -12,7 +12,7 @@ This document describes the **Videos page sticky toolbar**: the icon-based sort/
 
 1. **Sort & rating filters** – `VideoSortFilters.jsx`: two toolbar buttons (Home, Funnel). Funnel dropdown contains sort options and rating filter.
 2. **Action buttons** – Add (uploader), Refresh (subscriptions; right-click = manage modal), Bulk tag (right-click = Auto-Tag). Same row, right of the filter; driven by `layoutStore`; VideosPage opens modals/refresh and clears one-shot flags.
-3. **Folder prism** – Inline in `VideosPage.jsx`: a colored segment bar (All, Unsorted, 16 folder colors) that fills the remaining width. **Right-click** anywhere on the prism toggles between populated-only and all-segments mode (no separate button).
+3. **Folder prism** – Inline in `VideosPage.jsx`: a colored segment bar (All, Unsorted, 16 folder colors) that fills the remaining width. **Right-click** anywhere on the prism opens a context menu. This menu allows toggling between populated-only and all-segments mode, as well as an option to rename the specific colored folder (or the main playlist if clicking the All/Unsorted segments).
 4. **Right side** – Back (when history or preview) and Close (fullscreen). These are the only Videos-page actions in the sticky bar on the right; **TopNavigation** no longer shows Add, Subscriptions, Bulk tag, Back, or Close when on Videos page (only the mini header title and the Twitter style toggle on the right remain there).
 
 **State ownership**: Sort mode, sort direction, selected ratings, and prism mode are local state in `VideosPage.jsx`. Folder selection is in `folderStore`; folder counts and segment data are derived in `VideosPage` from `videoFolderAssignments` and `activePlaylistItems`.
@@ -59,22 +59,23 @@ Icon-based sort and rating filter bar. **Home** and **Funnel** use Lucide icons;
 
 The **folder prism** is implemented inside `VideosPage.jsx`, not in `VideoSortFilters.jsx`. It occupies the middle and right part of the sticky toolbar row (flex-1, min-w-0). It shows segments for **All**, **Unsorted**, and the **16 folder colors** from `FOLDER_COLORS` (`src/utils/folderColors.js`). Clicking a segment sets the selected folder and filters the video grid (and updates header/folder context).
 
-### 3.1 Two Prism Modes (right-click toggle)
+### 3.1 Two Prism Modes & Context Menu (right-click)
 
-**Right-click on the prism** toggles between:
+**Right-click on the prism** opens a contextual menu with the following options:
 
-- **Populated-only (default)**  
-  - Only segments with **at least one item** are shown: All (always), Unsorted (if count ≥ 1), and each color that has count ≥ 1.  
-  - Segments are **equal width** (flex-1), so 2 segments or 7 segments are equally spaced in the allotted space.  
-  - Item counts are shown per segment.  
-  - Default when entering the Videos page: `prismOnlyPopulated === true`.
+1. **Prism Display Mode Toggle**: Switches between:
+   - **Populated-only (default)**  
+     - Only segments with **at least one item** are shown: All (always), Unsorted (if count ≥ 1), and each color that has count ≥ 1.  
+     - Segments are **equal width** (flex-1), so 2 segments or 7 segments are equally spaced in the allotted space.  
+     - Item counts are shown per segment.  
+     - Default when entering the Videos page: `prismOnlyPopulated === true`.
+   - **All segments**  
+     - All 18 segments are shown: All, Unsorted, and all 16 colors.  
+     - Each segment is flex-1 with min/max width constraints; colors with 0 items still appear (count hidden when 0).
 
-- **All segments**  
-  - All 18 segments are shown: All, Unsorted, and all 16 colors.  
-  - Each segment is flex-1 with min/max width constraints; colors with 0 items still appear (count hidden when 0).  
-  - Same right-click switches back to populated-only.
-
-**Right-click on prism**: Toggles between populated-only and all segments. Tooltip on the prism: “Right-click: show all segments” / “Right-click: only segments with items”.
+2. **Rename Folder**: Opens the `EditPlaylistModal` specialized for the segment you right-clicked on.
+   - Right-clicking a colored folder allows renaming that specific folder for the current playlist.
+   - Right-clicking the "All" or "Unsorted" segments allows renaming the current main playlist itself.
 
 ### 3.2 Segment Types and Appearance
 
@@ -92,7 +93,7 @@ Selected segment is emphasized with a ring (inset ring-2); All uses `after:ring-
   - `allCount`: total items (playlist items + orbs + banners for current playlist).  
   - `unsortedCount`: videos in current playlist with no folder assignment.
 - **Populated-only segments**: `prismPopulatedSegments` is a `useMemo`: All + Unsorted (if unsortedCount ≥ 1) + each color with count ≥ 1, in order. Used when `prismOnlyPopulated` is true.
-- **Prism mode**: `prismOnlyPopulated` (useState, default true); toggled by **right-clicking anywhere on the prism** (no separate button).
+- **Prism mode**: `prismOnlyPopulated` (useState, default true); toggled via the **right-click context menu** on the prism.
 
 Pagination and scroll position are reset when folder, sort, or rating filters change (including when switching prism mode if it changes which folder is conceptually “focused”; folder change itself triggers reset).
 
@@ -145,7 +146,7 @@ Progress and last-viewed data come from `getAllVideoProgress` / `getWatchedVideo
   - **Plus / Actions** (dropdown): Consolidated Add (uploader), Refresh (subscriptions), and Bulk tag functionalities.
   - **Pagination**: Left and Right chevron buttons flanking the current page number.
 - **Styling**: The buttons employ a floating `ICON_WHITE_OUTLINE` style (white fill with solid black drop-shadow) without boxy backgrounds. The sticky toolbar backdrop in `VideosPage` utilizes a solid light blue (`#cde5fa`) native app theme color completely replacing the prior transparency/backdrop-blur scroll effect.
-- **Folder prism**: Colored segment bar (All, Unsorted, 16 colors) in the same row. **Right-click on the prism** toggles “only segments with ≥1 item (equal width)” vs “all segments”. Default is populated-only.
+- **Folder prism**: Colored segment bar (All, Unsorted, 16 colors) in the same row. **Right-click on the prism** opens a context menu that contains options to rename the right-clicked segment (or playlist) and to toggle between populated-only (only segments with ≥1 item, equal width) and all segments display modes. Tooltip on the prism confirms it has a context menu.
 - State for sort, direction, ratings, pagination, and prism mode lives in `VideosPage`; folder selection in `folderStore`. Sorting and rating filtering are applied in `VideosPage` after folder filtering; pagination resets when any of these change.
 
 ---
@@ -157,5 +158,5 @@ Progress and last-viewed data come from `getAllVideoProgress` / `getWatchedVideo
 - **Pagination Addition**: Simple `ChevronLeft` and `ChevronRight` page navigation buttons and a page number indicator were appended immediately following the Plus dropdown natively inside `VideoSortFilters`, accepting `currentPage` and `totalPages` props.
 - **Aesthetic Refinements**: `VideoSortFilters` buttons alongside the Go Back and Close buttons stripped out backdrop boundaries, strictly employing white icons cleanly outlined with a thick black drop-shadow (`ICON_WHITE_OUTLINE`).
 - **Sticky toolbar backdrop**: The shifting transparency and `backdrop-blur` UI effect on scrolling was flattened completely into a static solid light blue backdrop color (`#cde5fa`) matching the native app theme uniformly.
-- **Folder prism**: The separate arrow button to the right of the prism was removed. **Right-click** anywhere on the prism toggles between populated-only (only segments with ≥1 item, equal width) and all segments. Tooltip on the prism reflects the current mode.
+- **Folder prism**: The separate arrow button to the right of the prism was removed. **Right-click** anywhere on the prism opens a context menu. We added the options to rename folders/playlists and toggle between populated-only (only segments with ≥1 item, equal width) and all segments. Tooltip on the prism reflects that a context menu is available.
 - **Sticky toolbar setup**: Container uses `overflow-visible` so the funnel and actions dropdowns are not clipped; dropdowns use `z-50`.

@@ -8,10 +8,11 @@ The **Video Card / Tweet Card 3-Dot Menu** is a single, vertical “all-in-one�
 
 ### 1.1 Trigger and Placement
 
-- **Trigger**: A 3-dot (⋮) button that appears on hover at the **bottom-right** of the card (thumbnail area).
-- **VideoCard**: Shown on both YouTube-style and Twitter-style cards when not in bulk tag mode.
-- **TweetCard**: Same trigger position on the media area; header CardActions were removed in favor of this menu.
-- **Opening**: Click the 3-dot to open the menu. It is positioned **above the card row**, centered on the card that was clicked, with a fixed vertical offset so it sits clearly above the grid.
+- **Primary Trigger (Right-Click)**: Right-clicking anywhere on a `VideoCard` opens the menu as a context menu precisely at the cursor's position. The card shows a `cursor-context-menu` on hover to indicate this.
+- **Secondary Trigger (3-Dot)**: A 3-dot (⋮) button that appears on hover at the **bottom-right** of the card (thumbnail area).
+- **VideoCard**: Both triggers are available when not in bulk tag mode.
+- **Opening (3-Dot)**: Click the 3-dot to open the menu. It is positioned below or above the trigger button.
+- **Opening (Right-Click)**: Right-click the card to open the menu at the cursor's exact coordinates.
 
 ### 1.2 Menu Layout (Vertical)
 
@@ -29,7 +30,8 @@ The menu is a **vertical standard popup** with these sections from top to bottom
 
 ### 1.3 Behavior
 
-- **Trigger**: Click the 3-dot to open the menu. Positions traditionally, directly under the trigger button. If constrained by bottom screen bounds, it pushes upward.
+- **Trigger (3-Dot)**: Click the 3-dot to open the menu. Positions traditionally, directly under the trigger button. If constrained by bottom screen bounds, it pushes upward.
+- **Trigger (Right-Click Context Menu)**: Right-click the card and the menu will follow the exact mouse coordinates, functioning just like a native OS context menu.
 - **Folder Grid Pop-out**: Clicking "Colored Folders..." opens the color grid adjacent to the menu without closing the main menu.
 - **Close**: Click outside or scroll; menu closes.
 - **Bulk tag mode**: When the Videos page is in bulk tag mode, the 3-dot menu is **hidden** on cards; folder assignment is done via the bulk-tag strip on the card instead.

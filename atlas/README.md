@@ -93,7 +93,7 @@ yttv2/
 │   │   ├── PlaylistBar.jsx              # Playlists page sticky toolbar: VideoSortFilters + Add/Refresh/Bulk + folder prism + Back/Close
 │   │   ├── InfiniteScrollWrapper.jsx   # Infinite/Looping horizontal scroll wrapper
 │   │   ├── PageBanner.jsx              # Banner with metadata, media carousel (continue/pinned/ASCII), animated patterns
-│   │   ├── EditPlaylistModal.jsx       # Modal for editing playlist/folder metadata
+│   │   ├── EditPlaylistModal.jsx       # Modal for renaming playlists and colored folders
 │   │   ├── SettingsPage.jsx            # [DEPRECATED] Legacy settings hub
 │   │   ├── MainSettingsPage.jsx        # New Settings Hub (Left Square + Right Popup layout)
 │   │   ├── OrbPage.jsx                 # Dedicated Orb configuration page with presets grid
@@ -494,6 +494,10 @@ For detailed information about the application's theme system and recent color c
 3. **Use cross-references** to navigate between related topics
 
 ### Update Log (Current Session)
+- **Context Menus & Renaming Capabilities**:
+  - **Prism Context Menu**: The folder prism in the Videos page sticky toolbar now features a right-click context menu offering `Expand all colored folders` and `Rename [Folder/Playlist]`.
+  - **VideoCard Context Menu**: Right-clicking anywhere on a `VideoCard` directly opens the `VideoCardThreeDotMenu`, behaving like a native context menu via `forwardRef` and `useImperativeHandle(openAt)`. Card displays a `cursor-context-menu` pointer.
+  - **EditPlaylistModal Consolidation**: The modal was refactored to focus solely on renaming, eliminating unused fields (description, custom ASCII, and page banner backgrounds). Its positioning was altered to a sleek floating side panel (`z-[10000]`) avoiding UI overlap.
 - **Floating Title & Glow Effect**:
   - **Dynamic Title Tracking**: Built a new active floating title into `TopNavigation.jsx` using a React Portal. The title dynamically tracks hovered colored folders across the `PlaylistBar` prism, `GroupPlaylistCarousel`s, and `PlaylistGroupColumn` (assign overlays), immediately updating the display text based on the contextual folder or custom carousel name.
   - **Splattered Aura Glow**: Replaced the static box backdrop with a massive, vibrant splatter glow using stacked, offset box shadows (a diffuse wide aura at 50px blur / 70% opacity and an intense core at 30px / 85% opacity). The glow instantly translates colors from the hovered or active colored folder.

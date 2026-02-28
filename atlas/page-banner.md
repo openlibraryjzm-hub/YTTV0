@@ -139,7 +139,6 @@ Users see a contextual banner (220px fixed height) at the top of scrollable cont
 - `src/components/OrbPage.jsx`: Uses PageBanner for Orb configuration page
 - `src/components/YouPage.jsx`: Uses PageBanner for Signature & Profile configuration page
 - `src/components/AppPage.jsx`: Uses PageBanner for App configuration page
-- `src/components/EditPlaylistModal.jsx`: Allows uploading custom page banner images
 
 **State Management:**
 - `src/store/configStore.js`:
@@ -516,13 +515,11 @@ Users see a contextual banner (220px fixed height) at the top of scrollable cont
 **6: Customization Options**
 
 **Via EditPlaylistModal:**
-- **Location**: Available through playlist context menu or other entry points
+**Via EditPlaylistModal:**
+- **Location**: Available through right-clicking colored folders in the folder prism or playlist level context menus
 - **Features**:
   - Rename playlist/folder
-  - Update description
-  - Upload custom page banner image
-  - Custom banners saved to `folder_metadata` table
-  - **Available**: For "Unsorted Videos" view (supports editing name/description/ASCII)
+  - **Available**: For "Unsorted Videos" view (supports editing name)
 
 **Via Settings:**
 - **Location**: Settings → Appearance → Page Banner (first section at top of Appearance tab)

@@ -233,7 +233,7 @@ Users see a horizontal scrolling layout with two rows of video cards showing vid
 - `src/components/PlaylistSelectionModal.jsx`: Modal for selecting playlist (Move/Copy actions)
 - `src/components/StickyVideoCarousel.jsx`: Sticky video grid/carousel component
 - `src/components/PageBanner.jsx`: Banner component for playlist/folder titles
-- `src/components/EditPlaylistModal.jsx`: Modal for editing playlist metadata
+- `src/components/EditPlaylistModal.jsx`: Modal for renaming playlists and colored folders
 - `src/components/BannerPresetCard.jsx`: Preset card for App Banner presets (rendered in grid)
 
 

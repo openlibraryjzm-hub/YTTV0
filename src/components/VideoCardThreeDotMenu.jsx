@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, forwardRef, useImperativeHandle } from 'react';
 import ReactDOM from 'react-dom';
 import { MoreVertical, Pin, Star, Folder, ChevronRight, ChevronLeft } from 'lucide-react';
 import BulkTagColorGrid from './BulkTagColorGrid';
@@ -9,7 +9,7 @@ import DrumstickRating from './DrumstickRating';
  * Consolidates: Pins, Folder assignment (BulkTagColorGrid via side popout), 
  * Drumstick rating, and standard actions in a traditional vertical list.
  */
-const VideoCardThreeDotMenu = ({
+const VideoCardThreeDotMenu = forwardRef(({
   video,
   playlistId,
   // Pin
@@ -31,7 +31,7 @@ const VideoCardThreeDotMenu = ({
   menuOptions = [],
   onMenuOptionClick,
   triggerClassName = '',
-}) => {
+}, ref) => {
   const [isOpen, setIsOpen] = useState(false);
   const [position, setPosition] = useState({ top: 0, left: 0 });
   const [folderGridOpen, setFolderGridOpen] = useState(false);
@@ -42,6 +42,15 @@ const VideoCardThreeDotMenu = ({
   const menuRef = useRef(null);
   const folderBtnRef = useRef(null);
   const folderGridRef = useRef(null);
+
+  useImperativeHandle(ref, () => ({
+    openAt: (clientX, clientY) => {
+      setIsOpen(true);
+      // Wait for next render so menuRef is populated, then position will auto-adjust via useEffect,
+      // but we need an initial projection.
+      setPosition({ top: clientY, left: clientX });
+    }
+  }));
 
   const handleToggle = (e) => {
     e.preventDefault();
@@ -81,7 +90,7 @@ const VideoCardThreeDotMenu = ({
       // If clicking outside the main menu and button, close everything
       if (
         menuRef.current && !menuRef.current.contains(event.target) &&
-        buttonRef.current && !buttonRef.current.contains(event.target)
+        (!buttonRef.current || !buttonRef.current.contains(event.target))
       ) {
         setIsOpen(false);
         setFolderGridOpen(false);
@@ -332,6 +341,6 @@ const VideoCardThreeDotMenu = ({
       )}
     </>
   );
-};
+});
 
 export default VideoCardThreeDotMenu;

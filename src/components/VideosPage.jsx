@@ -28,6 +28,7 @@ import TweetCard from './TweetCard';
 import OrbCard from './OrbCard';
 import BannerPresetCard from './BannerPresetCard';
 import AutoTagModal from './AutoTagModal';
+import FolderPrismContextMenu from './FolderPrismContextMenu';
 import SubscriptionManagerModal from './SubscriptionManagerModal';
 import VideoSortFilters from './VideoSortFilters';
 
@@ -153,6 +154,10 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
   const [sortDirection, setSortDirection] = useState('desc'); // 'asc', 'desc'
   const [selectedRatings, setSelectedRatings] = useState([]); // 1-5 multi-select for rating filter
   const [prismOnlyPopulated, setPrismOnlyPopulated] = useState(true); // when true, prism shows only segments with ≥1 item, equal width; default on for Videos page
+  const [prismMenuOpen, setPrismMenuOpen] = useState(false);
+  const [prismMenuPosition, setPrismMenuPosition] = useState({ top: 0, left: 0 });
+  const [prismMenuContextFolder, setPrismMenuContextFolder] = useState(null);
+  const [prismMenuContextLabel, setPrismMenuContextLabel] = useState("");
   const [includeUnwatched, setIncludeUnwatched] = useState(true);
   const [showOnlyCompleted, setShowOnlyCompleted] = useState(false);
   const [watchedVideoIds, setWatchedVideoIds] = useState(new Set());
@@ -385,6 +390,15 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
   useEffect(() => {
     setSelectedFolder(null);
   }, [activePlaylistId, setSelectedFolder]);
+
+  const handlePrismContextMenu = (e, folderId, label) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setPrismMenuContextFolder(folderId);
+    setPrismMenuContextLabel(label);
+    setPrismMenuPosition({ top: e.clientY, left: e.clientX });
+    setPrismMenuOpen(true);
+  };
 
   // Clear bulk tag selections when exiting bulk tag mode
   useEffect(() => {
@@ -1086,6 +1100,12 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
         await setFolderMetadata(activePlaylistId, selectedFolder, data.name, data.description, data.customAscii);
         // Refresh local state
         setFolderMetadataState({ name: data.name, description: data.description, customAscii: data.customAscii });
+
+        // Refresh the global zustand store that powers TopNavigation and other global spots
+        setAllFolderMetadata(prev => ({
+          ...prev,
+          [selectedFolder]: { ...prev[selectedFolder], name: data.name, description: data.description }
+        }));
       } else {
         // Update Playlist Metadata
         await updatePlaylist(activePlaylistId, data.name, data.description, data.customAscii);
@@ -1633,9 +1653,13 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
                   className="flex items-center h-7 min-w-0 flex-1 border-2 border-black rounded-lg overflow-hidden cursor-context-menu"
                   onContextMenu={(e) => {
                     e.preventDefault();
-                    setPrismOnlyPopulated((p) => !p);
+                    // Fallback if they right-click exactly on a 0px border / gap
+                    setPrismMenuPosition({ top: e.clientY, left: e.clientX });
+                    setPrismMenuContextFolder(selectedFolder);
+                    setPrismMenuContextLabel("Folder");
+                    setPrismMenuOpen(true);
                   }}
-                  title={prismOnlyPopulated ? 'Right-click: show all segments' : 'Right-click: only segments with items'}
+                  title={prismOnlyPopulated ? 'Right-click: Context Menu' : 'Right-click: Context Menu'}
                 >
                   {prismOnlyPopulated ? (
                     /* Only segments with ≥1 item; equal width */
@@ -1655,6 +1679,7 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
                           onClick={() => setSelectedFolder(seg.id)}
                           onMouseEnter={() => setHoveredFolder(seg.id)}
                           onMouseLeave={() => setHoveredFolder(undefined)}
+                          onContextMenu={(e) => handlePrismContextMenu(e, seg.id, isAll ? "Playlist" : isUnsorted ? "Unsorted" : (allFolderMetadata[seg.id]?.name || seg.label))}
                           className={`h-full flex-1 min-w-0 flex items-center justify-center transition-all tabular-nums px-0.5 text-[10px] font-bold leading-none ${isSelected
                             ? `opacity-100 z-10 relative after:content-[""] after:absolute after:inset-0 after:ring-2 after:ring-inset ${ringClass}`
                             : 'opacity-60 hover:opacity-100'
@@ -1673,6 +1698,7 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
                         onClick={() => setSelectedFolder(null)}
                         onMouseEnter={() => setHoveredFolder(null)}
                         onMouseLeave={() => setHoveredFolder(undefined)}
+                        onContextMenu={(e) => handlePrismContextMenu(e, null, "Playlist")}
                         className={`h-full min-w-[2.25rem] flex-1 flex items-center justify-center transition-all rounded-l-md tabular-nums px-px max-w-[3rem] ${selectedFolder === null
                           ? 'opacity-100 z-10 relative after:content-[""] after:absolute after:inset-0 after:ring-2 after:ring-inset after:ring-black/10'
                           : 'opacity-60 hover:opacity-100'
@@ -1686,6 +1712,7 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
                         onClick={() => setSelectedFolder('unsorted')}
                         onMouseEnter={() => setHoveredFolder('unsorted')}
                         onMouseLeave={() => setHoveredFolder(undefined)}
+                        onContextMenu={(e) => handlePrismContextMenu(e, 'unsorted', "Unsorted")}
                         className={`h-full min-w-[2.25rem] flex-1 flex items-center justify-center transition-all tabular-nums px-px max-w-[3rem] ${selectedFolder === 'unsorted'
                           ? 'opacity-100 z-10 relative after:content-[""] after:absolute after:inset-0 after:ring-2 after:ring-inset after:ring-white/30'
                           : 'opacity-60 hover:opacity-100'
@@ -1705,6 +1732,7 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
                             onClick={() => setSelectedFolder(color.id)}
                             onMouseEnter={() => setHoveredFolder(color.id)}
                             onMouseLeave={() => setHoveredFolder(undefined)}
+                            onContextMenu={(e) => handlePrismContextMenu(e, color.id, allFolderMetadata[color.id]?.name || color.name)}
                             className={`h-full flex-1 min-w-0 flex items-center justify-center transition-all tabular-nums px-0.5 ${isSelected
                               ? 'opacity-100 z-10 relative after:content-[""] after:absolute after:inset-0 after:ring-2 after:ring-inset after:ring-white/50'
                               : 'opacity-60 hover:opacity-100'
@@ -1769,6 +1797,19 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
           {/* Blurred app banner behind content only (excludes sticky toolbar / VideoSortFilters) */}
           <div className="relative overflow-hidden">
             <div className="relative z-10 px-4 pb-8">
+              {/* Context Menu for Folder Prism */}
+              <FolderPrismContextMenu
+                isOpen={prismMenuOpen}
+                position={prismMenuPosition}
+                onClose={() => setPrismMenuOpen(false)}
+                prismOnlyPopulated={prismOnlyPopulated}
+                setPrismOnlyPopulated={setPrismOnlyPopulated}
+                onRenameClick={() => {
+                  setSelectedFolder(prismMenuContextFolder);
+                  setShowEditModal(true);
+                }}
+                clickedSegmentLabel={prismMenuContextLabel}
+              />
               {/* Edit Playlist/Folder Modal */}
               <EditPlaylistModal
                 isOpen={showEditModal}

@@ -308,7 +308,8 @@ Users see video cards built using the Card component system with video-specific 
     - **Background**: Light sky blue (`#e0f2fe`) matching app theme (visible when image doesn't fill 16:9 ratio)
     - **Badges**:
       - **Top-left**: "Now Playing" indicator (3 animated bouncing dots in Warm Red, only when playing)
-      - **Top-left**: "Watched" indicator (Green tick icon, only when watched and not playing)
+      - **Top-left**: "Watched" indicator (Green tick icon, only when watched and not playing). Displays cleanly next to hover length badge.
+      - **Top-left (Hover)**: "Video Length" indicator displaying video duration format. Only visible during hover (`h:mm:ss` or `m:ss`).
 
       - **Top-right**: Combined controls:
         - **Pin Button**: Dual-action (click for normal, hold for priority)
@@ -338,6 +339,7 @@ Users see video cards built using the Card component system with video-specific 
 
 - **Interactive Elements**:
   - **Card Click**: Plays video in main player. No thumbnail hover expansion (ImageHoverPreview is used for TweetCard only, not VideoCard).
+  - **Card Right-Click**: Opens the all-in-one `VideoCardThreeDotMenu` exactly at the cursor's position (context menu style). Card shows a `cursor-context-menu` on hover when not in bulk tag mode.
 
   - **Pin Button** (top-right):
     - **Click unpinned**: Adds normal pin (filled blue icon).
@@ -355,12 +357,12 @@ Users see video cards built using the Card component system with video-specific 
     - **Tooltip**: Shows "Assigned to: [folder names]" with custom folder names if renamed (e.g., "Assigned to: Gaming, Watch Later")
     - Star outline color reflects the current quick assign folder color (when video has no folder assignments)
 
-  - **3-Dot Menu** (bottom-right on thumbnail):
-    - **Modern Menu**: Uses `ModernVideoMenu` with floating glassmorphism design.
+  - **3-Dot Menu / Context Menu** (bottom-right on thumbnail, or anywhere via right-click):
+    - **Modern Menu**: Uses the vertical, all-in-one `VideoCardThreeDotMenu` for pins, ratings, sticky toggle, and actions.
+    - **Colored Folders Popup**: Includes a bottom option to pop out the 16-color grid for folder assignment.
     - **Move to Playlist**: Opens modal to move video to another playlist (removes from current).
     - **Copy to Playlist**: Opens modal to copy video to another playlist (keeps in current).
     - **Delete**: Removes video from playlist (context-aware removal).
-    - *Note: "Assign to Folder" and "Quick Assign" removed to streamline UI.*
   - **Bulk Tag Grid** (in bulk mode): 
     - 16-color grid (4x4 pattern) in a strip **below the thumbnail** (between thumbnail and title), fixed height; does not overlay the thumbnail
     - Each square fills its grid cell completely (`w-full h-full`)
