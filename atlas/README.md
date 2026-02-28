@@ -165,6 +165,7 @@ yttv2/
 │   ├── playlist-cards.md         # Detailed documentation for Playlist Cards
 │   ├── group-carousel.md         # Group carousel system (colored folders, 16 colors, PlaylistBar prism, assign/rename/delete)
 │   ├── playlist-bar.md           # PlaylistBar: Playlists page sticky toolbar and folder prism
+│   ├── playlist-pagination.md    # Pagination systems for Playlists page (All/Unsorted list & Folder prism pages)
 │   ├── group-badge-player-controller.md  # Group badge + arrow cycling (all carousels) + playlist nav restricted to group
 │   ├── ui-modals.md              # Modal components
 │   ├── history.md
@@ -228,6 +229,7 @@ yttv2/
 | **Page Banner** | `page-banner.md` | `ui-pages.md`, `ui-layout.md`, `state-management.md` |
 | **Playlist Cards** | `playlist-cards.md` | `playlist&tab.md`, `ui.md`, `api-bridge.md` |
 | **Group Carousel (Playlists Page)** | `group-carousel.md` | `playlist-bar.md`, `playlist-cards.md`, `state-management.md`, `ui-pages.md`, `page-banner.md` (TopNavigation) |
+| **Playlist Pagination System** | `playlist-pagination.md` | `playlist-bar.md`, `group-carousel.md`, `ui-pages.md` |
 | **PlaylistBar (Playlists toolbar + prism)** | `playlist-bar.md` | `group-carousel.md`, `video-sort-filters.md`, `state-management.md` |
 | **Group Badge & Playlist Nav (Player Controller)** | `group-badge-player-controller.md` | `group-carousel.md`, `advanced-player-controller.md` |
 | **Subscription Manager** | `subscription-manager.md` | `api-bridge.md`, `database-schema.md` |

@@ -9,7 +9,7 @@ import { FOLDER_COLORS } from '../utils/folderColors';
  * Shows 16 slots in FOLDER_COLORS order: existing groups as cards (with that color), or a colored placeholder
  * that creates a new group for that color when clicked.
  */
-const PlaylistGroupColumn = ({ playlist, onClose, playlists = [], playlistThumbnails = {} }) => {
+const PlaylistGroupColumn = ({ playlist, onClose, playlists = [], playlistThumbnails = {}, prismPage = 1 }) => {
     const columnRef = useRef(null);
     const {
         getGroupByColorId,
@@ -42,7 +42,7 @@ const PlaylistGroupColumn = ({ playlist, onClose, playlists = [], playlistThumbn
 
     const handlePlaceholderClick = (e, color) => {
         e.stopPropagation();
-        const newGroupId = addGroup(color.name, color.id);
+        const newGroupId = addGroup(color.name, color.id, prismPage);
         addPlaylistToGroup(newGroupId, playlist.id);
     };
 
@@ -75,7 +75,7 @@ const PlaylistGroupColumn = ({ playlist, onClose, playlists = [], playlistThumbn
                 </div>
 
                 {FOLDER_COLORS.map((color) => {
-                    const group = getGroupByColorId(color.id);
+                    const group = getGroupByColorId(color.id, prismPage);
                     const isPlaceholder = !group;
 
                     if (isPlaceholder) {

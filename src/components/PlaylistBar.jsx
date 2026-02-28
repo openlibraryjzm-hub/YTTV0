@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { RotateCcw, ChevronLeft } from 'lucide-react';
+import { RotateCcw, ChevronLeft, ChevronRight } from 'lucide-react';
 import { FOLDER_COLORS } from '../utils/folderColors';
 import VideoSortFilters from './VideoSortFilters';
 import { useNavigationStore } from '../store/navigationStore';
@@ -18,6 +18,11 @@ const PlaylistBar = ({
   unsortedCount = 0,
   selectedFolder,
   onFolderSelect,
+  currentPage = 1,
+  totalPages = 1,
+  onPrevPage,
+  onNextPage,
+  onAddPage,
 }) => {
   const { history, goBack, setCurrentPage } = useNavigationStore();
   const { setViewMode } = useLayoutStore();
@@ -30,6 +35,11 @@ const PlaylistBar = ({
     setSelectedRatings((prev) =>
       prev.includes(rating) ? prev.filter((r) => r !== rating) : [...prev, rating].sort((a, b) => a - b)
     );
+  };
+
+  const ICON_WHITE_OUTLINE = {
+    color: 'white',
+    filter: 'drop-shadow(-1px -1px 0 #000) drop-shadow(1px -1px 0 #000) drop-shadow(-1px 1px 0 #000) drop-shadow(1px 1px 0 #000)'
   };
 
   const [isStuck, setIsStuck] = useState(false);
@@ -84,34 +94,41 @@ const PlaylistBar = ({
             className="shrink-0 mr-2"
           />
 
-          <div className="flex items-center gap-1.5 shrink-0 mr-2">
-            <button
-              type="button"
-              onClick={onAddClick}
-              className="p-1.5 h-7 bg-white hover:bg-gray-100 text-black rounded-md transition-all shadow border border-black/20 shrink-0 flex items-center justify-center"
-              title="Add playlist / config"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-              </svg>
-            </button>
-            <button
-              type="button"
-              className="p-1.5 h-7 bg-white hover:bg-gray-100 text-black rounded-md transition-all shadow border border-black/20 shrink-0 flex items-center justify-center opacity-70"
-              title="Refresh (Videos page only)"
-            >
-              <RotateCcw className="w-4 h-4" />
-            </button>
-            <button
-              type="button"
-              className="p-1.5 h-7 bg-white hover:bg-gray-100 text-black rounded-md transition-all shrink-0 border border-black/20 flex items-center justify-center opacity-70"
-              title="Bulk tag (Videos page only)"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
-              </svg>
-            </button>
-          </div>
+          {/* Pagination Controls */}
+          {totalPages >= 1 && (
+            <div className="flex items-center shrink-0 mr-2 ml-1">
+              <button
+                type="button"
+                onClick={onPrevPage}
+                disabled={currentPage <= 1}
+                className={`transition-all flex items-center justify-center ${currentPage <= 1 ? 'opacity-30 cursor-not-allowed' : 'opacity-85 hover:opacity-100 hover:scale-110'}`}
+                style={ICON_WHITE_OUTLINE}
+                title="Previous page"
+              >
+                <ChevronLeft size={20} strokeWidth={2.5} />
+              </button>
+
+              <span
+                onDoubleClick={onAddPage}
+                className="text-xs font-bold min-w-[1.5rem] text-center cursor-pointer hover:scale-110 transition-transform select-none"
+                style={ICON_WHITE_OUTLINE}
+                title="Double click to add new page"
+              >
+                {currentPage}
+              </span>
+
+              <button
+                type="button"
+                onClick={onNextPage}
+                disabled={currentPage >= totalPages}
+                className={`transition-all flex items-center justify-center ${currentPage >= totalPages ? 'opacity-30 cursor-not-allowed' : 'opacity-85 hover:opacity-100 hover:scale-110'}`}
+                style={ICON_WHITE_OUTLINE}
+                title="Next page"
+              >
+                <ChevronRight size={20} strokeWidth={2.5} />
+              </button>
+            </div>
+          )}
 
           <div className="flex items-center min-w-0 flex-1 mr-0">
             <div

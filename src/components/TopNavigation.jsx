@@ -7,8 +7,6 @@ import { useFolderStore } from '../store/folderStore';
 import { ChevronLeft, Twitter, Info, LayoutGrid, LayoutList, Minus } from 'lucide-react';
 import { THEMES } from '../utils/themes';
 import { FOLDER_COLORS } from '../utils/folderColors';
-import TabBar from './TabBar';
-import { useTabStore } from '../store/tabStore';
 import { usePlaylistGroupStore } from '../store/playlistGroupStore';
 
 const TopNavigation = () => {
@@ -16,7 +14,6 @@ const TopNavigation = () => {
     const { setViewMode, inspectMode, videoCardStyle, toggleVideoCardStyle, playlistsPageShowTitles, setPlaylistsPageShowTitles, setShowPlaylistUploader } = useLayoutStore();
     const setAllGroupCarouselModes = usePlaylistGroupStore((s) => s.setAllGroupCarouselModes);
     const getGroupByColorId = usePlaylistGroupStore((s) => s.getGroupByColorId);
-    const { activeTabId } = useTabStore();
     // Consume previewPlaylistId to support "visiting" context vs "playing" context
     const { previewPlaylistId, clearPreview, currentPlaylistId, currentPlaylistTitle, allPlaylists } = usePlaylistStore();
     // Consume selectedFolder and showColoredFolders from folderStore
@@ -128,7 +125,7 @@ const TopNavigation = () => {
 
                 {/* Left side: Override-for-all carousel mode (GROUPS) / Videos actions (Add, Subscriptions, Bulk tag) + Playlist/Folder Info */}
                 <div className="relative z-10 flex flex-col justify-end min-w-0 flex-1 pl-8">
-                    {isPlaylistsPage && activeTabId === 'groups' && (
+                    {isPlaylistsPage && (
                         <div className="flex items-center gap-1 mb-2">
                             <button
                                 type="button"
@@ -210,9 +207,7 @@ const TopNavigation = () => {
                 <div className="relative z-10 flex items-center gap-2 pl-4 pr-8 mb-1 shrink-0 min-w-0">
                     {isPlaylistsPage ? (
                         <>
-                            <div className="flex-1 min-w-0 overflow-x-auto no-scrollbar max-w-[280px]">
-                                <TabBar />
-                            </div>
+
                             <button
                                 onClick={() => setPlaylistsPageShowTitles()}
                                 className={`p-1.5 rounded-md transition-all shrink-0 ${playlistsPageShowTitles
