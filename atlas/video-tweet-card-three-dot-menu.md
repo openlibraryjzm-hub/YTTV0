@@ -1,6 +1,6 @@
 # Video & Tweet Card 3-Dot Menu
 
-The **Video Card / Tweet Card 3-Dot Menu** is a single, horizontal “all-in-one” popover used by both **VideoCard** and **TweetCard** on the Videos page. It consolidates pins, folder assignment, drumstick rating, sticky, and standard actions (delete, move, copy, set cover) into one decluttered menu opened from a 3-dot trigger.
+The **Video Card / Tweet Card 3-Dot Menu** is a single, vertical “all-in-one” popover used by both **VideoCard** and **TweetCard** on the Videos page. It consolidates pins, drumstick rating, standard actions (delete, move, copy, set cover) and a colored folder assignment pop-out into one decluttered menu opened from a 3-dot trigger.
 
 ---
 
@@ -13,29 +13,25 @@ The **Video Card / Tweet Card 3-Dot Menu** is a single, horizontal “all-in-one
 - **TweetCard**: Same trigger position on the media area; header CardActions were removed in favor of this menu.
 - **Opening**: Click the 3-dot to open the menu. It is positioned **above the card row**, centered on the card that was clicked, with a fixed vertical offset so it sits clearly above the grid.
 
-### 1.2 Menu Layout (Horizontal)
+### 1.2 Menu Layout (Vertical)
 
-The menu is a **horizontal bar** with three main sections, left to right:
+The menu is a **vertical standard popup** with these sections from top to bottom:
 
-1. **Actions** (vertical stack)  
+1. **Pins**: Pin / Unpin, Priority, Follower (Follower only when already pinned).  
+2. **Rating**: Drumstick 1–5 (same as drumstick-rating-system).  
+3. **Sticky Video**: Toggle sticky for the current playlist/folder context.
+4. **Actions**: 
    - Delete  
    - Move to Playlist  
    - Copy to Playlist  
    - Set as Playlist Cover  
-
-2. **Pins, Rating, Sticky** (vertical stack)  
-   - **Pin**: Pin / Unpin, Priority, Follower (Follower only when already pinned).  
-   - **Rating**: Drumstick 1–5 (same as drumstick-rating-system).  
-   - **Sticky Video**: Toggle sticky for the current playlist/folder context.  
-
-3. **Folder**  
-   - **BulkTagColorGrid**: 16-color grid (same UI as bulk tag mode). Click a color to assign/unassign the video to that folder. Assigned folders show a checkmark. Pencil icon on each color renames the folder (calls `onRenameFolder`).  
-   - Replaces the previous StarColorPicker in the menu.
+5. **Colored Folders**: A list item at the very bottom that, when clicked, expands a side pop-out (intelligently placed on the left or right) revealing a 16-color **BulkTagColorGrid**. Click a color in the grid to assign/unassign the video.
 
 ### 1.3 Behavior
 
+- **Trigger**: Click the 3-dot to open the menu. Positions traditionally, directly under the trigger button. If constrained by bottom screen bounds, it pushes upward.
+- **Folder Grid Pop-out**: Clicking "Colored Folders..." opens the color grid adjacent to the menu without closing the main menu.
 - **Close**: Click outside or scroll; menu closes.
-- **Positioning**: Menu is viewport-clamped so it does not overflow top, bottom, or sides.
 - **Bulk tag mode**: When the Videos page is in bulk tag mode, the 3-dot menu is **hidden** on cards; folder assignment is done via the bulk-tag strip on the card instead.
 
 ---
@@ -44,7 +40,7 @@ The menu is a **horizontal bar** with three main sections, left to right:
 
 | Area | File | Role |
 |------|------|------|
-| **Component** | `src/components/VideoCardThreeDotMenu.jsx` | Menu UI: horizontal layout, pin/rating/sticky/folder/actions, positioning. |
+| **Component** | `src/components/VideoCardThreeDotMenu.jsx` | Menu UI: vertical popup layout, pin/rating/actions, and side popout for colored folders. |
 | **Component** | `src/components/BulkTagColorGrid.jsx` | 16-color folder grid used inside the menu (and on cards in bulk tag mode). |
 | **Component** | `src/components/DrumstickRating.jsx` | 1–5 rating used in the “Pins, Rating, Sticky” section. |
 | **Card** | `src/components/VideoCard.jsx` | Renders the 3-dot trigger and passes props (pin, folder, rating, menu options, etc.). |
