@@ -135,6 +135,16 @@ const PlaylistsPage = ({ onVideoSelect }) => {
   // Derived filtered lists for pagination (moved here to use combinedPreviewItems)
   const sortedPlaylists = useMemo(() => {
     let sorted = [...playlists];
+
+    if (playlistSortBy?.startsWith('scramble_')) {
+      // Deterministic-enough shuffle triggered newly on each click of Scramble
+      for (let i = sorted.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [sorted[i], sorted[j]] = [sorted[j], sorted[i]];
+      }
+      return sorted;
+    }
+
     if (playlistSortBy !== 'shuffle') {
       sorted.sort((a, b) => {
         let valA, valB;

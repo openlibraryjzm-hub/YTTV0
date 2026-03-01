@@ -1,10 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Home, Filter, CalendarDays, Hash, Type, ArrowUp, ArrowDown, Eye, EyeOff, Layers, Package, PackageOpen } from 'lucide-react';
+import { Home, Filter, CalendarDays, Hash, Type, ArrowUp, ArrowDown, Eye, EyeOff, Layers, Package, PackageOpen, Dices } from 'lucide-react';
 
 const SORT_OPTIONS = [
     { mode: 'amount', label: 'Sort by item count', Icon: Hash },
     { mode: 'date', label: 'Sort by date created', Icon: CalendarDays },
     { mode: 'name', label: 'Sort alphabetically', Icon: Type },
+    { mode: 'scramble', label: 'Scramble playlists', Icon: Dices },
 ];
 
 /**
@@ -29,7 +30,7 @@ const PlaylistSortFilters = ({
 
     const cycleDirection = () => setSortDirection(d => (d === 'asc' ? 'desc' : 'asc'));
     const isShuffleActive = sortBy === 'shuffle';
-    const isSortDropdownActive = ['amount', 'date', 'name'].includes(sortBy);
+    const isSortDropdownActive = ['amount', 'date', 'name'].includes(sortBy) || sortBy?.startsWith('scramble');
     const isFunnelActive = isSortDropdownActive;
 
     const ICON_WHITE_OUTLINE = {
@@ -47,6 +48,12 @@ const PlaylistSortFilters = ({
     };
 
     const handleSortOptionClick = (mode) => {
+        if (mode === 'scramble') {
+            setSortBy(`scramble_${Date.now()}`);
+            setSortDirection('desc');
+            return;
+        }
+
         if (sortBy === mode) {
             cycleDirection();
         } else {
@@ -101,7 +108,7 @@ const PlaylistSortFilters = ({
                             Sort By
                         </div>
                         {SORT_OPTIONS.map(({ mode, label, Icon }) => {
-                            const active = sortBy === mode;
+                            const active = sortBy === mode || (mode === 'scramble' && sortBy?.startsWith('scramble'));
                             return (
                                 <button
                                     key={mode}
@@ -115,13 +122,13 @@ const PlaylistSortFilters = ({
                                             ? 'hover:bg-gray-100'
                                             : 'hover:bg-white/10'
                                         }`}
-                                    title={active ? 'Click to cycle direction' : label}
+                                    title={active ? (mode === 'scramble' ? 'Click to reshuffle' : 'Click to cycle direction') : label}
                                 >
                                     <span className="flex items-center gap-2">
                                         <Icon size={14} strokeWidth={2.5} />
                                         {label}
                                     </span>
-                                    {active && <Arrow up={sortDirection === 'asc'} />}
+                                    {active && mode !== 'scramble' && <Arrow up={sortDirection === 'asc'} />}
                                 </button>
                             );
                         })}

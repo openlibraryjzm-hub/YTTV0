@@ -65,7 +65,7 @@ This document describes the **Playlists page sticky toolbar** (`PlaylistBar.jsx`
 ## 5. Dependencies
 
 - **PlaylistSortFilters** – Playlists-page specific component containing:
-  - **Sort By**: Item count, Date created, Alphabetical.
+  - **Sort By**: Item count, Date created, Alphabetical, Scramble playlists (displays all playlists in a completely randomized order; clicking repeatedly rerandomizes).
   - **Visibility Filters**: Toggle hidden playlists (stored in `configStore` via `hiddenPlaylists` array; hiding/unhiding a playlist specifically is done from the `PlaylistCard` 3-dot menu).
   - **Content Filters**: All Playlists, Populated Only (item count > 0), Empty Only (item count === 0).
 - **FOLDER_COLORS** – `src/utils/folderColors.js` (16 colors: red, orange, amber, … pink). Same as Videos page prism and PlaylistGroupColumn.
