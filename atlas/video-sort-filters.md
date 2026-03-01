@@ -1,6 +1,6 @@
 # VideoSortFilters & Videos Page Sticky Toolbar
 
-This document describes the **Videos page sticky toolbar**: the icon-based sort/rating bar (**VideoSortFilters**) and the **colored folder prism** that share one row. Together they provide sorting (default, date, progress, last viewed), rating filtering (drumstick 1–5), and folder filtering (All, Unsorted, 16 colors) with an optional “populated-only” prism mode.
+This document describes the **Videos page sticky toolbar**: the icon-based sort/rating bar (**VideoSortFilters**) and the **colored folder prism** that share one row. Together they provide sorting (default, date, added to app, progress, last viewed), rating filtering (drumstick 1–5), and folder filtering (All, Unsorted, 16 colors) with an optional “populated-only” prism mode.
 
 ---
 
@@ -30,7 +30,7 @@ Icon-based sort and rating filter bar. **Home** and **Funnel** use Lucide icons;
 | Control   | Icon        | Behavior |
 |----------|-------------|----------|
 | **Home** | `Home`      | **Default order.** Sets sort to `shuffle`. No direction. Restores the default video order (shuffle-state driven). |
-| **Funnel** | `Filter`  | **Sort & rating dropdown.** Click opens a dropdown with: (1) **Sort by date** (chronological), **Sort by progress** (bar chart), **Sort by last viewed** (clock)—select an option or click again to cycle asc/desc; (2) **Rating filter**—a horizontal row of five drumstick icons (1–5) for multi-select. The funnel button appears active when any of the three sorts is active or any rating is selected. Dropdown closes on outside click. |
+| **Funnel** | `Filter`  | **Sort & rating dropdown.** Click opens a dropdown with: (1) **Sort by date** (chronological), **Added to app** (list-plus), **Sort by progress** (bar chart), **Sort by last viewed** (clock)—select an option or click again to cycle asc/desc; (2) **Rating filter**—a horizontal row of five drumstick icons (1–5) for multi-select. The funnel button appears active when any of the three sorts is active or any rating is selected. Dropdown closes on outside click. |
 
 **Direction cycling**: For Date, Progress, and Last viewed (inside the funnel dropdown), when that mode is already active, clicking it again only toggles `sortDirection` between `'asc'` and `'desc'`.
 
@@ -106,7 +106,8 @@ Sort and rating filtering are applied in `VideosPage` after folder filtering:
 - **Rating filter**: If `selectedRatings.length > 0`, the visible list is filtered to items whose `drumstick_rating` is in `selectedRatings`. Orbs and banner presets are kept regardless.
 - **Sort**:  
   - `shuffle`: Order by shuffle state (stable order from `shuffleStates[activePlaylistId]`).  
-  - `chronological`: Sort by `published_at` or `added_at`; direction from `sortDirection`.  
+  - `chronological`: Sort by `published_at` or `added_at` (fallback); direction from `sortDirection`.  
+  - `addedToApp`: Sort by `added_at` (when it was added to the playlist); direction from `sortDirection`.
   - `progress`: Sort by progress percentage (from `videoProgress`); optional filters “hide unwatched” and “show only completed” apply here; direction from `sortDirection`.  
   - `lastViewed`: Sort by `last_updated` from progress data; direction from `sortDirection`.
 
@@ -153,7 +154,7 @@ Progress and last-viewed data come from `getAllVideoProgress` / `getWatchedVideo
 
 ## 8. Change log
 
-- **VideoSortFilters consolidation**: Calendar (sort by date), Bar chart (sort by progress), and Clock (sort by last viewed) were consolidated into a single **Funnel** icon button; click opens a dropdown with those three sort options (each select or cycle asc/desc). **Drumstick** rating filter was moved into the same funnel dropdown as a horizontal row (1–5). 
+- **VideoSortFilters consolidation**: Calendar (sort by date), ListPlus (added to app), Bar chart (sort by progress), and Clock (sort by last viewed) were consolidated into a single **Funnel** icon button; click opens a dropdown with those four sort options (each select or cycle asc/desc). **Drumstick** rating filter was moved into the same funnel dropdown as a horizontal row (1–5). 
 - **Action Button Consolidation**: Add Videos, Subscriptions, and Bulk Tag tools were wrapped into a single **Plus** button dropdown within `VideoSortFilters` mirroring the Funnel structure.
 - **Pagination Addition**: Simple `ChevronLeft` and `ChevronRight` page navigation buttons and a page number indicator were appended immediately following the Plus dropdown natively inside `VideoSortFilters`, accepting `currentPage` and `totalPages` props.
 - **Aesthetic Refinements**: `VideoSortFilters` buttons alongside the Go Back and Close buttons stripped out backdrop boundaries, strictly employing white icons cleanly outlined with a thick black drop-shadow (`ICON_WHITE_OUTLINE`).

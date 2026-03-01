@@ -1205,6 +1205,14 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
       });
     }
 
+    if (sortBy === 'addedToApp') {
+      return [...baseVideos].sort((a, b) => {
+        const dateA = new Date(a.added_at || 0).getTime();
+        const dateB = new Date(b.added_at || 0).getTime();
+        return sortDirection === 'asc' ? dateA - dateB : dateB - dateA;
+      });
+    }
+
     if (sortBy === 'shuffle') {
       const state = shuffleStates[activePlaylistId];
 

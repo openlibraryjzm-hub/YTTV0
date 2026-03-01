@@ -116,6 +116,22 @@ const VideoCard = ({
     return `${m}:${s.toString().padStart(2, '0')}`;
   };
 
+  const formatViewCount = (countStr) => {
+    if (!countStr) return '';
+    const count = parseInt(countStr, 10);
+    if (isNaN(count)) return '';
+    if (count >= 1000000000) return Math.floor(count / 1000000000) + 'B';
+    if (count >= 1000000) return Math.floor(count / 1000000) + 'M';
+    if (count >= 1000) return Math.floor(count / 1000) + 'K';
+    return count.toString();
+  };
+
+  const extractYear = (dateStr) => {
+    if (!dateStr) return '';
+    const match = dateStr.match(/\b(19|20)\d{2}\b/);
+    return match ? match[0] : '';
+  };
+
   // Quick action - star for folder assignment (must be defined before badges)
   const quickActions = [];
 
@@ -341,10 +357,10 @@ const VideoCard = ({
 
       {/* Content Section (White bar at bottom) */}
       <div
-        className={`p-3 flex flex-col justify-center bg-white dark:bg-slate-800 flex-1 ${bulkTagMode ? '' : 'rounded-b-2xl'
+        className={`relative p-3 flex flex-col justify-center bg-white dark:bg-slate-800 flex-1 overflow-hidden ${bulkTagMode ? '' : 'rounded-b-2xl'
           }`}
       >
-        <div className="flex items-center justify-between min-h-[28px]">
+        <div className="relative z-10 flex items-center justify-between min-h-[28px]">
           <div className="min-w-0 flex-1 mr-2">
             <h3
               className="font-bold text-sm text-slate-800 dark:text-white leading-tight line-clamp-2"
@@ -380,6 +396,23 @@ const VideoCard = ({
             </div>
           )}
         </div>
+
+        {/* Metadata overlay on hover */}
+        {!bulkTagMode && (
+          <div className="absolute pointer-events-none left-0 right-0 bottom-0 h-1/2 bg-black text-white flex items-center justify-between px-2 text-[11px] font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-20">
+            <div className="flex-1 truncate text-center px-1" title={video.author || 'Unknown'}>
+              {video.author || 'Unknown'}
+            </div>
+            <div className="text-gray-400 text-[8px]">&bull;</div>
+            <div className="flex-1 text-center px-1 shrink-0">
+              {extractYear(video.published_at) || 'N/A'}
+            </div>
+            <div className="text-gray-400 text-[8px]">&bull;</div>
+            <div className="flex-1 text-center px-1 shrink-0">
+              {formatViewCount(video.view_count) || '0'}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Bulk tag: below thumbnail and title, when bulk tag mode is active */}

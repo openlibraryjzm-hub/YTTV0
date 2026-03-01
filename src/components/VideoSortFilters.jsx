@@ -1,10 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Home, Filter, CalendarDays, BarChart2, Clock, ArrowUp, ArrowDown, Plus, RotateCcw, Tag, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Home, Filter, CalendarDays, BarChart2, Clock, ArrowUp, ArrowDown, Plus, RotateCcw, Tag, ChevronLeft, ChevronRight, ListPlus } from 'lucide-react';
 
 const DRUMSTICK = '🍗';
 
 const SORT_OPTIONS = [
   { mode: 'chronological', label: 'Sort by date', Icon: CalendarDays },
+  { mode: 'addedToApp', label: 'Added to app', Icon: ListPlus },
   { mode: 'progress', label: 'Sort by progress', Icon: BarChart2 },
   { mode: 'lastViewed', label: 'Sort by last viewed', Icon: Clock },
 ];
@@ -42,7 +43,7 @@ const VideoSortFilters = ({
 
   const cycleDirection = () => setSortDirection(d => (d === 'asc' ? 'desc' : 'asc'));
   const isShuffleActive = sortBy === 'shuffle';
-  const isSortDropdownActive = ['chronological', 'progress', 'lastViewed'].includes(sortBy);
+  const isSortDropdownActive = ['chronological', 'addedToApp', 'progress', 'lastViewed'].includes(sortBy);
   const hasRatingFilter = selectedRatings.length > 0;
   const isFunnelActive = isSortDropdownActive || hasRatingFilter;
 

@@ -327,8 +327,8 @@ Users see video cards built using the Card component system with video-specific 
     - **Star Color Picker Overlay**: When hovering over star icon for 1.2 seconds, a grid of 16 colored stars appears centered at the top of the thumbnail
 
 - **Content Area**:
-  - **Title**: Video title, dark blue text (RGB(5, 47, 74) / #052F4A), truncates
   - **Title**: Video title, dark blue text (RGB(5, 47, 74) / #052F4A), truncates. No subtitle (video ID) is shown.
+  - **Metadata Hover Overlay**: When hovering over the card, the bottom half of the white content area overlaps with a black background and white text displaying video metadata: Author, Year Published (extracted from `published_at`), and abbreviated View Count (e.g., 3M, 10B). These are horizontally aligned, equally spaced, and separated by dots.
 
 - **Visual States**:
   - **Default**: Gray border, thumbnail and title visible
