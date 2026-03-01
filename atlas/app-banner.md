@@ -27,7 +27,7 @@ Users see a full-width banner at the very top of the application (200px height) 
 - **Window Controls Integration**: Custom window controls (Minimize, Maximize, Close) float in the top-right corner
 - **Draggable Region**: The entire banner area is draggable (`data-tauri-drag-region`), allowing users to move the window
 - **Smart Spill Interaction**: If a "Spill Over" height is set, the portion extending beyond the header (200px) is **click-through**. On hover over the spill, the **Active Banner** (splitscreen layer) can dim to a fixed opacity so you can see through to the content below (opacity is tunable via `SPILL_HOVER_OPACITY` in `LayoutShell.jsx`; set to `1` to disable the transparency effect, or e.g. `0.2` to enable it).
-  - **Precision Hitbox**: The system uses a **ray-casting point-in-polygon algorithm** to detect hovers based on the exact **SVG crop shape** and **Left Clip** settings, so transparency is only triggered when hovering visible spill pixels.
+  - **Precision Hitbox**: The system uses a **ray-casting point-in-polygon algorithm** to detect hovers based on the exact **SVG crop shape**, **Left/Right/Bottom Clip** settings, so transparency is only triggered when hovering visible spill pixels.
 - **Hover Popup**: Hovering the rightmost 1/6th reveals a 185x110px popup split into zones: 
   - **Top Section**: Centered orb flanked by two wide 40x16px rectangles.
   - **Bottom Right**: Split into a top 1/3 strip and a main 2/3 area.
@@ -116,7 +116,7 @@ Users see a full-width banner at the very top of the application (200px height) 
     - **Layer 1 (Overlay)**: The Splitscreen Banner config is rendered on top (z-15) with full spill capabilities.
   - **Spill Interaction**: The spill-over area is **always click-through** (`pointer-events: none`). When hovered over the visible spill shape, the **Active Banner** (Layer 1 in Splitscreen) can dim to a configurable opacity (`SPILL_HOVER_OPACITY` in `LayoutShell.jsx`; currently set to `1`, so the transparency effect is disabled).
     - **Border Overlap**: The spill layer (z-15) sits visually **above** the Player Border Separator (z-10), allowing the banner art to "break the frame", while transparent areas naturally reveal the border pattern underneath.
-    - **Precision Hitbox**: The system uses a **ray-casting point-in-polygon algorithm** to detect hovers based on the exact **SVG crop shape** and **Left Clip** settings.
+    - **Precision Hitbox**: The system uses a **ray-casting point-in-polygon algorithm** to detect hovers based on the exact **SVG crop shape** and **Left/Right/Bottom Clip** settings.
 
 **Advanced Customization Logic:**
 - **Masking (Shape Cropping):**
@@ -146,6 +146,8 @@ Users see a full-width banner at the very top of the application (200px height) 
   - **Spill Over**: 0-500px height extension.
   - **Crop Shape**: Interactive SVG masking tool.
   - **Clip From Left**: 0-100% left-side clipping.
+  - **Clip From Right**: 0-100% right-side clipping.
+  - **Clip From Bottom**: 0-100% bottom-side clipping.
   - **Horizontal Offset**: -200% to +200% pattern shift.
   - **Player Controller Horizontal Offset**: -500px to +500px shift for buttons/search bar.
 

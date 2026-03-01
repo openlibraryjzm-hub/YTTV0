@@ -106,6 +106,8 @@ export const useConfigStore = create(
                 maskPath: [],
                 scrollEnabled: true,
                 clipLeft: 0,
+                clipBottom: 0,
+                clipRight: 0,
                 horizontalOffset: 0,
                 playerControllerXOffset: 0
             },
@@ -121,6 +123,8 @@ export const useConfigStore = create(
                 maskPath: [],
                 scrollEnabled: true,
                 clipLeft: 0,
+                clipBottom: 0,
+                clipRight: 0,
                 horizontalOffset: 0,
                 playerControllerXOffset: 0
             },
@@ -175,6 +179,8 @@ export const useConfigStore = create(
                     maskPath: preset.bannerMaskPath || [],
                     scrollEnabled: preset.bannerScrollEnabled ?? true,
                     clipLeft: preset.bannerClipLeft ?? 0,
+                    clipBottom: preset.bannerClipBottom ?? 0,
+                    clipRight: preset.bannerClipRight ?? 0,
                     horizontalOffset: preset.bannerHorizontalOffset ?? 0,
                     playerControllerXOffset: preset.playerControllerXOffset ?? 0,
                 };

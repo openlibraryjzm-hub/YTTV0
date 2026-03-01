@@ -390,6 +390,52 @@ export default function AppPage({ onBack, currentThemeId, onThemeChange, onNavig
                                 </p>
                             </div>
 
+                            {/* Clip Right Slider */}
+                            <div className="space-y-3 pt-2 pb-4 border-b border-slate-100">
+                                <div className="flex justify-between items-center px-1">
+                                    <label className="text-xs font-bold uppercase text-slate-400">Clip From Right</label>
+                                    <span className="text-[10px] font-bold text-slate-500">{activeBanner.clipRight ?? 0}%</span>
+                                </div>
+                                <div className="flex items-center gap-4">
+                                    <span className="text-[10px] font-bold text-slate-400">0%</span>
+                                    <input
+                                        type="range"
+                                        min="0"
+                                        max="100"
+                                        value={activeBanner.clipRight ?? 0}
+                                        onChange={(e) => updateActiveBanner({ clipRight: parseInt(e.target.value) })}
+                                        className="flex-1 h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-sky-500"
+                                    />
+                                    <span className="text-[10px] font-bold text-slate-400">100%</span>
+                                </div>
+                                <p className="text-[10px] text-slate-400 px-1">
+                                    Hides the right portion of the banner, revealing the theme color underneath.
+                                </p>
+                            </div>
+
+                            {/* Clip Bottom Slider */}
+                            <div className="space-y-3 pt-2 pb-4 border-b border-slate-100">
+                                <div className="flex justify-between items-center px-1">
+                                    <label className="text-xs font-bold uppercase text-slate-400">Clip From Bottom</label>
+                                    <span className="text-[10px] font-bold text-slate-500">{activeBanner.clipBottom ?? 0}%</span>
+                                </div>
+                                <div className="flex items-center gap-4">
+                                    <span className="text-[10px] font-bold text-slate-400">0%</span>
+                                    <input
+                                        type="range"
+                                        min="0"
+                                        max="100"
+                                        value={activeBanner.clipBottom ?? 0}
+                                        onChange={(e) => updateActiveBanner({ clipBottom: parseInt(e.target.value) })}
+                                        className="flex-1 h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-sky-500"
+                                    />
+                                    <span className="text-[10px] font-bold text-slate-400">100%</span>
+                                </div>
+                                <p className="text-[10px] text-slate-400 px-1">
+                                    Hides the bottom portion of the banner, revealing the theme color underneath.
+                                </p>
+                            </div>
+
                             {/* Horizontal Offset Slider */}
                             <div className="space-y-3 pt-2 pb-4 border-b border-slate-100">
                                 <div className="flex justify-between items-center px-1">

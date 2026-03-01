@@ -88,7 +88,7 @@ const LayoutShell = ({
     const banner = activeBanner;
     if (!banner) return;
 
-    const { spillHeight, maskPath, clipLeft } = banner;
+    const { spillHeight, maskPath, clipLeft, clipBottom, clipRight } = banner;
     const isFullscreenPreview = bannerPreviewMode === 'fullscreen' || (!bannerPreviewMode && viewMode === 'full');
 
     if (!spillHeight || spillHeight <= 0 || isFullscreenPreview) {
@@ -106,12 +106,20 @@ const LayoutShell = ({
         if (isHoveringSpill) setIsHoveringSpill(false);
         return;
       }
-      if (clipLeft > 0) {
-        const clientXPercent = (e.clientX / window.innerWidth) * 100;
-        if (clientXPercent < clipLeft) {
-          if (isHoveringSpill) setIsHoveringSpill(false);
-          return;
-        }
+      const clientXPercent = (e.clientX / window.innerWidth) * 100;
+      const clientYPercent = (e.clientY / totalHeight) * 100;
+
+      if (clipLeft > 0 && clientXPercent < clipLeft) {
+        if (isHoveringSpill) setIsHoveringSpill(false);
+        return;
+      }
+      if (clipRight > 0 && clientXPercent > 100 - clipRight) {
+        if (isHoveringSpill) setIsHoveringSpill(false);
+        return;
+      }
+      if (clipBottom > 0 && clientYPercent > 100 - clipBottom) {
+        if (isHoveringSpill) setIsHoveringSpill(false);
+        return;
       }
 
       if (maskPath && maskPath.length >= 3) {
@@ -182,6 +190,8 @@ const LayoutShell = ({
       spillHeight,
       scrollEnabled,
       clipLeft,
+      clipBottom,
+      clipRight,
       horizontalOffset
     } = config;
 
@@ -207,12 +217,19 @@ const LayoutShell = ({
 
           clipPath: (() => {
             const left = clipLeft > 0 ? `${clipLeft}%` : '0';
+            const right = clipRight > 0 ? `${clipRight}%` : '0';
+
+            let bottom = clipBottom > 0 ? `${clipBottom}%` : '0';
             if (forceClip && spillHeight) {
               const totalHeight = 200 + spillHeight;
               const spillPercent = (spillHeight / totalHeight) * 100;
-              return `inset(0 0 ${spillPercent}% ${left})`;
+              bottom = clipBottom > spillPercent ? `${clipBottom}%` : `${spillPercent}%`;
             }
-            return clipLeft > 0 ? `inset(0 0 0 ${clipLeft}%)` : 'none';
+
+            if (left !== '0' || right !== '0' || bottom !== '0') {
+              return `inset(0 ${right} ${bottom} ${left})`;
+            }
+            return 'none';
           })(),
 
           ...getMaskStyle(config, isPrimary),
