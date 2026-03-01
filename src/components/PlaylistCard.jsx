@@ -8,6 +8,8 @@ import {
   Check,
   X,
   Folder,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import CardMenu from "./NewCardMenu";
 import ImageHoverPreview from "./ImageHoverPreview";
@@ -24,6 +26,7 @@ import { usePlaylistStore } from "../store/playlistStore";
 import { useLayoutStore } from "../store/layoutStore";
 import { useNavigationStore } from "../store/navigationStore";
 import { usePlaylistGroupStore } from "../store/playlistGroupStore";
+import { useConfigStore } from "../store/configStore";
 import { useInspectLabel } from "../utils/inspectLabels";
 
 const PlaylistCard = ({
@@ -56,8 +59,10 @@ const PlaylistCard = ({
   const { viewMode, setViewMode, inspectMode, setFullscreenInfoBlanked } = useLayoutStore();
   const { setCurrentPage } = useNavigationStore();
   const { getGroupIdsForPlaylist, removePlaylistFromGroup } = usePlaylistGroupStore();
+  const { hiddenPlaylists, hidePlaylist, unhidePlaylist } = useConfigStore();
   const groupIdsForPlaylist = getGroupIdsForPlaylist(playlist.id);
   const isInAnyCarousel = groupIdsForPlaylist.length > 0;
+  const isHidden = (hiddenPlaylists || []).includes(playlist.id);
 
   const getInspectTitle = (label) => (inspectMode ? label : undefined);
 
@@ -431,74 +436,74 @@ const PlaylistCard = ({
       >
         {/* Title bar – only in large size; small carousel uses title below thumbnail (VideoCard-style) */}
         {size !== 'small' && (
-        <div className={`mb-2 flex items-center justify-between border-2 border-[#052F4A] rounded-md p-1 bg-slate-100/90 shadow-sm relative overflow-hidden h-[38px]`}>
-          <h3
-            className="font-bold truncate transition-colors pl-1 flex-1 text-left text-lg"
-            style={{ color: "#052F4A" }}
-            onMouseEnter={(e) => (e.currentTarget.style.color = "#38bdf8")}
-            onMouseLeave={(e) => (e.currentTarget.style.color = "#052F4A")}
-            title={playlist.name}
-          >
-            {playlist.name}
-          </h3>
+          <div className={`mb-2 flex items-center justify-between border-2 border-[#052F4A] rounded-md p-1 bg-slate-100/90 shadow-sm relative overflow-hidden h-[38px]`}>
+            <h3
+              className="font-bold truncate transition-colors pl-1 flex-1 text-left text-lg"
+              style={{ color: "#052F4A" }}
+              onMouseEnter={(e) => (e.currentTarget.style.color = "#38bdf8")}
+              onMouseLeave={(e) => (e.currentTarget.style.color = "#052F4A")}
+              title={playlist.name}
+            >
+              {playlist.name}
+            </h3>
 
-          <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity absolute right-1 top-0 bottom-0 pr-1 pl-4 bg-gradient-to-l from-slate-100 via-slate-100 to-transparent z-10">
-            <div className="flex items-center">
-              <button
-                onClick={handlePreviewPlaylist}
-                className="p-1 hover:bg-slate-200 rounded text-[#052F4A] hover:text-sky-600 transition-colors"
-                title="Preview playlist"
-              >
-                <Grid3x3 size={18} strokeWidth={2.5} />
-              </button>
-            </div>
-
-            <div className="w-px h-5 bg-slate-300 mx-0.5" />
-
-            <div className="flex items-center gap-0.5">
-              {previewThumbnail?.isShuffled && (
+            <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity absolute right-1 top-0 bottom-0 pr-1 pl-4 bg-gradient-to-l from-slate-100 via-slate-100 to-transparent z-10">
+              <div className="flex items-center">
                 <button
-                  onClick={handleResetShuffle}
+                  onClick={handlePreviewPlaylist}
                   className="p-1 hover:bg-slate-200 rounded text-[#052F4A] hover:text-sky-600 transition-colors"
-                  title="Reset to default cover"
+                  title="Preview playlist"
                 >
-                  <RotateCcw size={18} strokeWidth={2.5} />
+                  <Grid3x3 size={18} strokeWidth={2.5} />
                 </button>
-              )}
-              <button
-                onClick={handleShuffle}
-                className="p-1 hover:bg-slate-200 rounded text-[#052F4A] hover:text-sky-600 transition-colors"
-                title="Preview random thumbnail"
-              >
-                <Shuffle size={18} />
-              </button>
-            </div>
+              </div>
 
-            <div className="w-px h-5 bg-slate-300 mx-0.5" />
+              <div className="w-px h-5 bg-slate-300 mx-0.5" />
 
-            <div className="flex items-center gap-0.5">
-              <button
-                onClick={togglePieMenu}
-                className={`p-1 rounded transition-colors ${isMenuOpen ? "bg-sky-500 text-white" : "hover:bg-slate-200 text-[#052F4A] hover:text-sky-600"}`}
-                title="Folder colors"
-              >
-                <svg
-                  className="w-[18px] h-[18px]"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
+              <div className="flex items-center gap-0.5">
+                {previewThumbnail?.isShuffled && (
+                  <button
+                    onClick={handleResetShuffle}
+                    className="p-1 hover:bg-slate-200 rounded text-[#052F4A] hover:text-sky-600 transition-colors"
+                    title="Reset to default cover"
+                  >
+                    <RotateCcw size={18} strokeWidth={2.5} />
+                  </button>
+                )}
+                <button
+                  onClick={handleShuffle}
+                  className="p-1 hover:bg-slate-200 rounded text-[#052F4A] hover:text-sky-600 transition-colors"
+                  title="Preview random thumbnail"
                 >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A2 2 0 013 12V7a4 4 0 014-4z"
-                  />
-                </svg>
-              </button>
+                  <Shuffle size={18} />
+                </button>
+              </div>
+
+              <div className="w-px h-5 bg-slate-300 mx-0.5" />
+
+              <div className="flex items-center gap-0.5">
+                <button
+                  onClick={togglePieMenu}
+                  className={`p-1 rounded transition-colors ${isMenuOpen ? "bg-sky-500 text-white" : "hover:bg-slate-200 text-[#052F4A] hover:text-sky-600"}`}
+                  title="Folder colors"
+                >
+                  <svg
+                    className="w-[18px] h-[18px]"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A2 2 0 013 12V7a4 4 0 014-4z"
+                    />
+                  </svg>
+                </button>
+              </div>
             </div>
           </div>
-        </div>
         )}
 
         <div
@@ -508,7 +513,7 @@ const PlaylistCard = ({
             paddingBottom: "56.25%",
             backgroundColor:
               displayedThumbnailUrl &&
-              displayedThumbnailUrl.includes("twimg.com")
+                displayedThumbnailUrl.includes("twimg.com")
                 ? "#e0f2fe"
                 : "#0f172a",
           }}
@@ -596,58 +601,58 @@ const PlaylistCard = ({
           )}
 
           {size !== 'small' && (
-          <div className="absolute bottom-2 left-2 z-30 flex items-center gap-2 group/folder-area">
-            <button
-              onClick={toggleFolderList}
-              className="transition-transform hover:scale-110 drop-shadow-md group/btn"
-              title={`${activeFolderCount} folders with content`}
-            >
-              <div className="relative flex items-center justify-center">
-                <Folder
-                  size={32}
-                  className={`transition-colors ${isListOpen ? "text-sky-500" : activeFolderFilter ? "" : "text-[#052F4A] opacity-90 group-hover/btn:text-sky-600"}`}
-                  fill={
-                    activeFolderFilter
-                      ? getFolderColorById(activeFolderFilter).hex
-                      : "currentColor"
-                  }
-                  stroke="white"
-                  strokeWidth={2}
-                />
-                <span className="absolute inset-x-0 bottom-0 top-[3px] flex items-center justify-center text-white text-[10px] font-bold">
-                  {activeFolderCount}
-                </span>
-                {activeFolderFilter && (
-                  <div
-                    className="absolute -top-2 -right-2 bg-red-600 rounded-full p-0.5 shadow-md hover:bg-red-500 cursor-pointer border border-white/20 hover:scale-110 transition-transform"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setActiveFolderFilter(null);
-                    }}
-                    title="Clear folder filter"
-                  >
-                    <X size={12} strokeWidth={3} className="text-white" />
-                  </div>
-                )}
-              </div>
-            </button>
+            <div className="absolute bottom-2 left-2 z-30 flex items-center gap-2 group/folder-area">
+              <button
+                onClick={toggleFolderList}
+                className="transition-transform hover:scale-110 drop-shadow-md group/btn"
+                title={`${activeFolderCount} folders with content`}
+              >
+                <div className="relative flex items-center justify-center">
+                  <Folder
+                    size={32}
+                    className={`transition-colors ${isListOpen ? "text-sky-500" : activeFolderFilter ? "" : "text-[#052F4A] opacity-90 group-hover/btn:text-sky-600"}`}
+                    fill={
+                      activeFolderFilter
+                        ? getFolderColorById(activeFolderFilter).hex
+                        : "currentColor"
+                    }
+                    stroke="white"
+                    strokeWidth={2}
+                  />
+                  <span className="absolute inset-x-0 bottom-0 top-[3px] flex items-center justify-center text-white text-[10px] font-bold">
+                    {activeFolderCount}
+                  </span>
+                  {activeFolderFilter && (
+                    <div
+                      className="absolute -top-2 -right-2 bg-red-600 rounded-full p-0.5 shadow-md hover:bg-red-500 cursor-pointer border border-white/20 hover:scale-110 transition-transform"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setActiveFolderFilter(null);
+                      }}
+                      title="Clear folder filter"
+                    >
+                      <X size={12} strokeWidth={3} className="text-white" />
+                    </div>
+                  )}
+                </div>
+              </button>
 
-            <span className="text-white text-xs font-bold bg-black/60 px-2 py-1 rounded-md backdrop-blur-sm" title={orbCount + bannerCount > 0 ? `${videoCount} video(s), ${orbCount} orb(s), ${bannerCount} banner(s)` : undefined}>
-              {orbCount + bannerCount > 0
-                ? `${videoCount} video${videoCount !== 1 ? "s" : ""}${orbCount ? `, ${orbCount} orb${orbCount !== 1 ? "s" : ""}` : ""}${bannerCount ? `, ${bannerCount} banner${bannerCount !== 1 ? "s" : ""}` : ""}`
-                : `${itemCount} video${itemCount !== 1 ? "s" : ""}`}
-            </span>
-          </div>
+              <span className="text-white text-xs font-bold bg-black/60 px-2 py-1 rounded-md backdrop-blur-sm" title={orbCount + bannerCount > 0 ? `${videoCount} video(s), ${orbCount} orb(s), ${bannerCount} banner(s)` : undefined}>
+                {orbCount + bannerCount > 0
+                  ? `${videoCount} video${videoCount !== 1 ? "s" : ""}${orbCount ? `, ${orbCount} orb${orbCount !== 1 ? "s" : ""}` : ""}${bannerCount ? `, ${bannerCount} banner${bannerCount !== 1 ? "s" : ""}` : ""}`
+                  : `${itemCount} video${itemCount !== 1 ? "s" : ""}`}
+              </span>
+            </div>
           )}
 
           {size !== 'small' && (
-          <button
-            onClick={handleSetAsCover}
-            className="absolute bottom-2 right-2 w-8 h-8 rounded-full bg-[#052F4A]/90 hover:bg-sky-500 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200 z-30 shadow-lg hover:scale-110 border border-white/20"
-            title="Set as playlist cover"
-          >
-            <Check size={18} strokeWidth={3} />
-          </button>
+            <button
+              onClick={handleSetAsCover}
+              className="absolute bottom-2 right-2 w-8 h-8 rounded-full bg-[#052F4A]/90 hover:bg-sky-500 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200 z-30 shadow-lg hover:scale-110 border border-white/20"
+              title="Set as playlist cover"
+            >
+              <Check size={18} strokeWidth={3} />
+            </button>
           )}
 
           <div
@@ -715,26 +720,35 @@ const PlaylistCard = ({
                 },
                 ...(isInAnyCarousel
                   ? [
-                      {
-                        label: groupIdsForPlaylist.length > 1 ? "Remove from carousels" : "Remove from carousel",
-                        icon: (
-                          <svg
-                            className="w-4 h-4 text-sky-500"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"
-                            />
-                          </svg>
-                        ),
-                        action: "removeFromCarousel",
-                      },
-                    ]
+                    {
+                      label: groupIdsForPlaylist.length > 1 ? "Remove from carousels" : "Remove from carousel",
+                      icon: (
+                        <svg
+                          className="w-4 h-4 text-sky-500"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"
+                          />
+                        </svg>
+                      ),
+                      action: "removeFromCarousel",
+                    },
+                  ]
+                  : []),
+                ...(!inCarousel
+                  ? [
+                    {
+                      label: isHidden ? "Unhide" : "Hide",
+                      icon: isHidden ? <Eye size={16} className="text-sky-500" /> : <EyeOff size={16} className="text-sky-500" />,
+                      action: isHidden ? "unhide" : "hide",
+                    },
+                  ]
                   : []),
                 {
                   label:
@@ -783,12 +797,16 @@ const PlaylistCard = ({
                   handleExportPlaylist?.(playlist.id, playlist.name);
                 else if (option.action === "delete")
                   handleDeletePlaylist?.(playlist.id, playlist.name, {
-                    stopPropagation: () => {},
+                    stopPropagation: () => { },
                   });
                 else if (option.action === "openAssignToGroup")
                   onAssignToGroupClick?.();
                 else if (option.action === "removeFromCarousel") {
                   groupIdsForPlaylist.forEach((gid) => removePlaylistFromGroup(gid, playlist.id));
+                } else if (option.action === "hide") {
+                  hidePlaylist?.(playlist.id);
+                } else if (option.action === "unhide") {
+                  unhidePlaylist?.(playlist.id);
                 }
               }}
             />
@@ -1059,54 +1077,54 @@ const PlaylistCard = ({
 
         {/* Mini Preview Strip – hidden in small size (carousel thumbnail-only mode) */}
         {size !== 'small' && (
-        <div className="mt-2 grid grid-cols-4 gap-2 px-1 pb-1">
-          {localPreviewVideos.slice(0, 4).map((item, index) => {
-            const slotKey = getPreviewItemKey(item, index);
-            const thumbSrc = getPreviewItemThumbnail(item);
-            const thumbFailed = miniImageErrors.has(slotKey);
-            const showImg = thumbSrc && !thumbFailed;
-            const isVideo = !item.isOrb && !item.isBannerPreset;
-            const isTweet = isVideo && item.thumbnail_url?.includes("twimg.com");
-            return (
+          <div className="mt-2 grid grid-cols-4 gap-2 px-1 pb-1">
+            {localPreviewVideos.slice(0, 4).map((item, index) => {
+              const slotKey = getPreviewItemKey(item, index);
+              const thumbSrc = getPreviewItemThumbnail(item);
+              const thumbFailed = miniImageErrors.has(slotKey);
+              const showImg = thumbSrc && !thumbFailed;
+              const isVideo = !item.isOrb && !item.isBannerPreset;
+              const isTweet = isVideo && item.thumbnail_url?.includes("twimg.com");
+              return (
+                <div
+                  key={slotKey}
+                  className="aspect-video relative rounded-md overflow-hidden bg-black/50 border-2 border-[#052F4A] hover:ring-2 hover:ring-sky-500 transition-all cursor-pointer group/mini shadow-md"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (isVideo && item.video_url && onVideoSelect) onVideoSelect(item.video_url);
+                  }}
+                  onContextMenu={(e) => handleMiniVideoRightClick(e, item, index)}
+                  title={getPreviewItemTitle(item)}
+                >
+                  {showImg ? (
+                    <img
+                      src={thumbSrc}
+                      alt=""
+                      className={`w-full h-full opacity-80 group-hover/mini:opacity-100 transition-opacity ${isTweet ? "object-contain bg-[#e0f2fe] p-0.5" : "object-cover"}`}
+                      onError={() => setMiniImageErrors((prev) => new Set(prev).add(slotKey))}
+                    />
+                  ) : (
+                    <div className={`w-full h-full flex items-center justify-center ${item.isOrb ? "bg-amber-900/60 text-amber-200" : item.isBannerPreset ? "bg-violet-900/60 text-violet-200" : "bg-slate-700/50 text-slate-400"}`}>
+                      <span className="text-xs font-bold uppercase">{item.isOrb ? "Orb" : item.isBannerPreset ? "Banner" : ""}</span>
+                    </div>
+                  )}
+                  {isVideo && showImg && (
+                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/mini:opacity-100 bg-black/30 transition-opacity">
+                      <Play size={12} className="text-white fill-current" />
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+            {Array.from({
+              length: Math.max(0, 4 - localPreviewVideos.length),
+            }).map((_, i) => (
               <div
-                key={slotKey}
-                className="aspect-video relative rounded-md overflow-hidden bg-black/50 border-2 border-[#052F4A] hover:ring-2 hover:ring-sky-500 transition-all cursor-pointer group/mini shadow-md"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  if (isVideo && item.video_url && onVideoSelect) onVideoSelect(item.video_url);
-                }}
-                onContextMenu={(e) => handleMiniVideoRightClick(e, item, index)}
-                title={getPreviewItemTitle(item)}
-              >
-                {showImg ? (
-                  <img
-                    src={thumbSrc}
-                    alt=""
-                    className={`w-full h-full opacity-80 group-hover/mini:opacity-100 transition-opacity ${isTweet ? "object-contain bg-[#e0f2fe] p-0.5" : "object-cover"}`}
-                    onError={() => setMiniImageErrors((prev) => new Set(prev).add(slotKey))}
-                  />
-                ) : (
-                  <div className={`w-full h-full flex items-center justify-center ${item.isOrb ? "bg-amber-900/60 text-amber-200" : item.isBannerPreset ? "bg-violet-900/60 text-violet-200" : "bg-slate-700/50 text-slate-400"}`}>
-                    <span className="text-xs font-bold uppercase">{item.isOrb ? "Orb" : item.isBannerPreset ? "Banner" : ""}</span>
-                  </div>
-                )}
-                {isVideo && showImg && (
-                  <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/mini:opacity-100 bg-black/30 transition-opacity">
-                    <Play size={12} className="text-white fill-current" />
-                  </div>
-                )}
-              </div>
-            );
-          })}
-          {Array.from({
-            length: Math.max(0, 4 - localPreviewVideos.length),
-          }).map((_, i) => (
-            <div
-              key={`empty-${i}`}
-              className="aspect-video relative rounded-md bg-slate-800/20 border border-slate-700/30"
-            />
-          ))}
-        </div>
+                key={`empty-${i}`}
+                className="aspect-video relative rounded-md bg-slate-800/20 border border-slate-700/30"
+              />
+            ))}
+          </div>
         )}
       </div>
     </div>

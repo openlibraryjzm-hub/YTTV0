@@ -29,6 +29,10 @@ const PlaylistsPage = ({ onVideoSelect }) => {
   const [playlists, setPlaylists] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 50;
+  const [playlistSortBy, setPlaylistSortBy] = useState('shuffle');
+  const [playlistSortDirection, setPlaylistSortDirection] = useState('desc');
+  const [showHiddenPlaylists, setShowHiddenPlaylists] = useState(false);
+  const [playlistContentFilter, setPlaylistContentFilter] = useState('all');
   const [centeredPlaylistName, setCenteredPlaylistName] = useState('');
   const [playlistThumbnails, setPlaylistThumbnails] = useState({});
   const [playlistRecentVideos, setPlaylistRecentVideos] = useState({});
@@ -83,33 +87,12 @@ const PlaylistsPage = ({ onVideoSelect }) => {
     setCurrentPage(1);
   }, [selectedPrismFolder]);
 
-  // Derived filtered lists for pagination
-  const allPlaylistsFiltered = useMemo(() => playlists, [playlists]);
-
-  const unsortedPlaylistsFiltered = useMemo(() =>
-    playlists.filter((p) => getGroupIdsForPlaylist(p.id).length === 0),
-    [playlists, getGroupIdsForPlaylist]);
-
-  const currentPlaylistsToRender = useMemo(() => {
-    if (selectedPrismFolder === null) return allPlaylistsFiltered;
-    if (selectedPrismFolder === 'unsorted') return unsortedPlaylistsFiltered;
-    return [];
-  }, [selectedPrismFolder, allPlaylistsFiltered, unsortedPlaylistsFiltered]);
-
-  const totalPages = Math.max(1, Math.ceil(currentPlaylistsToRender.length / itemsPerPage));
-  const totalPrismPages = playlistGroups.length > 0 ? Math.max(1, ...playlistGroups.map(g => g.page || 1)) : 1;
-
-  const displayPlaylists = useMemo(() => {
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    return currentPlaylistsToRender.slice(startIndex, startIndex + itemsPerPage);
-  }, [currentPlaylistsToRender, currentPage, itemsPerPage]);
-
   // Keep ref in sync with state
   pieDataRef.current.hoveredPieSegment = hoveredPieSegment;
   pieDataRef.current.playlistFolders = playlistFolders;
   const { setPlaylistItems, currentPlaylistItems, currentPlaylistId, currentVideoIndex, setCurrentFolder, setPreviewPlaylist, setAllPlaylists } = usePlaylistStore();
   const { pinnedVideos: allPinnedVideos, priorityPinIds } = usePinStore();
-  const { orbFavorites, bannerPresets } = useConfigStore();
+  const { orbFavorites, bannerPresets, hiddenPlaylists } = useConfigStore();
 
   // Combined preview items per playlist: orbs + banners assigned to this playlist, then DB preview videos
   const combinedPreviewItems = useMemo(() => {
@@ -148,6 +131,86 @@ const PlaylistsPage = ({ onVideoSelect }) => {
     });
     return out;
   }, [playlists, playlistPreviewVideos, orbFavorites, bannerPresets]);
+
+  // Derived filtered lists for pagination (moved here to use combinedPreviewItems)
+  const sortedPlaylists = useMemo(() => {
+    let sorted = [...playlists];
+    if (playlistSortBy !== 'shuffle') {
+      sorted.sort((a, b) => {
+        let valA, valB;
+        if (playlistSortBy === 'amount') {
+          const countA = playlistItemCounts[a.id] || 0;
+          const countB = playlistItemCounts[b.id] || 0;
+          const comboA = combinedPreviewItems[a.id] || [];
+          const comboB = combinedPreviewItems[b.id] || [];
+          const orbCountA = comboA.filter((i) => i.isOrb).length;
+          const bannerCountA = comboA.filter((i) => i.isBannerPreset).length;
+          const orbCountB = comboB.filter((i) => i.isOrb).length;
+          const bannerCountB = comboB.filter((i) => i.isBannerPreset).length;
+          valA = countA + orbCountA + bannerCountA;
+          valB = countB + orbCountB + bannerCountB;
+        } else if (playlistSortBy === 'date') {
+          valA = new Date(a.created_at || 0).getTime();
+          valB = new Date(b.created_at || 0).getTime();
+        } else if (playlistSortBy === 'name') {
+          valA = a.name.toLowerCase();
+          valB = b.name.toLowerCase();
+        }
+
+        if (valA < valB) return playlistSortDirection === 'asc' ? -1 : 1;
+        if (valA > valB) return playlistSortDirection === 'asc' ? 1 : -1;
+        return 0;
+      });
+    }
+    return sorted;
+  }, [playlists, playlistSortBy, playlistSortDirection, playlistItemCounts, combinedPreviewItems]);
+
+  const getPopulatedStatus = (playlistId) => {
+    const videoCount = playlistItemCounts[playlistId] || 0;
+    const combined = combinedPreviewItems[playlistId] || [];
+    const orbCount = combined.filter((i) => i.isOrb).length;
+    const bannerCount = combined.filter((i) => i.isBannerPreset).length;
+    return (videoCount + orbCount + bannerCount) > 0;
+  };
+
+  const passesContentFilter = (playlistId) => {
+    if (playlistContentFilter === 'all') return true;
+    const isPopulated = getPopulatedStatus(playlistId);
+    if (playlistContentFilter === 'populated') return isPopulated;
+    if (playlistContentFilter === 'empty') return !isPopulated;
+    return true;
+  };
+
+  const allPlaylistsFiltered = useMemo(() =>
+    sortedPlaylists.filter(p => {
+      const isVisibilityOk = showHiddenPlaylists ? true : !(hiddenPlaylists || []).includes(p.id);
+      return isVisibilityOk && passesContentFilter(p.id);
+    }),
+    [sortedPlaylists, hiddenPlaylists, showHiddenPlaylists, playlistContentFilter, combinedPreviewItems, playlistItemCounts]
+  );
+
+  const unsortedPlaylistsFiltered = useMemo(() =>
+    sortedPlaylists.filter((p) => {
+      if (getGroupIdsForPlaylist(p.id).length > 0) return false;
+      const isVisibilityOk = showHiddenPlaylists ? true : !(hiddenPlaylists || []).includes(p.id);
+      return isVisibilityOk && passesContentFilter(p.id);
+    }),
+    [sortedPlaylists, getGroupIdsForPlaylist, hiddenPlaylists, showHiddenPlaylists, playlistContentFilter, combinedPreviewItems, playlistItemCounts]
+  );
+
+  const currentPlaylistsToRender = useMemo(() => {
+    if (selectedPrismFolder === null) return allPlaylistsFiltered;
+    if (selectedPrismFolder === 'unsorted') return unsortedPlaylistsFiltered;
+    return [];
+  }, [selectedPrismFolder, allPlaylistsFiltered, unsortedPlaylistsFiltered]);
+
+  const totalPages = Math.max(1, Math.ceil(currentPlaylistsToRender.length / itemsPerPage));
+  const totalPrismPages = playlistGroups.length > 0 ? Math.max(1, ...playlistGroups.map(g => g.page || 1)) : 1;
+
+  const displayPlaylists = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    return currentPlaylistsToRender.slice(startIndex, startIndex + itemsPerPage);
+  }, [currentPlaylistsToRender, currentPage, itemsPerPage]);
 
   const priorityVideo = React.useMemo(() => {
     return allPinnedVideos.find(v => priorityPinIds.includes(v.id));
@@ -770,6 +833,14 @@ const PlaylistsPage = ({ onVideoSelect }) => {
               onPrevPage={() => setPrismPage(p => Math.max(1, p - 1))}
               onNextPage={() => setPrismPage(p => Math.min(totalPrismPages, p + 1))}
               onAddPage={() => setPrismPage(totalPrismPages + 1)}
+              sortBy={playlistSortBy}
+              setSortBy={setPlaylistSortBy}
+              sortDirection={playlistSortDirection}
+              setSortDirection={setPlaylistSortDirection}
+              showHidden={showHiddenPlaylists}
+              setShowHidden={setShowHiddenPlaylists}
+              contentFilter={playlistContentFilter}
+              setContentFilter={setPlaylistContentFilter}
             />
 
             <div className={`px-4 ${selectedPrismFolder !== 'unsorted' && selectedPrismFolder !== null ? 'pt-0 -mt-[14px] pb-0' : 'pt-4 pb-8'}`}>

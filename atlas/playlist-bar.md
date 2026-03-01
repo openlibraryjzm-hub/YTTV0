@@ -1,6 +1,6 @@
 # PlaylistBar – Playlists Page Sticky Toolbar
 
-This document describes the **Playlists page sticky toolbar** (`PlaylistBar.jsx`): the bar that sits at the top of the Playlists page content and combines **VideoSortFilters**, **Add/Refresh/Bulk tag** buttons, the **folder prism** for colored-folder (group carousel) selection, and **Back/Close** on the right. The prism drives which view is shown: All playlists grid, Unsorted grid, or a single group carousel by folder color.
+This document describes the **Playlists page sticky toolbar** (`PlaylistBar.jsx`): the bar that sits at the top of the Playlists page content and combines **PlaylistSortFilters**, **Add/Refresh/Bulk tag** buttons, the **folder prism** for colored-folder (group carousel) selection, and **Back/Close** on the right. The prism drives which view is shown: All playlists grid, Unsorted grid, or a single group carousel by folder color.
 
 ---
 
@@ -10,7 +10,7 @@ This document describes the **Playlists page sticky toolbar** (`PlaylistBar.jsx`
 
 **Layout (left to right)**:
 
-1. **VideoSortFilters** – Same component as on the Videos page: Home (default order), Funnel (sort + rating filter). Sort/rating state is local to PlaylistBar; filter UI is shared.
+1. **PlaylistSortFilters** – A specific component built tailored for the Playlists page: Home (default / shuffle order) and Funnel (dropdown with Sort, Visibility, and Content filters). The sort and filter states (`playlistSortBy`, `showHiddenPlaylists`, `playlistContentFilter`) are managed in `PlaylistsPage.jsx` and passed down. Playlists can be sorted by item count, date created, or alphabetically.
 2. **Action buttons** – Add (opens playlist uploader via `onAddClick`), Refresh (Videos-page only; placeholder), Bulk tag (Videos-page only; placeholder). Same row, right of the filter.
 3. **Folder prism** – Fills the remaining width. Segments: **All** (white), **Unsorted** (black, if any playlists are unassigned), and **one segment per folder color that has a group carousel**. Clicking a segment sets the selected folder; PlaylistsPage shows either the full grid (All/Unsorted) or the single carousel for that color.
 4. **Right side** – Back (when navigation history or playlist preview exists), Close (fullscreen / close menu via `layoutStore.setViewMode('full')`).
@@ -29,6 +29,7 @@ This document describes the **Playlists page sticky toolbar** (`PlaylistBar.jsx`
 | `unsortedCount` | `number` | Count of playlists not in any group; Unsorted segment only shown if ≥ 1. |
 | `selectedFolder` | `string \| null` | Current selection: `null` = All, `'unsorted'` = Unsorted, or a color id (e.g. `'red'`, `'sky'`). |
 | `onFolderSelect` | `function` | `(id: string \| null) => void`. Called when a prism segment is clicked. |
+| Sort & Filter Props | various | `sortBy`, `sortDirection`, `showHidden`, `contentFilter` and their setters are passed to `PlaylistSortFilters` and managed by `PlaylistsPage`. |
 
 ---
 
@@ -63,7 +64,10 @@ This document describes the **Playlists page sticky toolbar** (`PlaylistBar.jsx`
 
 ## 5. Dependencies
 
-- **VideoSortFilters** – Same component as Videos page; sort/rating state is local to PlaylistBar (not persisted for Playlists page).
+- **PlaylistSortFilters** – Playlists-page specific component containing:
+  - **Sort By**: Item count, Date created, Alphabetical.
+  - **Visibility Filters**: Toggle hidden playlists (stored in `configStore` via `hiddenPlaylists` array; hiding/unhiding a playlist specifically is done from the `PlaylistCard` 3-dot menu).
+  - **Content Filters**: All Playlists, Populated Only (item count > 0), Empty Only (item count === 0).
 - **FOLDER_COLORS** – `src/utils/folderColors.js` (16 colors: red, orange, amber, … pink). Same as Videos page prism and PlaylistGroupColumn.
 - **Stores**: `useNavigationStore` (history, goBack, setCurrentPage), `useLayoutStore` (setViewMode), `usePlaylistStore` (previewPlaylistId, clearPreview) for Back/Close behavior.
 
@@ -93,5 +97,6 @@ This document describes the **Playlists page sticky toolbar** (`PlaylistBar.jsx`
 
 - **Group carousel system**: `group-carousel.md` (colored folders, store, PlaylistGroupColumn, carousel by color).
 - **Videos page toolbar**: `video-sort-filters.md` (VideoSortFilters and folder prism pattern).
+- **Playlist Sorting & Filtering**: The filters applied from `PlaylistSortFilters` dynamically modify the active view (All/Unsorted) locally in `PlaylistsPage` before rendering `PlaylistCard`s. Hidden logic ignores carousels completely to avoid disruption.
 - **Folder colors**: `playlist&tab.md`, `folderColors.js`.
 - **State**: `state-management.md` (playlistGroupStore, navigationStore, layoutStore, playlistStore).

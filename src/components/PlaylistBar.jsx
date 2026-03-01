@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { RotateCcw, ChevronLeft, ChevronRight } from 'lucide-react';
 import { FOLDER_COLORS } from '../utils/folderColors';
-import VideoSortFilters from './VideoSortFilters';
+import PlaylistSortFilters from './PlaylistSortFilters';
 import { useNavigationStore } from '../store/navigationStore';
 import { useLayoutStore } from '../store/layoutStore';
 import { usePlaylistStore } from '../store/playlistStore';
@@ -23,19 +23,19 @@ const PlaylistBar = ({
   onPrevPage,
   onNextPage,
   onAddPage,
+  sortBy,
+  setSortBy,
+  sortDirection,
+  setSortDirection,
+  showHidden,
+  setShowHidden,
+  contentFilter,
+  setContentFilter,
 }) => {
   const { history, goBack, setCurrentPage } = useNavigationStore();
   const { setViewMode } = useLayoutStore();
   const { previewPlaylistId, clearPreview } = usePlaylistStore();
   const { allFolderMetadata, setHoveredFolder } = useFolderStore();
-  const [sortBy, setSortBy] = useState('shuffle');
-  const [sortDirection, setSortDirection] = useState('desc');
-  const [selectedRatings, setSelectedRatings] = useState([]);
-  const handleToggleRating = (rating) => {
-    setSelectedRatings((prev) =>
-      prev.includes(rating) ? prev.filter((r) => r !== rating) : [...prev, rating].sort((a, b) => a - b)
-    );
-  };
 
   const ICON_WHITE_OUTLINE = {
     color: 'white',
@@ -83,13 +83,15 @@ const PlaylistBar = ({
         }}
       >
         <div className={`px-4 flex items-center justify-between transition-all duration-300 relative z-10 ${isStuck ? 'h-[52px]' : 'py-0.5'}`}>
-          <VideoSortFilters
+          <PlaylistSortFilters
             sortBy={sortBy}
             setSortBy={setSortBy}
             sortDirection={sortDirection}
             setSortDirection={setSortDirection}
-            selectedRatings={selectedRatings}
-            onToggleRating={handleToggleRating}
+            showHidden={showHidden}
+            setShowHidden={setShowHidden}
+            contentFilter={contentFilter}
+            setContentFilter={setContentFilter}
             isLight={true}
             className="shrink-0 mr-2"
           />

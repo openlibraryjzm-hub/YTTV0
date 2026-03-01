@@ -429,6 +429,18 @@ export const useConfigStore = create(
             pageBannerImage2YOffset: 50,
             setPageBannerImage2YOffset: (val) => set({ pageBannerImage2YOffset: val }),
 
+            // Hidden Playlists
+            hiddenPlaylists: [],
+            hidePlaylist: (id) => set((state) => {
+                if (!state.hiddenPlaylists.includes(id)) {
+                    return { hiddenPlaylists: [...state.hiddenPlaylists, id] };
+                }
+                return state;
+            }),
+            unhidePlaylist: (id) => set((state) => ({
+                hiddenPlaylists: state.hiddenPlaylists.filter(pid => pid !== id)
+            })),
+
             // Layer 2 Image Folders System
             // playlistIds: [] means show on ALL playlists, specific IDs means show only on those playlists
             // isThemeFolder: true means this folder's images apply app-wide as the theme
