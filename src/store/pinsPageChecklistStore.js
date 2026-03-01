@@ -1,5 +1,6 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { persist, createJSONStorage } from 'zustand/middleware';
+import { idbStorage } from '../utils/storageUtils';
 
 /**
  * Pins Page Checklist Store
@@ -43,6 +44,9 @@ export const usePinsPageChecklistStore = create(
         });
       },
     }),
-    { name: 'pins-page-checklist-storage' }
+    {
+      name: 'pins-page-checklist-storage',
+      storage: createJSONStorage(() => idbStorage)
+    }
   )
 );

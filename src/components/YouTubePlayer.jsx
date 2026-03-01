@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { updateVideoProgress } from '../api/playlistApi';
 import { useLayoutStore } from '../store/layoutStore';
 import { usePinStore } from '../store/pinStore';
+import { getStoredPlaybackTime, savePlaybackTime } from '../utils/storageUtils';
 
 /**
  * Extracts video ID from YouTube URL
@@ -29,30 +30,12 @@ const extractVideoId = (url) => {
   return null;
 };
 
-// Get stored playback time for a video
-const getStoredPlaybackTime = (videoId) => {
-  try {
-    const stored = localStorage.getItem(`playback_time_${videoId}`);
-    return stored ? parseFloat(stored) : 0;
-  } catch {
-    return 0;
-  }
-};
-
-// Save playback time for a video (localStorage for quick access)
-const savePlaybackTime = (videoId, time) => {
-  try {
-    localStorage.setItem(`playback_time_${videoId}`, time.toString());
-  } catch (error) {
-    console.error('Failed to save playback time:', error);
-  }
-};
 
 // Save video progress to database and handle pin completion (follower pin transfer or unpin)
 const saveVideoProgress = async (videoId, videoUrl, duration, currentTime, handlePinCompletion, playlistItems) => {
   try {
     await updateVideoProgress(videoId, videoUrl, duration, currentTime);
-    
+
     // Handle pin completion if video reached >=85%
     if (duration && duration > 0 && currentTime >= 0) {
       const progressPercentage = (currentTime / duration) * 100;
@@ -76,7 +59,7 @@ const YouTubePlayer = ({ videoUrl, videoId, playerId = 'default', onEnded, playl
   const [apiReady, setApiReady] = useState(false);
   const { viewMode } = useLayoutStore();
   const { handleFollowerPinCompletion } = usePinStore();
-  
+
   // Store playlistItems in a ref so the interval callback has access to latest value
   const playlistItemsRef = useRef(playlistItems);
   useEffect(() => {
@@ -126,7 +109,7 @@ const YouTubePlayer = ({ videoUrl, videoId, playerId = 'default', onEnded, playl
 
     // Resize when viewMode changes
     resize();
-    
+
     // Also resize on window resize
     window.addEventListener('resize', resize);
     return () => window.removeEventListener('resize', resize);

@@ -3,6 +3,7 @@ import { updateVideoProgress } from '../api/playlistApi';
 import { invoke } from '@tauri-apps/api/core';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import { usePinStore } from '../store/pinStore';
+import { getStoredPlaybackTime, savePlaybackTime } from '../utils/storageUtils';
 
 // Manually verify observeMpvProperties import or implement locally if needed.
 // Keeping it for now assuming it uses event system which might match.
@@ -49,30 +50,12 @@ const setMpvProperty = async (name, value) => {
   }
 };
 
-// Get stored playback time for a video
-const getStoredPlaybackTime = (videoId) => {
-  try {
-    const stored = localStorage.getItem(`playback_time_${videoId}`);
-    return stored ? parseFloat(stored) : 0;
-  } catch {
-    return 0;
-  }
-};
-
-// Save playback time for a video (localStorage for quick access)
-const savePlaybackTime = (videoId, time) => {
-  try {
-    localStorage.setItem(`playback_time_${videoId}`, time.toString());
-  } catch (error) {
-    console.error('Failed to save playback time:', error);
-  }
-};
 
 // Save video progress to database and handle pin completion (follower pin transfer or unpin)
 const saveVideoProgress = async (videoId, videoUrl, duration, currentTime, handlePinCompletion, playlistItems) => {
   try {
     await updateVideoProgress(videoId, videoUrl, duration, currentTime);
-    
+
     // Handle pin completion if video reached >=85%
     if (duration && duration > 0 && currentTime >= 0) {
       const progressPercentage = (currentTime / duration) * 100;
@@ -89,7 +72,7 @@ const saveVideoProgress = async (videoId, videoUrl, duration, currentTime, handl
 const NativeVideoPlayer = ({ videoUrl, videoId, playerId = 'default', onEnded, playlistItems = [], ...props }) => {
   const containerRef = useRef(null);
   const { handleFollowerPinCompletion } = usePinStore();
-  
+
   // Store playlistItems in a ref so callbacks have access to latest value
   const playlistItemsRef = useRef(playlistItems);
   useEffect(() => {

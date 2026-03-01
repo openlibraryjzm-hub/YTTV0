@@ -1,5 +1,6 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { persist, createJSONStorage } from 'zustand/middleware';
+import { idbStorage } from '../utils/storageUtils';
 import { FOLDER_COLORS } from '../utils/folderColors';
 
 const generateId = () => 'g' + Date.now() + '-' + Math.random().toString(36).slice(2, 9);
@@ -109,6 +110,7 @@ export const usePlaylistGroupStore = create(
         },
         {
             name: 'playlist-group-storage',
+            storage: createJSONStorage(() => idbStorage),
             version: 4,
             migrate: (state, version) => {
                 if (!state) return { groups: [], activeGroupId: null, groupCarouselModes: {} };

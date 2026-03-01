@@ -120,7 +120,7 @@ Users experience watch-time tracking automatically in the background:
    - Every 5 seconds → Interval callback executes:
      - Gets current time → `playerRef.current.getCurrentTime()`
      - Gets duration → `durationRef.current || playerRef.current.getDuration()`
-     - Saves to localStorage → `savePlaybackTime(id, currentTime)` (quick access)
+     - Saves to localStorage cache → `savePlaybackTime(id, currentTime)` (100-video LRU quick access)
      - Saves to database → `saveVideoProgress(id, videoUrl, duration, currentTime)`
    - Backend calculates progress → `(current_time / duration) * 100`
    - Backend updates record → `INSERT OR REPLACE INTO video_progress`
@@ -130,13 +130,13 @@ Users experience watch-time tracking automatically in the background:
    - Video paused/stopped → `onStateChange` event fires
    - If state is not `PLAYING` → Clears interval (line 154)
    - Immediately saves progress → Gets current time and duration
-   - Saves to localStorage → `savePlaybackTime(id, currentTime)`
+   - Saves to localStorage cache → `savePlaybackTime(id, currentTime)`
    - Saves to database → `saveVideoProgress(id, videoUrl, duration, currentTime)`
    - Final progress recorded → Ensures no data loss on pause
 
 4. **Resume Playback Flow:**
    - Video loads → `onReady` event fires (YouTubePlayer.jsx line 103)
-   - Gets stored time → `getStoredPlaybackTime(id)` from localStorage
+   - Gets stored time → `getStoredPlaybackTime(id)` from localStorage cache
    - If stored time > 0 → `event.target.seekTo(storedTime, true)` (line 116)
    - Video starts at last position → User continues where they left off
    - Duration retrieved → `event.target.getDuration()` stored in `durationRef`
@@ -172,7 +172,7 @@ Users experience watch-time tracking automatically in the background:
 8. **Cleanup Flow:**
    - Video component unmounts → Cleanup function (YouTubePlayer.jsx line 163)
    - Gets final time → `playerRef.current.getCurrentTime()`
-   - Saves to localStorage → `savePlaybackTime(id, currentTime)`
+   - Saves to localStorage cache → `savePlaybackTime(id, currentTime)`
    - Saves to database → `saveVideoProgress(id, videoUrl, duration, currentTime)`
    - Clears interval → `clearInterval(saveIntervalRef.current)`
    - Destroys player → `playerRef.current.destroy()`
@@ -180,7 +180,7 @@ Users experience watch-time tracking automatically in the background:
 **Source of Truth:**
 - Database `watch_history` table - Source of Truth for watch history (ordered by `watched_at DESC`)
 - Database `video_progress` table - Source of Truth for progress data (one record per video_id)
-- `localStorage` (`playback_time_{videoId}`) - Quick access cache for resume playback (non-authoritative)
+- `localStorage` (`recent_playback_times`) - Capped 100-video LRU cache for fast resume playback (avoids QuotaExceededError, non-authoritative)
 
 **State Dependencies:**
 - When `currentVideoUrl` changes → Watch history entry created → New record in database

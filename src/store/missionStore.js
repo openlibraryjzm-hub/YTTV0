@@ -1,5 +1,6 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { persist, createJSONStorage } from 'zustand/middleware';
+import { idbStorage } from '../utils/storageUtils';
 
 export const useMissionStore = create(
     persist(
@@ -114,6 +115,7 @@ export const useMissionStore = create(
         }),
         {
             name: 'mission-storage', // unique name
+            storage: createJSONStorage(() => idbStorage),
             version: 4, // version bump for migration
             migrate: (persistedState, version) => {
                 let state = persistedState;

@@ -1,5 +1,6 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { persist, createJSONStorage } from 'zustand/middleware';
+import { idbStorage } from '../utils/storageUtils';
 
 /**
  * Sticky Store - Persistent stickied videos per playlist
@@ -64,7 +65,8 @@ export const useStickyStore = create(
             },
         }),
         {
-            name: 'sticky-storage', // unique name for localStorage
+            name: 'sticky-storage', // unique name for idb
+            storage: createJSONStorage(() => idbStorage),
         }
     )
 );

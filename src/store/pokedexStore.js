@@ -1,5 +1,6 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { persist, createJSONStorage } from 'zustand/middleware';
+import { idbStorage } from '../utils/storageUtils';
 
 // Gen 1 Pokemon Data (1-151)
 // We generate this programmatically to save space, fetching names/types could be done via an API or a large JSON if needed.
@@ -127,6 +128,7 @@ export const usePokedexStore = create(
         }),
         {
             name: 'pokedex-storage',
+            storage: createJSONStorage(() => idbStorage),
             version: 1,
         }
     )

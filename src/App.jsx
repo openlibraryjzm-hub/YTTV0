@@ -34,6 +34,7 @@ import { useMissionStore } from './store/missionStore';
 import { initializeTestData } from './utils/initDatabase';
 import { addToWatchHistory, getWatchHistory, getAllPlaylists, getPlaylistItems } from './api/playlistApi';
 import { extractVideoId } from './utils/youtubeUtils';
+import { clearOldPlaybackKeys } from './utils/storageUtils';
 import RadialMenuStandalone from './components/RadialMenuStandalone';
 import SettingsPage from './components/SettingsPage';
 import SupportPage from './components/SupportPage';
@@ -114,6 +115,9 @@ function App() {
       }
     };
     loadConfigs();
+
+    // Clear orphaned playback keys from localStorage
+    clearOldPlaybackKeys();
   }, []);
 
   // Debug logging for radial menu

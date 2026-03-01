@@ -116,9 +116,9 @@ yttv2/
 │   │   ├── tabStore.js           # View mode (ALL/UNSORTED/GROUPS) for Playlists page
 │   │   ├── tabPresetStore.js     # Tab preset state management
 │   │   ├── playlistGroupStore.js # Group carousels: groups, per-carousel modes (large/small/bar), assign/rename/delete (persisted)
-│   │   ├── pinStore.js           # Pin state management (persisted)
-│   │   ├── pinsPageChecklistStore.js  # Tasks page checklist (persisted to localStorage)
-│   │   ├── stickyStore.js        # Sticky video state management (persisted)
+│   │   ├── pinStore.js           # Pin state management (persisted to IndexedDB)
+│   │   ├── pinsPageChecklistStore.js  # Tasks page checklist (persisted to IndexedDB)
+│   │   ├── stickyStore.js        # Sticky video state management (persisted to IndexedDB)
 │   │   ├── shuffleStore.js       # Shuffle state for video ordering
 │   │   └── paginationStore.js    # Pagination state (shared between VideosPage and TopNav)
 │   ├── utils/                    # Utility functions
@@ -286,7 +286,7 @@ yttv2/
 **Cross-References**: See `database-schema.md` for watch_history table, `api-bridge.md` for history commands
 
 #### `tasks-page.md`
-**Covers**: Dedicated Tasks page for bullet-point checklists (date-grouped, tick-to-complete, 3-dot menu: Edit, Copy, Delete). Entry from Pins page; Back to Pins; persistence via pinsPageChecklistStore (localStorage).
+**Covers**: Dedicated Tasks page for bullet-point checklists (date-grouped, tick-to-complete, 3-dot menu: Edit, Copy, Delete). Entry from Pins page; Back to Pins; persistence via pinsPageChecklistStore (IndexedDB).
 **Cross-References**: See `ui-pages.md` (Pins §4.1.4, Tasks §4.1.5), `state-management.md` for store pattern
 
 #### `drumstick-rating-system.md`
@@ -368,7 +368,7 @@ yttv2/
 
 #### `state-management.md`
 **Covers**: All 7 Zustand stores, state flow patterns, persistence strategies
-**Key Topics**: Store architecture, state dependencies, localStorage vs database persistence
+**Key Topics**: Store architecture, state dependencies, IndexedDB/localStorage vs database persistence
 **Cross-References**: Referenced by all feature docs (stores are used throughout)
 
 #### `database-schema.md`
@@ -510,7 +510,7 @@ For detailed information about the application's theme system and recent color c
   - **Top Playlist Menu**: Removed video metadata (author, view count, year published) from the bottom bar; only navigation controls (Previous, Grid, Next) remain.
   - **Top Playlist & Top Video Menus**: Panels and bottom bars use transparent backgrounds (`bg-transparent`), no solid backdrop or rectangular border, so the App Banner is fully visible behind them; a soft box shadow (`shadow-2xl`) defines the rounded-rectangle shape. Implemented in `PlayerController.jsx`; documented in `advanced-player-controller.md` (§1.3, §1.4).
 - **Tasks Page & Pins Checklist**:
-  - **Tasks Page** (`TasksPage.jsx`): Dedicated page for task checklists—creation bar (input + Add, Enter to add), tasks grouped by date (newest first), tick button (circle/check-in-circle) to mark done, 3-dot menu per task (Edit inline, Copy to clipboard, Delete). "Back to Pins" link and global Back return to Pins. State in `pinsPageChecklistStore` (localStorage).
+  - **Tasks Page** (`TasksPage.jsx`): Dedicated page for task checklists—creation bar (input + Add, Enter to add), tasks grouped by date (newest first), tick button (circle/check-in-circle) to mark done, 3-dot menu per task (Edit inline, Copy to clipboard, Delete). "Back to Pins" link and global Back return to Pins. State in `pinsPageChecklistStore` (IndexedDB).
   - **Pins Page**: "Tasks" link at top navigates to Tasks page; priority pin history carousel starts expanded. Checklist UI removed from Pins in favor of the dedicated Tasks page.
   - **Documentation**: Added `atlas/tasks-page.md`; updated `ui-pages.md` (§4.1.4 Pins, new §4.1.5 Tasks) and `README.md` (structure, Quick Reference, Document Descriptions).
 - **Videos Page & Video Card UX**:

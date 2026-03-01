@@ -1,5 +1,6 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { persist, createJSONStorage } from 'zustand/middleware';
+import { idbStorage } from '../utils/storageUtils';
 
 /**
  * Pin Store - Persistent video pinning
@@ -104,7 +105,7 @@ export const usePinStore = create(
         setFollowerPin: (videoId) => {
           const state = get();
           const isPinned = state.pinnedVideos.some(v => v.id === videoId);
-          
+
           if (isPinned && !state.followerPinIds.includes(videoId)) {
             const newFollowerIds = [videoId, ...state.followerPinIds];
             set({ followerPinIds: newFollowerIds });
@@ -228,63 +229,63 @@ export const usePinStore = create(
          */
         handleFollowerPinCompletion: (videoId, playlistItems) => {
           const state = get();
-          
+
           // Find the pin by video_id (YouTube ID)
           const pinToRemove = state.pinnedVideos.find(v => v.video_id === videoId);
           if (!pinToRemove) return null;
-          
+
           const isFollower = state.followerPinIds.includes(pinToRemove.id);
           const isPriority = state.priorityPinIds.includes(pinToRemove.id);
-          
+
           if (!isFollower || !playlistItems || playlistItems.length === 0) {
             // Not a follower pin or no playlist - just unpin normally
             get().removePinByVideoId(videoId);
             return null;
           }
-          
+
           // Find current video's position in playlist
-          const currentIndex = playlistItems.findIndex(v => 
-            v.video_id === videoId || 
+          const currentIndex = playlistItems.findIndex(v =>
+            v.video_id === videoId ||
             (v.video_url && v.video_url.includes(videoId))
           );
-          
+
           if (currentIndex === -1 || currentIndex >= playlistItems.length - 1) {
             // Video not found in playlist or is the last video - just unpin
             get().removePinByVideoId(videoId);
             return null;
           }
-          
+
           // Get the next video in the playlist
           const nextVideo = playlistItems[currentIndex + 1];
           if (!nextVideo) {
             get().removePinByVideoId(videoId);
             return null;
           }
-          
+
           // Transfer the pin to the next video
           // 1. Remove old pin from pinnedVideos
           const newPins = state.pinnedVideos.filter(v => v.id !== pinToRemove.id);
-          
+
           // 2. Add new pin for next video
           const nextPinWithTimestamp = { ...nextVideo, pinnedAt: Date.now() };
           newPins.push(nextPinWithTimestamp);
-          
+
           // 3. Update priority status if original was priority
           let newPriorityIds = state.priorityPinIds.filter(id => id !== pinToRemove.id);
           if (isPriority) {
             newPriorityIds = [nextVideo.id, ...newPriorityIds];
           }
-          
+
           // 4. Transfer follower status to new video, remove from old
           let newFollowerIds = state.followerPinIds.filter(id => id !== pinToRemove.id);
           newFollowerIds = [nextVideo.id, ...newFollowerIds];
-          
+
           set({
             pinnedVideos: get()._sortPinsWithPriority(newPins, newPriorityIds),
             priorityPinIds: newPriorityIds,
             followerPinIds: newFollowerIds,
           });
-          
+
           console.log(`[FollowerPin] Transferred pin from "${pinToRemove.title}" to "${nextVideo.title}"`);
           return nextVideo;
         },
@@ -344,7 +345,8 @@ export const usePinStore = create(
       };
     },
     {
-      name: 'pin-storage', // localStorage key
+      name: 'pin-storage', // localStorage / idb key
+      storage: createJSONStorage(() => idbStorage),
       partialize: (state) => ({
         pinnedVideos: state.pinnedVideos,
         priorityPinIds: state.priorityPinIds,
