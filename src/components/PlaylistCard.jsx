@@ -53,6 +53,9 @@ const PlaylistCard = ({
   onAssignToGroupClick,
   groupIdFromCarousel,
   onEnterFromGroup,
+  isFolderCard = false,
+  folderColorFilter = null,
+  onFolderModeToggle,
 }) => {
   const { currentPlaylistId, setPlaylistItems, setPreviewPlaylist } =
     usePlaylistStore();
@@ -88,9 +91,15 @@ const PlaylistCard = ({
   // Sync initial videos from props if not shuffled
   useEffect(() => {
     if (!previewThumbnail?.isShuffled) {
-      setLocalPreviewVideos(initialPreviewVideos);
+      if (isFolderCard && folderColorFilter) {
+        getVideosInFolder(playlist.id, folderColorFilter).then(items => {
+          setLocalPreviewVideos(items.slice(0, 4));
+        }).catch(err => console.error("Failed to load initial folder preview videos", err));
+      } else {
+        setLocalPreviewVideos(initialPreviewVideos);
+      }
     }
-  }, [initialPreviewVideos, previewThumbnail?.isShuffled]);
+  }, [initialPreviewVideos, previewThumbnail?.isShuffled, isFolderCard, folderColorFilter, playlist.id]);
 
   // Handle Global Info Toggle
   useEffect(() => {
@@ -183,8 +192,14 @@ const PlaylistCard = ({
       else onEnterFromGroup(null);
     }
     try {
-      const items = await getPlaylistItems(playlist.id);
-      setPlaylistItems(items, playlist.id, null, playlist.name);
+      let items = [];
+      if (isFolderCard && folderColorFilter) {
+        items = await getVideosInFolder(playlist.id, folderColorFilter);
+        setPlaylistItems(items, playlist.id, { playlist_id: playlist.id, folder_color: folderColorFilter }, playlist.name);
+      } else {
+        items = await getPlaylistItems(playlist.id);
+        setPlaylistItems(items, playlist.id, null, playlist.name);
+      }
 
       if (items.length > 0 && onVideoSelect) {
         if (previewThumbnail?.videoUrl) {
@@ -236,8 +251,9 @@ const PlaylistCard = ({
   const handleShuffle = async (e) => {
     e.stopPropagation();
     try {
-      if (activeFolderFilter) {
-        const items = await getVideosInFolder(playlist.id, activeFolderFilter);
+      const filterToUse = activeFolderFilter || (isFolderCard ? folderColorFilter : null);
+      if (filterToUse) {
+        const items = await getVideosInFolder(playlist.id, filterToUse);
         if (items.length === 0) return;
         const randomVideo = items[Math.floor(Math.random() * items.length)];
         setPreviewThumbnail(previewThumbnailFromItem(randomVideo));
@@ -264,8 +280,9 @@ const PlaylistCard = ({
     e.stopPropagation();
     setPreviewThumbnail(null);
     try {
-      if (activeFolderFilter) {
-        const items = (await getVideosInFolder(playlist.id, activeFolderFilter)).slice(0, 4);
+      const filterToUse = activeFolderFilter || (isFolderCard ? folderColorFilter : null);
+      if (filterToUse) {
+        const items = (await getVideosInFolder(playlist.id, filterToUse)).slice(0, 4);
         setLocalPreviewVideos(items);
       } else {
         // Restore default order: first 4 of combined list (orbs + banners + videos)
@@ -602,40 +619,42 @@ const PlaylistCard = ({
 
           {size !== 'small' && (
             <div className="absolute bottom-2 left-2 z-30 flex items-center gap-2 group/folder-area">
-              <button
-                onClick={toggleFolderList}
-                className="transition-transform hover:scale-110 drop-shadow-md group/btn"
-                title={`${activeFolderCount} folders with content`}
-              >
-                <div className="relative flex items-center justify-center">
-                  <Folder
-                    size={32}
-                    className={`transition-colors ${isListOpen ? "text-sky-500" : activeFolderFilter ? "" : "text-[#052F4A] opacity-90 group-hover/btn:text-sky-600"}`}
-                    fill={
-                      activeFolderFilter
-                        ? getFolderColorById(activeFolderFilter).hex
-                        : "currentColor"
-                    }
-                    stroke="white"
-                    strokeWidth={2}
-                  />
-                  <span className="absolute inset-x-0 bottom-0 top-[3px] flex items-center justify-center text-white text-[10px] font-bold">
-                    {activeFolderCount}
-                  </span>
-                  {activeFolderFilter && (
-                    <div
-                      className="absolute -top-2 -right-2 bg-red-600 rounded-full p-0.5 shadow-md hover:bg-red-500 cursor-pointer border border-white/20 hover:scale-110 transition-transform"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setActiveFolderFilter(null);
-                      }}
-                      title="Clear folder filter"
-                    >
-                      <X size={12} strokeWidth={3} className="text-white" />
-                    </div>
-                  )}
-                </div>
-              </button>
+              {!isFolderCard && (
+                <button
+                  onClick={onFolderModeToggle ? (e) => { e.stopPropagation(); onFolderModeToggle(playlist.id); } : toggleFolderList}
+                  className="transition-transform hover:scale-110 drop-shadow-md group/btn"
+                  title={`${activeFolderCount} folders with content`}
+                >
+                  <div className="relative flex items-center justify-center">
+                    <Folder
+                      size={32}
+                      className={`transition-colors ${isListOpen ? "text-sky-500" : activeFolderFilter ? "" : "text-[#052F4A] opacity-90 group-hover/btn:text-sky-600"}`}
+                      fill={
+                        activeFolderFilter
+                          ? getFolderColorById(activeFolderFilter).hex
+                          : "currentColor"
+                      }
+                      stroke="white"
+                      strokeWidth={2}
+                    />
+                    <span className="absolute inset-x-0 bottom-0 top-[3px] flex items-center justify-center text-white text-[10px] font-bold">
+                      {activeFolderCount}
+                    </span>
+                    {activeFolderFilter && (
+                      <div
+                        className="absolute -top-2 -right-2 bg-red-600 rounded-full p-0.5 shadow-md hover:bg-red-500 cursor-pointer border border-white/20 hover:scale-110 transition-transform"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setActiveFolderFilter(null);
+                        }}
+                        title="Clear folder filter"
+                      >
+                        <X size={12} strokeWidth={3} className="text-white" />
+                      </div>
+                    )}
+                  </div>
+                </button>
+              )}
 
               <span className="text-white text-xs font-bold bg-black/60 px-2 py-1 rounded-md backdrop-blur-sm" title={orbCount + bannerCount > 0 ? `${videoCount} video(s), ${orbCount} orb(s), ${bannerCount} banner(s)` : undefined}>
                 {orbCount + bannerCount > 0

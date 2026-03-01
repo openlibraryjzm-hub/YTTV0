@@ -36,10 +36,12 @@ When hovering over the card, a **Set as Cover** checkmark button appears in the 
 
 ### 3. Folder Management Integration
 *   **Folder Pie Menu:** Clicking the color palette icon opens a pie menu overlay, allowing you to assign colors/folders to the playlist.
-*   **Folder List View:** Clicking the folder count icon opens a detailed column view showing all active folders and their respective contents for that playlist.
-    *   **Folder Preview Override & Filter:** Clicking on any of the folder cards within this column will not navigate you away immediately. Instead, it temporarily replaces the parent playlist card's main thumbnail and mini previews with the first videos from that selected folder.
-    *   **Folder Shuffle Mode:** Doing this also locks the playlist into a "folder filter" mode. While active, the folder icon badge will change to the color of the selected folder. Clicking the **Shuffle** button on the playlist card will now strictly shuffle videos from *within that chosen folder* rather than the whole playlist.
-    *   **Clear Folder Filter:** A red 'X' button will appear in the top right corner of the colored folder badge. Clicking this will clear the filter, returning the shuffle functionality back to the entire playlist pool.
+*   **Folder List View / Carousel Folder Mode:** Clicking the folder count icon behaves differently depending on context:
+    *   **In Main Grids (ALL / UNSORTED):** Opens the `PlaylistFolderColumn` overlay—a detailed vertical scrolling column view showing all active folders and their respective contents for that playlist.
+        *   **Folder Preview Override & Filter:** Clicking on any of the folder cards within this column will not navigate you away immediately. Instead, it temporarily replaces the parent playlist card's main thumbnail and mini previews with the first videos from that selected folder.
+        *   **Folder Shuffle Mode:** Doing this also locks the playlist into a "folder filter" mode. While active, the folder icon badge will change to the color of the selected folder. Clicking the **Shuffle** button on the playlist card will now strictly shuffle videos from *within that chosen folder* rather than the whole playlist.
+        *   **Clear Folder Filter:** A red 'X' button will appear in the top right corner of the colored folder badge. Clicking this will clear the filter, returning the shuffle functionality back to the entire playlist pool.
+    *   **In Group Carousels (GROUPS):** Temporarily switches the parent group carousel into a "folder view mode". The carousel replaces its normal playlist cards with pseudo-cards representing each populated colored folder inside the selected playlist. A "Back to [Playlist Name]" card allows exiting this mode. These folder cards have `isFolderCard=true` and `folderColorFilter` set, functioning almost autonomously.
 
 ### 4. Details and Metadata
 *   **Title Overlay:** Toggling the **Info** button (or using the global info toggle) displays the title of the item currently shown as the main thumbnail (video title, orb name, or banner preset name).

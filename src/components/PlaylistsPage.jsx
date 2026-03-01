@@ -54,6 +54,7 @@ const PlaylistsPage = ({ onVideoSelect }) => {
   const [openFolderListIds, setOpenFolderListIds] = useState(new Set()); // Track which playlists have folder list view open
   const [assignToGroupPlaylistId, setAssignToGroupPlaylistId] = useState(null); // Playlist id when "Assign to group" column is open
   const [hoveredPieSegment, setHoveredPieSegment] = useState({}); // Track hovered pie segment per playlist: { playlistId: folderColorId }
+  const [folderCarouselMode, setFolderCarouselMode] = useState({}); // Track folder view mode for group carousels: { groupId: playlistId }
   const pieChartRefs = useRef({}); // Refs for pie chart containers to handle wheel events
   const pieDataRef = useRef({ hoveredPieSegment: {}, playlistFolders: {} }); // Ref to hold latest state for wheel handler
 
@@ -896,6 +897,7 @@ const PlaylistsPage = ({ onVideoSelect }) => {
                         loadPlaylists={loadPlaylists}
                         onAssignToGroupClick={() => setAssignToGroupPlaylistId(playlist.id)}
                         onEnterFromGroup={() => setActiveGroupId(null)}
+                        onFolderModeToggle={() => setOpenFolderListIds(new Set([playlist.id]))}
                       />
                     );
                   })}
@@ -943,6 +945,7 @@ const PlaylistsPage = ({ onVideoSelect }) => {
                         loadPlaylists={loadPlaylists}
                         onAssignToGroupClick={() => setAssignToGroupPlaylistId(playlist.id)}
                         onEnterFromGroup={() => setActiveGroupId(null)}
+                        onFolderModeToggle={() => setOpenFolderListIds(new Set([playlist.id]))}
                       />
                     );
                   })}
@@ -954,6 +957,9 @@ const PlaylistsPage = ({ onVideoSelect }) => {
                 (() => {
                   const group = getGroupByColorId(selectedPrismFolder, prismPage);
                   if (!group) return null;
+
+                  const activeFolderModePlaylistId = folderCarouselMode[group.id];
+
                   return (
                     <GroupPlaylistCarousel
                       key={group.id}
@@ -966,7 +972,72 @@ const PlaylistsPage = ({ onVideoSelect }) => {
                       onMouseEnter={() => setHoveredFolder(group.folderColorId)}
                       onMouseLeave={() => setHoveredFolder(undefined)}
                     >
-                      {group.playlistIds
+                      {activeFolderModePlaylistId ? (() => {
+                        const playlist = playlists.find((p) => Number(p.id) === Number(activeFolderModePlaylistId));
+                        if (!playlist) return null;
+                        const folders = playlistFolders[playlist.id] || [];
+                        const items = [];
+                        items.push(
+                          <div
+                            key="back-button"
+                            onClick={(e) => { e.stopPropagation(); setFolderCarouselMode(prev => ({ ...prev, [group.id]: null })); }}
+                            className="h-full flex flex-col items-center justify-center bg-slate-100/50 hover:bg-sky-50 rounded-xl cursor-pointer border-2 border-dashed border-[#052F4A] hover:border-sky-500 transition-colors group aspect-video relative"
+                            style={{ minHeight: '200px' }}
+                          >
+                            <div className="absolute inset-0 flex flex-col items-center justify-center">
+                              <ChevronLeft size={48} strokeWidth={2.5} className="text-[#052F4A] mb-2 group-hover:text-sky-500 transition-colors group-hover:-translate-x-2 transform duration-200" />
+                              <span className="text-[#052F4A] font-bold text-xl group-hover:text-sky-600 transition-colors px-4 text-center">Back to {playlist.name}</span>
+                            </div>
+                          </div>
+                        );
+                        folders.forEach(folder => {
+                          if (!folder || (folder.video_count || 0) === 0) return;
+                          const folderColorData = getFolderColorById(folder.folder_color);
+                          const folderMetaKey = `${folder.playlist_id}:${folder.folder_color}`;
+                          const customName = folderMetadata[folderMetaKey]?.name;
+                          const folderDisplayName = customName || folderColorData.name;
+
+                          const pseudoPlaylist = {
+                            ...playlist,
+                            id: playlist.id,
+                            name: folderDisplayName,
+                          };
+
+                          let activeThumbnailUrl = null;
+                          if (folder.first_video) {
+                            activeThumbnailUrl = folder.first_video.thumbnail_url?.replace(/name=[a-z]+/, "name=large") || getThumbnailUrl(folder.first_video.video_id, 'max');
+                          }
+
+                          items.push(
+                            <PlaylistCard
+                              key={`${playlist.id}-folder-${folder.folder_color}`}
+                              playlist={pseudoPlaylist}
+                              folders={[]}
+                              activeThumbnailUrl={activeThumbnailUrl}
+                              itemCount={folder.video_count || 1}
+                              videoCount={folder.video_count || 1}
+                              orbCount={0}
+                              bannerCount={0}
+                              initialPreviewVideos={folder.first_video ? [folder.first_video] : []}
+                              globalInfoToggle={globalInfoToggle}
+                              folderMetadata={folderMetadata}
+                              deletingPlaylistId={deletingPlaylistId}
+                              expandedPlaylists={expandedPlaylists}
+                              onVideoSelect={onVideoSelect}
+                              togglePlaylistExpand={togglePlaylistExpand}
+                              handleExportPlaylist={handleExportPlaylist}
+                              handleDeletePlaylist={handleDeletePlaylist}
+                              loadPlaylists={loadPlaylists}
+                              onAssignToGroupClick={() => setAssignToGroupPlaylistId(playlist.id)}
+                              groupIdFromCarousel={group.id}
+                              onEnterFromGroup={setActiveGroupId}
+                              isFolderCard={true}
+                              folderColorFilter={folder.folder_color}
+                            />
+                          );
+                        });
+                        return items;
+                      })() : group.playlistIds
                         .map((id) => playlists.find((p) => Number(p.id) === Number(id)))
                         .filter(Boolean)
                         .map((playlist) => {
@@ -1009,6 +1080,7 @@ const PlaylistsPage = ({ onVideoSelect }) => {
                               onAssignToGroupClick={() => setAssignToGroupPlaylistId(playlist.id)}
                               groupIdFromCarousel={group.id}
                               onEnterFromGroup={setActiveGroupId}
+                              onFolderModeToggle={() => setFolderCarouselMode(prev => ({ ...prev, [group.id]: playlist.id }))}
                             />
                           );
                         })}
