@@ -1251,7 +1251,8 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
 
   // Handle first pin button click - set current video as first (leftmost) pin
   // Handle Pin Button Interactions
-  const handlePinMouseDown = () => {
+  const handlePinMouseDown = (e) => {
+    if (e.button !== 0) return; // Only process main (left) clicks
     const targetVideo = activeVideoItem || currentVideo;
     if (!targetVideo) return;
 
@@ -1266,7 +1267,8 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
     }, 600);
   };
 
-  const handlePinMouseUp = () => {
+  const handlePinMouseUp = (e) => {
+    if (e.button !== 0) return; // Only process main (left) clicks
     const targetVideo = activeVideoItem || currentVideo;
     if (!targetVideo) return;
 
@@ -2104,9 +2106,9 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
 
         {/* Background removed to use App-level global background */}
 
-        <div className="flex items-center relative overflow-visible">
-          {/* Spacer to balance layout */}
-          <div className="flex-1 flex items-center justify-end">
+        <div className={viewMode !== 'full' ? "grid grid-cols-[auto_auto] grid-rows-2 items-center justify-center gap-x-12 relative overflow-visible" : "flex items-center relative overflow-visible"}>
+          {/* PLAYLIST WRAPPER */}
+          <div className={viewMode !== 'full' ? "col-start-2 row-start-2 flex items-start justify-start self-start origin-top-left scale-90 -mt-2" : "flex-1 flex items-center justify-end"}>
             {/* PLAYLIST SECTION */}
             <div className="flex items-center gap-4 relative z-10 flex-shrink-0">
               <div className="absolute right-full mr-4 transition-transform" style={{ transform: `translateX(${leftAltNavX}px)` }}>
@@ -2326,50 +2328,9 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
             </div>
           </div>
 
-          {/* THE ORB SECTION - Centered */}
-          <div className="flex items-center justify-center relative group z-30 flex-shrink-0" style={{ marginLeft: `${orbMenuGap}px`, marginRight: `${orbMenuGap}px` }}>
-            {/* Orb Navigation Controls (Flanking the Orb) */}
-            <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-50 overflow-visible">
-              {/* Left Controls: Prev Playlist / Prev Orb */}
-              <div className="absolute left-0 -translate-x-full h-full flex flex-col items-end justify-center gap-1 pr-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-auto">
-                {/* Prev Playlist */}
-                <button
-                  onClick={() => handlePlaylistNav('prev')}
-                  className="p-1 rounded-full bg-slate-800/80 text-sky-400 hover:bg-sky-500 hover:text-white transition-colors border border-slate-600 shadow-lg"
-                  title="Previous Orb Playlist"
-                >
-                  <ChevronsLeft size={20} />
-                </button>
-                {/* Prev Orb */}
-                <button
-                  onClick={() => handleItemNav('prev')}
-                  className="p-1 rounded-full bg-slate-800/80 text-white hover:bg-sky-500 transition-colors border border-slate-600 shadow-lg"
-                  title="Previous Orb"
-                >
-                  <ChevronLeft size={16} />
-                </button>
-              </div>
+          {/* THE ORB SECTION - Centered / Left */}
+          <div className={`flex items-center justify-center relative group z-30 flex-shrink-0 ${viewMode !== 'full' ? 'col-start-1 row-start-1 row-span-2' : ''}`} style={{ marginLeft: viewMode === 'full' ? `${orbMenuGap}px` : '0px', marginRight: viewMode === 'full' ? `${orbMenuGap}px` : '0px' }}>
 
-              {/* Right Controls: Next Playlist / Next Orb */}
-              <div className="absolute right-0 translate-x-full h-full flex flex-col items-start justify-center gap-1 pl-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-auto">
-                {/* Next Playlist */}
-                <button
-                  onClick={() => handlePlaylistNav('next')}
-                  className="p-1 rounded-full bg-slate-800/80 text-sky-400 hover:bg-sky-500 hover:text-white transition-colors border border-slate-600 shadow-lg"
-                  title="Next Orb Playlist"
-                >
-                  <ChevronsRight size={20} />
-                </button>
-                {/* Next Orb */}
-                <button
-                  onClick={() => handleItemNav('next')}
-                  className="p-1 rounded-full bg-slate-800/80 text-white hover:bg-sky-500 transition-colors border border-slate-600 shadow-lg"
-                  title="Next Orb"
-                >
-                  <ChevronRight size={16} />
-                </button>
-              </div>
-            </div>
             {/* Audio Visualizer - Around Orb */}
             {/* Audio Visualizer - Around Orb */}
             <AudioVisualizer
@@ -2457,7 +2418,7 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
               </button>
 
               {/* Home Hub Button (Bottom Center) */}
-              <button onClick={lockApp} className="absolute rounded-full flex items-center justify-center bg-white shadow-xl hover:scale-110 active:scale-95 group/btn z-50 border-2 border-black opacity-0 group-hover:opacity-100 transition-all duration-300" style={{ left: '50%', top: '85%', transform: 'translate(-50%, -50%)', width: `28px`, height: `28px` }} title="Home Hub">
+              <button onClick={lockApp} className="absolute rounded-full flex items-center justify-center bg-white shadow-xl hover:scale-110 active:scale-95 group/btn z-50 border-2 border-black opacity-0 group-hover:opacity-100 transition-all duration-300" style={{ left: '50%', top: '100%', transform: 'translate(-50%, -50%)', width: `28px`, height: `28px` }} title="Home Hub">
                 <Home size={14} className="text-black" strokeWidth={2.5} />
               </button>
 
@@ -2480,12 +2441,51 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
                 )}
               </button>
 
+              {/* Prev Playlist */}
+              <button
+                onClick={() => handlePlaylistNav('prev')}
+                className="absolute rounded-full flex items-center justify-center bg-white shadow-xl hover:scale-110 active:scale-95 group/btn z-50 border-2 border-black opacity-0 group-hover:opacity-100 transition-all duration-300"
+                style={{ left: '2%', top: '38%', transform: 'translate(-50%, -50%)', width: `28px`, height: `28px` }}
+                title={activeNavigationMode === 'orb' ? "Previous Orb Playlist" : "Previous Banner Category"}
+              >
+                <ChevronsLeft size={14} className="text-black" strokeWidth={2.5} />
+              </button>
+
+              {/* Prev Item */}
+              <button
+                onClick={() => handleItemNav('prev')}
+                className="absolute rounded-full flex items-center justify-center bg-white shadow-xl hover:scale-110 active:scale-95 group/btn z-50 border-2 border-black opacity-0 group-hover:opacity-100 transition-all duration-300"
+                style={{ left: '2%', top: '62%', transform: 'translate(-50%, -50%)', width: `28px`, height: `28px` }}
+                title={activeNavigationMode === 'orb' ? "Previous Orb" : "Previous Banner"}
+              >
+                <ChevronLeft size={14} className="text-black" strokeWidth={2.5} />
+              </button>
+
+              {/* Next Playlist */}
+              <button
+                onClick={() => handlePlaylistNav('next')}
+                className="absolute rounded-full flex items-center justify-center bg-white shadow-xl hover:scale-110 active:scale-95 group/btn z-50 border-2 border-black opacity-0 group-hover:opacity-100 transition-all duration-300"
+                style={{ left: '98%', top: '38%', transform: 'translate(-50%, -50%)', width: `28px`, height: `28px` }}
+                title={activeNavigationMode === 'orb' ? "Next Orb Playlist" : "Next Banner Category"}
+              >
+                <ChevronsRight size={14} className="text-black" strokeWidth={2.5} />
+              </button>
+
+              {/* Next Item */}
+              <button
+                onClick={() => handleItemNav('next')}
+                className="absolute rounded-full flex items-center justify-center bg-white shadow-xl hover:scale-110 active:scale-95 group/btn z-50 border-2 border-black opacity-0 group-hover:opacity-100 transition-all duration-300"
+                style={{ left: '98%', top: '62%', transform: 'translate(-50%, -50%)', width: `28px`, height: `28px` }}
+                title={activeNavigationMode === 'orb' ? "Next Orb" : "Next Banner"}
+              >
+                <ChevronRight size={14} className="text-black" strokeWidth={2.5} />
+              </button>
 
             </div>
           </div>
 
           {/* VIDEO SECTION */}
-          <div className="flex-1 flex items-center justify-start">
+          <div className={viewMode !== 'full' ? "col-start-2 row-start-1 flex items-end justify-start self-end origin-bottom-left scale-90 -mb-2 -translate-y-[20px]" : "flex-1 flex items-center justify-start"}>
             <div className="flex items-center gap-4 relative z-10 flex-shrink-0">
               <div className={`shadow-2xl flex flex-col relative overflow-visible transition-all duration-300 ${isEditMode ? 'ring-4 ring-sky-400/30' : 'bg-transparent rounded-2xl'}`} style={{ width: `${menuWidth}px`, height: `${menuHeight}px` }}>
                 {showColorPicker && (<button onClick={() => { setShowColorPicker(null); setHoveredColorName(null); }} className="absolute -top-3 -right-3 w-7 h-7 bg-rose-500 text-white rounded-full flex items-center justify-center hover:bg-rose-600 z-50 shadow-lg border-2 border-white transition-all active:scale-90" title={getInspectTitle('Close color picker')}><X size={16} strokeWidth={3} /></button>)}
@@ -2666,11 +2666,13 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
 
                           if (isColored) {
                             return (
-                              <Play size={Math.round(bottomIconSize * 0.5)}
-                                color={activeColorHex}
-                                fill={activeColorHex}
-                                strokeWidth={0}
-                              />
+                              <span style={ICON_WHITE_OUTLINE}>
+                                <Play size={Math.round(bottomIconSize * 0.5)}
+                                  color={activeColorHex}
+                                  fill={activeColorHex}
+                                  strokeWidth={0}
+                                />
+                              </span>
                             );
                           }
                           return (
@@ -2719,7 +2721,9 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
 
                           if (folderColorObj) {
                             return (
-                              <Star size={Math.round(bottomIconSize * 0.5)} color={folderColorObj.hex} fill={folderColorObj.hex} strokeWidth={3} />
+                              <span style={ICON_WHITE_OUTLINE}>
+                                <Star size={Math.round(bottomIconSize * 0.5)} color={folderColorObj.hex} fill={folderColorObj.hex} strokeWidth={3} />
+                              </span>
                             );
                           }
                           return (
@@ -2761,18 +2765,15 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
                           // Normal: Black border (#000000), Blue fill (#3b82f6)
                           // Inactive: Black border, black icon
 
-                          let borderColor = '#000';
-                          let iconColor = '#000';
+                          let iconColor = 'white';
                           let iconFill = 'transparent';
                           let strokeWidth = 2.5;
 
                           if (isPriority) {
-                            borderColor = '#fbbf24';
                             iconColor = '#fbbf24';
                             iconFill = '#fbbf24';
                             strokeWidth = 1.5; // Stroke needed for needle visibility
                           } else if (isNormalPinned) {
-                            borderColor = '#000000';
                             iconColor = '#3b82f6';
                             iconFill = '#3b82f6';
                             strokeWidth = 1.5; // Stroke needed for needle visibility
@@ -2781,7 +2782,7 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
                           const iconSize = Math.round(bottomIconSize * 0.5);
 
                           return (
-                            <>
+                            <span style={ICON_WHITE_OUTLINE}>
                               {isFollower ? (
                                 /* Follower Pin Icon - 2 pins stacked diagonally */
                                 <svg width={iconSize} height={iconSize} viewBox="0 0 24 24" fill="none" stroke={iconColor} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round">
@@ -2795,15 +2796,9 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
                                   </g>
                                 </svg>
                               ) : (
-                                (borderColor === '#000' && iconColor === '#000' ? (
-                                  <span style={ICON_WHITE_OUTLINE}>
-                                    <Pin size={iconSize} color="white" fill="transparent" strokeWidth={strokeWidth} />
-                                  </span>
-                                ) : (
-                                  <Pin size={iconSize} color={iconColor} fill={iconFill} strokeWidth={strokeWidth} />
-                                ))
+                                <Pin size={iconSize} color={iconColor} fill={iconFill} strokeWidth={strokeWidth} />
                               )}
-                            </>
+                            </span>
                           );
                         })()}
                       </button>
@@ -2827,7 +2822,9 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
                         title={getInspectTitle('Like button (Right-click for Likes)')}
                       >
                         {isVideoLiked ? (
-                          <ThumbsUp size={Math.round(bottomIconSize * 0.5)} color={likeColor} fill={likeColor} strokeWidth={3} />
+                          <span style={ICON_WHITE_OUTLINE}>
+                            <ThumbsUp size={Math.round(bottomIconSize * 0.5)} color={likeColor} fill={likeColor} strokeWidth={3} />
+                          </span>
                         ) : (
                           <span style={ICON_WHITE_OUTLINE}>
                             <ThumbsUp size={Math.round(bottomIconSize * 0.5)} color="white" fill="transparent" strokeWidth={3} />

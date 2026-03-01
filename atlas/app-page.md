@@ -35,7 +35,8 @@ AppPage is a dedicated page for App Banner, Color Palette, and Player Borders co
 - **Player Controller Section**:
   - **Layout**: Simple slider control.
   - **Horizontal Position**: Slider to adjust X-offset (-500px to +500px).
-    - **Independent Per Mode**: This offset is saved separately for Fullscreen vs Splitscreen, allowing you to center the controller in fullscreen but shift it right in splitscreen to avoid sidebars.
+    - **Independent Per Mode**: This offset is saved separately for Fullscreen vs Splitscreen.
+    - **Note**: In current builds, explicit horizontal offsets in Splitscreen mode are entirely bypassed, as the Player Controller now utilizes an intelligent auto-anchoring CSS Grid stacked layout to perfectly center elements.
 
 - **Preset Management**:
   - **Save Functionality**: Save the current configuration as a named preset.

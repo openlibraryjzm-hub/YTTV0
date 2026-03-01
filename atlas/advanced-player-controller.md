@@ -24,6 +24,7 @@ The Central Orb is a circular element (154px diameter by default) positioned at 
 - **Upload Button**: On hover, an upload icon appears at the top of the orb (12 o'clock position). Clicking opens a file picker to upload a custom image.
 - **Orb Config Button**: (Top-Left) Opens the Orb Tab in Settings.
 - **Settings Button**: (Top-Right) Opens the Settings Page.
+- **Orb Navigation Chevrons**: Formatted identically to the settings buttons (white background, 2px black border, shadow-xl), these 4 precision-aligned icons hug the direct left/right curve of the 154px orb to cycle Orbs/Playlists or Banners/Categories depending on toggle state.
 - **Home Hub Button**: (Bottom-Center) Locks the app and returns to the gamified Home Hub dashboard.
 - **Pop-out Browser (Twitter)**: (Bottom-Left) Opens a standalone Twitter/X window in a time-limited session based on current `timeBank`. See `popout-browser.md` for details.
 - **Spill Toggle**: When enabled, the orb image can extend beyond the circular boundary. Users can configure which quadrants allow spill via the **Settings Page > Orb** tab.
@@ -111,9 +112,12 @@ It mirrors the design language of the Player Controller's Video Menu toolbar:
 
 The Top Video Menu is the right rectangle in the PlayerController, displaying video information (Title) and controls for the currently playing video. **See-Through Styling**: Like the Top Playlist Menu, it uses a transparent background, no rectangular border, and `shadow-2xl` so the App Banner shows through; the rounded shape is defined by the shadow.
 
+**Split-Screen Stacked Layout:**
+When the application leaves Fullscreen mode (Half or Quarter Split-Screen View), the PlayerController uses a responsive **CSS Grid** architecture. The Central Orb anchors the left side spanning two rows, while the Top Video Menu and Top Playlist Menu neatly **stack** on the right side. The Video Menu takes the top slot, and the Playlist Menu docks directly underneath it. Both menus slightly scale down (`scale-90`) with deeply calculated negative margins to compress intelligently into a combined `204px` natural flex height, flawlessly respecting the absolute maximum bounds of the `200px` App Banner area without visual overflow or clipping.
+
 **Title and toolbar visual style (black-and-white schema):**
 - **Playlist title** (Top Playlist Menu) and **video title** (Top Video Menu): White text with a black outline (1px stroke + 4-direction text-shadow) for readability on any banner. Implemented via inline styles; no circular or bubble container.
-- **Toolbar icons** (Grid, Play, Shuffle, Star, Pin, Like, Info, More; nav chevrons; orb overlay buttons): No circular button containers. Icons are **white with a black outline** (drop-shadow filter, `ICON_WHITE_OUTLINE`). Colored states (folder-assigned star/shuffle, liked, pin type) keep their semantic color without a circle.
+- **Toolbar icons** (Grid, Play, Shuffle, Star, Pin, Like, Info, More; nav chevrons; orb overlay buttons): No circular button containers. Icons are **white with a black outline** (drop-shadow filter, `ICON_WHITE_OUTLINE`). Active, colored states (e.g. assigning a video to a specific colored folder via the Star button) preserve their designated semantic fill color while flawlessly inheriting the same crisp black outline stroke (`ICON_WHITE_OUTLINE` span wrap) to unify the aesthetic.
 - **Badges** (group carousel, active preset, active tab, folder): No bubble or pill containers. Badge text uses **white with black outline** (`BADGE_TEXT_STYLE`), 11px font, horizontally aligned (`items-center`). Group badge retains left/right arrow buttons with the same white-outline icon style.
 
 **Note:** The action buttons (Star, Shuffle, Pin, Like, Menu) have been shifted right to create a cohesive cluster with the navigation controls. The 3x3 Grid button has been integrated into the navigation cluster.
@@ -130,11 +134,12 @@ Users see a centralized display of pinned videos with support for three pin type
   - **Follower Pin** (modifier): Double-pin icon (2 pins stacked diagonally). Can be applied to normal or priority pins. When video completes, pin automatically transfers to the next video in the playlist - perfect for watching series.
 
 - **Pin Button Interactions:**
-  - **Click unpinned video** → Normal pin
-  - **Click normal pin** → Normal + Follower modifier (double-pin icon)
-  - **Click follower pin** → Normal pin (removes follower)
-  - **Hold (>600ms)** → Priority pin
-  - **Double-click any pinned** → Unpin completely
+  - **Left-Click unpinned video** → Normal pin
+  - **Left-Click normal pin** → Normal + Follower modifier (double-pin icon)
+  - **Left-Click follower pin** → Normal pin (removes follower)
+  - **Left-Click Hold (>600ms)** → Priority pin
+  - **Double Left-Click any pinned** → Unpin completely
+  - **Right-Click** → Safely teleports user to the Pins Page without toggling the video's underlying pin status.
 
 - **Follower Pin Behavior:**
   - When a follower-pinned video reaches ≥85% completion, the pin automatically transfers to the next chronological video in the playlist.
