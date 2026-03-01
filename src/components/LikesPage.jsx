@@ -6,6 +6,7 @@ import VideoCard from './VideoCard';
 
 import { useLayoutStore } from '../store/layoutStore';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import BottomNavigation from './BottomNavigation';
 
 const ITEMS_PER_PAGE = 24;
 
@@ -195,10 +196,11 @@ const LikesPage = ({ onVideoSelect }) => {
 
     return (
         <div className="w-full h-full flex flex-col bg-transparent">
-            <div className="flex-1 overflow-y-auto custom-scrollbar">
+            <div className="flex-1 overflow-y-auto relative custom-scrollbar">
+                <BottomNavigation />
 
 
-                <div className="px-4 pb-8">
+                <div className="px-4 pb-8 pt-0">
                     {renderVideos()}
 
                     {/* Pagination Controls (Bottom) */}

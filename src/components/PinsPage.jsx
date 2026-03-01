@@ -7,6 +7,7 @@ import VideoCard from './VideoCard';
 
 import StickyVideoCarousel, { SplatterIcon } from './StickyVideoCarousel';
 import { ChevronDown, ChevronUp, ListTodo, ChevronRight } from 'lucide-react';
+import BottomNavigation from './BottomNavigation';
 
 const PinsPage = ({ onVideoSelect }) => {
     const { pinnedVideos, priorityPinIds } = usePinStore();
@@ -196,19 +197,22 @@ const PinsPage = ({ onVideoSelect }) => {
 
     return (
         <div className="w-full h-full flex flex-col bg-transparent">
-            <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">
-                {/* Link to Tasks page */}
-                <button
-                    type="button"
-                    onClick={() => setCurrentPage('tasks')}
-                    className="flex items-center gap-2 mb-6 px-4 py-3 rounded-lg bg-white/10 hover:bg-white/20 border border-black/10 text-[#052F4A] font-medium transition-colors w-full sm:w-auto"
-                >
-                    <ListTodo size={20} />
-                    <span>Tasks</span>
-                    <ChevronRight size={18} className="opacity-70" />
-                </button>
+            <div className="flex-1 overflow-y-auto relative custom-scrollbar">
+                <BottomNavigation />
+                <div className="p-4 pt-0">
+                    {/* Link to Tasks page */}
+                    <button
+                        type="button"
+                        onClick={() => setCurrentPage('tasks')}
+                        className="flex items-center gap-2 mb-6 px-4 py-3 rounded-lg bg-white/10 hover:bg-white/20 border border-black/10 text-[#052F4A] font-medium transition-colors w-full sm:w-auto"
+                    >
+                        <ListTodo size={20} />
+                        <span>Tasks</span>
+                        <ChevronRight size={18} className="opacity-70" />
+                    </button>
 
-                {renderContent()}
+                    {renderContent()}
+                </div>
             </div>
         </div>
     );

@@ -6,6 +6,7 @@ import { FOLDER_COLORS } from '../utils/folderColors';
 import { THEMES } from '../utils/themes';
 import { usePlaylistStore } from '../store/playlistStore';
 import { Save, ChevronDown } from 'lucide-react';
+import BottomNavigation from './BottomNavigation';
 
 function ConfigSection({ title, icon: Icon, children }) {
     return (
@@ -136,6 +137,7 @@ export default function AppPage({ onBack, currentThemeId, onThemeChange, onNavig
     return (
         <div className="w-full h-full flex flex-col">
             <div ref={scrollContainerRef} className="flex-1 overflow-y-auto bg-transparent relative">
+                <BottomNavigation />
                 {/* Page Banner */}
                 <div className="px-4 pt-8 relative">
                     <PageBanner

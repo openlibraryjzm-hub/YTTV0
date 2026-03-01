@@ -154,6 +154,7 @@ yttv2/
 │   ├── ui-layout.md              # Layout & Side Menu
 │   ├── ui-pages.md               # Page components (main pages)
 │   ├── top-navigation.md         # Top Navigation contextual mini-header
+│   ├── bottom-navigation.md      # Bottom Navigation secondary contextual bar
 │   ├── tasks-page.md             # Tasks page (checklist, date-grouped, 3-dot menu)
 │   ├── orb-page.md               # OrbPage configuration documentation
    ├── orb-navigation.md         # Orb Navigation System documentation
@@ -232,6 +233,7 @@ yttv2/
 | **Playlist Pagination System** | `playlist-pagination.md` | `playlist-bar.md`, `group-carousel.md`, `ui-pages.md` |
 | **PlaylistBar (Playlists toolbar + prism)** | `playlist-bar.md` | `group-carousel.md`, `video-sort-filters.md`, `state-management.md` |
 | **Group Badge & Playlist Nav (Player Controller)** | `group-badge-player-controller.md` | `group-carousel.md`, `advanced-player-controller.md` |
+| **Bottom Navigation Bar** | `bottom-navigation.md` | `top-navigation.md`, `ui-pages.md` |
 | **Subscription Manager** | `subscription-manager.md` | `api-bridge.md`, `database-schema.md` |
 | **Pokedex System** | `pokedex-system.md` | `gen1-pokemon-reference.md`, `state-management.md`, `ui-pages.md`, `database-schema.md` |
 | **Tasks Page** | `tasks-page.md` | `ui-pages.md` (Pins §4.1.4, Tasks §4.1.5), `state-management.md` (pinsPageChecklistStore) |
