@@ -15,35 +15,20 @@ The Top Navigation bar is designed to be visually engaging and context-aware:
 
 ## Layout & Components
 
-The Top Navigation is split into a left section (Title & Group Carousel Actions) and a right section (Tab Navigation & Context Actions).
+The Top Navigation acts primarily as a dynamic title bar. Previous legacy action buttons (such as carousel controls, view toggles, add buttons, and back/close navigation) have been migrated to components like the `PlaylistBar` to streamline the UI.
 
-### Left Section (Context & Carousel Controls)
+### Floating Context Title
 
-*   **Playlists Page (Groups Mode):** Displays quick-action buttons to override the visual style of *all* group carousels at once (Large, Small, or Bar layouts).
-*   **Floating Context Title:** 
-    *   Instead of a static layout, the active context (current playlist, active colored folder, or specifically hovered elements) is displayed as a prominent **floating title** using a React Portal (spanning over other UI elements like the App Banner).
-    *   This floating title tracks the user's focus dynamically. When hovering over colored folder options in the `PlaylistBar` prism, `GroupPlaylistCarousel` boxes, or the `PlaylistGroupColumn` (assign to folder), the title instantly updates its text and styling to match the hovered color context (falling back to user-defined custom carousels names if hovering over an existing group). 
-    *   **Aesthetics:** The font uses a heavy weight (`font-black`) with a high-contrast text stroke/shadow (white text with a thick black outline, or inverted black text with a white stroke for "Unsorted" views).
-    *   **Splatter Glow Backdrop:** The background relies on a massive, dual-layered dynamic glow rather than a hard rectangular box. A wide, soft diffuse glow (50px blur) provides atmosphere, while an intense core glow (30px blur, higher opacity) sits directly behind the text. Both glows use the active folder's hex color so the title radiates its context vibrantly.
+Instead of a static layout, the active context (current playlist, active colored folder, or specifically hovered elements) is displayed as a prominent **floating title** using a React Portal (spanning over other UI elements like the App Banner).
 
-### Right Section (Actions)
-
-**On Playlists Page:**
-*   **Tab Bar (`TabBar.jsx`):** Horizontal scrollable list allowing the user to switch between "All", "Unsorted", and custom preset tabs.
-*   **Toggle Titles:** A toggle button (Info icon) to show/hide titles on all playlist cards globally.
-*   **Toggle Folders:** A toggle button to show/hide the colored folder segments.
-*   **Add Playlist:** A primary action button to open the `PlaylistUploader` modal.
-*   **Back/Close Navigation:** Standard "Go Back" chevron (if history exists) and a red "Close" cross button that forces the app layout back to "full" view mode.
-
-**On Videos / Other Pages:**
-*   **Card Style Toggle:** A toggle button showcasing a Twitter/X icon, used to switch the global video card displays between standard layout and the alternative Twitter-style layouts.
-*   **Back/Close Navigation:** Same standard navigation actions as the Playlists page.
+*   **Dynamic Tracking:** This floating title tracks the user's focus dynamically. When hovering over colored folder options in the `PlaylistBar` prism, `GroupPlaylistCarousel` boxes, or the `PlaylistGroupColumn` (assign to folder), the title instantly updates its text and styling to match the hovered color context (falling back to user-defined custom carousels names if hovering over an existing group). 
+*   **Aesthetics:** The font uses a heavy weight (`font-black`) with a high-contrast text stroke/shadow (white text with a thick black outline, or inverted black text with a white stroke for "Unsorted" views).
+*   **Splatter Glow Backdrop:** The background relies on a massive, dual-layered dynamic glow rather than a hard rectangular box. A wide, soft diffuse glow (50px blur) provides atmosphere, while an intense core glow (30px blur, higher opacity) sits directly behind the text. Both glows use the active folder's hex color so the title radiates its context vibrantly.
 
 ## State Dependencies
 
-This component heavily relies on Zustand stores to derive its display state:
-*   `useNavigationStore`: Tracks history and current page to conditionally render "Back" buttons and determine if we're on the Playlists view.
-*   `useLayoutStore`: Controls the view mode (full, half, etc.), video card styles, and triggers to show configuration modals.
-*   `usePlaylistStore`: Determines the active playlist (or a playlist currently being "previewed" via history navigation but not yet playing).
+This component relies on Zustand stores to derive its display state:
+*   `useNavigationStore`: Tracks history and current page.
+*   `useLayoutStore`: Determines inspect modes and other layout state.
+*   `usePlaylistStore`: Determines the active playlist (or a playlist currently being "previewed").
 *   `useFolderStore`: Determines which specific 16-color folder (or 'unsorted') is currently active within a playlist.
-*   `usePlaylistGroupStore`: Used specifically on the Playlists page to control global carousel UI layouts.

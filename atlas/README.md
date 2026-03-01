@@ -52,7 +52,7 @@ yttv2/
 │   │   ├── YouTubePlayer.jsx     # YouTube iframe player component
 │   │   ├── NativeVideoPlayer.jsx # Native mpv player for local videos
 │   │   ├── LocalVideoPlayer.jsx  # HTML5 fallback player (browser-compatible formats)
-│   │   ├── TopNavigation.jsx     # Contextual Mini Header; Playlists: TabBar + Info/Folder/Add + Back/Close; non-Playlists: title + Twitter style toggle only
+│   │   ├── TopNavigation.jsx     # Contextual Mini Header; Dynamic floating title that tracks context (folders/playlists)
 │   │   ├── PlaylistsPage.jsx     # Main playlists grid view
 │   │   ├── VideosPage.jsx        # Videos grid view for current playlist
 │   │   ├── VideoSortFilters.jsx # Icon sort bar (Home/Date/Progress/Last Viewed) + hover-expand drumstick rating filter for Videos toolbar
