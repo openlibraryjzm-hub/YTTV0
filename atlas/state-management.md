@@ -10,7 +10,7 @@ This document provides a comprehensive overview of all Zustand stores, their rel
 
 ## Overview
 
-The application uses **Zustand** (v5.0.9) for state management. Zustand is a lightweight, unopinionated state management library that provides a simple API for creating reactive stores. There are **8 Zustand stores** that manage different aspects of the application state.
+The application uses **Zustand** (v5.0.9) for state management. Zustand is a lightweight, unopinionated state management library that provides a simple API for creating reactive stores. There are **6 main Zustand stores** that manage different aspects of the application state.
 
 ## Store Architecture
 
@@ -26,8 +26,7 @@ The application uses **Zustand** (v5.0.9) for state management. Zustand is a lig
    - `folderStore` - Folder assignments, bulk tagging state
 
 3. **Organization State Stores** (persisted to localStorage):
-   - `tabStore` - Playlists page view mode (ALL / UNSORTED / GROUPS)
-   - `tabPresetStore` - Tab preset configurations
+   - `playlistGroupStore` - Group carousels (assign/rename/delete); see `group-carousel.md`
    - `playlistGroupStore` - Group carousels (assign/rename/delete); see `group-carousel.md`
    - `stickyStore` - Sticky video state management
 
@@ -169,55 +168,7 @@ The application uses **Zustand** (v5.0.9) for state management. Zustand is a lig
 
 ---
 
-### 5. tabStore (`src/store/tabStore.js`)
 
-**Purpose**: On the Playlists page, drives the view mode: **ALL** (all playlists), **UNSORTED** (playlists not in any group carousel), or **GROUPS** (group carousels only). Valid `activeTabId` values are `'all' | 'unsorted' | 'groups'`. Legacy tab/preset UI has been retired in favor of group carousels (see `group-carousel.md`).
-
-**State:**
-- `tabs`: Array - Legacy tab objects (may still exist; Playlists page no longer uses for filtering)
-- `activeTabId`: string - Current view: `'all'`, `'unsorted'`, or `'groups'`
-
-**Actions:**
-- `setActiveTab(tabId)` - Sets active tab (persists to localStorage)
-- `createTab(name)` - Creates new tab, returns tab ID
-- `deleteTab(tabId)` - Deletes tab (cannot delete 'all')
-- `renameTab(tabId, newName)` - Renames tab
-- `addPlaylistToTab(tabId, playlistId)` - Adds playlist to tab
-- `removePlaylistFromTab(tabId, playlistId)` - Removes playlist from tab
-
-**Persistence:**
-- `tabs` persisted to localStorage: `playlistTabs`
-- `activeTabId` persisted to localStorage: `activeTabId`
-
-**Dependencies:**
-- When `activeTabId` changes → PlaylistsPage filters playlists → Grid shows only tab playlists
-- When tab's `playlistIds` changes → Grid updates → Playlists appear/disappear
-
----
-
-### 6. tabPresetStore (`src/store/tabPresetStore.js`)
-
-**Purpose**: Manages tab preset configurations
-
-**State:**
-- `presets`: Array - Array of preset objects `{ id, name, tabIds: [] }`
-- `activePresetId`: string - Currently active preset ID
-
-**Actions:**
-- `setActivePreset(presetId)` - Sets active preset (persists to localStorage)
-- `createPreset(name, tabIds)` - Creates new preset
-- `deletePreset(presetId)` - Deletes preset (cannot delete 'all')
-- `updatePreset(presetId, name, tabIds)` - Updates preset
-
-**Persistence:**
-- `presets` persisted to localStorage: `tabPresets`
-- `activePresetId` persisted to localStorage: `activePresetId`
-
-**Dependencies:**
-- When `activePresetId` changes → TabBar filters visible tabs → Only preset tabs shown
-- When preset's `tabIds` changes → TabBar recalculates → Tab visibility updates
-
----
 
 ### 7. pinStore (`src/store/pinStore.js`)
 
@@ -432,12 +383,12 @@ The application uses **Zustand** (v5.0.9) for state management. Zustand is a lig
 4. User commits → `setPlaylistItems()` called with preview data → Preview cleared
 5. User reverts → `clearPreview()` called → Returns to original state
 
-### Pattern 4: Tab Filtering
+### Pattern 4: Group Carousel Filtering
 
-1. User clicks tab → `setActiveTab(tabId)` called
-2. `tabStore.activeTabId` updates
-3. `PlaylistsPage` detects change → Filters playlists by `activeTab.playlistIds`
-4. Grid updates → Shows only playlists in active tab
+1. User clicks navigation options in TopNavigation → View switches between ALL / UNSORTED / GROUPS
+2. `playlistGroupStore` state combined with currently loaded playlists determines rendering
+3. `PlaylistsPage` detects change → Renders standard grid OR individual `GroupPlaylistCarousel` modules
+4. Active view dynamically limits the scope of navigation possible within `PlayerController`
 
 ### Pattern 5: Bulk Tagging
 
@@ -476,13 +427,10 @@ VideoCard (folder indicators)
    - When playlist changes → Folder assignments loaded → `folderStore.videoFolderAssignments` updated
    - When folder selected → `folderStore.selectedFolder` → VideosPage filters `playlistStore.currentPlaylistItems`
 
-2. **playlistStore ↔ tabStore**:
-   - When tab active → PlaylistsPage filters `playlistStore.allPlaylists` by `tabStore.activeTab.playlistIds`
+2. **playlistGroupStore ↔ playlistStore**:
+   - When playlist active → Group bounds checked → Up/down navigation restricted to group bounds if applicable
 
-3. **tabStore ↔ tabPresetStore**:
-   - When preset active → TabBar filters `tabStore.tabs` by `tabPresetStore.activePreset.tabIds`
-
-4. **layoutStore ↔ navigationStore**:
+3. **layoutStore ↔ navigationStore**:
    - When page changes in full mode → `layoutStore.setViewMode('half')` auto-called
 
 ---
@@ -496,10 +444,6 @@ VideoCard (folder indicators)
 - Sticky folders (stuck_folders)
 
 ### localStorage Persistence
-- `playlistTabs` - Tab configurations
-- `activeTabId` - Active tab
-- `tabPresets` - Tab preset configurations
-- `activePresetId` - Active preset
 - `quickAssignFolder` - Quick assign folder preference
 - `showColoredFolders` - Folder display toggle
 - `pin-storage` - Pin state (pinnedVideos, priorityPinIds, followerPinIds)
@@ -556,7 +500,7 @@ useEffect(() => {
 
 1. **Use stores for global state** - Don't prop-drill deeply nested state
 2. **Keep stores focused** - Each store manages one domain (playlists, folders, tabs, etc.)
-3. **Persist user preferences** - Use localStorage for UI preferences (tabs, quick assign, etc.)
+3. **Persist user preferences** - Use localStorage for UI preferences (views, quick assign, etc.)
 4. **Sync with database** - Data stores should sync with database, not duplicate it
 5. **Clear session state** - Session-only state (pins, bulk selections) should clear appropriately
 6. **Handle loading states** - Components should handle store state being empty/loading
