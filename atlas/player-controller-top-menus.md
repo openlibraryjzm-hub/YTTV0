@@ -25,9 +25,21 @@ Displays the current playlist's title, centered with contextual badges below it:
 - **Folder (Colored)**: Displays active folder name.
 
 ### Interactions
-- **Bottom Control Bar**: Contains only Navigation buttons (Previous playlist, Grid, Next playlist). Minimalistic design devoid of metadata.
 - **Title Click**: Opens the playlists grid view.
 - **Priority Pin Display**: Overlaid at top-right if a priority pin is active.
+
+### Navigation Controls (Right-Aligned Cluster)
+- **Previous/Next Playlist** (Chevron Left/Right).
+- **Grid Button**: Navigates to the Playlists grid.
+
+### Action Controls (Left-Aligned Cluster)
+A tightly grouped, sequentially aligned set of tool buttons on the far left side of the menu:
+1. **Three Dot Menu (More Options)**: Toggles advanced configurations (Preview Menus, Dev Toolbar, Change Banner, Audio Visualizer).
+2. **Add (Plus)**: Dedicated button to add content to the current playlist.
+3. **Priority Pin**: Sets the active playlist as a priority item. Icon merges standard pin and crown.
+4. **Bookmark**: Quick-save functionality for the current session state.
+5. **Queue**: Displays or modifies the current playback queue order. Uses custom YouTube-style icon.
+6. **History**: Clock icon for navigating playback history. Left-click moves Forward (newer), Right-click moves Back (older).
 
 ## 3. Top Video Menu (Right)
 

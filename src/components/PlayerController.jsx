@@ -51,7 +51,9 @@ import {
   Circle,
   Settings,
   Move,
-  LayoutGrid
+  LayoutGrid,
+  Clock,
+  HelpCircle
 } from 'lucide-react';
 import { usePlaylistStore } from '../store/playlistStore';
 import { useNavigationStore } from '../store/navigationStore';
@@ -65,7 +67,7 @@ import { useMissionStore } from '../store/missionStore';
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow';
 import { useTabPresetStore } from '../store/tabPresetStore';
 import { useInspectLabel } from '../utils/inspectLabels';
-import { getAllPlaylists, getPlaylistItems, getAllFoldersWithVideos, getVideosInFolder, getAllStuckFolders, assignVideoToFolder, unassignVideoFromFolder, getVideoFolderAssignments, createPlaylist, addVideoToPlaylist, removeVideoFromPlaylist, getFolderMetadata } from '../api/playlistApi';
+import { getAllPlaylists, getPlaylistItems, getAllFoldersWithVideos, getVideosInFolder, getAllStuckFolders, assignVideoToFolder, unassignVideoFromFolder, getVideoFolderAssignments, createPlaylist, addVideoToPlaylist, removeVideoFromPlaylist, getFolderMetadata, getWatchHistory } from '../api/playlistApi';
 import { getThumbnailUrl } from '../utils/youtubeUtils';
 import { getFolderColorById, FOLDER_COLORS } from '../utils/folderColors';
 import { THEMES } from '../utils/themes';
@@ -329,6 +331,15 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
   const [isVisualizerEnabled, setIsVisualizerEnabled] = useState(false);
   const [showViewCount, setShowViewCount] = useState(true); // Toggle between view count and publish year
   const [metadataOpacity, setMetadataOpacity] = useState(1); // For fade animation
+
+  const [historyStack, setHistoryStack] = useState([]);
+  const [historyIndex, setHistoryIndex] = useState(0);
+  const historyStateRef = useRef({ stack: [], index: 0 });
+  const isHistoryNavRef = useRef(false);
+
+  useEffect(() => {
+    historyStateRef.current = { stack: historyStack, index: historyIndex };
+  }, [historyStack, historyIndex]);
 
 
 
@@ -644,7 +655,70 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
   // Get playlist/folder title (show preview if in preview mode)
   // If store preview is active, show preview playlist name
   // In second player mode, show second player's playlist name
+
+  // History Navigation Hooks
+  useEffect(() => {
+    getWatchHistory(6).then(data => {
+      if (data && data.length > 0) {
+        const stack = data.map(item => item.video_url).filter(Boolean);
+        setHistoryStack(stack);
+        setHistoryIndex(0);
+        historyStateRef.current = { stack, index: 0 };
+      }
+    }).catch(err => console.error("Failed to load initial watch history", err));
+  }, []);
+
+  useEffect(() => {
+    if (activeVideoItem && activeVideoItem.video_url) {
+      if (isHistoryNavRef.current) {
+        isHistoryNavRef.current = false;
+        return;
+      }
+
+      const url = activeVideoItem.video_url;
+      const { stack, index } = historyStateRef.current;
+
+      if (stack[index] === url) {
+        return;
+      }
+
+      const newStack = [url, ...stack.slice(index)].slice(0, 6);
+      setHistoryStack(newStack);
+      setHistoryIndex(0);
+    }
+  }, [activeVideoItem?.video_url]);
+
   // --- Handlers ---
+  const handleHistoryBack = () => {
+    const { stack, index } = historyStateRef.current;
+    if (index < stack.length - 1 && index < 5) {
+      isHistoryNavRef.current = true;
+      const nextIndex = index + 1;
+      setHistoryIndex(nextIndex);
+      const videoToPlay = stack[nextIndex];
+      if (videoToPlay && onVideoSelect) {
+        onVideoSelect(videoToPlay);
+      }
+    }
+  };
+
+  const handleHistoryForward = () => {
+    const { stack, index } = historyStateRef.current;
+    if (index > 0) {
+      isHistoryNavRef.current = true;
+      const prevIndex = index - 1;
+      setHistoryIndex(prevIndex);
+      const videoToPlay = stack[prevIndex];
+      if (videoToPlay && onVideoSelect) {
+        onVideoSelect(videoToPlay);
+      }
+    }
+  };
+  const handleHistoryRightClick = (e) => {
+    e.preventDefault();
+    handleHistoryBack();
+  };
+
   const handleNextVideo = () => {
     // Route to appropriate player based on active mode
     if (isModeLeft) {
@@ -2289,6 +2363,157 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
                     {/* Right Components: Navigation Buttons (Tab Button moved to Video Menu, Shuffle Removed) */}
 
                     {/* Navigation Contols (Right Cluster - "Far Right") */}
+
+                    {/* Leftmost: More Options / Settings Menu */}
+                    <div className="absolute left-1/2 top-1/2" style={{ transform: `translate(calc(-50% - 141px), -50%)` }}>
+                      <button
+                        onClick={() => setIsMoreMenuOpen(!isMoreMenuOpen)}
+                        className="flex items-center justify-center group/tool"
+                        title={getInspectTitle('More options')}
+                      >
+                        <span style={ICON_WHITE_OUTLINE}>
+                          <MoreHorizontal size={Math.round(bottomIconSize * 0.5)} color="white" strokeWidth={3} />
+                        </span>
+                      </button>
+                      {isMoreMenuOpen && (
+                        <div className="absolute top-full left-1/2 -translate-x-1/2 mt-3 w-56 bg-sky-50 border border-sky-300 rounded-lg shadow-xl overflow-hidden z-[10001] animate-in fade-in zoom-in-95 duration-100 flex flex-col p-1" style={{ zIndex: 10001 }}>
+                          <button
+                            className="w-full text-left px-4 py-2 text-sm text-sky-900 hover:bg-sky-200 transition-colors flex items-center gap-2"
+                            onClick={() => {
+                              setShowPreviewMenus(!showPreviewMenus);
+                              setIsMoreMenuOpen(false);
+                            }}
+                          >
+                            {showPreviewMenus ? <EyeOff size={14} /> : <Eye size={14} />}
+                            {showPreviewMenus ? 'Hide Preview Menus' : 'Show Preview Menus'}
+                          </button>
+
+                          <button
+                            className="w-full text-left px-4 py-2 text-sm text-sky-900 hover:bg-sky-200 transition-colors flex items-center gap-2"
+                            onClick={() => {
+                              toggleDevToolbar();
+                              setIsMoreMenuOpen(false);
+                            }}
+                          >
+                            {showDevToolbar ? <EyeOff size={14} /> : <Eye size={14} />}
+                            {showDevToolbar ? 'Hide Dev Toolbar' : 'Show Dev Toolbar'}
+                          </button>
+
+                          <button
+                            className="w-full text-left px-4 py-2 text-sm text-sky-900 hover:bg-sky-200 transition-colors flex items-center gap-2"
+                            onClick={() => {
+                              document.getElementById('banner-upload').click();
+                              setIsMoreMenuOpen(false);
+                            }}
+                          >
+                            <Upload size={14} />
+                            Change Banner
+                          </button>
+
+                          <button
+                            className="w-full text-left px-4 py-2 text-sm text-sky-900 hover:bg-sky-200 transition-colors flex items-center gap-2"
+                            onClick={() => {
+                              setIsVisualizerEnabled(!isVisualizerEnabled);
+                              setIsMoreMenuOpen(false);
+                            }}
+                          >
+                            {isVisualizerEnabled ? <EyeOff size={14} /> : <Eye size={14} />}
+                            {isVisualizerEnabled ? 'Hide Audio Visualizer' : 'Show Audio Visualizer'}
+                          </button>
+                          <input
+                            type="file"
+                            id="banner-upload"
+                            className="hidden"
+                            accept="image/*"
+                            onChange={handleBannerUpload}
+                          />
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Plus Button */}
+                    <div className="absolute left-1/2 top-1/2" style={{ transform: `translate(calc(-50% - 100px), -50%)` }}>
+                      <button
+                        onClick={() => console.log('Plus button clicked')}
+                        className="flex items-center justify-center group/tool"
+                        title={getInspectTitle('Add to Playlist')}
+                      >
+                        <span style={ICON_WHITE_OUTLINE}>
+                          <Plus size={Math.round(bottomIconSize * 0.5)} color="white" strokeWidth={3} />
+                        </span>
+                      </button>
+                    </div>
+
+                    {/* Priority Pin Button */}
+                    <div className="absolute left-1/2 top-1/2" style={{ transform: `translate(calc(-50% - 59px), -50%)` }}>
+                      <button
+                        onClick={() => console.log('Priority Pin button clicked')}
+                        className="flex items-center justify-center group/tool"
+                        title={getInspectTitle('Priority Pin')}
+                      >
+                        <span style={ICON_WHITE_OUTLINE}>
+                          <svg width={Math.round(bottomIconSize * 0.5)} height={Math.round(bottomIconSize * 0.5)} viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                            <g transform="translate(1, 2) scale(0.9) rotate(45 12 12)">
+                              {/* Standard Pin Body */}
+                              <line x1="12" y1="17" x2="12" y2="22" strokeWidth="2.5"></line>
+                              <path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24Z" strokeWidth="2.5"></path>
+                            </g>
+                            {/* Crown sitting on top left */}
+                            <g transform="translate(-1, -3) scale(0.45) rotate(-20 12 12)">
+                              <path d="M5 21L4 6l6 4 2-7 2 7 6-4-1 15H5z" fill="white" stroke="white" strokeWidth="2" strokeLinejoin="round"></path>
+                            </g>
+                          </svg>
+                        </span>
+                      </button>
+                    </div>
+
+                    {/* Bookmark Button (Placeholder) */}
+                    <div className="absolute left-1/2 top-1/2" style={{ transform: `translate(calc(-50% - 18px), -50%)` }}>
+                      <button
+                        onClick={() => console.log('Bookmark button clicked (placeholder)')}
+                        className="flex items-center justify-center group/tool"
+                        title={getInspectTitle('Bookmark')}
+                      >
+                        <span style={ICON_WHITE_OUTLINE}>
+                          <Bookmark size={Math.round(bottomIconSize * 0.5)} color="white" strokeWidth={3} />
+                        </span>
+                      </button>
+                    </div>
+
+                    {/* Queue Button */}
+                    <div className="absolute left-1/2 top-1/2" style={{ transform: `translate(calc(-50% + 23px), -50%)` }}>
+                      <button
+                        onClick={() => console.log('Queue button clicked')}
+                        className="flex items-center justify-center group/tool"
+                        title={getInspectTitle('Queue')}
+                      >
+                        <span style={ICON_WHITE_OUTLINE}>
+                          <svg width={Math.round(bottomIconSize * 0.5)} height={Math.round(bottomIconSize * 0.5)} viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                            {/* Three horizontal lines */}
+                            <line x1="11" y1="7" x2="21" y2="7"></line>
+                            <line x1="5" y1="13" x2="21" y2="13"></line>
+                            <line x1="5" y1="19" x2="21" y2="19"></line>
+                            {/* Solid play arrow in top left */}
+                            <polygon points="5,4 10,7 5,10" fill="white" strokeWidth="0"></polygon>
+                          </svg>
+                        </span>
+                      </button>
+                    </div>
+
+                    {/* History Clock Icon Left=Next Right=Back */}
+                    <div className="absolute left-1/2 top-1/2" style={{ transform: `translate(calc(-50% + 64px), -50%)` }}>
+                      <button
+                        onClick={handleHistoryForward}
+                        onContextMenu={handleHistoryRightClick}
+                        className={`flex items-center justify-center group/tool transition-opacity ${historyIndex >= Math.min(historyStack.length - 1, 5) || historyStack.length <= 1 ? (historyIndex === 0 ? 'opacity-30' : '') : ''}`}
+                        title={getInspectTitle('History: Left-click (Forward/Newer) / Right-click (Back/Older)')}
+                      >
+                        <span style={ICON_WHITE_OUTLINE}>
+                          <Clock size={Math.round(bottomIconSize * 0.5)} color="white" strokeWidth={3} />
+                        </span>
+                      </button>
+                    </div>
+
                     {/* Previous Playlist - Left of Grid */}
                     <button
                       onClick={() => navigatePlaylist('down')}
@@ -2943,74 +3168,6 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
                               </div>
 
                             </div>
-                          </div>
-                        )}
-                      </div>
-
-
-
-                      <div className="absolute left-1/2 top-1/2" style={{ transform: `translate(calc(-50% + ${menuButtonX + 32}px), -50%)` }}>
-                        <button
-                          onClick={() => setIsMoreMenuOpen(!isMoreMenuOpen)}
-                          className="flex items-center justify-center group/tool"
-                          title={getInspectTitle('More options')}
-                        >
-                          <span style={ICON_WHITE_OUTLINE}>
-                            <MoreHorizontal size={Math.round(bottomIconSize * 0.5)} color="white" strokeWidth={3} />
-                          </span>
-                        </button>
-                        {isMoreMenuOpen && (
-                          <div className="absolute top-full right-0 mt-3 w-56 bg-sky-50 border border-sky-300 rounded-lg shadow-xl overflow-hidden z-[10001] animate-in fade-in zoom-in-95 duration-100 flex flex-col p-1" style={{ zIndex: 10001 }}>
-                            <button
-                              className="w-full text-left px-4 py-2 text-sm text-sky-900 hover:bg-sky-200 transition-colors flex items-center gap-2"
-                              onClick={() => {
-                                setShowPreviewMenus(!showPreviewMenus);
-                                setIsMoreMenuOpen(false);
-                              }}
-                            >
-                              {showPreviewMenus ? <EyeOff size={14} /> : <Eye size={14} />}
-                              {showPreviewMenus ? 'Hide Preview Menus' : 'Show Preview Menus'}
-                            </button>
-
-                            <button
-                              className="w-full text-left px-4 py-2 text-sm text-sky-900 hover:bg-sky-200 transition-colors flex items-center gap-2"
-                              onClick={() => {
-                                toggleDevToolbar();
-                                setIsMoreMenuOpen(false);
-                              }}
-                            >
-                              {showDevToolbar ? <EyeOff size={14} /> : <Eye size={14} />}
-                              {showDevToolbar ? 'Hide Dev Toolbar' : 'Show Dev Toolbar'}
-                            </button>
-
-                            <button
-                              className="w-full text-left px-4 py-2 text-sm text-sky-900 hover:bg-sky-200 transition-colors flex items-center gap-2"
-                              onClick={() => {
-                                document.getElementById('banner-upload').click();
-                                setIsMoreMenuOpen(false);
-                              }}
-                            >
-                              <Upload size={14} />
-                              Change Banner
-                            </button>
-
-                            <button
-                              className="w-full text-left px-4 py-2 text-sm text-sky-900 hover:bg-sky-200 transition-colors flex items-center gap-2"
-                              onClick={() => {
-                                setIsVisualizerEnabled(!isVisualizerEnabled);
-                                setIsMoreMenuOpen(false);
-                              }}
-                            >
-                              {isVisualizerEnabled ? <EyeOff size={14} /> : <Eye size={14} />}
-                              {isVisualizerEnabled ? 'Hide Audio Visualizer' : 'Show Audio Visualizer'}
-                            </button>
-                            <input
-                              type="file"
-                              id="banner-upload"
-                              className="hidden"
-                              accept="image/*"
-                              onChange={handleBannerUpload}
-                            />
                           </div>
                         )}
                       </div>
