@@ -189,7 +189,8 @@ yttv2/
 │   ├── popout-browser.md         # Documentation for standalone webview windows (e.g. Twitter)
 │   ├── fullscreen-video-info.md  # Fullscreen right-margin video metadata panel (thumbnail, author, views, year)
 │   ├── video-sort-filters.md     # Videos page sticky toolbar: VideoSortFilters (sort/rating) + folder prism
-│   └── session-updates.md        # Development session logs
+│   ├── session-updates.md        # Development session logs
+│   └── video-queue.md            # Temporary session-based queue system
 │
 ├── dev-logs/                     # Development change logs
 │   ├── README.md                 # Dev logs guide
@@ -235,6 +236,7 @@ yttv2/
 | **Mission Hub** | `mission-hub.md` | `state-management.md` |
 | **Pop-out Browser** | `popout-browser.md` | `player-controller-unified.md` |
 | **App Banner** | `app-banner.md` | `player-controller-unified.md`, `ui-layout.md`, `state-management.md` |
+| **Video Queue** | `video-queue.md` | `player-controller-unified.md`, `state-management.md` |
 | **Page Banner** | `page-banner.md` | `page-videos.md`, `page-playlists.md`, `ui-layout.md`, `state-management.md` |
 | **Playlist Cards** | `card-playlist.md` | `playlist&tab.md`, `ui.md`, `api-bridge.md` |
 | **Group Carousel (Playlists Page)** | `group-carousel.md` | `playlist-bar.md`, `card-playlist.md`, `state-management.md`, `page-playlists.md`, `page-banner.md` (TopNavigation) |

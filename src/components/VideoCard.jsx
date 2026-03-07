@@ -33,6 +33,7 @@ const VideoCard = ({
   bulkTagSelections = new Set(),
   onBulkTagColorClick,
   onPinClick,
+  onLongClick,
   onSecondPlayerSelect,
   progress = 0,
   isWatched = false,
@@ -92,6 +93,58 @@ const VideoCard = ({
   };
 
   const bulkTagBorderColor = getBulkTagBorderColor();
+
+  const longPressTimerRef = useRef(null);
+  const touchStartPosRef = useRef(null);
+  const longPressFired = useRef(false);
+
+  const handlePointerDown = (e) => {
+    if (e.pointerType === 'mouse' && e.button !== 0) return;
+    const isAction = e.target.closest('[data-card-action]') !== null || e.target.closest('[data-card-menu]') !== null;
+    if (isAction || bulkTagMode || !onLongClick) return;
+
+    touchStartPosRef.current = { x: e.clientX, y: e.clientY };
+    longPressFired.current = false;
+
+    longPressTimerRef.current = setTimeout(() => {
+      longPressFired.current = true;
+      onLongClick(video);
+      longPressTimerRef.current = null;
+    }, 500);
+  };
+
+  const clearLongPress = () => {
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+  };
+
+  const handlePointerUp = () => clearLongPress();
+  const handlePointerLeave = () => clearLongPress();
+  const handlePointerCancel = () => clearLongPress();
+
+  const handlePointerMove = (e) => {
+    if (longPressTimerRef.current && touchStartPosRef.current) {
+      const dx = Math.abs(e.clientX - touchStartPosRef.current.x);
+      const dy = Math.abs(e.clientY - touchStartPosRef.current.y);
+      if (dx > 10 || dy > 10) {
+        clearLongPress();
+      }
+    }
+  };
+
+  const handleCardClick = (e) => {
+    if (longPressFired.current) {
+      e.preventDefault();
+      e.stopPropagation();
+      longPressFired.current = false;
+      return;
+    }
+    if (!bulkTagMode && onVideoClick) {
+      onVideoClick(e);
+    }
+  };
 
 
   // FIX: Split selectors to prevent "Maximum update depth exceeded" error
@@ -183,7 +236,15 @@ const VideoCard = ({
       ),
       action: 'copyToPlaylist',
     },
-
+    {
+      label: 'Add to Queue',
+      icon: (
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h10m4-4l4 4m0 0l-4 4m4-4H14" />
+        </svg>
+      ),
+      action: 'addToQueue',
+    },
   ];
 
   // Play overlay for hover (only show when not in bulk tag mode)
@@ -247,7 +308,12 @@ const VideoCard = ({
   if (cardStyle === 'twitter') {
     return (
       <Card
-        onClick={bulkTagMode ? undefined : onVideoClick}
+        onPointerDown={handlePointerDown}
+        onPointerUp={handlePointerUp}
+        onPointerMove={handlePointerMove}
+        onPointerCancel={handlePointerCancel}
+        onPointerLeave={handlePointerLeave}
+        onClick={handleCardClick}
         onContextMenu={handleContextMenu}
         selected={isSelected}
         playing={isCurrentlyPlaying}
@@ -333,10 +399,15 @@ const VideoCard = ({
   // Default YouTube style rendering
   return (
     <div
+      onPointerDown={handlePointerDown}
+      onPointerUp={handlePointerUp}
+      onPointerMove={handlePointerMove}
+      onPointerCancel={handlePointerCancel}
+      onPointerLeave={handlePointerLeave}
       className={`group relative bg-white dark:bg-slate-800 rounded-2xl border border-black dark:border-black shadow-sm hover:shadow-md transition-all flex flex-col h-full ${isSelected ? 'ring-2 ring-sky-500' : ''
         } ${isCurrentlyPlaying ? 'ring-4 ring-red-500' : ''} ${bulkTagMode ? 'overflow-visible cursor-default' : 'overflow-visible cursor-context-menu'
         }`}
-      onClick={bulkTagMode ? undefined : onVideoClick}
+      onClick={handleCardClick}
       onContextMenu={handleContextMenu}
       style={bulkTagBorderColor ? { borderColor: bulkTagBorderColor, borderWidth: '2px' } : undefined}
     >

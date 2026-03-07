@@ -16,6 +16,11 @@ const Card = ({
   rounded = true, // set false for square corners (e.g. video thumbnails)
   // Action areas - these won't trigger card click
   actionAreas = [], // Array of refs or selectors for areas that shouldn't trigger card click
+  onPointerDown,
+  onPointerUp,
+  onPointerMove,
+  onPointerCancel,
+  onPointerLeave,
 }) => {
   const cardRef = React.useRef(null);
 
@@ -72,6 +77,11 @@ const Card = ({
     <div
       ref={cardRef}
       onClick={handleClick}
+      onPointerDown={onPointerDown}
+      onPointerUp={onPointerUp}
+      onPointerMove={onPointerMove}
+      onPointerCancel={onPointerCancel}
+      onPointerLeave={onPointerLeave}
       className={baseClasses}
       data-card="true"
     >

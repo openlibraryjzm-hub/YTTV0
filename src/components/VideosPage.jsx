@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { usePlaylistStore } from '../store/playlistStore';
+import { useQueueStore } from '../store/queueStore';
 import { useFolderStore } from '../store/folderStore';
 import { useLayoutStore } from '../store/layoutStore';
 import { assignVideoToFolder, unassignVideoFromFolder, getAllFolderAssignments, getVideosInFolder, removeVideoFromPlaylist, getWatchedVideoIds, getAllVideoProgress } from '../api/playlistApi';
@@ -170,6 +171,7 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
   const [showUploader, setShowUploader] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [folderMetadata, setFolderMetadataState] = useState(null); // { custom_name, description }
+  const { addToQueue } = useQueueStore();
 
   // Use preview items if available, otherwise use current playlist items
   const activePlaylistItems = previewPlaylistItems || currentPlaylistItems;
@@ -736,6 +738,11 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
           setSelectedVideoForAction(video);
           setActionType('copy');
           setShowPlaylistSelector(true);
+          break;
+
+        case 'addToQueue':
+          addToQueue(video);
+          console.log('Video added to queue:', video.title);
           break;
 
         default:
@@ -1860,6 +1867,10 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
                                 handleMenuOptionClick(option, video);
                               }
                             }}
+                            onLongClick={() => {
+                              addToQueue(video);
+                              console.log('Video added to queue via long press:', video.title);
+                            }}
                             onQuickAssign={handleStarClick}
                             bulkTagMode={bulkTagMode}
                             bulkTagSelections={new Set(videoFolderAssignments[video.id] || [])}
@@ -1935,6 +1946,10 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
                           } else {
                             handleMenuOptionClick(option, video);
                           }
+                        },
+                        onLongClick: () => {
+                          addToQueue(video);
+                          console.log('Video added to queue via long press:', video.title);
                         },
                         onQuickAssign: handleStarClick,
                         bulkTagMode,
