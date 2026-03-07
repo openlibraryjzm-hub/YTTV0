@@ -48,7 +48,10 @@ yttv2/
 │   ├── api/                      # API layer for Tauri commands
 │   │   └── playlistApi.js       # All playlist/video database operations
 │   ├── components/               # React components
-│   │   ├── PlayerController.jsx  # Top controller (orb + rectangles UI) - Advanced version with preview navigation, colored shuffle, likes, folder badges
+│   │   ├── PlayerController.jsx  # Main context wrapper and state logic for Top controller
+│   │   ├── PlayerControllerPlaylistMenu.jsx # Left-side Playlist Menu sub-component (badges, preview nav)
+│   │   ├── PlayerControllerVideoMenu.jsx    # Right-side Video Menu sub-component (pins, folders, shuffle)
+│   │   ├── PlayerControllerOrbMenu.jsx      # Central Orb sub-component (visualizer, image upload)
 │   │   ├── YouTubePlayer.jsx     # YouTube iframe player component
 │   │   ├── NativeVideoPlayer.jsx # Native mpv player for local videos
 │   │   ├── LocalVideoPlayer.jsx  # HTML5 fallback player (browser-compatible formats)
@@ -418,7 +421,7 @@ yttv2/
 **Group Badge & Playlist Nav (Player Controller):**
 - Primary: `group-badge-player-controller.md`
 - State: `playlistGroupStore.js` (activeGroupId), `playlistStore.js` (navigationItems, next/previous)
-- UI: `PlayerController.jsx` (badge, nav build), `PlaylistCard.jsx` (onEnterFromGroup), `PlaylistsPage.jsx` (pass group/clear)
+- UI: `PlayerControllerPlaylistMenu.jsx` (badge render), `PlayerController.jsx` (nav build), `PlaylistCard.jsx` (onEnterFromGroup), `PlaylistsPage.jsx` (pass group/clear)
 
 **Folder Assignments:**
 - Primary: `playlist&tab.md` (Section 2.2)
