@@ -357,9 +357,25 @@ const VideoCard = ({
 
       {/* Content Section (White bar at bottom) */}
       <div
-        className={`relative p-3 flex flex-col justify-center bg-white dark:bg-slate-800 flex-1 overflow-hidden ${bulkTagMode ? '' : 'rounded-b-2xl'
+        className={`relative pt-5 px-3 pb-3 flex flex-col justify-center bg-white dark:bg-slate-800 flex-1 overflow-hidden ${bulkTagMode ? '' : 'rounded-b-2xl'
           }`}
       >
+        {/* Metadata overlay on hover */}
+        {!bulkTagMode && (
+          <div className="absolute pointer-events-none left-0 right-0 top-0 h-5 bg-black/90 text-white flex items-center justify-between px-2 text-[10px] font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-20">
+            <div className="flex-1 truncate text-center px-1" title={video.author || 'Unknown'}>
+              {video.author || 'Unknown'}
+            </div>
+            <div className="text-gray-400 text-[8px]">&bull;</div>
+            <div className="flex-1 text-center px-1 shrink-0">
+              {extractYear(video.published_at) || 'N/A'}
+            </div>
+            <div className="text-gray-400 text-[8px]">&bull;</div>
+            <div className="flex-1 text-center px-1 shrink-0">
+              {formatViewCount(video.view_count) || '0'}
+            </div>
+          </div>
+        )}
         <div className="relative z-10 flex items-center justify-between min-h-[28px]">
           <div className="min-w-0 flex-1 mr-2">
             <h3
@@ -396,23 +412,6 @@ const VideoCard = ({
             </div>
           )}
         </div>
-
-        {/* Metadata overlay on hover */}
-        {!bulkTagMode && (
-          <div className="absolute pointer-events-none left-0 right-0 bottom-0 h-1/2 bg-black text-white flex items-center justify-between px-2 text-[11px] font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-20">
-            <div className="flex-1 truncate text-center px-1" title={video.author || 'Unknown'}>
-              {video.author || 'Unknown'}
-            </div>
-            <div className="text-gray-400 text-[8px]">&bull;</div>
-            <div className="flex-1 text-center px-1 shrink-0">
-              {extractYear(video.published_at) || 'N/A'}
-            </div>
-            <div className="text-gray-400 text-[8px]">&bull;</div>
-            <div className="flex-1 text-center px-1 shrink-0">
-              {formatViewCount(video.view_count) || '0'}
-            </div>
-          </div>
-        )}
       </div>
 
       {/* Bulk tag: below thumbnail and title, when bulk tag mode is active */}

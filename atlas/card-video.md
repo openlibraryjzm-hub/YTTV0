@@ -26,7 +26,8 @@ Video cards are the primary interface for individual content playback designed t
 
 - **Content Area**:
   - **Title**: Dark blue text (`#052F4A`). Truncates without displaying the YouTube URL/ID.
-  - **Metadata Hover Overlay**: Hovering the card reveals the bottom half overlapping with a black background displaying horizontally aligned elements: Author, Year Published, and abbreviated View Count.
+  - **Metadata Hover Overlay**: Hovering the card reveals a black info bar displaying horizontally aligned elements: Author, Year Published, and abbreviated View Count.
+    - **Flush Stack Layout**: This bar is slotted into the very top margin of the Content Area (directly below the thumbnail). The red watch progress bar locks precisely to the bottom of the thumbnail, creating a perfectly flush, seamlessly stacked layout on hover (Progress Bar -> Info Bar -> Title Bar).
 
 - **Status Halos (Borders)**:
   - **Selected**: Solid Blue border.

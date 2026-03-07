@@ -35,7 +35,7 @@ Displays the current playlist's title, centered with contextual badges below it:
 ### Action Controls (Left-Aligned Cluster)
 A tightly grouped, sequentially aligned set of tool buttons on the far left side of the menu:
 1. **Three Dot Menu (More Options)**: Toggles advanced configurations (Preview Menus, Dev Toolbar, Change Banner, Audio Visualizer).
-2. **Add (Plus)**: Dedicated button to add content to the current playlist.
+2. **Add (Plus)**: Functions as a dropdown menu. Currently features an "Add clipboard to quick videos" utility that automatically reads YouTube links from the clipboard, fetches full metadata (via YouTube Data API v3), manages/creates the "Quick Videos" playlist, and securely injects the video.
 3. **Priority Pin**: Sets the active playlist as a priority item. Icon merges standard pin and crown.
 4. **Bookmark**: Quick-save functionality for the current session state.
 5. **Queue**: Displays or modifies the current playback queue order. Uses custom YouTube-style icon.

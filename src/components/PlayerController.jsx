@@ -68,7 +68,7 @@ import { WebviewWindow } from '@tauri-apps/api/webviewWindow';
 import { useTabPresetStore } from '../store/tabPresetStore';
 import { useInspectLabel } from '../utils/inspectLabels';
 import { getAllPlaylists, getPlaylistItems, getAllFoldersWithVideos, getVideosInFolder, getAllStuckFolders, assignVideoToFolder, unassignVideoFromFolder, getVideoFolderAssignments, createPlaylist, addVideoToPlaylist, removeVideoFromPlaylist, getFolderMetadata, getWatchHistory } from '../api/playlistApi';
-import { getThumbnailUrl } from '../utils/youtubeUtils';
+import { getThumbnailUrl, extractVideoId, fetchVideoMetadata } from '../utils/youtubeUtils';
 import { getFolderColorById, FOLDER_COLORS } from '../utils/folderColors';
 import { THEMES } from '../utils/themes';
 import AudioVisualizer from './AudioVisualizer';
@@ -278,6 +278,7 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
   const [activeHeaderMode, setActiveHeaderMode] = useState('info'); // Start with playlist title 
   const [isModeLeft, setIsModeLeft] = useState(true);
   const [isMoreMenuOpen, setIsMoreMenuOpen] = useState(false);
+  const [isAddMenuOpen, setIsAddMenuOpen] = useState(false);
   const [isTooltipOpen, setIsTooltipOpen] = useState(false); // Tooltip popup state
   const [showPreviewMenus, setShowPreviewMenus] = useState(true); // Default to true based on user request "toggle visibility... with [options]" implies options are main focus, but need to hide/show something? Actually request says "toggle visibility OF the top right menu" - ok so we need a state for the menu itself?
   // Wait, the request is: "add an option to toggle visibility of the top right menu with 'full, half, quarter, menu q, debug, inspect, ruler, menu' buttons"
@@ -295,6 +296,84 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
       setIsModeLeft(activePlayer === 1);
     }
   }, [activePlayer, onActivePlayerChange]);
+
+  const handleAddClipboardToQuickVideos = async () => {
+    try {
+      const text = await navigator.clipboard.readText();
+      if (!text) {
+        console.warn("Clipboard is empty");
+        return;
+      }
+
+      const videoId = extractVideoId(text);
+      if (!videoId) {
+        console.warn("Clipboard does not contain a valid YouTube video URL");
+        return;
+      }
+
+      // Find or create "Quick Videos" playlist
+      let targetPlaylistId;
+      const quickVideosPlaylist = allPlaylists.find(p => p.name === 'Quick Videos');
+      if (quickVideosPlaylist) {
+        targetPlaylistId = quickVideosPlaylist.id;
+      } else {
+        targetPlaylistId = await createPlaylist('Quick Videos', 'Quickly added videos from clipboard');
+        const updatedPlaylists = await getAllPlaylists();
+        setAllPlaylists(updatedPlaylists || []);
+      }
+
+      // Fetch metadata
+      const tempTitle = `Quick Video ${videoId}`;
+      const fallbackThumbnailUrl = getThumbnailUrl(videoId, 'hqdefault');
+      let finalTitle = tempTitle;
+      let authorName = 'Unknown';
+      let viewCountStr = '0';
+      let pubAt = null;
+      let finalThumbnailUrl = fallbackThumbnailUrl;
+      let durSecs = null;
+      let desc = null;
+      let tagsStr = null;
+
+      const meta = await fetchVideoMetadata(videoId);
+      if (meta) {
+        finalTitle = meta.title || finalTitle;
+        authorName = meta.author || authorName;
+        viewCountStr = meta.viewCount || viewCountStr;
+        pubAt = meta.publishedAt || pubAt;
+        finalThumbnailUrl = meta.thumbnailUrl || finalThumbnailUrl;
+        durSecs = meta.durationSeconds || null;
+        desc = meta.description || null;
+        tagsStr = meta.tags || null;
+      }
+
+      // Add video to playlist
+      await addVideoToPlaylist(
+        targetPlaylistId,
+        text,
+        videoId,
+        finalTitle,
+        finalThumbnailUrl,
+        authorName,
+        viewCountStr,
+        pubAt,
+        false, // isLocal
+        null, // profileImageUrl
+        durSecs,
+        desc,
+        tagsStr
+      );
+
+      console.log(`Added ${finalTitle} to Quick Videos`);
+      setIsAddMenuOpen(false);
+
+      if (currentPlaylistId === targetPlaylistId) {
+        const items = await getPlaylistItems(targetPlaylistId);
+        setPlaylistItems(items, targetPlaylistId);
+      }
+    } catch (err) {
+      console.error('Failed to add clipboard to quick videos:', err);
+    }
+  };
 
   // Handle mode toggle - update external state
   const handleModeToggle = () => {
@@ -2434,7 +2513,7 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
                     {/* Plus Button */}
                     <div className="absolute left-1/2 top-1/2" style={{ transform: `translate(calc(-50% - 100px), -50%)` }}>
                       <button
-                        onClick={() => console.log('Plus button clicked')}
+                        onClick={() => setIsAddMenuOpen(!isAddMenuOpen)}
                         className="flex items-center justify-center group/tool"
                         title={getInspectTitle('Add to Playlist')}
                       >
@@ -2442,6 +2521,17 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
                           <Plus size={Math.round(bottomIconSize * 0.5)} color="white" strokeWidth={3} />
                         </span>
                       </button>
+                      {isAddMenuOpen && (
+                        <div className="absolute top-full left-1/2 -translate-x-1/2 mt-3 w-56 bg-sky-50 border border-sky-300 rounded-lg shadow-xl overflow-hidden z-[10001] animate-in fade-in zoom-in-95 duration-100 flex flex-col p-1" style={{ zIndex: 10001 }}>
+                          <button
+                            className="w-full text-left px-4 py-2 text-sm text-sky-900 hover:bg-sky-200 transition-colors flex items-center gap-2"
+                            onClick={handleAddClipboardToQuickVideos}
+                          >
+                            <Plus size={14} />
+                            Add clipboard to quick videos
+                          </button>
+                        </div>
+                      )}
                     </div>
 
                     {/* Priority Pin Button */}

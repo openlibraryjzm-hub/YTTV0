@@ -107,35 +107,50 @@ export const fetchPlaylistMetadata = async (playlistId) => {
   }
 };
 
+const API_KEY = 'AIzaSyBYPwv0a-rRbTrvMA9nF4Wa1ryC0b6l7xw';
+
 /**
- * Fetches video metadata from YouTube oEmbed API
+ * Fetches video metadata from YouTube Data API v3
  * This works for individual videos
  */
 export const fetchVideoMetadata = async (videoId) => {
   try {
-    const videoUrl = `https://www.youtube.com/watch?v=${videoId}`;
-    const oembedUrl = `https://www.youtube.com/oembed?url=${encodeURIComponent(videoUrl)}&format=json`;
+    const videoUrl = `https://www.googleapis.com/youtube/v3/videos?part=snippet,statistics,contentDetails&id=${videoId}&key=${API_KEY}`;
 
-    const response = await fetch(oembedUrl);
+    const response = await fetch(videoUrl);
     if (!response.ok) {
       throw new Error('Failed to fetch video metadata');
     }
 
     const data = await response.json();
-    return {
-      videoId,
-      title: data.title,
-      thumbnailUrl: data.thumbnail_url,
-      author: data.author_name,
-      authorUrl: data.author_url,
-    };
+    if (data.items && data.items.length > 0) {
+      const snippet = data.items[0].snippet;
+      const statistics = data.items[0].statistics;
+      const contentDetails = data.items[0].contentDetails;
+
+      let durationSeconds = null;
+      if (contentDetails?.duration) {
+        durationSeconds = parseYouTubeDuration(contentDetails.duration);
+      }
+
+      return {
+        videoId,
+        title: snippet.title,
+        thumbnailUrl: snippet.thumbnails?.maxres?.url || snippet.thumbnails?.high?.url || snippet.thumbnails?.medium?.url || snippet.thumbnails?.default?.url,
+        author: snippet.channelTitle,
+        viewCount: statistics?.viewCount || '0',
+        publishedAt: snippet.publishedAt,
+        durationSeconds,
+        description: snippet.description || null,
+        tags: Array.isArray(snippet.tags) ? JSON.stringify(snippet.tags) : null,
+      };
+    }
+    return null;
   } catch (error) {
     console.error('Failed to fetch video metadata:', error);
     return null;
   }
 };
-
-const API_KEY = 'AIzaSyBYPwv0a-rRbTrvMA9nF4Wa1ryC0b6l7xw';
 
 export const resolveHandleToChannelId = async (handle) => {
   const cleanHandle = handle.replace('@', '');

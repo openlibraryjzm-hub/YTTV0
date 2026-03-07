@@ -111,14 +111,10 @@ const CardThumbnail = ({
       {/* Progress Bar */}
       {progress > 0 && (
         <div
+          className="absolute left-0 w-full z-[5] bottom-0"
           style={{
-            position: 'absolute',
-            bottom: 0,
-            left: 0,
-            width: '100%',
             height: '4px',
             backgroundColor: 'rgba(0,0,0,0.3)', // Subtle track
-            zIndex: 5
           }}
         >
           <div
