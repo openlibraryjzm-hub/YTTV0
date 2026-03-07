@@ -1,60 +1,8 @@
+import PlayerControllerPlaylistMenu from './PlayerControllerPlaylistMenu';
+import PlayerControllerOrbMenu from './PlayerControllerOrbMenu';
+import PlayerControllerVideoMenu from './PlayerControllerVideoMenu';
 import React, { useState, useRef, useEffect, useMemo } from 'react';
-import {
-  Play,
-  Home,
-  Twitter,
-  List,
-  Shuffle,
-  Grid3X3,
-  Star,
-  ChevronLeft,
-  ChevronRight,
-  ChevronUp,
-  ChevronDown,
-  Check,
-  CheckCircle2,
-  X,
-  Settings2,
-
-  Pin,
-  Share2,
-  Info,
-  BarChart2,
-  Bookmark,
-  MoreHorizontal,
-  Heart,
-  ListMusic,
-  Zap,
-  Radio,
-  Flame,
-  ChevronsLeft,
-  ChevronsRight,
-
-  Upload,
-  Palette,
-
-  History as HistoryIcon,
-  Layout,
-
-  Layers,
-  Compass,
-  Library,
-  Eye,
-  EyeOff,
-  RotateCcw,
-  ThumbsUp,
-  Plus,
-  Anchor as AnchorIcon,
-  Type,
-  MousePointer2,
-  ArrowLeftRight,
-  Circle,
-  Settings,
-  Move,
-  LayoutGrid,
-  Clock,
-  HelpCircle
-} from 'lucide-react';
+import { Play, Home, Twitter, List, Shuffle, Grid3X3, Star, ChevronLeft, ChevronRight, ChevronUp, ChevronDown, Check, CheckCircle2, X, Settings2, Pin, Share2, Info, BarChart2, Bookmark, MoreHorizontal, Heart, ListMusic, Zap, Radio, Flame, ChevronsLeft, ChevronsRight, Upload, Palette, History as HistoryIcon, Layout, Layers, Compass, Library, Eye, EyeOff, RotateCcw, ThumbsUp, Plus, Anchor as AnchorIcon, Type, MousePointer2, ArrowLeftRight, Circle, Settings, Move, LayoutGrid, Clock, HelpCircle } from 'lucide-react';
 import { usePlaylistStore } from '../store/playlistStore';
 import { useNavigationStore } from '../store/navigationStore';
 import { usePinStore } from '../store/pinStore';
@@ -74,23 +22,25 @@ import { getFolderColorById, FOLDER_COLORS } from '../utils/folderColors';
 import { THEMES } from '../utils/themes';
 import AudioVisualizer from './AudioVisualizer';
 
-
-
 // Seeded random function for consistent random selection per page
-const seededRandom = (seed) => {
+const seededRandom = seed => {
   let hash = 0;
   if (seed) {
     for (let i = 0; i < seed.length; i++) {
       const char = seed.charCodeAt(i);
-      hash = ((hash << 5) - hash) + char;
+      hash = (hash << 5) - hash + char;
       hash = hash & hash;
     }
   }
-  return (Math.abs(hash) % 10000) / 10000;
+  return Math.abs(hash) % 10000 / 10000;
 };
 
 // Use folder colors from the app's folder system
-const COLORS = FOLDER_COLORS.map(color => ({ hex: color.hex, name: color.name, id: color.id }));
+const COLORS = FOLDER_COLORS.map(color => ({
+  hex: color.hex,
+  name: color.name,
+  id: color.id
+}));
 
 // White icon with black outline (no circle) - use as wrapper style for toolbar icons
 const ICON_WHITE_OUTLINE = {
@@ -108,7 +58,19 @@ const BADGE_TEXT_STYLE = {
 
 // TAB_GROUPS removed - now using dynamic tabs and presets from stores
 
-export default function PlayerController({ onPlaylistSelect, onVideoSelect, activePlayer = 1, onActivePlayerChange, secondPlayerVideoUrl = null, secondPlayerVideoIndex = 0, onSecondPlayerVideoIndexChange, secondPlayerPlaylistId = null, secondPlayerPlaylistItems = [], currentThemeId = 'blue', onThemeChange }) {
+export default function PlayerController({
+  onPlaylistSelect,
+  onVideoSelect,
+  activePlayer = 1,
+  onActivePlayerChange,
+  secondPlayerVideoUrl = null,
+  secondPlayerVideoIndex = 0,
+  onSecondPlayerVideoIndexChange,
+  secondPlayerPlaylistId = null,
+  secondPlayerPlaylistItems = [],
+  currentThemeId = 'blue',
+  onThemeChange
+}) {
   const fileInputRef = useRef(null);
   const playButtonRightClickRef = useRef(0); // Track right clicks for double-click detection
   const pinLongPressTimerRef = useRef(null); // Track long press for pin button
@@ -141,23 +103,62 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
     previewPlaylistId: storePreviewPlaylistId,
     previewFolderInfo: storePreviewFolderInfo,
     clearPreview,
-    currentPlaylistTitle,
+    currentPlaylistTitle
   } = usePlaylistStore();
-
-  const { currentPage, setCurrentPage } = useNavigationStore();
-  const { pinnedVideos, togglePriorityPin, removePin, isPriorityPin, isPinned, isFollowerPin, togglePin } = usePinStore();
-  const { viewMode, setViewMode, inspectMode, toggleMenuQuarterMode, menuQuarterMode, showDebugBounds, toggleDebugBounds, toggleInspectMode, showRuler, toggleRuler, showDevToolbar, toggleDevToolbar, setFullscreenInfoBlanked } = useLayoutStore();
-  const { showColoredFolders } = useFolderStore();
-  const { tabs, activeTabId, setActiveTab } = useTabStore();
-  const { presets, activePresetId, setActivePreset } = useTabPresetStore();
-  const { groups, getGroupIdsForPlaylist, activeGroupId, setActiveGroupId } = usePlaylistGroupStore();
+  const {
+    currentPage,
+    setCurrentPage
+  } = useNavigationStore();
+  const {
+    pinnedVideos,
+    togglePriorityPin,
+    removePin,
+    isPriorityPin,
+    isPinned,
+    isFollowerPin,
+    togglePin
+  } = usePinStore();
+  const {
+    viewMode,
+    setViewMode,
+    inspectMode,
+    toggleMenuQuarterMode,
+    menuQuarterMode,
+    showDebugBounds,
+    toggleDebugBounds,
+    toggleInspectMode,
+    showRuler,
+    toggleRuler,
+    showDevToolbar,
+    toggleDevToolbar,
+    setFullscreenInfoBlanked
+  } = useLayoutStore();
+  const {
+    showColoredFolders
+  } = useFolderStore();
+  const {
+    tabs,
+    activeTabId,
+    setActiveTab
+  } = useTabStore();
+  const {
+    presets,
+    activePresetId,
+    setActivePreset
+  } = useTabPresetStore();
+  const {
+    groups,
+    getGroupIdsForPlaylist,
+    activeGroupId,
+    setActiveGroupId
+  } = usePlaylistGroupStore();
 
   // Ensure tabs and presets are arrays
   const safeTabs = Array.isArray(tabs) ? tabs : [];
   const safePresets = Array.isArray(presets) ? presets : [];
 
   // Helper to get inspect label
-  const getInspectTitle = (label) => inspectMode ? label : undefined;
+  const getInspectTitle = label => inspectMode ? label : undefined;
 
   // Load all playlists and folders on mount and when showColoredFolders changes
   // Initial load of playlists
@@ -178,7 +179,6 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
     const buildNav = async () => {
       try {
         let playlists = allPlaylists;
-
         console.log('[DEBUG_EXT] Building Navigation Items. Sources:', {
           allPlaylistsCount: allPlaylists?.length,
           activeTabId: activeTabId,
@@ -206,7 +206,10 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
             playlists = playlists.filter(p => idSet.has(Number(p.id)));
             const orderMap = new Map(group.playlistIds.map((id, i) => [Number(id), i]));
             playlists = [...playlists].sort((a, b) => (orderMap.get(Number(a.id)) ?? 999) - (orderMap.get(Number(b.id)) ?? 999));
-            console.log('[DEBUG_EXT] Filtered by Group:', { groupName: group.name, filteredCount: playlists.length });
+            console.log('[DEBUG_EXT] Filtered by Group:', {
+              groupName: group.name,
+              filteredCount: playlists.length
+            });
           }
         }
 
@@ -220,7 +223,6 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
 
           // Get all folders to find stuck ones
           const allFoldersData = await getAllFoldersWithVideos();
-
           allFoldersData.forEach(folder => {
             const folderKey = `${folder.playlist_id}:${folder.folder_color}`;
             if (stuckSet.has(folderKey)) {
@@ -239,12 +241,10 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
           try {
             const allFoldersData = await getAllFoldersWithVideos();
             const existingKeys = new Set(foldersToInclude.map(f => `${f.playlist_id}:${f.folder_color}`));
-
             allFoldersData.forEach(folder => {
               const folderKey = `${folder.playlist_id}:${folder.folder_color}`;
               // Only include folder if its playlist is visible (filtered)
               const parentVisible = playlists.find(p => p.id === folder.playlist_id);
-
               if (parentVisible && !existingKeys.has(folderKey)) {
                 foldersToInclude.push(folder);
               }
@@ -259,7 +259,7 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
         console.log('[DEBUG_EXT] Final Navigation Items:', {
           count: navItems.length,
           firstFive: navItems.slice(0, 5).map(i => i.type === 'playlist' ? i.data.name : `Folder: ${i.data.folder_color}`),
-          lastItem: navItems.length > 0 ? (navItems[navItems.length - 1].type === 'playlist' ? navItems[navItems.length - 1].data.name : 'Folder') : 'None'
+          lastItem: navItems.length > 0 ? navItems[navItems.length - 1].type === 'playlist' ? navItems[navItems.length - 1].data.name : 'Folder' : 'None'
         });
         setNavigationItems(navItems);
       } catch (error) {
@@ -268,7 +268,6 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
     };
     buildNav();
   }, [allPlaylists, buildNavigationItems, setNavigationItems, showColoredFolders, activeTabId, tabs, activeGroupId, groups]);
-
 
   // --- UI State ---
   const [showPins, setShowPins] = useState(true);
@@ -288,16 +287,12 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
   // Reference @atlas/advanced-player-controller.md implies the 3-dot menu is the place for "More options".
   // So I will populate the EXISTING 3-dot menu `isMoreMenuOpen` with these new items. 
 
-
-
-
   // Sync internal mode with external activePlayer prop
   React.useEffect(() => {
     if (onActivePlayerChange) {
       setIsModeLeft(activePlayer === 1);
     }
   }, [activePlayer, onActivePlayerChange]);
-
   const handleAddClipboardToQuickVideos = async () => {
     try {
       const text = await navigator.clipboard.readText();
@@ -305,7 +300,6 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
         console.warn("Clipboard is empty");
         return;
       }
-
       const videoId = extractVideoId(text);
       if (!videoId) {
         console.warn("Clipboard does not contain a valid YouTube video URL");
@@ -334,7 +328,6 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
       let durSecs = null;
       let desc = null;
       let tagsStr = null;
-
       const meta = await fetchVideoMetadata(videoId);
       if (meta) {
         finalTitle = meta.title || finalTitle;
@@ -348,25 +341,13 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
       }
 
       // Add video to playlist
-      await addVideoToPlaylist(
-        targetPlaylistId,
-        text,
-        videoId,
-        finalTitle,
-        finalThumbnailUrl,
-        authorName,
-        viewCountStr,
-        pubAt,
-        false, // isLocal
-        null, // profileImageUrl
-        durSecs,
-        desc,
-        tagsStr
-      );
-
+      await addVideoToPlaylist(targetPlaylistId, text, videoId, finalTitle, finalThumbnailUrl, authorName, viewCountStr, pubAt, false,
+      // isLocal
+      null,
+      // profileImageUrl
+      durSecs, desc, tagsStr);
       console.log(`Added ${finalTitle} to Quick Videos`);
       setIsAddMenuOpen(false);
-
       if (currentPlaylistId === targetPlaylistId) {
         const items = await getPlaylistItems(targetPlaylistId);
         setPlaylistItems(items, targetPlaylistId);
@@ -384,12 +365,14 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
       onActivePlayerChange(newMode ? 1 : 2);
     }
   };
-
   const [playlistCheckpoint, setPlaylistCheckpoint] = useState(null);
   const [videoCheckpoint, setVideoCheckpoint] = useState(null);
   const [activeNavButton, setActiveNavButton] = useState('grid');
   const [isQueueModeOpen, setIsQueueModeOpen] = useState(false);
-  const { queue, removeFromQueue } = useQueueStore();
+  const {
+    queue,
+    removeFromQueue
+  } = useQueueStore();
   // Preview states - track what we're previewing without actually changing the player
   const [previewNavigationIndex, setPreviewNavigationIndex] = useState(null);
   const [previewVideoIndex, setPreviewVideoIndex] = useState(null);
@@ -399,17 +382,14 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
   const [showColorPicker, setShowColorPicker] = useState(null);
   const [hoveredColorName, setHoveredColorName] = useState(null);
   const [starColor, setStarColor] = useState('#0ea5e9');
-
   const [currentVideoFolders, setCurrentVideoFolders] = useState([]); // Current video's folder assignments
   const [currentVideoFolderNames, setCurrentVideoFolderNames] = useState({}); // Map of folderId -> customName
   const [shuffleColor, setShuffleColor] = useState('#6366f1');
-
   const [likeColor, setLikeColor] = useState('#0ea5e9');
   const [likesPlaylistId, setLikesPlaylistId] = useState(null); // ID of the special "Likes" playlist
   const [isVideoLiked, setIsVideoLiked] = useState(false); // Whether current video is liked
   const [isEditMode, setIsEditMode] = useState(false);
   const [isConfigOnRight, setIsConfigOnRight] = useState(false);
-
   const [isAdjustingImage, setIsAdjustingImage] = useState(false);
   const [isVisualizerEnabled, setIsVisualizerEnabled] = useState(false);
   const [showViewCount, setShowViewCount] = useState(true); // Toggle between view count and publish year
@@ -417,14 +397,17 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
 
   const [historyStack, setHistoryStack] = useState([]);
   const [historyIndex, setHistoryIndex] = useState(0);
-  const historyStateRef = useRef({ stack: [], index: 0 });
+  const historyStateRef = useRef({
+    stack: [],
+    index: 0
+  });
   const isHistoryNavRef = useRef(false);
-
   useEffect(() => {
-    historyStateRef.current = { stack: historyStack, index: historyIndex };
+    historyStateRef.current = {
+      stack: historyStack,
+      index: historyIndex
+    };
   }, [historyStack, historyIndex]);
-
-
 
   // Load visualizer enabled state from localStorage on mount
   useEffect(() => {
@@ -451,15 +434,13 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
   useEffect(() => {
     const titleElement = playlistTitleRef.current;
     if (!titleElement) return;
-
-    const handleRightClick = (e) => {
+    const handleRightClick = e => {
       e.preventDefault();
       e.stopPropagation();
       console.log('Mega shuffle triggered via addEventListener');
       handleShufflePlaylist();
     };
-
-    const handleMouseDown = (e) => {
+    const handleMouseDown = e => {
       if (e.button === 2) {
         e.preventDefault();
         e.stopPropagation();
@@ -467,7 +448,6 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
         handleShufflePlaylist();
       }
     };
-
     titleElement.addEventListener('contextmenu', handleRightClick, true); // Use capture phase
     titleElement.addEventListener('mousedown', handleMouseDown, true); // Use capture phase
 
@@ -476,12 +456,6 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
       titleElement.removeEventListener('mousedown', handleMouseDown, true);
     };
   }, []); // Empty deps - handleShufflePlaylist is stable
-
-
-
-
-
-
 
   // Initialize active pin based on current mode
   useEffect(() => {
@@ -503,13 +477,8 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
 
   // Get current playlist/folder info (use preview if in preview mode)
   const displayNavIndex = previewNavigationIndex !== null ? previewNavigationIndex : currentNavigationIndex;
-  const currentNavItem = displayNavIndex >= 0 && navigationItems[displayNavIndex]
-    ? navigationItems[displayNavIndex]
-    : null;
-
-  const currentPlaylist = currentNavItem && currentNavItem.type === 'playlist'
-    ? currentNavItem.data
-    : (currentPlaylistId ? allPlaylists.find(p => p.id === currentPlaylistId) : null);
+  const currentNavItem = displayNavIndex >= 0 && navigationItems[displayNavIndex] ? navigationItems[displayNavIndex] : null;
+  const currentPlaylist = currentNavItem && currentNavItem.type === 'playlist' ? currentNavItem.data : currentPlaylistId ? allPlaylists.find(p => p.id === currentPlaylistId) : null;
 
   // Get current video first
   const currentVideo = getCurrentVideo();
@@ -522,7 +491,6 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
       const hasSecondPlayerVideo = !isModeLeft && secondPlayerVideoUrl;
       let targetVideo = currentVideo;
       let targetPlaylistId = currentPlaylistId;
-
       if (hasSecondPlayerVideo) {
         // Mode is 2 (second player) - use second player's video and playlist
         if (secondPlayerPlaylistItems.length > 0 && secondPlayerVideoIndex >= 0 && secondPlayerVideoIndex < secondPlayerPlaylistItems.length) {
@@ -546,7 +514,6 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
           }
         }
       }
-
       if (targetVideo && targetPlaylistId && targetVideo.id) {
         try {
           const folders = await getVideoFolderAssignments(targetPlaylistId, targetVideo.id);
@@ -555,7 +522,7 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
 
           // Fetch custom names for these folders
           const namesMap = {};
-          await Promise.all(safeFolders.map(async (folderId) => {
+          await Promise.all(safeFolders.map(async folderId => {
             try {
               const metadata = await getFolderMetadata(targetPlaylistId, folderId);
               if (metadata && metadata[0]) {
@@ -585,7 +552,6 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
       try {
         const playlists = await getAllPlaylists();
         let likesPlaylist = playlists.find(p => p.name === 'Likes');
-
         if (!likesPlaylist) {
           // Create "Likes" playlist if it doesn't exist
           const newPlaylistId = await createPlaylist('Likes', 'Videos you have liked');
@@ -607,7 +573,6 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
       // So we'll compute it here again or use a ref. For now, compute inline.
       const hasSecondPlayerVideo = !isModeLeft && secondPlayerVideoUrl;
       let targetVideo = currentVideo;
-
       if (hasSecondPlayerVideo) {
         // Mode is 2 (second player) - use second player's video
         if (secondPlayerPlaylistItems.length > 0 && secondPlayerVideoIndex >= 0 && secondPlayerVideoIndex < secondPlayerPlaylistItems.length) {
@@ -628,12 +593,10 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
           }
         }
       }
-
       if (!targetVideo || !likesPlaylistId) {
         setIsVideoLiked(false);
         return;
       }
-
       try {
         const likesItems = await getPlaylistItems(likesPlaylistId);
         const isLiked = likesItems.some(item => item.video_id === targetVideo.video_id);
@@ -656,15 +619,10 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
   // Use second player info if we have a video URL (even if playlist items aren't loaded yet)
   const hasSecondPlayerVideo = !isModeLeft && secondPlayerVideoUrl;
   // Use second player's playlist items if available, otherwise fall back to current playlist items
-  const secondPlayerItems = (hasSecondPlayerVideo && secondPlayerPlaylistItems.length > 0)
-    ? secondPlayerPlaylistItems
-    : currentPlaylistItems;
+  const secondPlayerItems = hasSecondPlayerVideo && secondPlayerPlaylistItems.length > 0 ? secondPlayerPlaylistItems : currentPlaylistItems;
 
   // Determine active playlist ID - use second player's playlist when in mode 2
-  const activePlaylistId = hasSecondPlayerVideo && secondPlayerPlaylistId
-    ? secondPlayerPlaylistId
-    : currentPlaylistId;
-
+  const activePlaylistId = hasSecondPlayerVideo && secondPlayerPlaylistId ? secondPlayerPlaylistId : currentPlaylistId;
   let activeVideoItem = currentVideo;
   if (hasSecondPlayerVideo) {
     // Mode is 2 (second player) - prioritize using second player's playlist if available
@@ -698,10 +656,7 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
 
   // Use preview video if in preview mode, otherwise use active video (main or second player)
   // Determine which playlist items to use based on active player mode
-  const activePlaylistItems = (hasSecondPlayerVideo && secondPlayerPlaylistItems.length > 0)
-    ? secondPlayerPlaylistItems
-    : currentPlaylistItems;
-
+  const activePlaylistItems = hasSecondPlayerVideo && secondPlayerPlaylistItems.length > 0 ? secondPlayerPlaylistItems : currentPlaylistItems;
   let displayVideoIndex;
   if (previewVideoIndex !== null) {
     displayVideoIndex = previewVideoIndex;
@@ -729,11 +684,7 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
   }
 
   // Get playlist image - use active video thumbnail (main or second player) instead of playlist thumbnail
-  const playlistImage = activeVideoItem?.thumbnail_url
-    ? activeVideoItem.thumbnail_url
-    : (displayVideoItem?.thumbnail_url
-      ? displayVideoItem.thumbnail_url
-      : 'https://picsum.photos/seed/playlist/800/600');
+  const playlistImage = activeVideoItem?.thumbnail_url ? activeVideoItem.thumbnail_url : displayVideoItem?.thumbnail_url ? displayVideoItem.thumbnail_url : 'https://picsum.photos/seed/playlist/800/600';
 
   // Get playlist/folder title (show preview if in preview mode)
   // If store preview is active, show preview playlist name
@@ -746,25 +697,27 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
         const stack = data.map(item => item.video_url).filter(Boolean);
         setHistoryStack(stack);
         setHistoryIndex(0);
-        historyStateRef.current = { stack, index: 0 };
+        historyStateRef.current = {
+          stack,
+          index: 0
+        };
       }
     }).catch(err => console.error("Failed to load initial watch history", err));
   }, []);
-
   useEffect(() => {
     if (activeVideoItem && activeVideoItem.video_url) {
       if (isHistoryNavRef.current) {
         isHistoryNavRef.current = false;
         return;
       }
-
       const url = activeVideoItem.video_url;
-      const { stack, index } = historyStateRef.current;
-
+      const {
+        stack,
+        index
+      } = historyStateRef.current;
       if (stack[index] === url) {
         return;
       }
-
       const newStack = [url, ...stack.slice(index)].slice(0, 6);
       setHistoryStack(newStack);
       setHistoryIndex(0);
@@ -773,7 +726,10 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
 
   // --- Handlers ---
   const handleHistoryBack = () => {
-    const { stack, index } = historyStateRef.current;
+    const {
+      stack,
+      index
+    } = historyStateRef.current;
     if (index < stack.length - 1 && index < 5) {
       isHistoryNavRef.current = true;
       const nextIndex = index + 1;
@@ -784,9 +740,11 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
       }
     }
   };
-
   const handleHistoryForward = () => {
-    const { stack, index } = historyStateRef.current;
+    const {
+      stack,
+      index
+    } = historyStateRef.current;
     if (index > 0) {
       isHistoryNavRef.current = true;
       const prevIndex = index - 1;
@@ -797,11 +755,10 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
       }
     }
   };
-  const handleHistoryRightClick = (e) => {
+  const handleHistoryRightClick = e => {
     e.preventDefault();
     handleHistoryBack();
   };
-
   const handleNextVideo = () => {
     // Route to appropriate player based on active mode
     if (isModeLeft) {
@@ -825,7 +782,6 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
       }
     }
   };
-
   const handlePrevVideo = () => {
     // Route to appropriate player based on active mode
     if (isModeLeft) {
@@ -840,9 +796,7 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
       // Control second player (player 2) - navigate within second player's playlist without affecting main player
       // Only navigate if there's actually a second player video loaded
       if (secondPlayerVideoUrl && secondPlayerPlaylistItems.length > 0 && onSecondPlayerVideoIndexChange) {
-        const prevIndex = secondPlayerVideoIndex <= 0
-          ? secondPlayerPlaylistItems.length - 1
-          : secondPlayerVideoIndex - 1;
+        const prevIndex = secondPlayerVideoIndex <= 0 ? secondPlayerPlaylistItems.length - 1 : secondPlayerVideoIndex - 1;
         onSecondPlayerVideoIndexChange(prevIndex);
         const prevVideo = secondPlayerPlaylistItems[prevIndex];
         if (prevVideo && onVideoSelect) {
@@ -856,11 +810,9 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
   const handleNextPlaylist = async () => {
     const result = nextPlaylist();
     if (!result) return;
-
     if (result.type === 'playlist') {
       const playlist = result.data;
       if (!playlist) return;
-
       try {
         const items = await getPlaylistItems(playlist.id);
         // Use playlist name from navigation item to ensure title consistency
@@ -870,9 +822,7 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
         }
         if (items.length > 0 && onVideoSelect) {
           const lastIndex = localStorage.getItem(`last_video_index_${playlist.id}`);
-          const videoIndex = lastIndex && parseInt(lastIndex, 10) < items.length
-            ? parseInt(lastIndex, 10)
-            : 0;
+          const videoIndex = lastIndex && parseInt(lastIndex, 10) < items.length ? parseInt(lastIndex, 10) : 0;
           onVideoSelect(items[videoIndex].video_url);
         }
       } catch (error) {
@@ -881,22 +831,22 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
     } else if (result.type === 'folder') {
       const folder = result.data;
       if (!folder) return;
-
       try {
         const items = await getVideosInFolder(folder.playlist_id, folder.folder_color);
         if (items.length === 0) {
           console.warn(`Folder ${folder.folder_color} in playlist ${folder.playlist_id} has no videos`);
           return;
         }
-        setPlaylistItems(items, folder.playlist_id, { playlist_id: folder.playlist_id, folder_color: folder.folder_color });
+        setPlaylistItems(items, folder.playlist_id, {
+          playlist_id: folder.playlist_id,
+          folder_color: folder.folder_color
+        });
         if (onPlaylistSelect) {
           onPlaylistSelect(items, folder.playlist_id);
         }
         const folderKey = `last_video_index_${folder.playlist_id}_${folder.folder_color}`;
         const lastIndex = localStorage.getItem(folderKey);
-        const videoIndex = lastIndex && parseInt(lastIndex, 10) < items.length
-          ? parseInt(lastIndex, 10)
-          : 0;
+        const videoIndex = lastIndex && parseInt(lastIndex, 10) < items.length ? parseInt(lastIndex, 10) : 0;
         if (onVideoSelect && items[videoIndex]) {
           onVideoSelect(items[videoIndex].video_url);
         }
@@ -905,15 +855,12 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
       }
     }
   };
-
   const handlePreviousPlaylist = async () => {
     const result = previousPlaylist();
     if (!result) return;
-
     if (result.type === 'playlist') {
       const playlist = result.data;
       if (!playlist) return;
-
       try {
         const items = await getPlaylistItems(playlist.id);
         // Use playlist name from navigation item to ensure title consistency
@@ -923,9 +870,7 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
         }
         if (items.length > 0 && onVideoSelect) {
           const lastIndex = localStorage.getItem(`last_video_index_${playlist.id}`);
-          const videoIndex = lastIndex && parseInt(lastIndex, 10) < items.length
-            ? parseInt(lastIndex, 10)
-            : 0;
+          const videoIndex = lastIndex && parseInt(lastIndex, 10) < items.length ? parseInt(lastIndex, 10) : 0;
           onVideoSelect(items[videoIndex].video_url);
         }
       } catch (error) {
@@ -934,22 +879,22 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
     } else if (result.type === 'folder') {
       const folder = result.data;
       if (!folder) return;
-
       try {
         const items = await getVideosInFolder(folder.playlist_id, folder.folder_color);
         if (items.length === 0) {
           console.warn(`Folder ${folder.folder_color} in playlist ${folder.playlist_id} has no videos`);
           return;
         }
-        setPlaylistItems(items, folder.playlist_id, { playlist_id: folder.playlist_id, folder_color: folder.folder_color });
+        setPlaylistItems(items, folder.playlist_id, {
+          playlist_id: folder.playlist_id,
+          folder_color: folder.folder_color
+        });
         if (onPlaylistSelect) {
           onPlaylistSelect(items, folder.playlist_id);
         }
         const folderKey = `last_video_index_${folder.playlist_id}_${folder.folder_color}`;
         const lastIndex = localStorage.getItem(folderKey);
-        const videoIndex = lastIndex && parseInt(lastIndex, 10) < items.length
-          ? parseInt(lastIndex, 10)
-          : 0;
+        const videoIndex = lastIndex && parseInt(lastIndex, 10) < items.length ? parseInt(lastIndex, 10) : 0;
         if (onVideoSelect && items[videoIndex]) {
           onVideoSelect(items[videoIndex].video_url);
         }
@@ -962,11 +907,9 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
   // Handle shuffle - shuffle from specific folder or all videos
   const handleShuffle = async (folderColorId = null) => {
     const colorToUse = folderColorId || quickShuffleColor;
-
     try {
       let videosToShuffle = [];
       let playlistIdToUse;
-
       if (isModeLeft) {
         // Control main player (player 1) - use current playlist
         playlistIdToUse = currentPlaylistId;
@@ -985,7 +928,6 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
           videosToShuffle = await getVideosInFolder(playlistIdToUse, colorToUse);
         }
       }
-
       if (videosToShuffle.length === 0) {
         console.warn('No videos found to shuffle');
         return;
@@ -994,7 +936,6 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
       // Pick a random video
       const randomIndex = Math.floor(Math.random() * videosToShuffle.length);
       const randomVideo = videosToShuffle[randomIndex];
-
       if (randomVideo && onVideoSelect) {
         if (isModeLeft) {
           // Control main player (player 1)
@@ -1034,7 +975,6 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
 
       // Load items
       const items = await getPlaylistItems(randomPlaylist.id);
-
       if (items.length === 0) {
         console.warn('Selected random playlist is empty');
         return;
@@ -1049,12 +989,10 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
       // Pick random video within playlist to start
       const randomVideoIndex = Math.floor(Math.random() * items.length);
       const randomVideo = items[randomVideoIndex];
-
       if (randomVideo && onVideoSelect) {
         setCurrentVideoIndex(randomVideoIndex);
         onVideoSelect(randomVideo.video_url);
       }
-
     } catch (error) {
       console.error('Failed to shuffle to random playlist:', error);
     }
@@ -1072,7 +1010,6 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
       }
     }
   };
-
   const handleVideosGrid = () => {
     // Clear any preview state to ensure we show the currently playing playlist
     if (storePreviewPlaylistId) {
@@ -1087,7 +1024,6 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
       setPreviewFolderInfo(null);
       setPlaylistCheckpoint(null);
     }
-
     if (currentPlaylistId) {
       if (currentPage === 'videos') {
         setViewMode(viewMode === 'full' ? 'half' : 'full');
@@ -1101,12 +1037,9 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
     }
   };
 
-
-
   // Handle pin click - switch to that video
-  const handlePinClick = async (pinnedVideo) => {
+  const handlePinClick = async pinnedVideo => {
     const videoIndex = currentPlaylistItems.findIndex(v => v.id === pinnedVideo.id);
-
     if (videoIndex >= 0) {
       setCurrentVideoIndex(videoIndex);
       if (onVideoSelect) {
@@ -1142,8 +1075,7 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
     e.stopPropagation();
     removePin(pinnedVideo.id);
   };
-
-  const navigateTabs = (dir) => {
+  const navigateTabs = dir => {
     if (activeHeaderMode === 'tabs') {
       // Navigate through tabs
       const currentIndex = safeTabs.findIndex(tab => tab.id === activeLeftPin);
@@ -1155,9 +1087,7 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
         }
         return;
       }
-      const nextIndex = dir === 'next'
-        ? (currentIndex + 1) % safeTabs.length
-        : (currentIndex - 1 + safeTabs.length) % safeTabs.length;
+      const nextIndex = dir === 'next' ? (currentIndex + 1) % safeTabs.length : (currentIndex - 1 + safeTabs.length) % safeTabs.length;
       if (safeTabs[nextIndex]) {
         setActiveLeftPin(safeTabs[nextIndex].id);
         setActiveTab(safeTabs[nextIndex].id);
@@ -1173,9 +1103,7 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
         }
         return;
       }
-      const nextIndex = dir === 'next'
-        ? (currentIndex + 1) % safePresets.length
-        : (currentIndex - 1 + safePresets.length) % safePresets.length;
+      const nextIndex = dir === 'next' ? (currentIndex + 1) % safePresets.length : (currentIndex - 1 + safePresets.length) % safePresets.length;
       if (safePresets[nextIndex]) {
         setActiveLeftPin(safePresets[nextIndex].id);
         setActivePreset(safePresets[nextIndex].id);
@@ -1184,7 +1112,7 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
   };
 
   // Direct playlist navigation (for capsule buttons - immediate navigation, not preview)
-  const navigatePlaylist = (dir) => {
+  const navigatePlaylist = dir => {
     if (dir === 'up') {
       handleNextPlaylist();
     } else if (dir === 'down') {
@@ -1202,17 +1130,13 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
       }
 
       // Calculate next/prev navigation index (preview only)
-      const currentPreviewIndex = previewNavigationIndex !== null ? previewNavigationIndex : (currentNavigationIndex >= 0 ? currentNavigationIndex : 0);
-      const nextIndex = direction === 'up'
-        ? (navigationItems.length === 0 ? 0 : (currentPreviewIndex + 1) % navigationItems.length)
-        : (navigationItems.length === 0 ? 0 : (currentPreviewIndex <= 0 ? navigationItems.length - 1 : currentPreviewIndex - 1));
-
+      const currentPreviewIndex = previewNavigationIndex !== null ? previewNavigationIndex : currentNavigationIndex >= 0 ? currentNavigationIndex : 0;
+      const nextIndex = direction === 'up' ? navigationItems.length === 0 ? 0 : (currentPreviewIndex + 1) % navigationItems.length : navigationItems.length === 0 ? 0 : currentPreviewIndex <= 0 ? navigationItems.length - 1 : currentPreviewIndex - 1;
       setPreviewNavigationIndex(nextIndex);
 
       // Load preview playlist/folder data (but don't change actual player)
       const previewItem = navigationItems[nextIndex];
       if (!previewItem) return;
-
       if (previewItem.type === 'playlist') {
         try {
           const items = await getPlaylistItems(previewItem.data.id);
@@ -1227,7 +1151,10 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
           const items = await getVideosInFolder(previewItem.data.playlist_id, previewItem.data.folder_color);
           setPreviewPlaylistItems(items);
           setPreviewPlaylistId(previewItem.data.playlist_id);
-          setPreviewFolderInfo({ playlist_id: previewItem.data.playlist_id, folder_color: previewItem.data.folder_color });
+          setPreviewFolderInfo({
+            playlist_id: previewItem.data.playlist_id,
+            folder_color: previewItem.data.folder_color
+          });
         } catch (error) {
           console.error('Failed to load preview folder items:', error);
         }
@@ -1239,17 +1166,12 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
         setVideoCheckpoint(currentIdx >= 0 ? currentIdx : 0);
         setPreviewVideoIndex(currentIdx >= 0 ? currentIdx : 0);
       }
-
-      const currentPreviewIdx = previewVideoIndex !== null ? previewVideoIndex : (currentPlaylistItems.findIndex(v => v.id === currentVideo?.id) || 0);
-      const nextIdx = direction === 'up'
-        ? (currentPreviewIdx + 1) % currentPlaylistItems.length
-        : (currentPreviewIdx === 0 ? currentPlaylistItems.length - 1 : currentPreviewIdx - 1);
-
+      const currentPreviewIdx = previewVideoIndex !== null ? previewVideoIndex : currentPlaylistItems.findIndex(v => v.id === currentVideo?.id) || 0;
+      const nextIdx = direction === 'up' ? (currentPreviewIdx + 1) % currentPlaylistItems.length : currentPreviewIdx === 0 ? currentPlaylistItems.length - 1 : currentPreviewIdx - 1;
       setPreviewVideoIndex(nextIdx);
     }
   };
-
-  const handleRevert = (type) => {
+  const handleRevert = type => {
     if (type === 'playlist' && playlistCheckpoint !== null) {
       // Revert to original navigation index
       setPreviewNavigationIndex(null);
@@ -1265,8 +1187,7 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
       setVideoCheckpoint(null);
     }
   };
-
-  const handleCommit = async (type) => {
+  const handleCommit = async type => {
     if (type === 'playlist' && playlistCheckpoint !== null && previewNavigationIndex !== null) {
       // Actually navigate to the previewed playlist/folder
       const previewItem = navigationItems[previewNavigationIndex];
@@ -1274,7 +1195,6 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
         handleRevert('playlist');
         return;
       }
-
       if (previewItem.type === 'playlist') {
         if (previewPlaylistItems && previewPlaylistId) {
           setPlaylistItems(previewPlaylistItems, previewPlaylistId, null);
@@ -1283,9 +1203,7 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
           }
           if (previewPlaylistItems.length > 0 && onVideoSelect) {
             const lastIndex = localStorage.getItem(`last_video_index_${previewPlaylistId}`);
-            const videoIndex = lastIndex && parseInt(lastIndex, 10) < previewPlaylistItems.length
-              ? parseInt(lastIndex, 10)
-              : 0;
+            const videoIndex = lastIndex && parseInt(lastIndex, 10) < previewPlaylistItems.length ? parseInt(lastIndex, 10) : 0;
             onVideoSelect(previewPlaylistItems[videoIndex].video_url);
           }
         }
@@ -1298,9 +1216,7 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
           if (previewPlaylistItems.length > 0 && onVideoSelect) {
             const folderKey = `last_video_index_${previewFolderInfo.playlist_id}_${previewFolderInfo.folder_color}`;
             const lastIndex = localStorage.getItem(folderKey);
-            const videoIndex = lastIndex && parseInt(lastIndex, 10) < previewPlaylistItems.length
-              ? parseInt(lastIndex, 10)
-              : 0;
+            const videoIndex = lastIndex && parseInt(lastIndex, 10) < previewPlaylistItems.length ? parseInt(lastIndex, 10) : 0;
             if (previewPlaylistItems[videoIndex]) {
               onVideoSelect(previewPlaylistItems[videoIndex].video_url);
             }
@@ -1355,7 +1271,6 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
       setVideoCheckpoint(null);
     }
   };
-
   const handleToggleHeader = () => {
     setActiveHeaderMode(curr => {
       if (curr === 'primary') return 'secondary';
@@ -1370,16 +1285,12 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
     const targetVideo = activeVideoItem || currentVideo;
     // Use activePlaylistId which is computed above
     const targetPlaylistId = activePlaylistId || currentPlaylistId;
-
     if (!targetVideo || !targetPlaylistId) return;
-
     const colorToUse = folderColorId || quickAssignColor;
-
     try {
       // Get current folder assignments for the target video
       const videoFolders = await getVideoFolderAssignments(targetPlaylistId, targetVideo.id);
       const isAssigned = videoFolders.includes(colorToUse);
-
       if (isAssigned) {
         // Unassign from folder
         await unassignVideoFromFolder(targetPlaylistId, targetVideo.id, colorToUse);
@@ -1408,7 +1319,7 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
 
   // Handle first pin button click - set current video as first (leftmost) pin
   // Handle Pin Button Interactions
-  const handlePinMouseDown = (e) => {
+  const handlePinMouseDown = e => {
     if (e.button !== 0) return; // Only process main (left) clicks
     const targetVideo = activeVideoItem || currentVideo;
     if (!targetVideo) return;
@@ -1423,12 +1334,10 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
       pinLongPressTimerRef.current = null; // Mark as handled
     }, 600);
   };
-
-  const handlePinMouseUp = (e) => {
+  const handlePinMouseUp = e => {
     if (e.button !== 0) return; // Only process main (left) clicks
     const targetVideo = activeVideoItem || currentVideo;
     if (!targetVideo) return;
-
     if (pinLongPressTimerRef.current) {
       // Timer still running -> Short Click
       clearTimeout(pinLongPressTimerRef.current);
@@ -1438,9 +1347,7 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
       const now = Date.now();
       const timeSinceLastClick = now - lastPinClickTimeRef.current;
       lastPinClickTimeRef.current = now;
-
       const isCurrentlyPinned = isPinned(targetVideo.id) || isPriorityPin(targetVideo.id);
-
       if (timeSinceLastClick < 300 && isCurrentlyPinned) {
         // Double-click on pinned video → Unpin completely
         removePin(targetVideo.id);
@@ -1453,7 +1360,6 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
       }
     }
   };
-
   const handlePinMouseLeave = () => {
     // If mouse leaves button while holding, cancel long press
     if (pinLongPressTimerRef.current) {
@@ -1462,11 +1368,9 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
     }
   };
 
-
   // Handle play button toggle - cycle through colored folders
   const handlePlayButtonToggle = async (direction = 'forward') => {
     if (!currentPlaylistId) return;
-
     try {
       // Fetch fresh folder data
       const allFolders = await getAllFoldersWithVideos();
@@ -1478,13 +1382,10 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
       const currentColor = currentFolder ? currentFolder.folder_color : 'all';
 
       // Sort playlistFolders by FOLDER_COLORS order
-      const validColors = FOLDER_COLORS
-        .map(c => c.id)
-        .filter(id => playlistFolders.some(f => f.folder_color === id));
+      const validColors = FOLDER_COLORS.map(c => c.id).filter(id => playlistFolders.some(f => f.folder_color === id));
 
       // Determine next color
       let nextColor = 'all';
-
       if (direction === 'reset') {
         nextColor = 'all';
       } else if (direction === 'forward') {
@@ -1519,7 +1420,10 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
         setPlaylistItems(newItems, currentPlaylistId, null);
       } else {
         newItems = await getVideosInFolder(currentPlaylistId, nextColor);
-        setPlaylistItems(newItems, currentPlaylistId, { playlist_id: currentPlaylistId, folder_color: nextColor });
+        setPlaylistItems(newItems, currentPlaylistId, {
+          playlist_id: currentPlaylistId,
+          folder_color: nextColor
+        });
       }
 
       // Handle auto-play logic if current video is lost
@@ -1530,7 +1434,6 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
           setCurrentVideoIndex(0);
         }
       }
-
     } catch (error) {
       console.error('Failed to cycle play button folder:', error);
     }
@@ -1541,19 +1444,18 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
   const handleStarAlignToPlay = async () => {
     // Get the color the Star is currently displaying (video's folder assignment)
     const starDisplayColor = currentVideoFolders.length > 0 ? currentVideoFolders[0] : null;
-
     if (!starDisplayColor) {
       console.log(`[ColorSync] Video is not in any folder - nothing to align`);
       return;
     }
-
     try {
       console.log(`[ColorSync] Aligning Play to Star color: ${starDisplayColor}`);
-
       const newItems = await getVideosInFolder(currentPlaylistId, starDisplayColor);
-
       if (newItems.length > 0) {
-        setPlaylistItems(newItems, currentPlaylistId, { playlist_id: currentPlaylistId, folder_color: starDisplayColor });
+        setPlaylistItems(newItems, currentPlaylistId, {
+          playlist_id: currentPlaylistId,
+          folder_color: starDisplayColor
+        });
         // Auto-play first video if current video is not in the new view
         const currentVideoStillExists = newItems.some(v => v.id === activeVideoItem?.id);
         if (!currentVideoStillExists) {
@@ -1572,14 +1474,11 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
   const handleLikeClick = async () => {
     // Get the active video (main or second player) - use activeVideoItem which is computed above
     const targetVideo = activeVideoItem || currentVideo;
-
     if (!targetVideo || !likesPlaylistId) return;
-
     try {
       // Check if target video is liked
       const likesItems = await getPlaylistItems(likesPlaylistId);
       const targetIsLiked = likesItems.some(item => item.video_id === targetVideo.video_id);
-
       if (targetIsLiked) {
         // Remove from Likes playlist
         const likeItem = likesItems.find(item => item.video_id === targetVideo.video_id);
@@ -1592,13 +1491,7 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
         }
       } else {
         // Add to Likes playlist
-        await addVideoToPlaylist(
-          likesPlaylistId,
-          targetVideo.video_url,
-          targetVideo.video_id,
-          targetVideo.title || null,
-          targetVideo.thumbnail_url || null
-        );
+        await addVideoToPlaylist(likesPlaylistId, targetVideo.video_url, targetVideo.video_id, targetVideo.title || null, targetVideo.thumbnail_url || null);
         // Update local state if this is the current video being displayed
         if (targetVideo.id === activeVideoItem?.id) {
           setIsVideoLiked(true);
@@ -1608,7 +1501,6 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
       console.error('Failed to toggle like:', error);
     }
   };
-
   const handleColorSelect = (hex, colorId, isRightClick = false) => {
     if (showColorPicker === 'star') {
       if (isRightClick) {
@@ -1636,8 +1528,7 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
       setHoveredColorName(null);
     }
   };
-
-  const handleOrbImageUpload = (e) => {
+  const handleOrbImageUpload = e => {
     const file = e.target.files[0];
     if (file) {
       const reader = new FileReader();
@@ -1648,7 +1539,6 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
       reader.readAsDataURL(file);
     }
   };
-
   const openTwitter = async () => {
     try {
       const label = 'twitter-popup';
@@ -1663,32 +1553,27 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
       // Get current timeBank (in seconds) without subscribing to updates (avoids re-renders)
       const startingTime = useMissionStore.getState().timeBank;
       let remainingTime = startingTime;
-
       console.log(`Creating new Twitter window with TTL: ${startingTime}s`);
-
-      const getTitle = (timeLeft) => {
+      const getTitle = timeLeft => {
         const mins = Math.floor(timeLeft / 60);
         const secs = timeLeft % 60;
         return `X / Twitter (${mins}:${secs.toString().padStart(2, '0')})`;
       };
-
       const webview = new WebviewWindow(label, {
         url: 'https://x.com',
         title: getTitle(remainingTime),
         width: 1200,
         height: 800,
         resizable: true,
-        focus: true,
+        focus: true
       });
-
       webview.once('tauri://created', function () {
         console.log('Twitter window created successfully');
 
         // Start live countdown timer
         if (remainingTime > 0) {
           // Update title immediately
-          webview.setTitle(getTitle(remainingTime)).catch(() => { });
-
+          webview.setTitle(getTitle(remainingTime)).catch(() => {});
           const timerId = setInterval(async () => {
             remainingTime--;
 
@@ -1696,14 +1581,12 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
             let currentWebview = null;
             try {
               currentWebview = await WebviewWindow.getByLabel(label);
-            } catch (ignore) { }
-
+            } catch (ignore) {}
             if (!currentWebview) {
               console.log('Twitter popup window not found, stopping timer');
               clearInterval(timerId);
               return;
             }
-
             if (remainingTime <= 0) {
               // Time up!
               clearInterval(timerId);
@@ -1725,17 +1608,14 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
           }, 1000);
         }
       });
-
       webview.once('tauri://error', function (e) {
         console.error('Twitter window creation error:', e);
       });
-
     } catch (e) {
       console.error('Failed to open Twitter:', e);
     }
   };
-
-  const handleBannerUpload = (e) => {
+  const handleBannerUpload = e => {
     const file = e.target.files[0];
     if (file) {
       const reader = new FileReader();
@@ -1743,26 +1623,27 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
         const imageDataUrl = reader.result;
         // Update the banner that is currently visible
         if (viewMode === 'full') {
-          updateFullscreenBanner({ image: imageDataUrl });
+          updateFullscreenBanner({
+            image: imageDataUrl
+          });
         } else {
-          updateSplitscreenBanner({ image: imageDataUrl });
+          updateSplitscreenBanner({
+            image: imageDataUrl
+          });
         }
       };
       reader.readAsDataURL(file);
     }
   };
-
-  const startPreviewTimer = (callback) => {
+  const startPreviewTimer = callback => {
     if (hoverTimerRef.current) clearTimeout(hoverTimerRef.current);
     hoverTimerRef.current = setTimeout(callback, 2000);
   };
-
   const clearPreviewTimer = () => {
     if (hoverTimerRef.current) clearTimeout(hoverTimerRef.current);
     setPreviewPinIndex(null);
     setPreviewTabImage(null);
   };
-
   const clearPreviewTabImage = () => {
     clearPreviewTimer();
   };
@@ -1775,57 +1656,111 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
   const [rightAltNavX, setRightAltNavX] = useState(-10);
   // --- Config Store ---
   const {
-    pinFirstButtonX, pinFirstButtonSize, likeButtonX, menuButtonX, tooltipButtonX,
-    pinAnchorX, pinAnchorY, plusButtonX, plusButtonY, pinToggleY,
-    dotMenuWidth, dotMenuHeight, dotMenuY, dotSize,
-    playlistCapsuleX, playlistCapsuleY, playlistCapsuleWidth, playlistCapsuleHeight,
-    playlistHandleSize, playlistPlayIconSize, playlistChevronIconSize,
-    playlistChevronLeftX, playlistChevronRightX, playlistPlayCircleX,
-    modeHandleSize, modeHandleInternalSize,
-    orbImageScale, orbImageScaleW, orbImageScaleH, orbImageXOffset, orbImageYOffset,
-    orbSize, menuWidth, menuHeight, bottomBarHeight,
-    titleFontSize, metadataFontSize,
-    pinSize, pinWidth, pinHeight, bottomIconSize, navChevronSize,
-    orbMenuGap, setOrbMenuGap, orbButtonSpread,
+    pinFirstButtonX,
+    pinFirstButtonSize,
+    likeButtonX,
+    menuButtonX,
+    tooltipButtonX,
+    pinAnchorX,
+    pinAnchorY,
+    plusButtonX,
+    plusButtonY,
+    pinToggleY,
+    dotMenuWidth,
+    dotMenuHeight,
+    dotMenuY,
+    dotSize,
+    playlistCapsuleX,
+    playlistCapsuleY,
+    playlistCapsuleWidth,
+    playlistCapsuleHeight,
+    playlistHandleSize,
+    playlistPlayIconSize,
+    playlistChevronIconSize,
+    playlistChevronLeftX,
+    playlistChevronRightX,
+    playlistPlayCircleX,
+    modeHandleSize,
+    modeHandleInternalSize,
+    orbImageScale,
+    orbImageScaleW,
+    orbImageScaleH,
+    orbImageXOffset,
+    orbImageYOffset,
+    orbSize,
+    menuWidth,
+    menuHeight,
+    bottomBarHeight,
+    titleFontSize,
+    metadataFontSize,
+    pinSize,
+    pinWidth,
+    pinHeight,
+    bottomIconSize,
+    navChevronSize,
+    orbMenuGap,
+    setOrbMenuGap,
+    orbButtonSpread,
     // New
-    playlistToggleX, playlistTabsX, playlistInfoX, playlistInfoWidth,
-    videoChevronLeftX, videoChevronRightX, videoPlayButtonX,
-    modeSwitcherX, shuffleButtonX, gridButtonX, starButtonX,
-    updateFullscreenBanner, updateSplitscreenBanner, // Use new actions
+    playlistToggleX,
+    playlistTabsX,
+    playlistInfoX,
+    playlistInfoWidth,
+    videoChevronLeftX,
+    videoChevronRightX,
+    videoPlayButtonX,
+    modeSwitcherX,
+    shuffleButtonX,
+    gridButtonX,
+    starButtonX,
+    updateFullscreenBanner,
+    updateSplitscreenBanner,
+    // Use new actions
     // Orb State (From Config Store now)
-    customOrbImage, setCustomOrbImage,
-    isSpillEnabled, setIsSpillEnabled,
-    orbSpill, setOrbSpill,
+    customOrbImage,
+    setCustomOrbImage,
+    isSpillEnabled,
+    setIsSpillEnabled,
+    orbSpill,
+    setOrbSpill,
     // Quick Assign/Shuffle (From Config Store)
-    quickAssignColor, setQuickAssignColor,
-    quickShuffleColor, setQuickShuffleColor,
+    quickAssignColor,
+    setQuickAssignColor,
+    quickShuffleColor,
+    setQuickShuffleColor,
     // Advanced Orb Masks
-    orbAdvancedMasks, orbMaskRects,
-    orbMaskPaths, orbMaskModes, // New Path Props
+    orbAdvancedMasks,
+    orbMaskRects,
+    orbMaskPaths,
+    orbMaskModes,
+    // New Path Props
     // Orb Favorites for Overrides
     orbFavorites,
     isOrbPreviewMode,
     // Orb Navigation State (Shared)
-    orbNavPlaylistId, setOrbNavPlaylistId,
-    orbNavOrbId, setOrbNavOrbId,
-
+    orbNavPlaylistId,
+    setOrbNavPlaylistId,
+    orbNavOrbId,
+    setOrbNavOrbId,
     // Banner Navigation State (Shared)
-    activeNavigationMode, setActiveNavigationMode,
-    bannerNavPlaylistId, setBannerNavPlaylistId,
-    bannerNavBannerId, setBannerNavBannerId,
+    activeNavigationMode,
+    setActiveNavigationMode,
+    bannerNavPlaylistId,
+    setBannerNavPlaylistId,
+    bannerNavBannerId,
+    setBannerNavBannerId,
     bannerPresets
   } = useConfigStore();
-
-  const { lockApp } = useMissionStore();
-
-
+  const {
+    lockApp
+  } = useMissionStore();
 
   // --- Derived Constants ---
   const theme = THEMES[currentThemeId] || THEMES.blue;
   const trackWidth = Math.max(0, plusButtonX - pinAnchorX);
 
   // Helper to format view count
-  const formatViews = (count) => {
+  const formatViews = count => {
     if (!count) return '0';
     if (count >= 1000000000) return `${(count / 1000000000).toFixed(1)}B`;
     if (count >= 10000000) return `${(count / 1000000).toFixed(0)}M`;
@@ -1854,34 +1789,25 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
   // Computed: Orbs in the currently selected Orb-Nav playlist
   const availableOrbsInPlaylist = useMemo(() => {
     if (!orbNavPlaylistId || !orbFavorites) return [];
-    return orbFavorites.filter(orb =>
-      orb.playlistIds && orb.playlistIds.map(String).includes(String(orbNavPlaylistId))
-    );
+    return orbFavorites.filter(orb => orb.playlistIds && orb.playlistIds.map(String).includes(String(orbNavPlaylistId)));
   }, [orbNavPlaylistId, orbFavorites]);
 
   // Handler: Navigate Orb Playlists
-  const navigateOrbPlaylist = (direction) => {
+  const navigateOrbPlaylist = direction => {
     if (availableOrbPlaylists.length === 0) return;
-
     let nextIndex = 0;
-    const currentIndex = orbNavPlaylistId
-      ? availableOrbPlaylists.findIndex(p => String(p.id) === String(orbNavPlaylistId))
-      : -1;
-
+    const currentIndex = orbNavPlaylistId ? availableOrbPlaylists.findIndex(p => String(p.id) === String(orbNavPlaylistId)) : -1;
     if (direction === 'next') {
       nextIndex = (currentIndex + 1) % availableOrbPlaylists.length;
     } else {
       nextIndex = (currentIndex - 1 + availableOrbPlaylists.length) % availableOrbPlaylists.length;
     }
-
     const nextPlaylist = availableOrbPlaylists[nextIndex];
     if (nextPlaylist) {
       setOrbNavPlaylistId(nextPlaylist.id);
 
       // Auto-select first orb in new playlist
-      const orbsInNext = orbFavorites.filter(orb =>
-        orb.playlistIds && orb.playlistIds.map(String).includes(String(nextPlaylist.id))
-      );
+      const orbsInNext = orbFavorites.filter(orb => orb.playlistIds && orb.playlistIds.map(String).includes(String(nextPlaylist.id)));
       if (orbsInNext.length > 0) {
         setOrbNavOrbId(orbsInNext[0].id);
       } else {
@@ -1891,20 +1817,15 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
   };
 
   // Handler: Navigate Orbs in current Orb-Nav Playlist
-  const navigateOrb = (direction) => {
+  const navigateOrb = direction => {
     if (availableOrbsInPlaylist.length === 0) return;
-
     let nextIndex = 0;
-    const currentIndex = orbNavOrbId
-      ? availableOrbsInPlaylist.findIndex(o => o.id === orbNavOrbId)
-      : -1;
-
+    const currentIndex = orbNavOrbId ? availableOrbsInPlaylist.findIndex(o => o.id === orbNavOrbId) : -1;
     if (direction === 'next') {
       nextIndex = (currentIndex + 1) % availableOrbsInPlaylist.length;
     } else {
       nextIndex = (currentIndex - 1 + availableOrbsInPlaylist.length) % availableOrbsInPlaylist.length;
     }
-
     const nextOrb = availableOrbsInPlaylist[nextIndex];
     if (nextOrb) {
       setOrbNavOrbId(nextOrb.id);
@@ -1928,34 +1849,25 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
   // Computed: Banners in the currently selected Banner-Nav playlist
   const availableBannersInPlaylist = useMemo(() => {
     if (!bannerNavPlaylistId || !bannerPresets) return [];
-    return bannerPresets.filter(preset =>
-      preset.playlistIds && preset.playlistIds.map(String).includes(String(bannerNavPlaylistId))
-    );
+    return bannerPresets.filter(preset => preset.playlistIds && preset.playlistIds.map(String).includes(String(bannerNavPlaylistId)));
   }, [bannerNavPlaylistId, bannerPresets]);
 
   // Handler: Navigate Banner Playlists
-  const navigateBannerPlaylist = (direction) => {
+  const navigateBannerPlaylist = direction => {
     if (availableBannerPlaylists.length === 0) return;
-
     let nextIndex = 0;
-    const currentIndex = bannerNavPlaylistId
-      ? availableBannerPlaylists.findIndex(p => String(p.id) === String(bannerNavPlaylistId))
-      : -1;
-
+    const currentIndex = bannerNavPlaylistId ? availableBannerPlaylists.findIndex(p => String(p.id) === String(bannerNavPlaylistId)) : -1;
     if (direction === 'next') {
       nextIndex = (currentIndex + 1) % availableBannerPlaylists.length;
     } else {
       nextIndex = (currentIndex - 1 + availableBannerPlaylists.length) % availableBannerPlaylists.length;
     }
-
     const nextPlaylist = availableBannerPlaylists[nextIndex];
     if (nextPlaylist) {
       setBannerNavPlaylistId(nextPlaylist.id);
 
       // Auto-select first banner in new playlist
-      const bannersInNext = bannerPresets.filter(preset =>
-        preset.playlistIds && preset.playlistIds.map(String).includes(String(nextPlaylist.id))
-      );
+      const bannersInNext = bannerPresets.filter(preset => preset.playlistIds && preset.playlistIds.map(String).includes(String(nextPlaylist.id)));
       if (bannersInNext.length > 0) {
         setBannerNavBannerId(bannersInNext[0].id);
       } else {
@@ -1965,20 +1877,15 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
   };
 
   // Handler: Navigate Banners in current Banner-Nav Playlist
-  const navigateBanner = (direction) => {
+  const navigateBanner = direction => {
     if (availableBannersInPlaylist.length === 0) return;
-
     let nextIndex = 0;
-    const currentIndex = bannerNavBannerId
-      ? availableBannersInPlaylist.findIndex(b => b.id === bannerNavBannerId)
-      : -1;
-
+    const currentIndex = bannerNavBannerId ? availableBannersInPlaylist.findIndex(b => b.id === bannerNavBannerId) : -1;
     if (direction === 'next') {
       nextIndex = (currentIndex + 1) % availableBannersInPlaylist.length;
     } else {
       nextIndex = (currentIndex - 1 + availableBannersInPlaylist.length) % availableBannersInPlaylist.length;
     }
-
     const nextBanner = availableBannersInPlaylist[nextIndex];
     if (nextBanner) {
       setBannerNavBannerId(nextBanner.id);
@@ -1986,22 +1893,22 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
   };
 
   // --- Unified Navigation Handlers ---
-  const handlePlaylistNav = (direction) => { // direction: 'prev' | 'next'
+  const handlePlaylistNav = direction => {
+    // direction: 'prev' | 'next'
     if (activeNavigationMode === 'orb') {
       navigateOrbPlaylist(direction);
     } else {
       navigateBannerPlaylist(direction);
     }
   };
-
-  const handleItemNav = (direction) => { // direction: 'prev' | 'next'
+  const handleItemNav = direction => {
+    // direction: 'prev' | 'next'
     if (activeNavigationMode === 'orb') {
       navigateOrb(direction);
     } else {
       navigateBanner(direction);
     }
   };
-
   const getEffectiveOrbImage = () => {
     // -1. CHECK LIVE PREVIEW MODE (Highest Priority)
     if (isOrbPreviewMode) {
@@ -2012,7 +1919,8 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
         scale: orbImageScale,
         xOffset: orbImageXOffset,
         yOffset: orbImageYOffset,
-        isSpillEnabled: isSpillEnabled, // Use Store State
+        isSpillEnabled: isSpillEnabled,
+        // Use Store State
         orbSpill: orbSpill,
         orbAdvancedMasks: orbAdvancedMasks,
         orbMaskRects: orbMaskRects,
@@ -2049,15 +1957,10 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
       if (p) playlistName = p.name;
     }
     if (!playlistName && currentPlaylistTitle) playlistName = currentPlaylistTitle;
-
     if (!playlistName) return null;
 
     // 2. Check Orb Group Override
-    const orbGroup = orbFavorites?.find(f =>
-      f.playlistIds &&
-      (f.playlistIds.includes(playlistName) || (currentPlaylistId && f.playlistIds.includes(String(currentPlaylistId))))
-    );
-
+    const orbGroup = orbFavorites?.find(f => f.playlistIds && (f.playlistIds.includes(playlistName) || currentPlaylistId && f.playlistIds.includes(String(currentPlaylistId))));
     if (orbGroup) {
       // Collect group images
       let images = [orbGroup];
@@ -2073,7 +1976,6 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
       if (activeFolderColor && activeFolderColor !== 'all') {
         images = images.filter(img => img.folderColors && img.folderColors.includes(activeFolderColor));
       }
-
       if (images.length > 0) {
         // Use playlist ID as seed for consistency
         const seed = String(currentPlaylistId || 'default');
@@ -2083,7 +1985,8 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
         if (selected && selected.customOrbImage) {
           return {
             image: selected.customOrbImage,
-            scale: selected.orbImageScale || 1, // Use raw multiplier (e.g. 1.0), do NOT divide by 100
+            scale: selected.orbImageScale || 1,
+            // Use raw multiplier (e.g. 1.0), do NOT divide by 100
             xOffset: selected.orbImageXOffset || 0,
             yOffset: selected.orbImageYOffset || 0,
             ...selected
@@ -2093,7 +1996,6 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
     }
     return null;
   };
-
   const effectiveOrb = getEffectiveOrbImage();
   const orbImageSrc = effectiveOrb?.image || customOrbImage || playlistImage;
   const displayScale = effectiveOrb ? effectiveOrb.scale : orbImageScale;
@@ -2169,8 +2071,6 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
     }
   }, [shouldUseMergedView, hasViewCount, hasPublishedYear, finalDisplayVideoItem?.id]);
 
-
-
   // Get playlist/folder title (show preview if in preview mode)
   // Get playlist/folder title (show preview if in preview mode)
   let playlistTitle;
@@ -2203,28 +2103,141 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
   }
 
   // Group carousel badge: which group to show (activeGroupId if set, else first group containing current playlist)
-  const effectivePlaylistIdForBadge = (hasSecondPlayerVideo && secondPlayerPlaylistId) ? secondPlayerPlaylistId : currentPlaylistId;
+  const effectivePlaylistIdForBadge = hasSecondPlayerVideo && secondPlayerPlaylistId ? secondPlayerPlaylistId : currentPlaylistId;
   const groupIdsForCurrentPlaylist = effectivePlaylistIdForBadge ? getGroupIdsForPlaylist(effectivePlaylistIdForBadge) : [];
   const allGroupsForPlaylist = groupIdsForCurrentPlaylist.map(id => groups.find(g => g.id === id)).filter(Boolean);
-  const singleGroupForBadge = (activeGroupId && groups.some(g => g.id === activeGroupId))
-    ? groups.find(g => g.id === activeGroupId)
-    : (allGroupsForPlaylist[0] || groups[0] || null);
+  const singleGroupForBadge = activeGroupId && groups.some(g => g.id === activeGroupId) ? groups.find(g => g.id === activeGroupId) : allGroupsForPlaylist[0] || groups[0] || null;
 
   // Cycle group badge: cycle through ALL group carousels (not just groups containing current playlist)
-  const cycleGroupBadge = (direction) => {
+  const cycleGroupBadge = direction => {
     if (groups.length < 2) return;
-    const currentIdx = singleGroupForBadge
-      ? groups.findIndex(g => g.id === singleGroupForBadge.id)
-      : 0;
+    const currentIdx = singleGroupForBadge ? groups.findIndex(g => g.id === singleGroupForBadge.id) : 0;
     const idx = currentIdx >= 0 ? currentIdx : 0;
-    const nextIdx = direction === 'prev'
-      ? (idx - 1 + groups.length) % groups.length
-      : (idx + 1) % groups.length;
+    const nextIdx = direction === 'prev' ? (idx - 1 + groups.length) % groups.length : (idx + 1) % groups.length;
     setActiveGroupId(groups[nextIdx].id);
   };
   const canCycleGroups = groups.length >= 2;
-  return (
-    <div className="w-full pointer-events-none">
+  const sharedProps = {
+    viewMode,
+    leftAltNavX,
+    playlistCheckpoint,
+    handleCommit,
+    getInspectTitle,
+    handleRevert,
+    showPreviewMenus,
+    theme,
+    menuHeight,
+    handleAltNav,
+    isEditMode,
+    menuWidth,
+    handleShufflePlaylist,
+    playlistTitleRef,
+    titleFontSize,
+    handlePlaylistsGrid,
+    playlistTitle,
+    currentVideoFolders,
+    activeTabId,
+    activePresetId,
+    singleGroupForBadge,
+    cycleGroupBadge,
+    canCycleGroups,
+    safePresets,
+    safeTabs,
+    currentVideoFolderNames,
+    pins,
+    isPriorityPin,
+    handlePinClick,
+    activePin,
+    handleUnpin,
+    bottomBarHeight,
+    setIsMoreMenuOpen,
+    isMoreMenuOpen,
+    bottomIconSize,
+    setShowPreviewMenus,
+    toggleDevToolbar,
+    showDevToolbar,
+    setIsVisualizerEnabled,
+    isVisualizerEnabled,
+    handleBannerUpload,
+    setIsAddMenuOpen,
+    isAddMenuOpen,
+    handleAddClipboardToQuickVideos,
+    isQueueModeOpen,
+    setIsQueueModeOpen,
+    queue,
+    setPlaylistItems,
+    setCurrentVideoIndex,
+    removeFromQueue,
+    activeNavButton,
+    navChevronSize,
+    setActiveNavButton,
+    handleHistoryBack,
+    historyIndex,
+    historyStack,
+    handleHistoryForward,
+    navigatePlaylist,
+    orbMenuGap,
+    orbSize,
+    orbImageSrc,
+    displayIsSpillEnabled,
+    displayScale,
+    orbImageScaleW,
+    orbImageScaleH,
+    displayX,
+    displayY,
+    fileInputRef,
+    handleOrbImageUpload,
+    setFullscreenInfoBlanked,
+    setViewMode,
+    setCurrentPage,
+    lockApp,
+    openTwitter,
+    setActiveNavigationMode,
+    activeNavigationMode,
+    handlePlaylistNav,
+    handleItemNav,
+    showColorPicker,
+    setShowColorPicker,
+    setHoveredColorName,
+    dotMenuY,
+    dotMenuWidth,
+    dotMenuHeight,
+    dotSize,
+    quickShuffleColor,
+    handleColorSelect,
+    quickAssignColor,
+    displayVideo,
+    hoveredColorName,
+    handlePrevVideo,
+    handleVideosGrid,
+    handleNextVideo,
+    handlePlayButtonToggle,
+    playButtonRightClickRef,
+    currentFolder,
+    handleShuffle,
+    shuffleButtonX,
+    handleStarClick,
+    handleStarAlignToPlay,
+    starButtonX,
+    handlePinMouseDown,
+    handlePinMouseUp,
+    handlePinMouseLeave,
+    pinFirstButtonX,
+    activeVideoItem,
+    currentVideo,
+    isPinned,
+    isFollowerPin,
+    handleLikeClick,
+    likeButtonX,
+    isVideoLiked,
+    likeColor,
+    tooltipButtonX,
+    setIsTooltipOpen,
+    isTooltipOpen,
+    rightAltNavX,
+    videoCheckpoint
+  };
+  return <div className="w-full pointer-events-none">
       <div className="max-w-5xl mx-auto py-4 px-6 pointer-events-auto">
         {/* SVG ClipPath Generator for Partial Spillover */}
         <svg width="0" height="0" className="absolute pointer-events-none">
@@ -2232,31 +2245,53 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
             <clipPath id="orbClipPath" clipPathUnits="objectBoundingBox">
               <circle cx="0.5" cy="0.5" r="0.5" />
               {['tl', 'tr', 'bl', 'br'].map(q => {
-                if (!displayIsSpillEnabled || !displayOrbSpill[q]) return null;
-
-                const defaults = {
-                  tl: { x: -1.0, y: -0.5, w: 1.5, h: 1.0 },
-                  tr: { x: 0.5, y: -0.5, w: 1.0, h: 1.0 },
-                  bl: { x: -1.0, y: 0.5, w: 1.5, h: 1.5 },
-                  br: { x: 0.5, y: 0.5, w: 1.0, h: 1.5 }
+              if (!displayIsSpillEnabled || !displayOrbSpill[q]) return null;
+              const defaults = {
+                tl: {
+                  x: -1.0,
+                  y: -0.5,
+                  w: 1.5,
+                  h: 1.0
+                },
+                tr: {
+                  x: 0.5,
+                  y: -0.5,
+                  w: 1.0,
+                  h: 1.0
+                },
+                bl: {
+                  x: -1.0,
+                  y: 0.5,
+                  w: 1.5,
+                  h: 1.5
+                },
+                br: {
+                  x: 0.5,
+                  y: 0.5,
+                  w: 1.0,
+                  h: 1.5
+                }
+              };
+              if (!displayOrbAdvancedMasks?.[q]) {
+                const d = defaults[q];
+                return <rect key={q} x={d.x} y={d.y} width={d.w} height={d.h} />;
+              }
+              const mode = displayOrbMaskModes?.[q] || 'rect';
+              if (mode === 'path') {
+                const points = displayOrbMaskPaths?.[q] || [];
+                if (points.length < 3) return <rect key={q} x={defaults[q].x} y={defaults[q].y} width={defaults[q].w} height={defaults[q].h} />;
+                const pts = points.map(p => `${p.x / 100},${p.y / 100}`).join(' ');
+                return <polygon key={q} points={pts} />;
+              } else {
+                const r = displayOrbMaskRects?.[q] || {
+                  x: 0,
+                  y: 0,
+                  w: 50,
+                  h: 50
                 };
-
-                if (!displayOrbAdvancedMasks?.[q]) {
-                  const d = defaults[q];
-                  return <rect key={q} x={d.x} y={d.y} width={d.w} height={d.h} />;
-                }
-
-                const mode = displayOrbMaskModes?.[q] || 'rect';
-                if (mode === 'path') {
-                  const points = displayOrbMaskPaths?.[q] || [];
-                  if (points.length < 3) return <rect key={q} x={defaults[q].x} y={defaults[q].y} width={defaults[q].w} height={defaults[q].h} />;
-                  const pts = points.map(p => `${p.x / 100},${p.y / 100}`).join(' ');
-                  return <polygon key={q} points={pts} />;
-                } else {
-                  const r = displayOrbMaskRects?.[q] || { x: 0, y: 0, w: 50, h: 50 };
-                  return <rect key={q} x={r.x / 100} y={r.y / 100} width={r.w / 100} height={r.h / 100} />;
-                }
-              })}
+                return <rect key={q} x={r.x / 100} y={r.y / 100} width={r.w / 100} height={r.h / 100} />;
+              }
+            })}
             </clipPath>
           </defs>
         </svg>
@@ -2265,1131 +2300,15 @@ export default function PlayerController({ onPlaylistSelect, onVideoSelect, acti
 
         <div className={viewMode !== 'full' ? "grid grid-cols-[auto_auto] grid-rows-2 items-center justify-center gap-x-12 relative overflow-visible" : "flex items-center relative overflow-visible"}>
           {/* PLAYLIST WRAPPER */}
-          <div className={viewMode !== 'full' ? "col-start-2 row-start-2 flex items-start justify-start self-start origin-top-left scale-90 -mt-2" : "flex-1 flex items-center justify-end"}>
-            {/* PLAYLIST SECTION */}
-            <div className="flex items-center gap-4 relative z-10 flex-shrink-0">
-              <div className="absolute right-full mr-4 transition-transform" style={{ transform: `translateX(${leftAltNavX}px)` }}>
-                <div className="flex items-center gap-4 animate-in slide-in-from-right-2 duration-300">
-                  <div className="flex flex-col gap-3 w-9 h-24 items-center justify-center">
-                    {playlistCheckpoint !== null && (
-                      <><button onClick={() => handleCommit('playlist')} className="w-9 h-9 rounded-full flex items-center justify-center shadow-md bg-emerald-500 text-white active:scale-90" title={getInspectTitle('Commit playlist preview')}><Check size={20} strokeWidth={3} /></button><button onClick={() => handleRevert('playlist')} className="w-9 h-9 rounded-full flex items-center justify-center shadow-md bg-rose-500 text-white active:scale-90" title={getInspectTitle('Revert playlist preview')}><X size={20} strokeWidth={3} /></button></>
-                    )}
-                  </div>
-                  {/* Playlist Preview Navigation Menu */}
-                  {showPreviewMenus && (
-                    <div className={`w-8 ${theme.menuBg} border ${theme.menuBorder} rounded-lg shadow-sm flex flex-col justify-between items-center py-2 shrink-0 animate-in fade-in zoom-in-95 duration-200`} style={{ height: `${menuHeight}px` }}>
-                      <button onClick={() => handleAltNav('up', 'playlist')} className="text-black p-1" title={getInspectTitle('Previous playlist in preview')}><ChevronUp size={18} strokeWidth={3} /></button>
-                      <div className={`w-full h-px ${theme.bottomBar} my-1`} />
-                      <button onClick={() => handleAltNav('down', 'playlist')} className="text-black p-1" title={getInspectTitle('Next playlist in preview')}><ChevronDown size={18} strokeWidth={3} /></button>
-                    </div>
-                  )}
-                </div>
-              </div>
-              <div className={`shadow-2xl flex flex-col relative overflow-visible transition-all duration-300 group/playlist ${isEditMode ? 'ring-4 ring-sky-400/30' : 'bg-transparent rounded-2xl overflow-hidden'}`} style={{ width: `${menuWidth}px`, height: `${menuHeight}px` }}>
-                <div
-                  className="flex-grow flex flex-col items-center justify-center px-4 relative z-10 overflow-x-visible overflow-y-hidden w-full h-full min-h-0"
-                  onMouseDown={(e) => {
-                    if (e.button === 2) { // Right mouse button
-                      e.preventDefault();
-                      e.stopPropagation();
-                      console.log('Mega shuffle triggered from container (mouseDown)');
-                      handleShufflePlaylist();
-                    }
-                  }}
-                  onContextMenu={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    console.log('Mega shuffle triggered from container (contextMenu)');
-                    handleShufflePlaylist();
-                  }}
-                >
-                  <h1
-                    ref={playlistTitleRef}
-                    className="font-black text-center leading-tight line-clamp-3 tracking-tight transition-all pb-1 cursor-pointer hover:opacity-90 select-none"
-                    style={{
-                      fontSize: `${titleFontSize}px`,
-                      pointerEvents: 'auto',
-                      color: 'white',
-                      WebkitTextStroke: '1px #000',
-                      textShadow: '-1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000'
-                    }}
-                    onClick={handlePlaylistsGrid}
-                    title={`${playlistTitle} (Right-click for mega shuffle)`}
-                  >
-                    {playlistTitle}
-                  </h1>
-
-                  {/* Badges Container */}
-                  {(currentVideoFolders.length > 0 || activeTabId !== 'all' || activePresetId !== 'all' || singleGroupForBadge) && (
-                    <div className="flex flex-wrap justify-center items-center gap-x-2 gap-y-0 mb-0.5 animate-in fade-in zoom-in duration-300 overflow-visible min-w-0">
-
-                      {/* Group Carousel Badge - single group; always show left/right arrows (disabled when only one group) */}
-                      {singleGroupForBadge && (
-                        <span key={singleGroupForBadge.id} className="inline-flex items-center shrink-0 gap-0">
-                          <button
-                            type="button"
-                            onClick={(e) => { e.preventDefault(); e.stopPropagation(); cycleGroupBadge('prev'); }}
-                            disabled={!canCycleGroups}
-                            className="p-0.5 disabled:opacity-40 disabled:cursor-default"
-                            title={canCycleGroups ? (getInspectTitle('Previous group carousel') || 'Previous group carousel') : 'Only one group carousel'}
-                          >
-                            <span style={ICON_WHITE_OUTLINE}>
-                              <ChevronLeft size={14} color="white" strokeWidth={3} />
-                            </span>
-                          </button>
-                          <span
-                            className="text-[11px] font-black uppercase tracking-[0.15em] px-1 inline-flex items-center leading-none"
-                            style={BADGE_TEXT_STYLE}
-                            title={`Carousel: ${singleGroupForBadge.name}`}
-                          >
-                            {singleGroupForBadge.name}
-                          </span>
-                          <button
-                            type="button"
-                            onClick={(e) => { e.preventDefault(); e.stopPropagation(); cycleGroupBadge('next'); }}
-                            disabled={!canCycleGroups}
-                            className="p-0.5 disabled:opacity-40 disabled:cursor-default"
-                            title={canCycleGroups ? (getInspectTitle('Next group carousel') || 'Next group carousel') : 'Only one group carousel'}
-                          >
-                            <span style={ICON_WHITE_OUTLINE}>
-                              <ChevronRight size={14} color="white" strokeWidth={3} />
-                            </span>
-                          </button>
-                        </span>
-                      )}
-
-                      {/* Active Preset Badge */}
-                      {activePresetId !== 'all' && (() => {
-                        const activePreset = safePresets.find(p => p.id === activePresetId);
-                        if (!activePreset) return null;
-                        return (
-                          <span
-                            key="badge-preset"
-                            className="text-[11px] font-black uppercase tracking-[0.15em] px-1 inline-flex items-center leading-none"
-                            style={BADGE_TEXT_STYLE}
-                          >
-                            {activePreset.name}
-                          </span>
-                        );
-                      })()}
-
-                      {/* Active Tab Badge */}
-                      {activeTabId !== 'all' && (() => {
-                        const activeTab = safeTabs.find(t => t.id === activeTabId);
-                        if (!activeTab) return null;
-                        return (
-                          <span
-                            key="badge-tab"
-                            className="text-[11px] font-black uppercase tracking-[0.15em] px-1 inline-flex items-center leading-none"
-                            style={BADGE_TEXT_STYLE}
-                          >
-                            {activeTab.name}
-                          </span>
-                        );
-                      })()}
-
-                      {/* Video Folder Badge */}
-                      {currentVideoFolders.map(folderId => {
-                        const folderColor = FOLDER_COLORS.find(c => c.id === folderId);
-                        if (!folderColor) return null;
-                        const customName = currentVideoFolderNames[folderId];
-                        return (
-                          <span
-                            key={folderId}
-                            className="text-[11px] font-black uppercase tracking-[0.15em] px-1 inline-flex items-center leading-none"
-                            style={BADGE_TEXT_STYLE}
-                          >
-                            {customName || folderColor.name}
-                          </span>
-                        );
-                      })}
-                    </div>
-                  )}
-
-                </div>
-
-                {/* Priority Pin (Top Right) */}
-                {(() => {
-                  const priorityPinData = pins.find(pin => isPriorityPin(pin.video.id));
-                  if (!priorityPinData) return null;
-                  const thumbnailUrl = getThumbnailUrl(priorityPinData.video.video_id, 'default');
-                  return (
-                    <div className="absolute top-1 right-1 pointer-events-auto group/pin z-40">
-                      <button
-                        onClick={() => handlePinClick(priorityPinData.video)}
-                        className={`rounded-lg flex items-center justify-center transition-all shadow-md overflow-hidden ${activePin === priorityPinData.id ? 'ring-2 ring-sky-400' : ''}`}
-                        style={{ width: '52px', height: '39px', border: '2px solid #000' }}
-                        title={`Priority Pin: ${priorityPinData.video.title || 'Untitled Video'}`}
-                      >
-                        {thumbnailUrl ? (
-                          <img src={thumbnailUrl} alt={priorityPinData.video.title} className="w-full h-full object-cover" />
-                        ) : (
-                          <Pin size={24} fill="#fbbf24" strokeWidth={2} />
-                        )}
-                      </button>
-                      <button
-                        className="absolute -top-1 -right-1 w-4 h-4 bg-rose-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover/pin:opacity-100 transition-opacity shadow-sm border border-white z-20"
-                        onClick={(e) => handleUnpin(e, priorityPinData.video)}
-                        title="Unpin video"
-                      >
-                        <X size={10} strokeWidth={4} />
-                      </button>
-                    </div>
-                  );
-                })()}
-
-                <div className="border-t border-sky-300/50 flex items-center px-3 shrink-0 relative rounded-b-2xl bg-transparent" style={{ height: `${bottomBarHeight}px` }}>
-                  <div className="w-full h-full relative">
-                    {/* Left Side: Metadata removed (view count, author, year) */}
-
-                    {/* Right Components: Action & Navigation Buttons */}
-                    {/* Right Components: Navigation Buttons (Tab Button moved to Video Menu, Shuffle Removed) */}
-
-                    {/* Navigation Contols (Right Cluster - "Far Right") */}
-
-                    {/* Leftmost: More Options / Settings Menu */}
-                    <div className="absolute left-1/2 top-1/2" style={{ transform: `translate(calc(-50% - 141px), -50%)` }}>
-                      <button
-                        onClick={() => setIsMoreMenuOpen(!isMoreMenuOpen)}
-                        className="flex items-center justify-center group/tool"
-                        title={getInspectTitle('More options')}
-                      >
-                        <span style={ICON_WHITE_OUTLINE}>
-                          <MoreHorizontal size={Math.round(bottomIconSize * 0.5)} color="white" strokeWidth={3} />
-                        </span>
-                      </button>
-                      {isMoreMenuOpen && (
-                        <div className="absolute top-full left-1/2 -translate-x-1/2 mt-3 w-56 bg-sky-50 border border-sky-300 rounded-lg shadow-xl overflow-hidden z-[10001] animate-in fade-in zoom-in-95 duration-100 flex flex-col p-1" style={{ zIndex: 10001 }}>
-                          <button
-                            className="w-full text-left px-4 py-2 text-sm text-sky-900 hover:bg-sky-200 transition-colors flex items-center gap-2"
-                            onClick={() => {
-                              setShowPreviewMenus(!showPreviewMenus);
-                              setIsMoreMenuOpen(false);
-                            }}
-                          >
-                            {showPreviewMenus ? <EyeOff size={14} /> : <Eye size={14} />}
-                            {showPreviewMenus ? 'Hide Preview Menus' : 'Show Preview Menus'}
-                          </button>
-
-                          <button
-                            className="w-full text-left px-4 py-2 text-sm text-sky-900 hover:bg-sky-200 transition-colors flex items-center gap-2"
-                            onClick={() => {
-                              toggleDevToolbar();
-                              setIsMoreMenuOpen(false);
-                            }}
-                          >
-                            {showDevToolbar ? <EyeOff size={14} /> : <Eye size={14} />}
-                            {showDevToolbar ? 'Hide Dev Toolbar' : 'Show Dev Toolbar'}
-                          </button>
-
-                          <button
-                            className="w-full text-left px-4 py-2 text-sm text-sky-900 hover:bg-sky-200 transition-colors flex items-center gap-2"
-                            onClick={() => {
-                              document.getElementById('banner-upload').click();
-                              setIsMoreMenuOpen(false);
-                            }}
-                          >
-                            <Upload size={14} />
-                            Change Banner
-                          </button>
-
-                          <button
-                            className="w-full text-left px-4 py-2 text-sm text-sky-900 hover:bg-sky-200 transition-colors flex items-center gap-2"
-                            onClick={() => {
-                              setIsVisualizerEnabled(!isVisualizerEnabled);
-                              setIsMoreMenuOpen(false);
-                            }}
-                          >
-                            {isVisualizerEnabled ? <EyeOff size={14} /> : <Eye size={14} />}
-                            {isVisualizerEnabled ? 'Hide Audio Visualizer' : 'Show Audio Visualizer'}
-                          </button>
-                          <input
-                            type="file"
-                            id="banner-upload"
-                            className="hidden"
-                            accept="image/*"
-                            onChange={handleBannerUpload}
-                          />
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Plus Button */}
-                    <div className="absolute left-1/2 top-1/2" style={{ transform: `translate(calc(-50% - 100px), -50%)` }}>
-                      <button
-                        onClick={() => setIsAddMenuOpen(!isAddMenuOpen)}
-                        className="flex items-center justify-center group/tool"
-                        title={getInspectTitle('Add to Playlist')}
-                      >
-                        <span style={ICON_WHITE_OUTLINE}>
-                          <Plus size={Math.round(bottomIconSize * 0.5)} color="white" strokeWidth={3} />
-                        </span>
-                      </button>
-                      {isAddMenuOpen && (
-                        <div className="absolute top-full left-1/2 -translate-x-1/2 mt-3 w-56 bg-sky-50 border border-sky-300 rounded-lg shadow-xl overflow-hidden z-[10001] animate-in fade-in zoom-in-95 duration-100 flex flex-col p-1" style={{ zIndex: 10001 }}>
-                          <button
-                            className="w-full text-left px-4 py-2 text-sm text-sky-900 hover:bg-sky-200 transition-colors flex items-center gap-2"
-                            onClick={handleAddClipboardToQuickVideos}
-                          >
-                            <Plus size={14} />
-                            Add clipboard to quick videos
-                          </button>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Queue Mode OR Normal Action Controls */}
-                    {isQueueModeOpen ? (
-                      <div className="absolute top-0 bottom-0 pointer-events-auto flex items-center justify-end px-3 gap-2 w-full pr-[14px]">
-                        {/* Close button slightly above */}
-                        <button
-                          onClick={() => setIsQueueModeOpen(false)}
-                          className="absolute -top-7 right-[80px] p-1 text-white bg-black/60 hover:bg-black/80 rounded-full z-[101] shadow-md transition-all drop-shadow-[0_0_8px_rgba(255,255,255,0.4)]"
-                        >
-                          <X size={14} strokeWidth={3} />
-                        </button>
-
-                        <div className="flex items-center gap-2 overflow-x-auto w-full justify-end" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-                          <style dangerouslySetInnerHTML={{ __html: `::-webkit-scrollbar { display: none; }` }} />
-                          {queue.length === 0 ? (
-                            <div className="text-white/70 text-xs italic pr-8">Queue is empty</div>
-                          ) : (
-                            queue.map((video, idx) => {
-                              const thumbUrl = video.thumbnail_url || getThumbnailUrl(video.video_id, 'maxresdefault');
-                              return (
-                                <div
-                                  key={idx}
-                                  onClick={() => {
-                                    // Using setPlaylistItems to temporarily play this video in a queue state
-                                    setPlaylistItems([video], null, null, 'Temporary Queue');
-                                    setCurrentVideoIndex(0);
-                                    setIsQueueModeOpen(false);
-                                  }}
-                                  className="relative group cursor-pointer flex-shrink-0"
-                                  style={{
-                                    width: '52px',
-                                    height: '39px',
-                                    border: '2px solid #000',
-                                    borderRadius: '4px',
-                                    overflow: 'hidden'
-                                  }}
-                                >
-                                  <img src={thumbUrl} className="w-full h-full object-cover" />
-                                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                                    <Play size={16} color="white" fill="currentColor" />
-                                  </div>
-                                  <div
-                                    className="absolute top-0 right-0 p-0.5 bg-black/60 rounded-bl opacity-0 group-hover:opacity-100 hover:bg-black"
-                                    onClick={(e) => { e.stopPropagation(); removeFromQueue(video.id); }}
-                                    title="Remove from queue"
-                                  >
-                                    <X size={10} color="white" />
-                                  </div>
-                                </div>
-                              );
-                            })
-                          )}
-                        </div>
-                      </div>
-                    ) : (
-                      <>
-                        {/* Priority Pin Button */}
-                        <div className="absolute left-1/2 top-1/2" style={{ transform: `translate(calc(-50% - 59px), -50%)` }}>
-                          <div className="relative flex items-center justify-center">
-                            <div className={`absolute -left-6 transition-all duration-200 ${activeNavButton === 'pin' ? 'opacity-100 translate-x-0 pointer-events-auto' : 'opacity-0 translate-x-3 pointer-events-none'}`}>
-                              <button onClick={() => console.log('Pin Left Nav')} className="p-0.5 text-black hover:scale-110 active:scale-95 transition-transform" title="Priority Pin Nav Left">
-                                <ChevronLeft size={navChevronSize} strokeWidth={3} />
-                              </button>
-                            </div>
-
-                            <button
-                              onClick={() => console.log('Priority Pin button clicked')}
-                              onContextMenu={(e) => { e.preventDefault(); setActiveNavButton(prev => prev === 'pin' ? null : 'pin'); }}
-                              className={`flex items-center justify-center group/tool transition-all ${activeNavButton === 'pin' ? 'scale-110 drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]' : ''}`}
-                              title={getInspectTitle('Priority Pin (Right-click to toggle nav)')}
-                            >
-                              <span style={ICON_WHITE_OUTLINE}>
-                                <svg width={Math.round(bottomIconSize * 0.5)} height={Math.round(bottomIconSize * 0.5)} viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                                  <g transform="translate(1, 2) scale(0.9) rotate(45 12 12)">
-                                    {/* Standard Pin Body */}
-                                    <line x1="12" y1="17" x2="12" y2="22" strokeWidth="2.5"></line>
-                                    <path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24Z" strokeWidth="2.5"></path>
-                                  </g>
-                                  {/* Crown sitting on top left */}
-                                  <g transform="translate(-1, -3) scale(0.45) rotate(-20 12 12)">
-                                    <path d="M5 21L4 6l6 4 2-7 2 7 6-4-1 15H5z" fill="white" stroke="white" strokeWidth="2" strokeLinejoin="round"></path>
-                                  </g>
-                                </svg>
-                              </span>
-                            </button>
-
-                            <div className={`absolute -right-6 transition-all duration-200 ${activeNavButton === 'pin' ? 'opacity-100 translate-x-0 pointer-events-auto' : 'opacity-0 -translate-x-3 pointer-events-none'}`}>
-                              <button onClick={() => console.log('Pin Right Nav')} className="p-0.5 text-black hover:scale-110 active:scale-95 transition-transform" title="Priority Pin Nav Right">
-                                <ChevronRight size={navChevronSize} strokeWidth={3} />
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Bookmark Button (Placeholder) */}
-                        <div className="absolute left-1/2 top-1/2" style={{ transform: `translate(calc(-50% - 18px), -50%)` }}>
-                          <button
-                            onClick={() => console.log('Bookmark button clicked (placeholder)')}
-                            className="flex items-center justify-center group/tool"
-                            title={getInspectTitle('Bookmark')}
-                          >
-                            <span style={ICON_WHITE_OUTLINE}>
-                              <Bookmark size={Math.round(bottomIconSize * 0.5)} color="white" strokeWidth={3} />
-                            </span>
-                          </button>
-                        </div>
-
-                        {/* Queue Button */}
-                        <div className="absolute left-1/2 top-1/2" style={{ transform: `translate(calc(-50% + 23px), -50%)` }}>
-                          <div className="relative flex items-center justify-center">
-                            <div className={`absolute -left-6 transition-all duration-200 ${activeNavButton === 'queue' ? 'opacity-100 translate-x-0 pointer-events-auto' : 'opacity-0 translate-x-3 pointer-events-none'}`}>
-                              <button onClick={() => console.log('Queue Left Nav')} className="p-0.5 text-black hover:scale-110 active:scale-95 transition-transform" title="Queue Nav Left">
-                                <ChevronLeft size={navChevronSize} strokeWidth={3} />
-                              </button>
-                            </div>
-
-                            <button
-                              onClick={() => { setIsQueueModeOpen(true); setActiveNavButton('queue'); }}
-                              onContextMenu={(e) => { e.preventDefault(); setActiveNavButton(prev => prev === 'queue' ? null : 'queue'); }}
-                              className={`flex items-center justify-center group/tool transition-all ${activeNavButton === 'queue' ? 'scale-110 drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]' : ''}`}
-                              title={getInspectTitle('Queue (Right-click to toggle nav)')}
-                            >
-                              <span style={ICON_WHITE_OUTLINE}>
-                                <svg width={Math.round(bottomIconSize * 0.5)} height={Math.round(bottomIconSize * 0.5)} viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                                  {/* Three horizontal lines */}
-                                  <line x1="11" y1="7" x2="21" y2="7"></line>
-                                  <line x1="5" y1="13" x2="21" y2="13"></line>
-                                  <line x1="5" y1="19" x2="21" y2="19"></line>
-                                  {/* Solid play arrow in top left */}
-                                  <polygon points="5,4 10,7 5,10" fill="white" strokeWidth="0"></polygon>
-                                </svg>
-                              </span>
-                            </button>
-
-                            <div className={`absolute -right-6 transition-all duration-200 ${activeNavButton === 'queue' ? 'opacity-100 translate-x-0 pointer-events-auto' : 'opacity-0 -translate-x-3 pointer-events-none'}`}>
-                              <button onClick={() => console.log('Queue Right Nav')} className="p-0.5 text-black hover:scale-110 active:scale-95 transition-transform" title="Queue Nav Right">
-                                <ChevronRight size={navChevronSize} strokeWidth={3} />
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* History Clock Icon */}
-                        <div className="absolute left-1/2 top-1/2" style={{ transform: `translate(calc(-50% + 64px), -50%)` }}>
-                          <div className="relative flex items-center justify-center">
-                            <div className={`absolute -left-6 transition-all duration-200 ${activeNavButton === 'history' ? 'opacity-100 translate-x-0 pointer-events-auto' : 'opacity-0 translate-x-3 pointer-events-none'}`}>
-                              <button onClick={handleHistoryBack} className="p-0.5 text-black hover:scale-110 active:scale-95 transition-transform" title="History Back (Older)">
-                                <ChevronLeft size={navChevronSize} strokeWidth={3} />
-                              </button>
-                            </div>
-
-                            <button
-                              onClick={() => console.log('History button clicked')}
-                              onContextMenu={(e) => { e.preventDefault(); setActiveNavButton(prev => prev === 'history' ? null : 'history'); }}
-                              className={`flex items-center justify-center group/tool transition-all ${activeNavButton === 'history' ? 'scale-110 drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]' : ''} ${historyIndex >= Math.min(historyStack.length - 1, 5) || historyStack.length <= 1 ? (historyIndex === 0 ? 'opacity-30' : '') : ''}`}
-                              title={getInspectTitle('History (Right-click to toggle nav)')}
-                            >
-                              <span style={ICON_WHITE_OUTLINE}>
-                                <Clock size={Math.round(bottomIconSize * 0.5)} color="white" strokeWidth={3} />
-                              </span>
-                            </button>
-
-                            <div className={`absolute -right-6 transition-all duration-200 ${activeNavButton === 'history' ? 'opacity-100 translate-x-0 pointer-events-auto' : 'opacity-0 -translate-x-3 pointer-events-none'}`}>
-                              <button onClick={handleHistoryForward} className="p-0.5 text-black hover:scale-110 active:scale-95 transition-transform" title="History Forward (Newer)">
-                                <ChevronRight size={navChevronSize} strokeWidth={3} />
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Grid Button */}
-                        <div className="absolute left-1/2 top-1/2" style={{ transform: `translate(calc(-50% + 120px), -50%)` }}>
-                          <div className="relative flex items-center justify-center">
-                            <div className={`absolute -left-7 transition-all duration-200 ${activeNavButton === 'grid' ? 'opacity-100 translate-x-0 pointer-events-auto' : 'opacity-0 translate-x-3 pointer-events-none'}`}>
-                              <button onClick={() => navigatePlaylist('down')} className="p-0.5 text-black hover:scale-110 active:scale-95 transition-transform" title={getInspectTitle('Previous playlist')}>
-                                <ChevronLeft size={navChevronSize} strokeWidth={3} />
-                              </button>
-                            </div>
-
-                            <button
-                              onClick={handlePlaylistsGrid}
-                              onContextMenu={(e) => { e.preventDefault(); setActiveNavButton(prev => prev === 'grid' ? null : 'grid'); }}
-                              className={`flex items-center justify-center group/tool transition-all ${activeNavButton === 'grid' ? 'scale-110 drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]' : ''}`}
-                              title={getInspectTitle('View playlists grid (Right-click to toggle nav)')}
-                            >
-                              <span style={ICON_WHITE_OUTLINE}>
-                                <Library size={Math.round(bottomIconSize * 0.5)} color="white" strokeWidth={3} />
-                              </span>
-                            </button>
-
-                            <div className={`absolute -right-7 transition-all duration-200 ${activeNavButton === 'grid' ? 'opacity-100 translate-x-0 pointer-events-auto' : 'opacity-0 -translate-x-3 pointer-events-none'}`}>
-                              <button onClick={() => navigatePlaylist('up')} className="p-0.5 text-black hover:scale-110 active:scale-95 transition-transform" title={getInspectTitle('Next playlist')}>
-                                <ChevronRight size={navChevronSize} strokeWidth={3} />
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      </>
-                    )}
-                  </div>
-                </div>
-
-                <div className="flex-grow relative z-10" />
-              </div>
-            </div>
-          </div>
+          <PlayerControllerPlaylistMenu {...sharedProps} />
 
           {/* THE ORB SECTION - Centered / Left */}
-          <div className={`flex items-center justify-center relative group z-30 flex-shrink-0 ${viewMode !== 'full' ? 'col-start-1 row-start-1 row-span-2' : ''}`} style={{ marginLeft: viewMode === 'full' ? `${orbMenuGap}px` : '0px', marginRight: viewMode === 'full' ? `${orbMenuGap}px` : '0px' }}>
-
-            {/* Audio Visualizer - Around Orb */}
-            {/* Audio Visualizer - Around Orb */}
-            <AudioVisualizer
-              enabled={isVisualizerEnabled}
-              orbSize={orbSize}
-              barCount={113}
-              barWidth={4}
-              radius={77}
-              radiusY={77}
-              maxBarLength={76}
-              minBarLength={7}
-              colors={[255, 255, 255, 255]}
-              smoothing={0.75}
-              preAmpGain={4.0}
-              angleTotal={Math.PI * 2}
-              angleStart={-Math.PI / 2}
-              clockwise={true}
-              inward={false}
-              fftSize={2048}
-              freqMin={60}
-              freqMax={11000}
-              sensitivity={64}
-              updateRate={16}
-            />
-            <div
-              className={`rounded-full bg-sky-50 backdrop-blur-3xl shadow-2xl flex items-center justify-center transition-all relative overflow-visible z-20`}
-              style={{ width: `${orbSize}px`, height: `${orbSize}px` }}
-            >
-              {/* IMAGE LAYER */}
-              <div className="absolute inset-0 pointer-events-none transition-all duration-500 flex items-center justify-center z-40" style={{ clipPath: 'url(#orbClipPath)', overflow: 'visible' }}>
-                <img
-                  src={orbImageSrc}
-                  alt=""
-                  className="max-w-none transition-all duration-500"
-                  style={{
-                    width: displayIsSpillEnabled ? `${orbSize * displayScale * orbImageScaleW}px` : '100%',
-                    height: displayIsSpillEnabled ? `${orbSize * displayScale * orbImageScaleH}px` : '100%',
-                    transform: displayIsSpillEnabled ? `translate(${displayX}px, ${displayY}px)` : 'none',
-                    objectFit: displayIsSpillEnabled ? 'contain' : 'cover'
-                  }}
-                />
-              </div>
-
-              {/* Adjuster Border Guide */}
-              {/* GLASS INTERLAY */}
-              <div className="absolute inset-0 z-10 overflow-hidden rounded-full pointer-events-none"><div className="absolute inset-0 bg-sky-200/10" /></div>
-              <div className="absolute inset-0 bg-gradient-to-tr from-white/30 via-transparent to-transparent opacity-60 z-10 pointer-events-none rounded-full" />
-
-              <input type="file" ref={fileInputRef} onChange={handleOrbImageUpload} accept="image/*" className="hidden" />
-              <button className="absolute left-1/2 top-0 -translate-x-1/2 -translate-y-1/2 rounded-full flex items-center justify-center bg-white shadow-xl hover:scale-110 active:scale-95 group/btn z-50 border-2 border-black opacity-0 group-hover:opacity-100 transition-all duration-300" style={{ width: `28px`, height: `28px` }} onClick={() => fileInputRef.current.click()} title={getInspectTitle('Upload orb image')}><Upload size={16} className={theme.accent} strokeWidth={3} /></button>
-
-              {/* Orb Config Button (Top Left) */}
-              <button
-                onClick={() => {
-                  if (viewMode === 'full') {
-                    setFullscreenInfoBlanked(true);
-                    requestAnimationFrame(() => {
-                      setViewMode('half');
-                      setCurrentPage('orb-config');
-                    });
-                  } else {
-                    setCurrentPage('orb-config');
-                  }
-                }}
-                className="absolute rounded-full flex items-center justify-center bg-white shadow-xl hover:scale-110 active:scale-95 group/btn z-50 border-2 border-black opacity-0 group-hover:opacity-100 transition-all duration-300"
-                style={{ left: '15%', top: '15%', transform: 'translate(-50%, -50%)', width: `28px`, height: `28px` }}
-                title={getInspectTitle('Orb Config') || 'Orb Config'}
-              >
-                <Circle size={14} className="text-black" strokeWidth={2.5} />
-              </button>
-
-              {/* Settings Button (Top Right) */}
-              <button onClick={() => {
-                if (viewMode === 'full') {
-                  setFullscreenInfoBlanked(true);
-                  requestAnimationFrame(() => {
-                    setViewMode('half');
-                    setCurrentPage('app');
-                  });
-                } else {
-                  setCurrentPage('app');
-                }
-              }} className="absolute rounded-full flex items-center justify-center bg-white shadow-xl hover:scale-110 active:scale-95 group/btn z-50 border-2 border-black opacity-0 group-hover:opacity-100 transition-all duration-300" style={{ left: '85%', top: '15%', transform: 'translate(-50%, -50%)', width: `28px`, height: `28px` }} title={getInspectTitle('Settings') || 'Settings'}>
-                <Settings size={14} className="text-black" strokeWidth={2.5} />
-              </button>
-
-              {/* Home Hub Button (Bottom Center) */}
-              <button onClick={lockApp} className="absolute rounded-full flex items-center justify-center bg-white shadow-xl hover:scale-110 active:scale-95 group/btn z-50 border-2 border-black opacity-0 group-hover:opacity-100 transition-all duration-300" style={{ left: '50%', top: '100%', transform: 'translate(-50%, -50%)', width: `28px`, height: `28px` }} title="Home Hub">
-                <Home size={14} className="text-black" strokeWidth={2.5} />
-              </button>
-
-              {/* Twitter Button (Bottom Left) */}
-              <button onClick={openTwitter} className="absolute rounded-full flex items-center justify-center bg-white shadow-xl hover:scale-110 active:scale-95 group/btn z-50 border-2 border-black opacity-0 group-hover:opacity-100 transition-all duration-300" style={{ left: '15%', top: '85%', transform: 'translate(-50%, -50%)', width: `28px`, height: `28px` }} title="Open X (Twitter)">
-                <Twitter size={14} className="text-black" strokeWidth={2.5} />
-              </button>
-
-              {/* Navigation Mode Toggle (Bottom Right) */}
-              <button
-                onClick={() => setActiveNavigationMode(activeNavigationMode === 'orb' ? 'banner' : 'orb')}
-                className={`absolute rounded-full flex items-center justify-center bg-white shadow-xl hover:scale-110 active:scale-95 group/btn z-50 border-2 border-black text-black opacity-0 group-hover:opacity-100 transition-all duration-300`}
-                style={{ left: '85%', top: '85%', transform: 'translate(-50%, -50%)', width: `28px`, height: `28px` }}
-                title={activeNavigationMode === 'orb' ? "Switch to Banner Navigation" : "Switch to Orb Navigation"}
-              >
-                {activeNavigationMode === 'orb' ? (
-                  <Circle size={14} className="text-black" strokeWidth={2.5} />
-                ) : (
-                  <Layout size={14} className="text-black" strokeWidth={2.5} />
-                )}
-              </button>
-
-              {/* Prev Playlist */}
-              <button
-                onClick={() => handlePlaylistNav('prev')}
-                className="absolute rounded-full flex items-center justify-center bg-white shadow-xl hover:scale-110 active:scale-95 group/btn z-50 border-2 border-black opacity-0 group-hover:opacity-100 transition-all duration-300"
-                style={{ left: '2%', top: '38%', transform: 'translate(-50%, -50%)', width: `28px`, height: `28px` }}
-                title={activeNavigationMode === 'orb' ? "Previous Orb Playlist" : "Previous Banner Category"}
-              >
-                <ChevronsLeft size={14} className="text-black" strokeWidth={2.5} />
-              </button>
-
-              {/* Prev Item */}
-              <button
-                onClick={() => handleItemNav('prev')}
-                className="absolute rounded-full flex items-center justify-center bg-white shadow-xl hover:scale-110 active:scale-95 group/btn z-50 border-2 border-black opacity-0 group-hover:opacity-100 transition-all duration-300"
-                style={{ left: '2%', top: '62%', transform: 'translate(-50%, -50%)', width: `28px`, height: `28px` }}
-                title={activeNavigationMode === 'orb' ? "Previous Orb" : "Previous Banner"}
-              >
-                <ChevronLeft size={14} className="text-black" strokeWidth={2.5} />
-              </button>
-
-              {/* Next Playlist */}
-              <button
-                onClick={() => handlePlaylistNav('next')}
-                className="absolute rounded-full flex items-center justify-center bg-white shadow-xl hover:scale-110 active:scale-95 group/btn z-50 border-2 border-black opacity-0 group-hover:opacity-100 transition-all duration-300"
-                style={{ left: '98%', top: '38%', transform: 'translate(-50%, -50%)', width: `28px`, height: `28px` }}
-                title={activeNavigationMode === 'orb' ? "Next Orb Playlist" : "Next Banner Category"}
-              >
-                <ChevronsRight size={14} className="text-black" strokeWidth={2.5} />
-              </button>
-
-              {/* Next Item */}
-              <button
-                onClick={() => handleItemNav('next')}
-                className="absolute rounded-full flex items-center justify-center bg-white shadow-xl hover:scale-110 active:scale-95 group/btn z-50 border-2 border-black opacity-0 group-hover:opacity-100 transition-all duration-300"
-                style={{ left: '98%', top: '62%', transform: 'translate(-50%, -50%)', width: `28px`, height: `28px` }}
-                title={activeNavigationMode === 'orb' ? "Next Orb" : "Next Banner"}
-              >
-                <ChevronRight size={14} className="text-black" strokeWidth={2.5} />
-              </button>
-
-            </div>
-          </div>
+          <PlayerControllerOrbMenu {...sharedProps} />
 
           {/* VIDEO SECTION */}
-          <div className={viewMode !== 'full' ? "col-start-2 row-start-1 flex items-end justify-start self-end origin-bottom-left scale-90 -mb-2 -translate-y-[20px]" : "flex-1 flex items-center justify-start"}>
-            <div className="flex items-center gap-4 relative z-10 flex-shrink-0">
-              <div className={`shadow-2xl flex flex-col relative overflow-visible transition-all duration-300 ${isEditMode ? 'ring-4 ring-sky-400/30' : 'bg-transparent rounded-2xl'}`} style={{ width: `${menuWidth}px`, height: `${menuHeight}px` }}>
-                {showColorPicker && (<button onClick={() => { setShowColorPicker(null); setHoveredColorName(null); }} className="absolute -top-3 -right-3 w-7 h-7 bg-rose-500 text-white rounded-full flex items-center justify-center hover:bg-rose-600 z-50 shadow-lg border-2 border-white transition-all active:scale-90" title={getInspectTitle('Close color picker')}><X size={16} strokeWidth={3} /></button>)}
-                <div className="absolute top-0 left-0 w-full flex items-center -translate-y-1/2 z-40 px-2 pointer-events-none h-0">
-                  {/* Normal pins track removed per user request */}
-                </div>
-                {/* Header Metadata - Centered above (Mirrors Playlist Title) */}
-                {/* Header Metadata - Removed from here, moved to Playlist Menu */}
-
-                <div className="flex-grow flex flex-col items-center justify-center px-4 relative z-10 overflow-hidden">
-                  {showColorPicker ? (
-                    <div className="flex flex-col items-center animate-in zoom-in duration-200" style={{ transform: `translateY(${dotMenuY}px)` }}>
-                      <p className="text-[9px] font-black uppercase text-sky-600 tracking-[0.2em] mb-3">Accent: {showColorPicker}</p>
-                      <div className="grid grid-cols-7 gap-1.5 p-2.5 bg-white/60 backdrop-blur-md rounded-2xl border border-sky-200 shadow-inner overflow-hidden flex items-center justify-center" style={{ width: `${dotMenuWidth}px`, height: `${dotMenuHeight}px` }}>
-                        {/* Add "All" option for shuffle */}
-                        {showColorPicker === 'shuffle' && (
-                          <div
-                            onMouseEnter={() => setHoveredColorName('All')}
-                            onMouseLeave={() => setHoveredColorName(null)}
-                            className="rounded-full cursor-pointer border-2 border-white shadow-sm hover:scale-125 transition-transform shrink-0 relative"
-                            style={{
-                              backgroundColor: '#ffffff',
-                              width: `${dotSize}px`,
-                              height: `${dotSize}px`,
-                              borderColor: quickShuffleColor === 'all' ? '#000' : 'white',
-                              borderWidth: quickShuffleColor === 'all' ? '3px' : '2px'
-                            }}
-                            onClick={() => handleColorSelect('#ffffff', 'all', false)}
-                            onContextMenu={(e) => {
-                              e.preventDefault();
-                              handleColorSelect('#ffffff', 'all', true);
-                            }}
-                            title={quickShuffleColor === 'all' ? 'All (Quick Shuffle - Right click to change)' : 'All (Right click to set as Quick Shuffle)'}
-                          />
-                        )}
-                        {COLORS.map((c) => (
-                          <div
-                            key={c.hex}
-                            onMouseEnter={() => setHoveredColorName(c.name)}
-                            onMouseLeave={() => setHoveredColorName(null)}
-                            className="rounded-full cursor-pointer border-2 border-white shadow-sm hover:scale-125 transition-transform shrink-0 relative"
-                            style={{
-                              backgroundColor: c.hex,
-                              width: `${dotSize}px`,
-                              height: `${dotSize}px`,
-                              borderColor: showColorPicker === 'star'
-                                ? (c.id === quickAssignColor ? '#000' : 'white')
-                                : (showColorPicker === 'shuffle'
-                                  ? (c.id === quickShuffleColor ? '#000' : 'white')
-                                  : 'white'),
-                              borderWidth: showColorPicker === 'star'
-                                ? (c.id === quickAssignColor ? '3px' : '2px')
-                                : (showColorPicker === 'shuffle'
-                                  ? (c.id === quickShuffleColor ? '3px' : '2px')
-                                  : '2px')
-                            }}
-                            onClick={() => handleColorSelect(c.hex, c.id, false)}
-                            onContextMenu={(e) => {
-                              e.preventDefault();
-                              handleColorSelect(c.hex, c.id, true);
-                            }}
-                            title={
-                              showColorPicker === 'star'
-                                ? (c.id === quickAssignColor ? `${c.name} (Quick Assign - Right click to change)` : `${c.name} (Right click to set as Quick Assign)`)
-                                : (showColorPicker === 'shuffle'
-                                  ? (c.id === quickShuffleColor ? `${c.name} (Quick Shuffle - Right click to change)` : `${c.name} (Right click to set as Quick Shuffle)`)
-                                  : c.name)
-                            }
-                          />
-                        ))}
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="w-full flex flex-col justify-center transition-all relative h-full">
-                      <h1
-                        className="font-black text-center leading-tight line-clamp-3 tracking-tight transition-all pb-1"
-                        style={{
-                          fontSize: `${titleFontSize}px`,
-                          color: 'white',
-                          WebkitTextStroke: '1px #000',
-                          textShadow: '-1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000'
-                        }}
-                      >
-                        {displayVideo.title}
-                      </h1>
-                    </div>
-                  )}
-                </div>
-                <div className="border-t border-sky-300/50 flex items-center px-3 shrink-0 relative rounded-b-2xl bg-transparent" style={{ height: `${bottomBarHeight}px` }}>
-                  {showColorPicker ? (<div className="flex items-center justify-center w-full h-full animate-in fade-in slide-in-from-bottom-1 duration-300"><span className="text-[10px] font-black uppercase tracking-[0.3em] text-sky-700/80">{hoveredColorName || `Select ${showColorPicker} color`}</span></div>) : (
-                    <div className="w-full h-full relative">
-                      {/* Navigation Controls - Now Absolute Centered */}
-                      {/* Navigation Contols (Left Cluster - "Far Left") - Mirrored from Playlist */}
-                      {/* Previous Video - Left of Grid */}
-                      <button
-                        onClick={handlePrevVideo}
-                        className="absolute left-1/2 top-1/2 p-0.5 text-black"
-                        style={{ transform: `translate(calc(-50% - 148px), -50%)` }}
-                        title={getInspectTitle('Previous video')}
-                      >
-                        <ChevronLeft size={navChevronSize} strokeWidth={3} />
-                      </button>
-
-                      {/* Video Grid Button - Center of Cluster */}
-                      <button
-                        onClick={handleVideosGrid}
-                        onContextMenu={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          if (viewMode === 'full') {
-                            setFullscreenInfoBlanked(true);
-                            requestAnimationFrame(() => {
-                              setViewMode('half');
-                              setCurrentPage('history');
-                            });
-                          } else {
-                            setCurrentPage('history');
-                          }
-                        }}
-                        className="absolute left-1/2 top-1/2 flex items-center justify-center group/tool"
-                        style={{ transform: `translate(calc(-50% - 120px), -50%)` }}
-                        title={getInspectTitle('View videos grid (Right-click for history)')}
-                      >
-                        <span style={ICON_WHITE_OUTLINE}>
-                          <svg
-                            width={Math.round(bottomIconSize * 0.55)}
-                            height={Math.round(bottomIconSize * 0.55)}
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            style={{ color: 'white' }}
-                          >
-                            {/* 3x3 grid of dots like a dice face */}
-                            <circle cx="6" cy="6" r="2" fill="currentColor" />
-                            <circle cx="12" cy="6" r="2" fill="currentColor" />
-                            <circle cx="18" cy="6" r="2" fill="currentColor" />
-                            <circle cx="6" cy="12" r="2" fill="currentColor" />
-                            <circle cx="12" cy="12" r="2" fill="currentColor" />
-                            <circle cx="18" cy="12" r="2" fill="currentColor" />
-                            <circle cx="6" cy="18" r="2" fill="currentColor" />
-                            <circle cx="12" cy="18" r="2" fill="currentColor" />
-                            <circle cx="18" cy="18" r="2" fill="currentColor" />
-                          </svg>
-                        </span>
-                      </button>
-
-                      {/* Next Video - Right of Grid */}
-                      <button
-                        onClick={handleNextVideo}
-                        className="absolute left-1/2 top-1/2 p-0.5 text-black"
-                        style={{ transform: `translate(calc(-50% - 92px), -50%)` }}
-                        title={getInspectTitle('Next video')}
-                      >
-                        <ChevronRight size={navChevronSize} strokeWidth={3} />
-                      </button>
-
-                      <button
-                        onClick={() => handlePlayButtonToggle('forward')}
-                        onContextMenu={(e) => {
-                          e.preventDefault();
-                          const now = Date.now();
-                          if (now - playButtonRightClickRef.current < 300) {
-                            // Double right click detected -> Reset to all
-                            handlePlayButtonToggle('reset');
-                          } else {
-                            // Single right click -> Reverse cycle
-                            handlePlayButtonToggle('reverse');
-                          }
-                          playButtonRightClickRef.current = now;
-                        }}
-                        className="absolute left-1/2 top-1/2 flex items-center justify-center group/tool"
-                        style={{ transform: `translate(calc(-50% - 60px), -50%)` }}
-                        title={getInspectTitle('Cycle Folder Filter (Left: Forward, Right: Reverse)')}
-                      >
-                        {(() => {
-                          const activeColorData = currentFolder ? FOLDER_COLORS.find(c => c.id === currentFolder.folder_color) : null;
-                          const activeColorHex = activeColorData ? activeColorData.hex : '#cbd5e1';
-                          const isColored = !!activeColorData;
-
-                          if (isColored) {
-                            return (
-                              <span style={ICON_WHITE_OUTLINE}>
-                                <Play size={Math.round(bottomIconSize * 0.5)}
-                                  color={activeColorHex}
-                                  fill={activeColorHex}
-                                  strokeWidth={0}
-                                />
-                              </span>
-                            );
-                          }
-                          return (
-                            <span style={ICON_WHITE_OUTLINE}>
-                              <Play size={Math.round(bottomIconSize * 0.5)} color="white" fill="white" strokeWidth={0} />
-                            </span>
-                          );
-                        })()}
-                      </button>
-
-                      {/* Tool Buttons - Absolute Centered */}
-                      <button
-                        onClick={() => handleShuffle()}
-                        onContextMenu={(e) => { e.preventDefault(); setShowColorPicker('shuffle'); }}
-                        className="absolute left-1/2 top-1/2 flex items-center justify-center group/tool"
-                        style={{ transform: `translate(calc(-50% + ${shuffleButtonX}px), -50%)` }}
-                        title={getInspectTitle('Shuffle videos')}
-                      >
-                        {(() => {
-                          const shuffleColorObj = quickShuffleColor === 'all'
-                            ? { hex: '#000', name: 'All' }
-                            : (FOLDER_COLORS.find(c => c.id === quickShuffleColor) || FOLDER_COLORS.find(c => c.id === 'indigo'));
-                          if (shuffleColorObj.hex === '#000') {
-                            return (
-                              <span style={ICON_WHITE_OUTLINE}>
-                                <Shuffle size={Math.round(bottomIconSize * 0.5)} color="white" strokeWidth={3} />
-                              </span>
-                            );
-                          }
-                          return (
-                            <Shuffle size={Math.round(bottomIconSize * 0.5)} color={shuffleColorObj.hex} strokeWidth={3} />
-                          );
-                        })()}
-                      </button>
-
-                      <button
-                        onClick={() => handleStarClick()}
-                        onContextMenu={(e) => { e.preventDefault(); handleStarAlignToPlay(); }}
-                        className="absolute left-1/2 top-1/2 flex items-center justify-center group/tool"
-                        style={{ transform: `translate(calc(-50% + ${starButtonX}px), -50%)` }}
-                        title={getInspectTitle('Star button (Left: assign to folder, Right: filter to this color)')}
-                      >
-                        {(() => {
-                          const firstFolder = currentVideoFolders.length > 0 ? currentVideoFolders[0] : null;
-                          const folderColorObj = firstFolder ? FOLDER_COLORS.find(c => c.id === firstFolder) : null;
-
-                          if (folderColorObj) {
-                            return (
-                              <span style={ICON_WHITE_OUTLINE}>
-                                <Star size={Math.round(bottomIconSize * 0.5)} color={folderColorObj.hex} fill={folderColorObj.hex} strokeWidth={3} />
-                              </span>
-                            );
-                          }
-                          return (
-                            <span style={ICON_WHITE_OUTLINE}>
-                              <Star size={Math.round(bottomIconSize * 0.5)} color="white" fill="transparent" strokeWidth={3} />
-                            </span>
-                          );
-                        })()}
-                      </button>
-
-                      <button
-                        onMouseDown={handlePinMouseDown}
-                        onMouseUp={handlePinMouseUp}
-                        onMouseLeave={handlePinMouseLeave}
-                        onContextMenu={(e) => {
-                          e.preventDefault();
-                          if (viewMode === 'full') {
-                            setFullscreenInfoBlanked(true);
-                            requestAnimationFrame(() => {
-                              setViewMode('half');
-                              setCurrentPage('pins');
-                            });
-                          } else {
-                            setCurrentPage('pins');
-                          }
-                        }}
-                        className="absolute left-1/2 top-1/2 flex items-center justify-center group/tool"
-                        style={{ transform: `translate(calc(-50% + ${pinFirstButtonX}px), -50%)` }}
-                        title={getInspectTitle('Pin Video (Click: Pin/Follower, Hold: Priority, Double-click: Unpin, Right-click: Pins Page)')}
-                      >
-                        {(() => {
-                          const targetVideo = activeVideoItem || currentVideo;
-                          const isPriority = targetVideo && isPriorityPin(targetVideo.id);
-                          const isNormalPinned = targetVideo && isPinned(targetVideo.id) && !isPriority;
-                          const isFollower = targetVideo && isFollowerPin(targetVideo.id);
-
-                          // Visual Logic
-                          // Priority: Amber border (#fbbf24), Amber fill
-                          // Normal: Black border (#000000), Blue fill (#3b82f6)
-                          // Inactive: Black border, black icon
-
-                          let iconColor = 'white';
-                          let iconFill = 'transparent';
-                          let strokeWidth = 2.5;
-
-                          if (isPriority) {
-                            iconColor = '#fbbf24';
-                            iconFill = '#fbbf24';
-                            strokeWidth = 1.5; // Stroke needed for needle visibility
-                          } else if (isNormalPinned) {
-                            iconColor = '#3b82f6';
-                            iconFill = '#3b82f6';
-                            strokeWidth = 1.5; // Stroke needed for needle visibility
-                          }
-
-                          const iconSize = Math.round(bottomIconSize * 0.5);
-
-                          return (
-                            <span style={ICON_WHITE_OUTLINE}>
-                              {isFollower ? (
-                                /* Follower Pin Icon - 2 pins stacked diagonally */
-                                <svg width={iconSize} height={iconSize} viewBox="0 0 24 24" fill="none" stroke={iconColor} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round">
-                                  <g transform="translate(-3, -3) scale(0.75)">
-                                    <path d="M12 17v5" fill={iconFill} />
-                                    <path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6a3 3 0 0 0-6 0v4.76Z" fill={iconFill} />
-                                  </g>
-                                  <g transform="translate(3, 3) scale(0.75)">
-                                    <path d="M12 17v5" fill={iconFill} />
-                                    <path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6a3 3 0 0 0-6 0v4.76Z" fill={iconFill} />
-                                  </g>
-                                </svg>
-                              ) : (
-                                <Pin size={iconSize} color={iconColor} fill={iconFill} strokeWidth={strokeWidth} />
-                              )}
-                            </span>
-                          );
-                        })()}
-                      </button>
-
-                      <button
-                        onClick={handleLikeClick}
-                        onContextMenu={(e) => {
-                          e.preventDefault();
-                          if (viewMode === 'full') {
-                            setFullscreenInfoBlanked(true);
-                            requestAnimationFrame(() => {
-                              setViewMode('half');
-                              setCurrentPage('likes');
-                            });
-                          } else {
-                            setCurrentPage('likes');
-                          }
-                        }}
-                        className="absolute left-1/2 top-1/2 flex items-center justify-center group/tool"
-                        style={{ transform: `translate(calc(-50% + ${likeButtonX}px), -50%)` }}
-                        title={getInspectTitle('Like button (Right-click for Likes)')}
-                      >
-                        {isVideoLiked ? (
-                          <span style={ICON_WHITE_OUTLINE}>
-                            <ThumbsUp size={Math.round(bottomIconSize * 0.5)} color={likeColor} fill={likeColor} strokeWidth={3} />
-                          </span>
-                        ) : (
-                          <span style={ICON_WHITE_OUTLINE}>
-                            <ThumbsUp size={Math.round(bottomIconSize * 0.5)} color="white" fill="transparent" strokeWidth={3} />
-                          </span>
-                        )}
-                      </button>
-
-                      {/* Tooltip Button */}
-                      <div className="absolute left-1/2 top-1/2" style={{ transform: `translate(calc(-50% + ${tooltipButtonX}px), -50%)` }}>
-                        <button
-                          onClick={() => setIsTooltipOpen(!isTooltipOpen)}
-                          className="flex items-center justify-center group/tool relative"
-                          title={getInspectTitle('Controls Help')}
-                        >
-                          <span style={ICON_WHITE_OUTLINE}>
-                            <Info size={Math.round(bottomIconSize * 0.5)} color="white" strokeWidth={3} />
-                          </span>
-                        </button>
-
-                        {isTooltipOpen && (
-                          <div className="absolute top-full right-0 mt-3 w-80 bg-white/95 backdrop-blur-xl border border-sky-100 rounded-2xl shadow-2xl overflow-hidden z-[10002] animate-in fade-in zoom-in-95 duration-200 p-4 text-xs text-sky-900 font-medium" style={{ zIndex: 10002 }}>
-                            <div className="flex flex-col gap-4">
-
-                              {/* Play Button */}
-                              <div className="flex gap-3">
-                                <div className="shrink-0 w-8 h-8 bg-sky-50 rounded-full flex items-center justify-center border border-sky-100 shadow-sm text-sky-600">
-                                  <Play size={14} fill="currentColor" strokeWidth={0} />
-                                </div>
-                                <div className="flex flex-col gap-1.5 pt-0.5">
-                                  <div className="flex items-center gap-2 text-slate-600">
-                                    <div className="flex gap-1">
-                                      {/* Left Click Icon */}
-                                      <svg width="12" height="16" viewBox="0 0 12 16" fill="none" className="text-sky-500">
-                                        <rect x="0.5" y="0.5" width="11" height="15" rx="3.5" stroke="currentColor" />
-                                        <line x1="6" y1="0.5" x2="6" y2="6" stroke="currentColor" />
-                                        <line x1="0.5" y1="6" x2="11.5" y2="6" stroke="currentColor" />
-                                        <path d="M1 4C1 2.34315 2.34315 1 4 1H6V6H1V4Z" fill="currentColor" />
-                                      </svg>
-                                      {/* Right Click Icon */}
-                                      <svg width="12" height="16" viewBox="0 0 12 16" fill="none" className="text-sky-500">
-                                        <rect x="0.5" y="0.5" width="11" height="15" rx="3.5" stroke="currentColor" />
-                                        <line x1="6" y1="0.5" x2="6" y2="6" stroke="currentColor" />
-                                        <line x1="0.5" y1="6" x2="11.5" y2="6" stroke="currentColor" />
-                                        <path d="M6 1H8C9.65685 1 11 2.34315 11 4V6H6V1Z" fill="currentColor" />
-                                      </svg>
-                                    </div>
-                                    <span className="font-semibold text-sky-900/80">Cycle Folder Filter</span>
-                                  </div>
-                                  <div className="flex items-center gap-2 text-slate-500">
-                                    {/* Double Click (Two dots/badges) */}
-                                    <div className="flex items-center justify-center w-6 h-4 bg-sky-100 rounded text-[9px] font-bold text-sky-700 tracking-tighter px-0.5">
-                                      2x
-                                    </div>
-                                    <span>Reset to All Videos</span>
-                                  </div>
-                                </div>
-                              </div>
-
-                              {/* Pin Button */}
-                              <div className="flex gap-3">
-                                <div className="shrink-0 w-8 h-8 bg-amber-50 rounded-full flex items-center justify-center border border-amber-100 shadow-sm text-amber-500">
-                                  <Pin size={14} fill="currentColor" strokeWidth={0} />
-                                </div>
-                                <div className="flex flex-col gap-1.5 pt-0.5">
-                                  <div className="flex items-center gap-2 text-slate-600">
-                                    <svg width="12" height="16" viewBox="0 0 12 16" fill="none" className="text-amber-500">
-                                      <rect x="0.5" y="0.5" width="11" height="15" rx="3.5" stroke="currentColor" />
-                                      <line x1="6" y1="0.5" x2="6" y2="6" stroke="currentColor" />
-                                      <line x1="0.5" y1="6" x2="11.5" y2="6" stroke="currentColor" />
-                                      <path d="M1 4C1 2.34315 2.34315 1 4 1H6V6H1V4Z" fill="currentColor" />
-                                    </svg>
-                                    <span className="font-semibold text-sky-900/80">Normal Pin</span>
-                                  </div>
-                                  <div className="flex items-center gap-2 text-slate-500">
-                                    {/* Long Press Icon */}
-                                    <Clock size={12} className="text-amber-500" strokeWidth={2.5} />
-                                    <span>Hold for Priority Pin</span>
-                                  </div>
-                                </div>
-                              </div>
-
-                              {/* Like Button */}
-                              <div className="flex gap-3">
-                                <div className="shrink-0 w-8 h-8 bg-indigo-50 rounded-full flex items-center justify-center border border-indigo-100 shadow-sm text-indigo-500">
-                                  <ThumbsUp size={14} fill="currentColor" strokeWidth={0} />
-                                </div>
-                                <div className="flex flex-col gap-1.5 pt-1.5">
-                                  <div className="flex items-center gap-2 text-slate-600">
-                                    <svg width="12" height="16" viewBox="0 0 12 16" fill="none" className="text-indigo-500">
-                                      <rect x="0.5" y="0.5" width="11" height="15" rx="3.5" stroke="currentColor" />
-                                      <line x1="6" y1="0.5" x2="6" y2="6" stroke="currentColor" />
-                                      <line x1="0.5" y1="6" x2="11.5" y2="6" stroke="currentColor" />
-                                      <path d="M6 1H8C9.65685 1 11 2.34315 11 4V6H6V1Z" fill="currentColor" />
-                                    </svg>
-                                    <span className="font-semibold text-sky-900/80">Go to Likes Page</span>
-                                  </div>
-                                </div>
-                              </div>
-
-                              {/* Star Button */}
-                              <div className="flex gap-3">
-                                <div className="shrink-0 w-8 h-8 bg-purple-50 rounded-full flex items-center justify-center border border-purple-100 shadow-sm text-purple-500">
-                                  <Star size={14} fill="currentColor" strokeWidth={0} />
-                                </div>
-                                <div className="flex flex-col gap-1.5 pt-1.5">
-                                  <div className="flex items-center gap-2 text-slate-600">
-                                    <svg width="12" height="16" viewBox="0 0 12 16" fill="none" className="text-purple-500">
-                                      <rect x="0.5" y="0.5" width="11" height="15" rx="3.5" stroke="currentColor" />
-                                      <line x1="6" y1="0.5" x2="6" y2="6" stroke="currentColor" />
-                                      <line x1="0.5" y1="6" x2="11.5" y2="6" stroke="currentColor" />
-                                      <path d="M6 1H8C9.65685 1 11 2.34315 11 4V6H6V1Z" fill="currentColor" />
-                                    </svg>
-                                    <span className="font-semibold text-sky-900/80">Assign Quick Color</span>
-                                  </div>
-                                </div>
-                              </div>
-
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-              <div className="absolute left-full ml-4 transition-transform" style={{ transform: `translateX(${rightAltNavX}px)` }}>
-              </div>
-              <div className="absolute left-full ml-4 transition-transform" style={{ transform: `translateX(${rightAltNavX}px)` }}>
-                <div className="flex items-center gap-4 animate-in slide-in-from-left-2 duration-300">
-                  {/* Video Preview Navigation Menu */}
-                  {showPreviewMenus && (
-                    <div className={`w-8 ${theme.menuBg} border ${theme.menuBorder} rounded-lg shadow-sm flex flex-col justify-between items-center py-2 shrink-0 animate-in fade-in zoom-in-95 duration-200`} style={{ height: `${menuHeight}px` }}>
-                      <button onClick={() => handleAltNav('up', 'video')} className="text-black p-1" title={getInspectTitle('Previous video in preview')}><ChevronUp size={18} strokeWidth={3} /></button>
-                      <div className={`w-full h-px ${theme.bottomBar} my-1`} />
-                      <button onClick={() => handleAltNav('down', 'video')} className="text-black p-1" title={getInspectTitle('Next video in preview')}><ChevronDown size={18} strokeWidth={3} /></button>
-                    </div>
-                  )}
-                  <div className="flex flex-col gap-3 w-9 h-24 items-center justify-center">
-                    {videoCheckpoint !== null && (
-                      <><button onClick={() => handleCommit('video')} className="w-9 h-9 rounded-full flex items-center justify-center shadow-md bg-emerald-500 text-white transition-all active:scale-90 animate-in zoom-in duration-200" title={getInspectTitle('Commit video preview')}><Check size={20} strokeWidth={3} /></button><button onClick={() => handleRevert('video')} className="w-9 h-9 rounded-full flex items-center justify-center shadow-md bg-rose-500 text-white transition-all active:scale-90 animate-in zoom-in duration-200" title={getInspectTitle('Revert video preview')}><X size={20} strokeWidth={3} /></button></>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
+          <PlayerControllerVideoMenu {...sharedProps} />
         </div>
 
       </div>
-    </div >
-  );
+    </div>;
 }

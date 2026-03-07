@@ -73,12 +73,14 @@ Users can safely preview playlists and videos without interrupting playback via 
 - **Revert Button** (Red X): Cancels the preview, snapping the titles back to the actively playing state.
 - **Title Syncing**: Previews temporarily overlay the actual playing title in the UI, ensuring smooth browsing.
 
-## 5. File Manifest
+## Related Files
 
-**UI/Components:**
-- `src/components/PlayerController.jsx`: Handles all interactive rendering for menus, pins, and previews.
-
-**State Management:**
+- `src/components/PlayerController.jsx`: Main UI controller that manages state and passes props to sub-components.
+- `src/components/PlayerControllerPlaylistMenu.jsx`: Renders the left-side Top Playlist Menu, including badges, group carousel arrows, and preview/queue/history nav.
+- `src/components/PlayerControllerVideoMenu.jsx`: Renders the right-side Top Video Menu, including video details, shuffle, like, and folder assignments.
+- `src/components/PlayerControllerOrbMenu.jsx`: Renders the central Orb, image masking, and audio visualizer.
+- `src/components/BottomNavigation.jsx`: Secondary navigation component displayed on non-player views.
+- `src/store/*.js`: Zustand stores handling application state.
 - `src/store/playlistStore.js`: Playlist items, navigation indexes, and preview state (`previewPlaylistItems`).
 - `src/store/pinStore.js`: `pinnedVideos`, `priorityPinIds`, `followerPinIds`.
 - `src/store/folderStore.js`: Folder state (`quickAssignFolder`).

@@ -30,7 +30,8 @@ Accessed via the Settings Page -> Orb tab.
 ## 3. File Manifest
 
 **UI/Components:**
-- `src/components/PlayerController.jsx`: Orb rendering, image display, upload button, orb buttons, spill/clipping logic.
+- `src/components/PlayerController.jsx`: Main interface wrapper handling state distribution.
+- `src/components/PlayerControllerOrbMenu.jsx`: Orb rendering, image display, upload button, orb buttons, spill/clipping logic.
 - `src/components/SettingsPage.jsx`: Configuration UI.
 
 **State Management:**

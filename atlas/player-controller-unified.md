@@ -2,7 +2,7 @@
 
 The Advanced Player Controller is the comprehensive UI component positioned at the very top of the application layout, sitting seamlessly over the App Banner. It provides centralized control for playlist navigation, video playback, folder management, and preview functionality.
 
-To prevent documentation bloat, the logic and presentation of the Player Controller has been fractured into smaller, manageable sub-documents.
+To prevent documentation bloat and improve code maintainability, the logic and presentation of the Player Controller has been fractured into smaller, manageable sub-documents and sub-components. `PlayerController.jsx` acts as the main context wrapper for `PlayerControllerPlaylistMenu.jsx`, `PlayerControllerOrbMenu.jsx`, and `PlayerControllerVideoMenu.jsx`.
 
 ## Documentation Index
 
