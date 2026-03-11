@@ -342,10 +342,10 @@ export default function PlayerController({
 
       // Add video to playlist
       await addVideoToPlaylist(targetPlaylistId, text, videoId, finalTitle, finalThumbnailUrl, authorName, viewCountStr, pubAt, false,
-      // isLocal
-      null,
-      // profileImageUrl
-      durSecs, desc, tagsStr);
+        // isLocal
+        null,
+        // profileImageUrl
+        durSecs, desc, tagsStr);
       console.log(`Added ${finalTitle} to Quick Videos`);
       setIsAddMenuOpen(false);
       if (currentPlaylistId === targetPlaylistId) {
@@ -354,6 +354,56 @@ export default function PlayerController({
       }
     } catch (err) {
       console.error('Failed to add clipboard to quick videos:', err);
+    }
+  };
+
+  const handleAddClipboardToCurrentPlaylist = async () => {
+    try {
+      if (!currentPlaylistId) {
+        console.warn("No active playlist selected to add to.");
+        return;
+      }
+      const text = await navigator.clipboard.readText();
+      if (!text) {
+        console.warn("Clipboard is empty");
+        return;
+      }
+      const videoId = extractVideoId(text);
+      if (!videoId) {
+        console.warn("Clipboard does not contain a valid YouTube video URL");
+        return;
+      }
+
+      const tempTitle = `Added Video ${videoId}`;
+      const fallbackThumbnailUrl = getThumbnailUrl(videoId, 'hqdefault');
+      let finalTitle = tempTitle;
+      let authorName = 'Unknown';
+      let viewCountStr = '0';
+      let pubAt = null;
+      let finalThumbnailUrl = fallbackThumbnailUrl;
+      let durSecs = null;
+      let desc = null;
+      let tagsStr = null;
+      const meta = await fetchVideoMetadata(videoId);
+      if (meta) {
+        finalTitle = meta.title || finalTitle;
+        authorName = meta.author || authorName;
+        viewCountStr = meta.viewCount || viewCountStr;
+        pubAt = meta.publishedAt || pubAt;
+        finalThumbnailUrl = meta.thumbnailUrl || finalThumbnailUrl;
+        durSecs = meta.durationSeconds || null;
+        desc = meta.description || null;
+        tagsStr = meta.tags || null;
+      }
+
+      await addVideoToPlaylist(currentPlaylistId, text, videoId, finalTitle, finalThumbnailUrl, authorName, viewCountStr, pubAt, false, null, durSecs, desc, tagsStr);
+      console.log(`Added ${finalTitle} to current playlist`);
+      setIsAddMenuOpen(false);
+
+      const items = await getPlaylistItems(currentPlaylistId);
+      setPlaylistItems(items, currentPlaylistId);
+    } catch (err) {
+      console.error('Failed to add clipboard to current playlist:', err);
     }
   };
 
@@ -1573,7 +1623,7 @@ export default function PlayerController({
         // Start live countdown timer
         if (remainingTime > 0) {
           // Update title immediately
-          webview.setTitle(getTitle(remainingTime)).catch(() => {});
+          webview.setTitle(getTitle(remainingTime)).catch(() => { });
           const timerId = setInterval(async () => {
             remainingTime--;
 
@@ -1581,7 +1631,7 @@ export default function PlayerController({
             let currentWebview = null;
             try {
               currentWebview = await WebviewWindow.getByLabel(label);
-            } catch (ignore) {}
+            } catch (ignore) { }
             if (!currentWebview) {
               console.log('Twitter popup window not found, stopping timer');
               clearInterval(timerId);
@@ -2162,6 +2212,7 @@ export default function PlayerController({
     setIsAddMenuOpen,
     isAddMenuOpen,
     handleAddClipboardToQuickVideos,
+    handleAddClipboardToCurrentPlaylist,
     isQueueModeOpen,
     setIsQueueModeOpen,
     queue,
@@ -2238,13 +2289,13 @@ export default function PlayerController({
     videoCheckpoint
   };
   return <div className="w-full pointer-events-none">
-      <div className="max-w-5xl mx-auto py-4 px-6 pointer-events-auto">
-        {/* SVG ClipPath Generator for Partial Spillover */}
-        <svg width="0" height="0" className="absolute pointer-events-none">
-          <defs>
-            <clipPath id="orbClipPath" clipPathUnits="objectBoundingBox">
-              <circle cx="0.5" cy="0.5" r="0.5" />
-              {['tl', 'tr', 'bl', 'br'].map(q => {
+    <div className="max-w-5xl mx-auto py-4 px-6 pointer-events-auto">
+      {/* SVG ClipPath Generator for Partial Spillover */}
+      <svg width="0" height="0" className="absolute pointer-events-none">
+        <defs>
+          <clipPath id="orbClipPath" clipPathUnits="objectBoundingBox">
+            <circle cx="0.5" cy="0.5" r="0.5" />
+            {['tl', 'tr', 'bl', 'br'].map(q => {
               if (!displayIsSpillEnabled || !displayOrbSpill[q]) return null;
               const defaults = {
                 tl: {
@@ -2292,23 +2343,23 @@ export default function PlayerController({
                 return <rect key={q} x={r.x / 100} y={r.y / 100} width={r.w / 100} height={r.h / 100} />;
               }
             })}
-            </clipPath>
-          </defs>
-        </svg>
+          </clipPath>
+        </defs>
+      </svg>
 
-        {/* Background removed to use App-level global background */}
+      {/* Background removed to use App-level global background */}
 
-        <div className={viewMode !== 'full' ? "grid grid-cols-[auto_auto] grid-rows-2 items-center justify-center gap-x-12 relative overflow-visible" : "flex items-center relative overflow-visible"}>
-          {/* PLAYLIST WRAPPER */}
-          <PlayerControllerPlaylistMenu {...sharedProps} />
+      <div className={viewMode !== 'full' ? "grid grid-cols-[auto_auto] grid-rows-2 items-center justify-center gap-x-12 relative overflow-visible" : "flex items-center relative overflow-visible"}>
+        {/* PLAYLIST WRAPPER */}
+        <PlayerControllerPlaylistMenu {...sharedProps} />
 
-          {/* THE ORB SECTION - Centered / Left */}
-          <PlayerControllerOrbMenu {...sharedProps} />
+        {/* THE ORB SECTION - Centered / Left */}
+        <PlayerControllerOrbMenu {...sharedProps} />
 
-          {/* VIDEO SECTION */}
-          <PlayerControllerVideoMenu {...sharedProps} />
-        </div>
-
+        {/* VIDEO SECTION */}
+        <PlayerControllerVideoMenu {...sharedProps} />
       </div>
-    </div>;
+
+    </div>
+  </div>;
 }

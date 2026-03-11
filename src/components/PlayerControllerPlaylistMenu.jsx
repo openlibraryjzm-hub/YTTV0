@@ -3,7 +3,6 @@ import { Play, Home, Twitter, List, Shuffle, Grid3X3, Star, ChevronLeft, Chevron
 import { usePlaylistStore } from '../store/playlistStore';
 import { useNavigationStore } from '../store/navigationStore';
 import { usePinStore } from '../store/pinStore';
-import { useQueueStore } from '../store/queueStore';
 import { useLayoutStore } from '../store/layoutStore';
 import { useFolderStore } from '../store/folderStore';
 import { useTabStore } from '../store/tabStore';
@@ -99,12 +98,9 @@ export default function PlayerControllerPlaylistMenu(props) {
     setIsAddMenuOpen,
     isAddMenuOpen,
     handleAddClipboardToQuickVideos,
-    isQueueModeOpen,
-    setIsQueueModeOpen,
-    queue,
+    handleAddClipboardToCurrentPlaylist,
     setPlaylistItems,
     setCurrentVideoIndex,
-    removeFromQueue,
     activeNavButton,
     navChevronSize,
     setActiveNavButton,
@@ -312,163 +308,37 @@ export default function PlayerControllerPlaylistMenu(props) {
                 {isAddMenuOpen && <div className="absolute top-full left-1/2 -translate-x-1/2 mt-3 w-56 bg-sky-50 border border-sky-300 rounded-lg shadow-xl overflow-hidden z-[10001] animate-in fade-in zoom-in-95 duration-100 flex flex-col p-1" style={{
                   zIndex: 10001
                 }}>
-                  <button className="w-full text-left px-4 py-2 text-sm text-sky-900 hover:bg-sky-200 transition-colors flex items-center gap-2" onClick={handleAddClipboardToQuickVideos}>
+                  <button className="w-full text-left px-4 py-2 text-sm text-sky-900 border-b border-sky-200 hover:bg-sky-200 transition-colors flex items-center gap-2" onClick={handleAddClipboardToQuickVideos}>
                     <Plus size={14} />
                     Add clipboard to quick videos
+                  </button>
+                  <button className="w-full text-left px-4 py-2 text-sm text-sky-900 hover:bg-sky-200 transition-colors flex items-center gap-2" onClick={handleAddClipboardToCurrentPlaylist}>
+                    <Plus size={14} />
+                    Add clipboard to current playlist
                   </button>
                 </div>}
               </div>
 
-              {/* Queue Mode OR Normal Action Controls */}
-              {isQueueModeOpen ? <div className="absolute top-0 bottom-0 pointer-events-auto flex items-center justify-end px-3 gap-2 w-full pr-[14px]">
-                {/* Close button slightly above */}
-                <button onClick={() => setIsQueueModeOpen(false)} className="absolute -top-7 right-[80px] p-1 text-white bg-black/60 hover:bg-black/80 rounded-full z-[101] shadow-md transition-all drop-shadow-[0_0_8px_rgba(255,255,255,0.4)]">
-                  <X size={14} strokeWidth={3} />
-                </button>
-
-                <div className="flex items-center gap-2 overflow-x-auto w-full justify-end" style={{
-                  scrollbarWidth: 'none',
-                  msOverflowStyle: 'none'
-                }}>
-                  <style dangerouslySetInnerHTML={{
-                    __html: `::-webkit-scrollbar { display: none; }`
-                  }} />
-                  {queue.length === 0 ? <div className="text-white/70 text-xs italic pr-8">Queue is empty</div> : queue.map((video, idx) => {
-                    const thumbUrl = video.thumbnail_url || getThumbnailUrl(video.video_id, 'maxresdefault');
-                    return <div key={idx} onClick={() => {
-                      // Using setPlaylistItems to temporarily play this video in a queue state
-                      setPlaylistItems([video], null, null, 'Temporary Queue');
-                      setCurrentVideoIndex(0);
-                      setIsQueueModeOpen(false);
-                    }} className="relative group cursor-pointer flex-shrink-0" style={{
-                      width: '52px',
-                      height: '39px',
-                      border: '2px solid #000',
-                      borderRadius: '4px',
-                      overflow: 'hidden'
-                    }}>
-                      <img src={thumbUrl} className="w-full h-full object-cover" />
-                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                        <Play size={16} color="white" fill="currentColor" />
-                      </div>
-                      <div className="absolute top-0 right-0 p-0.5 bg-black/60 rounded-bl opacity-0 group-hover:opacity-100 hover:bg-black" onClick={e => {
-                        e.stopPropagation();
-                        removeFromQueue(video.id);
-                      }} title="Remove from queue">
-                        <X size={10} color="white" />
-                      </div>
-                    </div>;
-                  })}
-                </div>
-              </div> : <>
-                {/* Priority Pin Button */}
-                <div className="absolute left-1/2 top-1/2" style={{
-                  transform: `translate(calc(-50% - 59px), -50%)`
-                }}>
-                  <div className="relative flex items-center justify-center">
-                    <div className={`absolute -left-6 transition-all duration-200 ${activeNavButton === 'pin' ? 'opacity-100 translate-x-0 pointer-events-auto' : 'opacity-0 translate-x-3 pointer-events-none'}`}>
-                      <button onClick={() => console.log('Pin Left Nav')} className="p-0.5 text-black hover:scale-110 active:scale-95 transition-transform" title="Priority Pin Nav Left">
-                        <ChevronLeft size={navChevronSize} strokeWidth={3} />
-                      </button>
-                    </div>
-
-                    <button onClick={() => console.log('Priority Pin button clicked')} onContextMenu={e => {
-                      e.preventDefault();
-                      setActiveNavButton(prev => prev === 'pin' ? null : 'pin');
-                    }} className={`flex items-center justify-center group/tool transition-all ${activeNavButton === 'pin' ? 'scale-110 drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]' : ''}`} title={getInspectTitle('Priority Pin (Right-click to toggle nav)')}>
-                      <span style={ICON_WHITE_OUTLINE}>
-                        <svg width={Math.round(bottomIconSize * 0.5)} height={Math.round(bottomIconSize * 0.5)} viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                          <g transform="translate(1, 2) scale(0.9) rotate(45 12 12)">
-                            {/* Standard Pin Body */}
-                            <line x1="12" y1="17" x2="12" y2="22" strokeWidth="2.5"></line>
-                            <path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24Z" strokeWidth="2.5"></path>
-                          </g>
-                          {/* Crown sitting on top left */}
-                          <g transform="translate(-1, -3) scale(0.45) rotate(-20 12 12)">
-                            <path d="M5 21L4 6l6 4 2-7 2 7 6-4-1 15H5z" fill="white" stroke="white" strokeWidth="2" strokeLinejoin="round"></path>
-                          </g>
-                        </svg>
-                      </span>
-                    </button>
-
-                    <div className={`absolute -right-6 transition-all duration-200 ${activeNavButton === 'pin' ? 'opacity-100 translate-x-0 pointer-events-auto' : 'opacity-0 -translate-x-3 pointer-events-none'}`}>
-                      <button onClick={() => console.log('Pin Right Nav')} className="p-0.5 text-black hover:scale-110 active:scale-95 transition-transform" title="Priority Pin Nav Right">
-                        <ChevronRight size={navChevronSize} strokeWidth={3} />
-                      </button>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Bookmark Button (Placeholder) */}
-                <div className="absolute left-1/2 top-1/2" style={{
-                  transform: `translate(calc(-50% - 18px), -50%)`
-                }}>
-                  <button onClick={() => console.log('Bookmark button clicked (placeholder)')} className="flex items-center justify-center group/tool" title={getInspectTitle('Bookmark')}>
-                    <span style={ICON_WHITE_OUTLINE}>
-                      <Bookmark size={Math.round(bottomIconSize * 0.5)} color="white" strokeWidth={3} />
-                    </span>
-                  </button>
-                </div>
-
-                {/* Queue Button */}
-                <div className="absolute left-1/2 top-1/2" style={{
-                  transform: `translate(calc(-50% + 23px), -50%)`
-                }}>
-                  <div className="relative flex items-center justify-center">
-                    <div className={`absolute -left-6 transition-all duration-200 ${activeNavButton === 'queue' ? 'opacity-100 translate-x-0 pointer-events-auto' : 'opacity-0 translate-x-3 pointer-events-none'}`}>
-                      <button onClick={() => console.log('Queue Left Nav')} className="p-0.5 text-black hover:scale-110 active:scale-95 transition-transform" title="Queue Nav Left">
-                        <ChevronLeft size={navChevronSize} strokeWidth={3} />
-                      </button>
-                    </div>
-
-                    <button onClick={() => {
-                      setIsQueueModeOpen(true);
-                      setActiveNavButton('queue');
-                    }} onContextMenu={e => {
-                      e.preventDefault();
-                      setActiveNavButton(prev => prev === 'queue' ? null : 'queue');
-                    }} className={`flex items-center justify-center group/tool transition-all ${activeNavButton === 'queue' ? 'scale-110 drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]' : ''}`} title={getInspectTitle('Queue (Right-click to toggle nav)')}>
-                      <span style={ICON_WHITE_OUTLINE}>
-                        <svg width={Math.round(bottomIconSize * 0.5)} height={Math.round(bottomIconSize * 0.5)} viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                          {/* Three horizontal lines */}
-                          <line x1="11" y1="7" x2="21" y2="7"></line>
-                          <line x1="5" y1="13" x2="21" y2="13"></line>
-                          <line x1="5" y1="19" x2="21" y2="19"></line>
-                          {/* Solid play arrow in top left */}
-                          <polygon points="5,4 10,7 5,10" fill="white" strokeWidth="0"></polygon>
-                        </svg>
-                      </span>
-                    </button>
-
-                    <div className={`absolute -right-6 transition-all duration-200 ${activeNavButton === 'queue' ? 'opacity-100 translate-x-0 pointer-events-auto' : 'opacity-0 -translate-x-3 pointer-events-none'}`}>
-                      <button onClick={() => console.log('Queue Right Nav')} className="p-0.5 text-black hover:scale-110 active:scale-95 transition-transform" title="Queue Nav Right">
-                        <ChevronRight size={navChevronSize} strokeWidth={3} />
-                      </button>
-                    </div>
-                  </div>
-                </div>
-
+              {/* Normal Action Controls */}
+              <>
                 {/* History Clock Icon */}
                 <div className="absolute left-1/2 top-1/2" style={{
-                  transform: `translate(calc(-50% + 64px), -50%)`
+                  transform: `translate(calc(-50% + 10px), -50%)`
                 }}>
                   <div className="relative flex items-center justify-center">
-                    <div className={`absolute -left-6 transition-all duration-200 ${activeNavButton === 'history' ? 'opacity-100 translate-x-0 pointer-events-auto' : 'opacity-0 translate-x-3 pointer-events-none'}`}>
+                    <div className="absolute -left-6 opacity-100 pointer-events-auto">
                       <button onClick={handleHistoryBack} className="p-0.5 text-black hover:scale-110 active:scale-95 transition-transform" title="History Back (Older)">
                         <ChevronLeft size={navChevronSize} strokeWidth={3} />
                       </button>
                     </div>
 
-                    <button onClick={() => console.log('History button clicked')} onContextMenu={e => {
-                      e.preventDefault();
-                      setActiveNavButton(prev => prev === 'history' ? null : 'history');
-                    }} className={`flex items-center justify-center group/tool transition-all ${activeNavButton === 'history' ? 'scale-110 drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]' : ''} ${historyIndex >= Math.min(historyStack.length - 1, 5) || historyStack.length <= 1 ? historyIndex === 0 ? 'opacity-30' : '' : ''}`} title={getInspectTitle('History (Right-click to toggle nav)')}>
+                    <button onClick={() => console.log('History button clicked')} className={`flex items-center justify-center group/tool transition-all ${historyIndex >= Math.min(historyStack.length - 1, 5) || historyStack.length <= 1 ? historyIndex === 0 ? 'opacity-30' : '' : ''}`} title={getInspectTitle('History')}>
                       <span style={ICON_WHITE_OUTLINE}>
                         <Clock size={Math.round(bottomIconSize * 0.5)} color="white" strokeWidth={3} />
                       </span>
                     </button>
 
-                    <div className={`absolute -right-6 transition-all duration-200 ${activeNavButton === 'history' ? 'opacity-100 translate-x-0 pointer-events-auto' : 'opacity-0 -translate-x-3 pointer-events-none'}`}>
+                    <div className="absolute -right-6 opacity-100 pointer-events-auto">
                       <button onClick={handleHistoryForward} className="p-0.5 text-black hover:scale-110 active:scale-95 transition-transform" title="History Forward (Newer)">
                         <ChevronRight size={navChevronSize} strokeWidth={3} />
                       </button>
@@ -481,29 +351,26 @@ export default function PlayerControllerPlaylistMenu(props) {
                   transform: `translate(calc(-50% + 120px), -50%)`
                 }}>
                   <div className="relative flex items-center justify-center">
-                    <div className={`absolute -left-7 transition-all duration-200 ${activeNavButton === 'grid' ? 'opacity-100 translate-x-0 pointer-events-auto' : 'opacity-0 translate-x-3 pointer-events-none'}`}>
+                    <div className="absolute -left-7 opacity-100 pointer-events-auto">
                       <button onClick={() => navigatePlaylist('down')} className="p-0.5 text-black hover:scale-110 active:scale-95 transition-transform" title={getInspectTitle('Previous playlist')}>
                         <ChevronLeft size={navChevronSize} strokeWidth={3} />
                       </button>
                     </div>
 
-                    <button onClick={handlePlaylistsGrid} onContextMenu={e => {
-                      e.preventDefault();
-                      setActiveNavButton(prev => prev === 'grid' ? null : 'grid');
-                    }} className={`flex items-center justify-center group/tool transition-all ${activeNavButton === 'grid' ? 'scale-110 drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]' : ''}`} title={getInspectTitle('View playlists grid (Right-click to toggle nav)')}>
+                    <button onClick={handlePlaylistsGrid} className="flex items-center justify-center group/tool transition-all" title={getInspectTitle('View playlists grid')}>
                       <span style={ICON_WHITE_OUTLINE}>
                         <Library size={Math.round(bottomIconSize * 0.5)} color="white" strokeWidth={3} />
                       </span>
                     </button>
 
-                    <div className={`absolute -right-7 transition-all duration-200 ${activeNavButton === 'grid' ? 'opacity-100 translate-x-0 pointer-events-auto' : 'opacity-0 -translate-x-3 pointer-events-none'}`}>
+                    <div className="absolute -right-7 opacity-100 pointer-events-auto">
                       <button onClick={() => navigatePlaylist('up')} className="p-0.5 text-black hover:scale-110 active:scale-95 transition-transform" title={getInspectTitle('Next playlist')}>
                         <ChevronRight size={navChevronSize} strokeWidth={3} />
                       </button>
                     </div>
                   </div>
                 </div>
-              </>}
+              </>
             </div>
           </div>
 

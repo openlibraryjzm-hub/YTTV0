@@ -29,15 +29,12 @@ Displays the current playlist's title, centered with contextual badges below it:
 - **Priority Pin Display**: Overlaid at top-right if a priority pin is active.
 
 ### Action & Navigation Cluster
-A tightly grouped set of tool buttons positioned around the center-right of the menu. This cluster utilizes a **Dynamic Navigation Arrows** system to conserve horizontal space. **Right-clicking** specific buttons toggles them as the `activeNavButton`, revealing a pair of flanking left/right navigational chevrons and hiding any others (only one button's arrows can be active at a time). Left-clicking performs the center button's primary action, or the user can click the revealed flanking arrows for context-specific navigation.
+A tightly grouped set of tool buttons positioned around the center-right of the menu. The History and Grid buttons feature permanent, always-visible flanking left/right navigational chevrons for rapid access to context-specific navigation.
 
 1. **Three Dot Menu (More Options)**: Toggles advanced configurations (Preview Menus, Change Banner, Audio Visualizer).
-2. **Add (Plus)**: Functions as a dropdown menu ("Add clipboard to quick videos").
-3. **Priority Pin**: Standard left-click logic. Right-click toggles flanking navigation chevrons (currently aesthetic).
-4. **Bookmark**: Quick-save functionality (Placeholder).
-5. **Queue**: Left-click collapses this cluster to reveal the temporary session queue thumbnail rail. Right-click toggles flanking navigation chevrons.
-6. **History**: Clock icon. Right-click toggles flanking navigation chevrons. Left-clicking the revealed left/right arrows navigates Older/Newer in playback history.
-7. **Grid / Library**: Right-click toggles flanking navigation chevrons. Left-clicking the revealed left/right arrows navigates Previous/Next between playlists. Left-clicking the center button returns to the Playlists grid view.
+2. **Add (Plus)**: Functions as a dropdown menu ("Add clipboard to quick videos" and "Add clipboard to current playlist").
+3. **History**: Clock icon. Left-click to view History page (Placeholder). Left-clicking the flanking left/right arrows navigates Older/Newer in playback history.
+4. **Grid / Library**: Left-clicking the flanking left/right arrows navigates Previous/Next between playlists. Left-clicking the center button returns to the Playlists grid view.
 
 ## 3. Top Video Menu (Right)
 
