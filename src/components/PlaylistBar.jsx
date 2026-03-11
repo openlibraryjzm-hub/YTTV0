@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { RotateCcw, ChevronLeft, ChevronRight } from 'lucide-react';
+import { RotateCcw, ChevronLeft, ChevronRight, Plus, Tag } from 'lucide-react';
 import { FOLDER_COLORS } from '../utils/folderColors';
 import PlaylistSortFilters from './PlaylistSortFilters';
 import { useNavigationStore } from '../store/navigationStore';
 import { useLayoutStore } from '../store/layoutStore';
+import { usePlaylistGroupStore } from '../store/playlistGroupStore';
 import { usePlaylistStore } from '../store/playlistStore';
 import { useFolderStore } from '../store/folderStore';
 
@@ -35,7 +36,51 @@ const PlaylistBar = ({
   const { history, goBack, setCurrentPage } = useNavigationStore();
   const { setViewMode } = useLayoutStore();
   const { previewPlaylistId, clearPreview } = usePlaylistStore();
-  const { allFolderMetadata, setHoveredFolder } = useFolderStore();
+  const { allFolderMetadata, setHoveredFolder, hoveredFolder } = useFolderStore();
+  const getGroupByColorId = usePlaylistGroupStore((s) => s.getGroupByColorId);
+
+  const [filterDropdownOpen, setFilterDropdownOpen] = useState(false);
+  const isDropdownActive = filterDropdownOpen;
+
+  let displayTitle = 'All Playlists';
+  let bannerHex = 'rgba(255, 255, 255, 0.95)';
+  let isUnsorted = false;
+  let isColoredFolder = false;
+
+  const effectiveFolder = hoveredFolder !== undefined ? hoveredFolder : selectedFolder;
+
+  if (effectiveFolder !== null && effectiveFolder !== undefined) {
+    isColoredFolder = true;
+    if (effectiveFolder === 'unsorted') {
+      displayTitle = 'Unsorted Playlists';
+      bannerHex = '#000000';
+      isUnsorted = true;
+    } else {
+      const color = FOLDER_COLORS.find(c => c.id === effectiveFolder);
+      if (color) {
+        let folderName = color.name;
+        const group = getGroupByColorId(color.id);
+        if (group && group.name) { folderName = group.name; }
+        displayTitle = folderName;
+        bannerHex = color.hex;
+      }
+    }
+  }
+
+  let floatingTitleStyle = { color: '#052F4A' };
+  if (isColoredFolder) {
+    if (isUnsorted) {
+      floatingTitleStyle = {
+        color: 'black',
+        textShadow: '-1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff, 1px 1px 0 #fff'
+      };
+    } else {
+      floatingTitleStyle = {
+        color: 'white',
+        textShadow: '-1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000'
+      };
+    }
+  }
 
   const ICON_WHITE_OUTLINE = {
     color: 'white',
@@ -83,54 +128,99 @@ const PlaylistBar = ({
         }}
       >
         <div className={`px-4 flex items-center justify-between transition-all duration-300 relative z-10 ${isStuck ? 'h-[52px]' : 'py-0.5'}`}>
-          <PlaylistSortFilters
-            sortBy={sortBy}
-            setSortBy={setSortBy}
-            sortDirection={sortDirection}
-            setSortDirection={setSortDirection}
-            showHidden={showHidden}
-            setShowHidden={setShowHidden}
-            contentFilter={contentFilter}
-            setContentFilter={setContentFilter}
-            isLight={true}
-            className="shrink-0 mr-2"
-          />
 
-          {/* Pagination Controls */}
-          {totalPages >= 1 && (
-            <div className="flex items-center shrink-0 mr-2 ml-1">
-              <button
-                type="button"
-                onClick={onPrevPage}
-                disabled={currentPage <= 1}
-                className={`transition-all flex items-center justify-center ${currentPage <= 1 ? 'opacity-30 cursor-not-allowed' : 'opacity-85 hover:opacity-100 hover:scale-110'}`}
-                style={ICON_WHITE_OUTLINE}
-                title="Previous page"
-              >
-                <ChevronLeft size={20} strokeWidth={2.5} />
-              </button>
+          <div className={`relative flex items-center min-h-[32px] pl-1 pr-1 ${isDropdownActive ? '' : 'group'} shrink-0 mr-2`}>
 
-              <span
-                onDoubleClick={onAddPage}
-                className="text-xs font-bold min-w-[1.5rem] text-center cursor-pointer hover:scale-110 transition-transform select-none"
-                style={ICON_WHITE_OUTLINE}
-                title="Double click to add new page"
+            {/* The Glowing Title */}
+            <div className={`absolute left-0 z-10 w-max max-w-[30vw] transition-opacity duration-300 pointer-events-none flex flex-col items-start justify-center pl-1 ${isDropdownActive ? 'opacity-0' : 'opacity-100 group-hover:opacity-0'}`}>
+              <div
+                className="absolute inset-x-[-10%] inset-y-[-20%] pointer-events-none rounded-full blur-[20px] opacity-70 transition-colors duration-300"
+                style={{ backgroundColor: bannerHex, transform: 'scale(1.4)' }}
+              />
+              <div
+                className="absolute inset-0 pointer-events-none rounded-full blur-[10px] opacity-85 transition-colors duration-300"
+                style={{ backgroundColor: bannerHex, transform: 'scale(1.1)' }}
+              />
+              <h1
+                className="relative z-10 text-[24px] font-black tracking-tight truncate w-full text-left drop-shadow-xl"
+                style={floatingTitleStyle}
               >
-                {currentPage}
-              </span>
-
-              <button
-                type="button"
-                onClick={onNextPage}
-                disabled={currentPage >= totalPages}
-                className={`transition-all flex items-center justify-center ${currentPage >= totalPages ? 'opacity-30 cursor-not-allowed' : 'opacity-85 hover:opacity-100 hover:scale-110'}`}
-                style={ICON_WHITE_OUTLINE}
-                title="Next page"
-              >
-                <ChevronRight size={20} strokeWidth={2.5} />
-              </button>
+                {displayTitle}
+              </h1>
             </div>
-          )}
+
+            {/* The Buttons */}
+            <div className={`flex items-center gap-1 transition-opacity duration-300 relative z-20 ${isDropdownActive ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
+              <PlaylistSortFilters
+                sortBy={sortBy}
+                setSortBy={setSortBy}
+                sortDirection={sortDirection}
+                setSortDirection={setSortDirection}
+                showHidden={showHidden}
+                setShowHidden={setShowHidden}
+                contentFilter={contentFilter}
+                setContentFilter={setContentFilter}
+                isLight={true}
+                className="shrink-0"
+                onOpenChange={setFilterDropdownOpen}
+              />
+
+              <button
+                type="button"
+                onClick={() => onAddClick?.()}
+                className="p-1.5 transition-all shrink-0 flex items-center justify-center opacity-85 hover:opacity-100 hover:scale-110"
+                style={ICON_WHITE_OUTLINE}
+                title="Add Playlist"
+              >
+                <Plus size={20} strokeWidth={2.5} />
+              </button>
+
+              <button
+                type="button"
+                className="p-1.5 transition-all shrink-0 flex items-center justify-center opacity-85 hover:opacity-100 hover:scale-110"
+                style={ICON_WHITE_OUTLINE}
+                title="Bulk Tag"
+              >
+                <Tag size={20} strokeWidth={2.5} />
+              </button>
+
+              {/* Pagination Controls */}
+              {totalPages >= 1 && (
+                <div className="flex items-center shrink-0 mr-2 ml-1">
+                  <button
+                    type="button"
+                    onClick={onPrevPage}
+                    disabled={currentPage <= 1}
+                    className={`transition-all flex items-center justify-center ${currentPage <= 1 ? 'opacity-30 cursor-not-allowed' : 'opacity-85 hover:opacity-100 hover:scale-110'}`}
+                    style={ICON_WHITE_OUTLINE}
+                    title="Previous page"
+                  >
+                    <ChevronLeft size={20} strokeWidth={2.5} />
+                  </button>
+
+                  <span
+                    onDoubleClick={onAddPage}
+                    className="text-xs font-bold min-w-[1.5rem] text-center cursor-pointer hover:scale-110 transition-transform select-none"
+                    style={ICON_WHITE_OUTLINE}
+                    title="Double click to add new page"
+                  >
+                    {currentPage}
+                  </span>
+
+                  <button
+                    type="button"
+                    onClick={onNextPage}
+                    disabled={currentPage >= totalPages}
+                    className={`transition-all flex items-center justify-center ${currentPage >= totalPages ? 'opacity-30 cursor-not-allowed' : 'opacity-85 hover:opacity-100 hover:scale-110'}`}
+                    style={ICON_WHITE_OUTLINE}
+                    title="Next page"
+                  >
+                    <ChevronRight size={20} strokeWidth={2.5} />
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
 
           <div className="flex items-center min-w-0 flex-1 mr-0">
             <div

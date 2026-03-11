@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { X, RefreshCw, ExternalLink, PlaySquare, Youtube } from 'lucide-react';
-import { getPlaylistItems, addVideoToPlaylist } from '../api/playlistApi';
+import { getPlaylistItems, addVideoToPlaylist, assignVideoToFolder } from '../api/playlistApi';
 import { fetchChannelUploads, extractPlaylistId, fetchPlaylistVideos, extractChannelInfo } from '../utils/youtubeUtils';
+import { FOLDER_COLORS } from '../utils/folderColors';
 
 const SubscriptionManagerModal = ({ isOpen, onClose, playlistId }) => {
     const [channels, setChannels] = useState([]);
     const [playlists, setPlaylists] = useState([]);
     const [loading, setLoading] = useState(false);
     const [fetchingState, setFetchingState] = useState({}); // Stores fetching state per item ID
+    const [folderTargets, setFolderTargets] = useState({}); // Stores folder target per item ID
     const [error, setError] = useState(null);
     const [successMsg, setSuccessMsg] = useState(null);
 
@@ -82,6 +84,10 @@ const SubscriptionManagerModal = ({ isOpen, onClose, playlistId }) => {
 
             // Determine Channel ID
             const channelInfo = extractChannelInfo(item.video_url);
+
+            // Get target folder color
+            const targetColor = folderTargets[item.id] || 'all';
+
             let targetId = null;
             if (channelInfo && channelInfo.type === 'id') {
                 targetId = channelInfo.value;
@@ -101,10 +107,13 @@ const SubscriptionManagerModal = ({ isOpen, onClose, playlistId }) => {
             let addedCount = 0;
             for (const v of newVideos) {
                 if (!existingVideoIds.has(v.video_id)) {
-                    await addVideoToPlaylist(
+                    const addedItemId = await addVideoToPlaylist(
                         pid, v.video_url, v.video_id, v.title, null, v.author, null, v.published_at, false, null
                     );
                     existingVideoIds.add(v.video_id);
+                    if (targetColor !== 'all') {
+                        await assignVideoToFolder(pid, addedItemId, targetColor);
+                    }
                     addedCount++;
                 }
             }
@@ -124,16 +133,22 @@ const SubscriptionManagerModal = ({ isOpen, onClose, playlistId }) => {
             const existingItems = await getPlaylistItems(pid);
             const existingVideoIds = new Set(existingItems.map(i => i.video_id));
 
+            // Get target folder color
+            const targetColor = folderTargets[item.id] || 'all';
+
             // Fetch up to 100 recent videos to see if there's anything new
             const newVideos = await fetchPlaylistVideos(item.extractedListId, 100);
 
             let addedCount = 0;
             for (const v of newVideos) {
                 if (!existingVideoIds.has(v.video_id)) {
-                    await addVideoToPlaylist(
+                    const addedItemId = await addVideoToPlaylist(
                         pid, v.video_url, v.video_id, v.title, null, v.author, null, v.published_at, false, null
                     );
                     existingVideoIds.add(v.video_id);
+                    if (targetColor !== 'all') {
+                        await assignVideoToFolder(pid, addedItemId, targetColor);
+                    }
                     addedCount++;
                 }
             }
@@ -146,11 +161,127 @@ const SubscriptionManagerModal = ({ isOpen, onClose, playlistId }) => {
         }
     };
 
+    const handleRefreshAll = async (limit) => {
+        if (!window.confirm(`Fetch latest ${limit === Infinity ? 'ALL' : limit} videos for ALL channels and refresh ALL playlists?`)) return;
+
+        setLoading(true);
+        try {
+            // Refresh Channels
+            for (const item of channels) {
+                try {
+                    setFetchingState(prev => ({ ...prev, [item.id]: true }));
+                    const pid = parseInt(playlistId, 10);
+                    const existingItems = await getPlaylistItems(pid);
+                    const existingVideoIds = new Set(existingItems.map(i => i.video_id));
+
+                    const channelInfo = extractChannelInfo(item.video_url);
+                    const targetColor = folderTargets[item.id] || 'all';
+
+                    let targetId = null;
+                    if (channelInfo && channelInfo.type === 'id') {
+                        targetId = channelInfo.value;
+                    } else if (item.video_id && item.video_id.startsWith('UC')) {
+                        targetId = item.video_id;
+                    } else {
+                        throw new Error(`Could not definitively extract Channel ID for ${item.title}.`);
+                    }
+
+                    const fetchLimit = limit === Infinity ? 500 : limit;
+                    const newVideos = await fetchChannelUploads(targetId, fetchLimit);
+
+                    for (const v of newVideos) {
+                        if (!existingVideoIds.has(v.video_id)) {
+                            const addedItemId = await addVideoToPlaylist(
+                                pid, v.video_url, v.video_id, v.title, null, v.author, null, v.published_at, false, null
+                            );
+                            existingVideoIds.add(v.video_id);
+                            if (targetColor !== 'all') {
+                                await assignVideoToFolder(pid, addedItemId, targetColor);
+                            }
+                        }
+                    }
+                } catch (err) {
+                    console.error(`Error refreshing channel ${item.title}:`, err);
+                } finally {
+                    setFetchingState(prev => ({ ...prev, [item.id]: false }));
+                }
+            }
+
+            // Refresh Playlists
+            for (const item of playlists) {
+                try {
+                    setFetchingState(prev => ({ ...prev, [item.id]: true }));
+                    const pid = parseInt(playlistId, 10);
+                    const existingItems = await getPlaylistItems(pid);
+                    const existingVideoIds = new Set(existingItems.map(i => i.video_id));
+
+                    const targetColor = folderTargets[item.id] || 'all';
+                    const newVideos = await fetchPlaylistVideos(item.extractedListId, 100);
+
+                    for (const v of newVideos) {
+                        if (!existingVideoIds.has(v.video_id)) {
+                            const addedItemId = await addVideoToPlaylist(
+                                pid, v.video_url, v.video_id, v.title, null, v.author, null, v.published_at, false, null
+                            );
+                            existingVideoIds.add(v.video_id);
+                            if (targetColor !== 'all') {
+                                await assignVideoToFolder(pid, addedItemId, targetColor);
+                            }
+                        }
+                    }
+                } catch (err) {
+                    console.error(`Error refreshing playlist ${item.title}:`, err);
+                } finally {
+                    setFetchingState(prev => ({ ...prev, [item.id]: false }));
+                }
+            }
+            displayMsg('Successfully refreshed all channels and playlists!');
+        } catch (err) {
+            console.error('Refresh all error:', err);
+            displayMsg(err.message || 'Error refreshing all', 'error');
+        } finally {
+            setLoading(false);
+        }
+    };
+
     if (!isOpen) return null;
+
+    const renderFolderBar = (itemId) => {
+        const targetFolder = folderTargets[itemId] || 'all';
+        return (
+            <div className="flex items-center h-5 border border-slate-300 rounded-md overflow-hidden bg-slate-100/50">
+                <button
+                    onClick={() => setFolderTargets(prev => ({ ...prev, [itemId]: 'all' }))}
+                    className={`h-full min-w-[2.5rem] flex-1 flex items-center justify-center transition-all tabular-nums text-[9px] font-bold leading-none ${targetFolder === 'all'
+                        ? 'opacity-100 z-10 relative after:content-[""] after:absolute after:inset-0 after:ring-2 after:ring-inset after:ring-black/10 bg-white text-black drop-shadow-sm'
+                        : 'opacity-60 hover:opacity-100 bg-white text-black'
+                        }`}
+                    title="No Folder Assignment"
+                >
+                    All
+                </button>
+                {FOLDER_COLORS.map((color) => {
+                    const isSelected = targetFolder === color.id;
+                    return (
+                        <button
+                            key={color.id}
+                            onClick={() => setFolderTargets(prev => ({ ...prev, [itemId]: color.id }))}
+                            className={`h-full flex-1 min-w-0 flex items-center justify-center transition-all tabular-nums ${isSelected
+                                ? 'opacity-100 z-10 relative after:content-[""] after:absolute after:inset-0 after:ring-2 after:ring-inset after:ring-white/50'
+                                : 'opacity-60 hover:opacity-100'
+                                }`}
+                            style={{ backgroundColor: color.hex }}
+                            title={`${color.name} Folder`}
+                        />
+                    );
+                })}
+            </div>
+        );
+    };
 
     return (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-            <div className="bg-slate-50 border border-slate-200 rounded-2xl shadow-2xl w-full max-w-3xl max-h-[75vh] flex flex-col overflow-hidden">
+            <div className="bg-slate-50 border border-slate-200 rounded-2xl shadow-2xl w-full max-w-3xl max-h-[65vh] flex flex-col overflow-hidden">
 
                 {/* Header (Light Theme) */}
                 <div className="flex items-center justify-between p-5 border-b border-slate-200 bg-white">
@@ -223,6 +354,8 @@ const SubscriptionManagerModal = ({ isOpen, onClose, playlistId }) => {
                                                     </div>
                                                 </div>
 
+                                                {renderFolderBar(item.id)}
+
                                                 <div className="flex items-center gap-2 bg-slate-50 p-2 border border-slate-100 rounded-lg">
                                                     <span className="text-xs font-semibold text-slate-500">Fetch:</span>
                                                     {[1, 5, 10].map(num => (
@@ -272,6 +405,9 @@ const SubscriptionManagerModal = ({ isOpen, onClose, playlistId }) => {
                                                         </a>
                                                     </div>
                                                 </div>
+
+                                                {renderFolderBar(item.id)}
+
                                                 <button
                                                     onClick={() => handleRefreshPlaylist(item)}
                                                     disabled={fetchingState[item.id]}
@@ -285,6 +421,36 @@ const SubscriptionManagerModal = ({ isOpen, onClose, playlistId }) => {
                                     </div>
                                 </section>
                             )}
+
+                            {/* Refresh All Section */}
+                            <div className="bg-white border text-center border-slate-200 rounded-xl p-4 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-sm relative overflow-hidden group">
+                                <div className="absolute inset-0 bg-gradient-to-r from-sky-50 to-indigo-50 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                                <div className="relative z-10 flex-1 text-left">
+                                    <h4 className="text-sm font-bold text-slate-800">Refresh All Subscriptions</h4>
+                                    <p className="text-xs text-slate-500 mt-0.5">Fetch latest videos for all channels and tracked playlists above.</p>
+                                </div>
+                                <div className="relative z-10 flex items-center gap-2 bg-slate-50 p-2 border border-slate-100 rounded-lg w-full sm:w-auto">
+                                    <span className="text-xs font-semibold text-slate-500 whitespace-nowrap">Fetch per channel:</span>
+                                    {[1, 5, 10].map(num => (
+                                        <button
+                                            key={num}
+                                            onClick={() => handleRefreshAll(num)}
+                                            disabled={loading}
+                                            className="min-w-[2rem] text-[10px] font-bold py-1.5 px-2 bg-white border border-slate-200 rounded text-slate-600 hover:border-sky-300 hover:text-sky-600 disabled:opacity-50 transition-all"
+                                        >
+                                            {num}
+                                        </button>
+                                    ))}
+                                    <button
+                                        onClick={() => handleRefreshAll(Infinity)}
+                                        disabled={loading}
+                                        className="min-w-[3.5rem] text-[10px] font-bold py-1.5 px-2 bg-sky-500 border border-sky-600 rounded text-white hover:bg-sky-400 disabled:opacity-50 transition-all flex items-center justify-center gap-1"
+                                    >
+                                        {loading ? <RefreshCw size={10} className="animate-spin" /> : 'ALL'}
+                                    </button>
+                                </div>
+                            </div>
+
                         </div>
                     )}
                 </div>

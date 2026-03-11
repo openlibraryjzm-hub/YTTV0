@@ -123,39 +123,8 @@ const TopNavigation = () => {
 
                 {/* Left side: Playlist/Folder Info */}
                 <div className="relative z-10 flex flex-col justify-end min-w-0 flex-1 pl-8">
-                    {(!isPlaylistsPage && hasActiveContext) || (isPlaylistsPage && isColoredFolder) ? (
-                        createPortal(
-                            <div className="fixed top-[220px] left-[calc(50vw+2rem)] z-[2000] pointer-events-none transition-all duration-300">
-                                {/* Prominent colorful splatter glow behind the text */}
-                                {/* Wide, softer diffuse background glow */}
-                                <div
-                                    className="absolute inset-x-[-10%] inset-y-[-20%] pointer-events-none rounded-full blur-[50px] opacity-70 transition-colors duration-300"
-                                    style={{ backgroundColor: bannerHex, transform: 'scale(1.6)' }}
-                                />
-                                {/* Medium core glow directly behind the text */}
-                                <div
-                                    className="absolute inset-0 pointer-events-none rounded-full blur-[30px] opacity-85 transition-colors duration-300"
-                                    style={{ backgroundColor: bannerHex, transform: 'scale(1.2)' }}
-                                />
-                                <div className="relative z-10 px-4 py-2 flex flex-col items-start justify-center pointer-events-auto max-w-[40vw]">
-                                    <h1
-                                        className="text-[32px] font-black tracking-tight truncate w-full text-left drop-shadow-2xl"
-                                        style={floatingTitleStyle}
-                                    >
-                                        {displayTitle}
-                                    </h1>
-                                    {displayDescription && (
-                                        <p
-                                            className="text-[16px] mt-1 font-bold line-clamp-1 w-full text-left drop-shadow-2xl opacity-90"
-                                            style={floatingTitleStyle}
-                                        >
-                                            {displayDescription}
-                                        </p>
-                                    )}
-                                </div>
-                            </div>,
-                            document.body
-                        )
+                    {(!isPlaylistsPage && hasActiveContext) || isPlaylistsPage ? (
+                        null
                     ) : (
                         <>
                             <h1

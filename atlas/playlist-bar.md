@@ -10,10 +10,12 @@ This document describes the **Playlists page sticky toolbar** (`PlaylistBar.jsx`
 
 **Layout (left to right)**:
 
-1. **PlaylistSortFilters** – A specific component built tailored for the Playlists page: Home (default / shuffle order) and Funnel (dropdown with Sort, Visibility, and Content filters). The sort and filter states (`playlistSortBy`, `showHiddenPlaylists`, `playlistContentFilter`) are managed in `PlaylistsPage.jsx` and passed down. Playlists can be sorted by item count, date created, or alphabetically.
-2. **Action buttons** – Add (opens playlist uploader via `onAddClick`), Refresh (Videos-page only; placeholder), Bulk tag (Videos-page only; placeholder). Same row, right of the filter.
-3. **Folder prism** – Fills the remaining width. Segments: **All** (white), **Unsorted** (black, if any playlists are unassigned), and **one segment per folder color that has a group carousel**. Clicking a segment sets the selected folder; PlaylistsPage shows either the full grid (All/Unsorted) or the single carousel for that color.
-4. **Right side** – Back (when navigation history or playlist preview exists), Close (fullscreen / close menu via `layoutStore.setViewMode('full')`).
+1. **Hover-Reveal Container** – The left side of the bar acts as a group container. Usually, it displays a **Glowing Title** corresponding to the selected folder/playlist. On hover (or when the filter dropdown is open), the title fades out and reveals the action buttons.
+2. **PlaylistSortFilters** – The first button in the hover reveal group. The Home command (default / shuffle order) was moved inside the Funnel dropdown as the first sort. The sort and filter states (`playlistSortBy`, `showHiddenPlaylists`, `playlistContentFilter`) are managed in `PlaylistsPage.jsx` and passed down. Playlists can be sorted by item count, date created, or alphabetically.
+3. **Action buttons (Plus & Tag)** – Located inside the hover reveal group next to the Funnel. A Plus button opens the playlist uploader; a Tag button serves as a UI placeholder for future bulk tagging capability on playlists.
+4. **Pagination Controls** – Located inside the hover reveal group if multiple pages exist. Left/Right chevrons to navigate, with current page number between them.
+5. **Folder prism** – Fills the remaining width. Segments: **All** (white), **Unsorted** (black, if any playlists are unassigned), and **one segment per folder color that has a group carousel**. Clicking a segment sets the selected folder; PlaylistsPage shows either the full grid (All/Unsorted) or the single carousel for that color.
+6. **Right side** – Back (when navigation history or playlist preview exists), Close (fullscreen / close menu via `layoutStore.setViewMode('full')`).
 
 **Data flow**: PlaylistsPage passes `groupColorIds` (array of folder color ids that have a group), `allPlaylistCount`, `unsortedCount`, `selectedFolder`, and `onFolderSelect`. The prism shows only colors that have a group in populated-only mode; right-click toggles to all 16 segments.
 
@@ -65,9 +67,10 @@ This document describes the **Playlists page sticky toolbar** (`PlaylistBar.jsx`
 ## 5. Dependencies
 
 - **PlaylistSortFilters** – Playlists-page specific component containing:
-  - **Sort By**: Item count, Date created, Alphabetical, Scramble playlists (displays all playlists in a completely randomized order; clicking repeatedly rerandomizes).
+  - **Sort By**: Default/Shuffle (first option), Item count, Date created, Alphabetical, Scramble playlists.
   - **Visibility Filters**: Toggle hidden playlists (stored in `configStore` via `hiddenPlaylists` array; hiding/unhiding a playlist specifically is done from the `PlaylistCard` 3-dot menu).
   - **Content Filters**: All Playlists, Populated Only (item count > 0), Empty Only (item count === 0).
+  - Notifies `PlaylistBar` via `onOpenChange` so the glowing title stays hidden while the user operates the dropdown.
 - **FOLDER_COLORS** – `src/utils/folderColors.js` (16 colors: red, orange, amber, … pink). Same as Videos page prism and PlaylistGroupColumn.
 - **Stores**: `useNavigationStore` (history, goBack, setCurrentPage), `useLayoutStore` (setViewMode), `usePlaylistStore` (previewPlaylistId, clearPreview) for Back/Close behavior.
 

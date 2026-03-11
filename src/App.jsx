@@ -35,7 +35,6 @@ import { initializeTestData } from './utils/initDatabase';
 import { addToWatchHistory, getWatchHistory, getAllPlaylists, getPlaylistItems } from './api/playlistApi';
 import { extractVideoId } from './utils/youtubeUtils';
 import { clearOldPlaybackKeys } from './utils/storageUtils';
-import RadialMenuStandalone from './components/RadialMenuStandalone';
 import SettingsPage from './components/SettingsPage';
 import SupportPage from './components/SupportPage';
 import OrbConfigPlaceholderPage from './components/OrbConfigPlaceholderPage';
@@ -51,9 +50,6 @@ function App() {
   const { showPlaylists, setShowPlaylists, setPlaylistItems, currentPlaylistItems, currentPlaylistId, currentVideoIndex, setCurrentVideoIndex } = usePlaylistStore();
   const { currentPage, setCurrentPage } = useNavigationStore();
   const [dbInitialized, setDbInitialized] = useState(false);
-  const [containerConfig, setContainerConfig] = useState(null);
-  const [dictionaryConfig, setDictionaryConfig] = useState(null);
-  const [radialMenuVisible, setRadialMenuVisible] = useState(true); // Start visible for testing
   const [secondPlayerVideoUrl, setSecondPlayerVideoUrl] = useState(null);
 
   const [secondPlayerVideoIndex, setSecondPlayerVideoIndex] = useState(0); // Track second player's video index
@@ -88,47 +84,10 @@ function App() {
     console.log('currentPage:', currentPage);
   }, [showPlaylists, dbInitialized, viewMode, currentPage]);
 
-  // Load radial menu configs
   useEffect(() => {
-    const loadConfigs = async () => {
-      try {
-        console.log('Loading radial menu configs...');
-        // Load container config
-        const containerResponse = await fetch('/container-config (11).json');
-        if (!containerResponse.ok) {
-          throw new Error(`Container config failed: ${containerResponse.status}`);
-        }
-        const containerData = await containerResponse.json();
-        console.log('Container config loaded:', containerData);
-        setContainerConfig(containerData);
-
-        // Load dictionary config
-        const dictionaryResponse = await fetch('/dictionary.json');
-        if (!dictionaryResponse.ok) {
-          throw new Error(`Dictionary config failed: ${dictionaryResponse.status}`);
-        }
-        const dictionaryData = await dictionaryResponse.json();
-        console.log('Dictionary config loaded:', Object.keys(dictionaryData).length, 'entries');
-        setDictionaryConfig(dictionaryData);
-      } catch (error) {
-        console.error('Failed to load radial menu configs:', error);
-      }
-    };
-    loadConfigs();
-
     // Clear orphaned playback keys from localStorage
     clearOldPlaybackKeys();
   }, []);
-
-  // Debug logging for radial menu
-  useEffect(() => {
-    console.log('Radial menu state updated:', {
-      visible: radialMenuVisible,
-      hasContainerConfig: !!containerConfig,
-      hasDictionaryConfig: !!dictionaryConfig,
-      containerConfigKeys: containerConfig ? Object.keys(containerConfig) : null
-    });
-  }, [radialMenuVisible, containerConfig, dictionaryConfig]);
 
   // Initialize database with test data on mount
   useEffect(() => {
@@ -569,23 +528,6 @@ function App() {
               >
                 Ruler
               </button>
-              {/* Radial Menu Toggle */}
-              <button
-                onClick={() => setRadialMenuVisible(!radialMenuVisible)}
-                className={radialMenuVisible ? 'active' : ''}
-                title={getInspectTitle('Toggle radial menu') || 'Toggle Radial Menu'}
-                style={{
-                  backgroundColor: radialMenuVisible ? '#10b981' : 'transparent',
-                  color: radialMenuVisible ? 'white' : 'inherit',
-                  border: '1px solid #10b981',
-                  padding: '4px 8px',
-                  borderRadius: '4px',
-                  cursor: 'pointer',
-                  marginLeft: '8px'
-                }}
-              >
-                Menu
-              </button>
             </div>
           )}
 
@@ -628,26 +570,7 @@ function App() {
                 <TopNavigation />
               </div>
             }
-            animatedMenu={
-              radialMenuVisible && containerConfig && dictionaryConfig ? (
-                <div style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  width: '100%',
-                  height: '100%',
-                  backgroundColor: 'transparent',
-                  pointerEvents: 'auto',
-                  zIndex: 10
-                }}>
-                  <RadialMenuStandalone
-                    containerConfig={containerConfig}
-                    dictionaryConfig={dictionaryConfig}
-                    backgroundColor="transparent"
-                  />
-                </div>
-              ) : null
-            }
+            animatedMenu={null}
             spacerMenu={null}
             menuSpacerMenu={null}
             sideMenu={

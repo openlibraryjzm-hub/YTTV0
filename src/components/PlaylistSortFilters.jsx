@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Home, Filter, CalendarDays, Hash, Type, ArrowUp, ArrowDown, Eye, EyeOff, Layers, Package, PackageOpen, Dices } from 'lucide-react';
 
 const SORT_OPTIONS = [
+    { mode: 'shuffle', label: 'Default / Shuffle', Icon: Home },
     { mode: 'amount', label: 'Sort by item count', Icon: Hash },
     { mode: 'date', label: 'Sort by date created', Icon: CalendarDays },
     { mode: 'name', label: 'Sort alphabetically', Icon: Type },
@@ -24,6 +25,7 @@ const PlaylistSortFilters = ({
     setContentFilter,
     isLight = true, // true when All selected (white bar), false when Unsorted/folder (colored bar)
     className = '',
+    onOpenChange,
 }) => {
     const [dropdownOpen, setDropdownOpen] = useState(false);
     const dropdownRef = useRef(null);
@@ -48,6 +50,10 @@ const PlaylistSortFilters = ({
     };
 
     const handleSortOptionClick = (mode) => {
+        if (mode === 'shuffle') {
+            setSortBy('shuffle');
+            return;
+        }
         if (mode === 'scramble') {
             setSortBy(`scramble_${Date.now()}`);
             setSortDirection('desc');
@@ -67,32 +73,28 @@ const PlaylistSortFilters = ({
         const handleClickOutside = (e) => {
             if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
                 setDropdownOpen(false);
+                if (typeof onOpenChange === 'function') onOpenChange(false);
             }
         };
         if (dropdownOpen) {
             document.addEventListener('mousedown', handleClickOutside);
         }
         return () => document.removeEventListener('mousedown', handleClickOutside);
-    }, [dropdownOpen]);
+    }, [dropdownOpen, onOpenChange]);
+
+    const handleDropdownToggle = () => {
+        const next = !dropdownOpen;
+        setDropdownOpen(next);
+        if (typeof onOpenChange === 'function') onOpenChange(next);
+    };
 
     return (
         <div className={`flex items-center gap-1 ${className}`}>
-            {/* Home = Default (shuffle) */}
-            <button
-                type="button"
-                onClick={() => { setSortBy('shuffle'); setDropdownOpen(false); }}
-                className={`${btnBase} ${isShuffleActive ? btnActive : btnInactive}`}
-                style={ICON_WHITE_OUTLINE}
-                title="Default order"
-            >
-                <Home size={20} strokeWidth={2.5} />
-            </button>
-
             {/* Funnel = dropdown with sort options */}
             <div className="relative shrink-0" ref={dropdownRef}>
                 <button
                     type="button"
-                    onClick={() => { setDropdownOpen((o) => !o); }}
+                    onClick={handleDropdownToggle}
                     className={`${btnBase} ${isFunnelActive ? btnActive : btnInactive}`}
                     style={ICON_WHITE_OUTLINE}
                     title="Filter and sort playlists"
@@ -128,7 +130,7 @@ const PlaylistSortFilters = ({
                                         <Icon size={14} strokeWidth={2.5} />
                                         {label}
                                     </span>
-                                    {active && mode !== 'scramble' && <Arrow up={sortDirection === 'asc'} />}
+                                    {active && mode !== 'shuffle' && mode !== 'scramble' && <Arrow up={sortDirection === 'asc'} />}
                                 </button>
                             );
                         })}

@@ -1,9 +1,15 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Home, Filter, CalendarDays, BarChart2, Clock, ArrowUp, ArrowDown, Plus, RotateCcw, Tag, ChevronLeft, ChevronRight, ListPlus } from 'lucide-react';
+import { useNavigationStore } from '../store/navigationStore';
+import { usePlaylistStore } from '../store/playlistStore';
+import { useFolderStore } from '../store/folderStore';
+import { usePlaylistGroupStore } from '../store/playlistGroupStore';
+import { FOLDER_COLORS } from '../utils/folderColors';
 
 const DRUMSTICK = '🍗';
 
 const SORT_OPTIONS = [
+  { mode: 'shuffle', label: 'Default / Shuffle', Icon: Home },
   { mode: 'chronological', label: 'Sort by date', Icon: CalendarDays },
   { mode: 'addedToApp', label: 'Added to app', Icon: ListPlus },
   { mode: 'progress', label: 'Sort by progress', Icon: BarChart2 },
@@ -41,6 +47,76 @@ const VideoSortFilters = ({
   const dropdownRef = useRef(null);
   const actionDropdownRef = useRef(null);
 
+  const { currentPage: navCurrentPage } = useNavigationStore();
+  const getGroupByColorId = usePlaylistGroupStore((s) => s.getGroupByColorId);
+  const { previewPlaylistId, currentPlaylistId, currentPlaylistTitle, allPlaylists } = usePlaylistStore();
+  const { selectedFolder, hoveredFolder, allFolderMetadata } = useFolderStore();
+
+  const activePlaylistId = previewPlaylistId || currentPlaylistId;
+  const activePlaylist = allPlaylists.find(p => p.id === activePlaylistId);
+  const isPlaylistsPage = navCurrentPage === 'playlists';
+
+  let displayTitle = isPlaylistsPage
+    ? 'Playlists'
+    : ((activePlaylistId === currentPlaylistId ? currentPlaylistTitle : null)
+      || (activePlaylist ? activePlaylist.name : 'Select a Playlist'));
+
+  let bannerHex = 'rgba(255, 255, 255, 0.95)';
+  let isUnsorted = false;
+  let isColoredFolder = false;
+
+  const effectiveFolder = hoveredFolder !== undefined ? hoveredFolder : selectedFolder;
+
+  if (effectiveFolder !== null && effectiveFolder !== undefined) {
+    isColoredFolder = true;
+    if (effectiveFolder === 'unsorted') {
+      displayTitle = `${displayTitle} - Unsorted`;
+      bannerHex = '#000000';
+      isUnsorted = true;
+    } else {
+      const color = FOLDER_COLORS.find(c => c.id === effectiveFolder);
+      if (color) {
+        let folderName = color.name;
+        if (isPlaylistsPage) {
+          const group = getGroupByColorId(color.id);
+          if (group && group.name) { folderName = group.name; }
+        } else {
+          const metadata = allFolderMetadata[color.id];
+          if (metadata && metadata.name) {
+            const customName = metadata.name.trim();
+            const normalize = (name) => name.replace(/\s+Folder$/i, '').trim().toLowerCase();
+            const defaultBase = normalize(color.name);
+            const customBase = normalize(customName);
+            if (customBase !== defaultBase && customBase.length > 0) {
+              folderName = customName;
+            }
+          }
+        }
+        displayTitle = folderName;
+        bannerHex = color.hex;
+      }
+    }
+  } else if (activePlaylist) {
+    bannerHex = 'rgba(255, 255, 255, 0.95)';
+  }
+
+  let floatingTitleStyle = { color: '#052F4A' };
+  if (isColoredFolder) {
+    if (isUnsorted) {
+      floatingTitleStyle = {
+        color: 'black',
+        textShadow: '-1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff, 1px 1px 0 #fff'
+      };
+    } else {
+      floatingTitleStyle = {
+        color: 'white',
+        textShadow: '-1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000'
+      };
+    }
+  }
+
+  const isDropdownActive = dropdownOpen || actionDropdownOpen;
+
   const cycleDirection = () => setSortDirection(d => (d === 'asc' ? 'desc' : 'asc'));
   const isShuffleActive = sortBy === 'shuffle';
   const isSortDropdownActive = ['chronological', 'addedToApp', 'progress', 'lastViewed'].includes(sortBy);
@@ -62,6 +138,10 @@ const VideoSortFilters = ({
   };
 
   const handleSortOptionClick = (mode) => {
+    if (mode === 'shuffle') {
+      setSortBy('shuffle');
+      return;
+    }
     if (sortBy === mode) {
       cycleDirection();
     } else {
@@ -88,170 +168,161 @@ const VideoSortFilters = ({
 
   return (
     <div className={`flex items-center gap-1 ${className}`}>
-      {/* Home = Default (shuffle) */}
-      <button
-        type="button"
-        onClick={() => setSortBy('shuffle')}
-        className={`${btnBase} ${isShuffleActive ? btnActive : btnInactive}`}
-        style={ICON_WHITE_OUTLINE}
-        title="Default order"
-      >
-        <Home size={20} strokeWidth={2.5} />
-      </button>
 
-      {/* Funnel = dropdown with Date, Progress, Last viewed */}
-      <div className="relative shrink-0" ref={dropdownRef}>
-        <button
-          type="button"
-          onClick={() => { setDropdownOpen((o) => !o); setActionDropdownOpen(false); }}
-          className={`${btnBase} ${isFunnelActive ? btnActive : btnInactive}`}
-          style={ICON_WHITE_OUTLINE}
-          title="Sort & rating filter"
-        >
-          <Filter size={20} strokeWidth={2.5} />
-        </button>
-        {dropdownOpen && (
+      {/* Title + Buttons Wrapper */}
+      <div className={`relative flex items-center min-h-[32px] pl-1 pr-1 ${isDropdownActive ? '' : 'group'}`}>
+
+        {/* The Glowing Title */}
+        <div className={`absolute left-0 z-10 w-max max-w-[40vw] transition-opacity duration-300 pointer-events-none flex flex-col items-start justify-center pl-1 ${isDropdownActive ? 'opacity-0' : 'opacity-100 group-hover:opacity-0'}`}>
           <div
-            className={`absolute left-0 top-full pt-2 z-50 min-w-[180px] rounded-lg border-2 shadow-lg py-1 ${isLight ? 'bg-white border-black/20' : 'bg-slate-800 border-white/20'
-              }`}
+            className="absolute inset-x-[-10%] inset-y-[-20%] pointer-events-none rounded-full blur-[20px] opacity-70 transition-colors duration-300"
+            style={{ backgroundColor: bannerHex, transform: 'scale(1.4)' }}
+          />
+          <div
+            className="absolute inset-0 pointer-events-none rounded-full blur-[10px] opacity-85 transition-colors duration-300"
+            style={{ backgroundColor: bannerHex, transform: 'scale(1.1)' }}
+          />
+          <h1
+            className="relative z-10 text-[24px] font-black tracking-tight truncate w-full text-left drop-shadow-xl"
+            style={floatingTitleStyle}
           >
-            {SORT_OPTIONS.map(({ mode, label, Icon }) => {
-              const active = sortBy === mode;
-              return (
-                <button
-                  key={mode}
-                  type="button"
-                  onClick={() => handleSortOptionClick(mode)}
-                  className={`w-full flex items-center justify-between gap-2 px-3 py-2 text-left text-sm rounded-md transition-colors ${active
-                    ? isLight
-                      ? 'bg-black/10 font-medium'
-                      : 'bg-white/10 font-medium'
-                    : isLight
-                      ? 'hover:bg-gray-100 text-black/80'
-                      : 'hover:bg-white/10 text-white/80'
-                    }`}
-                  title={active ? 'Click to cycle direction' : label}
-                >
-                  <span className="flex items-center gap-2">
-                    <Icon size={14} strokeWidth={2.5} />
-                    {label}
-                  </span>
-                  {active && <Arrow up={sortDirection === 'asc'} />}
-                </button>
-              );
-            })}
-            {/* Rating filter: horizontal row of 1–5 drumsticks */}
-            <div className={`px-3 py-2 border-t ${isLight ? 'border-black/10' : 'border-white/10'}`}>
-              <div className="text-xs font-medium mb-1.5 opacity-70">Rating filter</div>
-              <div className="flex items-center justify-between gap-0.5">
-                {[1, 2, 3, 4, 5].map((rating) => {
-                  const selected = selectedRatings.includes(rating);
+            {displayTitle}
+          </h1>
+        </div>
+
+        {/* The 3 buttons layer */}
+        <div className={`flex items-center gap-1 transition-opacity duration-300 relative z-20 ${isDropdownActive ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
+          {/* Funnel = dropdown with Date, Progress, Last viewed */}
+          <div className="relative shrink-0" ref={dropdownRef}>
+            <button
+              type="button"
+              onClick={() => { setDropdownOpen((o) => !o); setActionDropdownOpen(false); }}
+              className={`${btnBase} ${isFunnelActive ? btnActive : btnInactive}`}
+              style={ICON_WHITE_OUTLINE}
+              title="Sort & rating filter"
+            >
+              <Filter size={20} strokeWidth={2.5} />
+            </button>
+            {dropdownOpen && (
+              <div
+                className={`absolute left-0 top-full pt-2 z-50 min-w-[180px] rounded-lg border-2 shadow-lg py-1 ${isLight ? 'bg-white border-black/20' : 'bg-slate-800 border-white/20'
+                  }`}
+              >
+                {SORT_OPTIONS.map(({ mode, label, Icon }) => {
+                  const active = sortBy === mode;
                   return (
                     <button
-                      key={rating}
+                      key={mode}
                       type="button"
-                      onClick={() => onToggleRating(rating)}
-                      className={`w-8 h-8 rounded flex items-center justify-center text-lg leading-none transition-all
-                        ${selected
-                          ? 'opacity-100 scale-110'
-                          : isLight
-                            ? 'opacity-40 hover:opacity-70 text-gray-600'
-                            : 'opacity-40 hover:opacity-70 text-white/80'
+                      onClick={() => handleSortOptionClick(mode)}
+                      className={`w-full flex items-center justify-between gap-2 px-3 py-2 text-left text-sm rounded-md transition-colors ${active
+                        ? isLight
+                          ? 'bg-black/10 font-medium'
+                          : 'bg-white/10 font-medium'
+                        : isLight
+                          ? 'hover:bg-gray-100 text-black/80'
+                          : 'hover:bg-white/10 text-white/80'
                         }`}
-                      title={`Rating ${rating} (toggle)`}
+                      title={active ? 'Click to cycle direction' : label}
                     >
-                      {DRUMSTICK}
+                      <span className="flex items-center gap-2">
+                        <Icon size={14} strokeWidth={2.5} />
+                        {label}
+                      </span>
+                      {active && mode !== 'shuffle' && <Arrow up={sortDirection === 'asc'} />}
                     </button>
                   );
                 })}
+                {/* Rating filter: horizontal row of 1–5 drumsticks */}
+                <div className={`px-3 py-2 border-t ${isLight ? 'border-black/10' : 'border-white/10'}`}>
+                  <div className="text-xs font-medium mb-1.5 opacity-70">Rating filter</div>
+                  <div className="flex items-center justify-between gap-0.5">
+                    {[1, 2, 3, 4, 5].map((rating) => {
+                      const selected = selectedRatings.includes(rating);
+                      return (
+                        <button
+                          key={rating}
+                          type="button"
+                          onClick={() => onToggleRating(rating)}
+                          className={`w-8 h-8 rounded flex items-center justify-center text-lg leading-none transition-all
+                        ${selected
+                              ? 'opacity-100 scale-110'
+                              : isLight
+                                ? 'opacity-40 hover:opacity-70 text-gray-600'
+                                : 'opacity-40 hover:opacity-70 text-white/80'
+                            }`}
+                          title={`Rating ${rating} (toggle)`}
+                        >
+                          {DRUMSTICK}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
               </div>
+            )}
+          </div>
+
+          {/* Add Videos / Subscriptions Button */}
+          <button
+            type="button"
+            onClick={() => onAddClick?.()}
+            onContextMenu={(e) => { e.preventDefault(); onRefreshClick?.(); }}
+            className={`${btnBase} ${btnInactive}`}
+            style={ICON_WHITE_OUTLINE}
+            title="Left-click: Add Videos / Right-click: Subscriptions"
+          >
+            <Plus size={20} strokeWidth={2.5} />
+          </button>
+
+          {/* Bulk Tag Button */}
+          <button
+            type="button"
+            onClick={() => onBulkTagClick?.()}
+            onContextMenu={(e) => { e.preventDefault(); onBulkTagRightClick?.(e); }}
+            className={`${btnBase} ${bulkTagMode ? btnActive : btnInactive}`}
+            style={ICON_WHITE_OUTLINE}
+            title="Left-click: Bulk Tag / Right-click: Auto-Tag"
+          >
+            <Tag size={20} strokeWidth={2.5} />
+          </button>
+
+          {/* Pagination Controls */}
+          {totalPages > 1 && (
+            <div className="flex items-center shrink-0 ml-1">
+              <button
+                type="button"
+                onClick={onPrevPage}
+                disabled={currentPage <= 1}
+                className={`transition-all flex items-center justify-center ${currentPage <= 1 ? 'opacity-30 cursor-not-allowed' : 'opacity-85 hover:opacity-100 hover:scale-110'}`}
+                style={ICON_WHITE_OUTLINE}
+                title="Previous page"
+              >
+                <ChevronLeft size={20} strokeWidth={2.5} />
+              </button>
+
+              <span
+                className="text-xs font-bold min-w-[1.5rem] text-center"
+                style={ICON_WHITE_OUTLINE}
+              >
+                {currentPage}
+              </span>
+
+              <button
+                type="button"
+                onClick={onNextPage}
+                disabled={currentPage >= totalPages}
+                className={`transition-all flex items-center justify-center ${currentPage >= totalPages ? 'opacity-30 cursor-not-allowed' : 'opacity-85 hover:opacity-100 hover:scale-110'}`}
+                style={ICON_WHITE_OUTLINE}
+                title="Next page"
+              >
+                <ChevronRight size={20} strokeWidth={2.5} />
+              </button>
             </div>
-          </div>
-        )}
-      </div>
+          )}
+        </div> {/* Close The 3 buttons layer */}
+      </div> {/* Close Title + Buttons Wrapper */}
 
-      {/* Actions = dropdown with Add, Refresh, Bulk Tag */}
-      <div className="relative shrink-0" ref={actionDropdownRef}>
-        <button
-          type="button"
-          onClick={() => { setActionDropdownOpen((o) => !o); setDropdownOpen(false); }}
-          className={`${btnBase} ${actionDropdownOpen || bulkTagMode ? btnActive : btnInactive}`}
-          style={ICON_WHITE_OUTLINE}
-          title="Actions"
-        >
-          <Plus size={20} strokeWidth={2.5} />
-        </button>
-        {actionDropdownOpen && (
-          <div
-            className={`absolute left-0 top-full pt-0.5 z-50 min-w-[200px] rounded-lg border-2 shadow-lg py-1 ${isLight ? 'bg-white border-black/20' : 'bg-slate-800 border-white/20'
-              }`}
-          >
-            <button
-              type="button"
-              onClick={() => { onAddClick?.(); setActionDropdownOpen(false); }}
-              className={`w-full flex items-center gap-2 px-3 py-2 text-left text-sm transition-colors ${isLight ? 'hover:bg-gray-100 text-black/80' : 'hover:bg-white/10 text-white/80'}`}
-              title="Add videos / config"
-            >
-              <Plus size={14} strokeWidth={2.5} />
-              Add Videos
-            </button>
-            <button
-              type="button"
-              onClick={() => { onRefreshClick?.(); setActionDropdownOpen(false); }}
-              onContextMenu={(e) => { e.preventDefault(); onRefreshRightClick?.(e); setActionDropdownOpen(false); }}
-              className={`w-full flex items-center gap-2 px-3 py-2 text-left text-sm transition-colors ${isLight ? 'hover:bg-gray-100 text-black/80' : 'hover:bg-white/10 text-white/80'}`}
-              title="Manage subscriptions (right-click: refresh)"
-            >
-              <RotateCcw size={14} strokeWidth={2.5} />
-              Subscriptions
-            </button>
-            <button
-              type="button"
-              onClick={() => { onBulkTagClick?.(); setActionDropdownOpen(false); }}
-              onContextMenu={(e) => { e.preventDefault(); onBulkTagRightClick?.(e); setActionDropdownOpen(false); }}
-              className={`w-full flex items-center gap-2 px-3 py-2 text-left text-sm transition-colors ${bulkTagMode ? (isLight ? 'bg-black/10 font-medium text-black' : 'bg-white/10 font-medium text-white') : (isLight ? 'hover:bg-gray-100 text-black/80' : 'hover:bg-white/10 text-white/80')}`}
-              title="Bulk tag (right-click for Auto-Tag)"
-            >
-              <Tag size={14} strokeWidth={2.5} />
-              Bulk Tag
-            </button>
-          </div>
-        )}
-      </div>
-
-      {/* Pagination Controls */}
-      {totalPages > 1 && (
-        <div className="flex items-center shrink-0 ml-1">
-          <button
-            type="button"
-            onClick={onPrevPage}
-            disabled={currentPage <= 1}
-            className={`transition-all flex items-center justify-center ${currentPage <= 1 ? 'opacity-30 cursor-not-allowed' : 'opacity-85 hover:opacity-100 hover:scale-110'}`}
-            style={ICON_WHITE_OUTLINE}
-            title="Previous page"
-          >
-            <ChevronLeft size={20} strokeWidth={2.5} />
-          </button>
-
-          <span
-            className="text-xs font-bold min-w-[1.5rem] text-center"
-            style={ICON_WHITE_OUTLINE}
-          >
-            {currentPage}
-          </span>
-
-          <button
-            type="button"
-            onClick={onNextPage}
-            disabled={currentPage >= totalPages}
-            className={`transition-all flex items-center justify-center ${currentPage >= totalPages ? 'opacity-30 cursor-not-allowed' : 'opacity-85 hover:opacity-100 hover:scale-110'}`}
-            style={ICON_WHITE_OUTLINE}
-            title="Next page"
-          >
-            <ChevronRight size={20} strokeWidth={2.5} />
-          </button>
-        </div>
-      )}
     </div>
   );
 };
