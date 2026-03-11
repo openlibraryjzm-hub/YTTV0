@@ -293,7 +293,7 @@ export default function PlayerController({
       setIsModeLeft(activePlayer === 1);
     }
   }, [activePlayer, onActivePlayerChange]);
-  const handleAddClipboardToQuickVideos = async () => {
+  const handleAddClipboardToQuickVideos = async (playImmediately = false) => {
     try {
       const text = await navigator.clipboard.readText();
       if (!text) {
@@ -348,16 +348,32 @@ export default function PlayerController({
         durSecs, desc, tagsStr);
       console.log(`Added ${finalTitle} to Quick Videos`);
       setIsAddMenuOpen(false);
+
+      const items = await getPlaylistItems(targetPlaylistId);
       if (currentPlaylistId === targetPlaylistId) {
-        const items = await getPlaylistItems(targetPlaylistId);
         setPlaylistItems(items, targetPlaylistId);
+      }
+
+      if (playImmediately) {
+        const newVideo = items.find(v => v.video_id === videoId) || items[items.length - 1];
+        if (newVideo) {
+          if (currentPlaylistId !== targetPlaylistId) {
+            setPlaylistItems(items, targetPlaylistId);
+            if (onPlaylistSelect) {
+              onPlaylistSelect(items, targetPlaylistId);
+            }
+          }
+          if (onVideoSelect) {
+            onVideoSelect(newVideo.video_url);
+          }
+        }
       }
     } catch (err) {
       console.error('Failed to add clipboard to quick videos:', err);
     }
   };
 
-  const handleAddClipboardToCurrentPlaylist = async () => {
+  const handleAddClipboardToCurrentPlaylist = async (playImmediately = false) => {
     try {
       if (!currentPlaylistId) {
         console.warn("No active playlist selected to add to.");
@@ -402,10 +418,19 @@ export default function PlayerController({
 
       const items = await getPlaylistItems(currentPlaylistId);
       setPlaylistItems(items, currentPlaylistId);
+
+      if (playImmediately) {
+        const newVideo = items.find(v => v.video_id === videoId) || items[items.length - 1];
+        if (newVideo && onVideoSelect) {
+          onVideoSelect(newVideo.video_url);
+        }
+      }
     } catch (err) {
       console.error('Failed to add clipboard to current playlist:', err);
     }
   };
+
+
 
   // Handle mode toggle - update external state
   const handleModeToggle = () => {

@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
-import { Play, Home, Twitter, List, Shuffle, Grid3X3, Star, ChevronLeft, ChevronRight, ChevronUp, ChevronDown, Check, CheckCircle2, X, Settings2, Pin, Share2, Info, BarChart2, Bookmark, MoreHorizontal, Heart, ListMusic, Zap, Radio, Flame, ChevronsLeft, ChevronsRight, Upload, Palette, History as HistoryIcon, Layout, Layers, Compass, Library, Eye, EyeOff, RotateCcw, ThumbsUp, Plus, Anchor as AnchorIcon, Type, MousePointer2, ArrowLeftRight, Circle, Settings, Move, LayoutGrid, Clock, HelpCircle } from 'lucide-react';
+import { Menu, Play, Home, Twitter, List, Shuffle, Grid3X3, Star, ChevronLeft, ChevronRight, ChevronUp, ChevronDown, Check, CheckCircle2, X, Settings2, Pin, Share2, Info, BarChart2, Bookmark, MoreHorizontal, Heart, ListMusic, Zap, Radio, Flame, ChevronsLeft, ChevronsRight, Upload, Palette, History as HistoryIcon, Layout, Layers, Compass, Library, Eye, EyeOff, RotateCcw, ThumbsUp, Plus, Anchor as AnchorIcon, Type, MousePointer2, ArrowLeftRight, Circle, Settings, Move, LayoutGrid, Clock, HelpCircle } from 'lucide-react';
 import { usePlaylistStore } from '../store/playlistStore';
 import { useNavigationStore } from '../store/navigationStore';
 import { usePinStore } from '../store/pinStore';
@@ -219,158 +219,157 @@ export default function PlayerControllerPlaylistMenu(props) {
 
           </div>
 
-          {/* Priority Pin (Top Right) */}
-          {(() => {
-            const priorityPinData = pins.find(pin => isPriorityPin(pin.video.id));
-            if (!priorityPinData) return null;
-            const thumbnailUrl = getThumbnailUrl(priorityPinData.video.video_id, 'default');
-            return <div className="absolute top-1 right-1 pointer-events-auto group/pin z-40">
-              <button onClick={() => handlePinClick(priorityPinData.video)} className={`rounded-lg flex items-center justify-center transition-all shadow-md overflow-hidden ${activePin === priorityPinData.id ? 'ring-2 ring-sky-400' : ''}`} style={{
-                width: '52px',
-                height: '39px',
-                border: '2px solid #000'
-              }} title={`Priority Pin: ${priorityPinData.video.title || 'Untitled Video'}`}>
-                {thumbnailUrl ? <img src={thumbnailUrl} alt={priorityPinData.video.title} className="w-full h-full object-cover" /> : <Pin size={24} fill="#fbbf24" strokeWidth={2} />}
-              </button>
-              <button className="absolute -top-1 -right-1 w-4 h-4 bg-rose-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover/pin:opacity-100 transition-opacity shadow-sm border border-white z-20" onClick={e => handleUnpin(e, priorityPinData.video)} title="Unpin video">
-                <X size={10} strokeWidth={4} />
-              </button>
-            </div>;
-          })()}
-
-          <div className="border-t border-sky-300/50 flex items-center px-3 shrink-0 relative rounded-b-2xl bg-transparent" style={{
+          <div className="border-t border-sky-300/50 flex items-center px-6 shrink-0 relative rounded-b-2xl bg-transparent" style={{
             height: `${bottomBarHeight}px`
           }}>
-            <div className="w-full h-full relative">
-              {/* Left Side: Metadata removed (view count, author, year) */}
+            <div className="w-full h-full flex items-center relative">
 
-              {/* Right Components: Action & Navigation Buttons */}
-              {/* Right Components: Navigation Buttons (Tab Button moved to Video Menu, Shuffle Removed) */}
-
-              {/* Navigation Contols (Right Cluster - "Far Right") */}
-
-              {/* Leftmost: More Options / Settings Menu */}
-              <div className="absolute left-1/2 top-1/2" style={{
-                transform: `translate(calc(-50% - 141px), -50%)`
-              }}>
-                <button onClick={() => setIsMoreMenuOpen(!isMoreMenuOpen)} className="flex items-center justify-center group/tool" title={getInspectTitle('More options')}>
-                  <span style={ICON_WHITE_OUTLINE}>
-                    <MoreHorizontal size={Math.round(bottomIconSize * 0.5)} color="white" strokeWidth={3} />
-                  </span>
-                </button>
-                {isMoreMenuOpen && <div className="absolute top-full left-1/2 -translate-x-1/2 mt-3 w-56 bg-sky-50 border border-sky-300 rounded-lg shadow-xl overflow-hidden z-[10001] animate-in fade-in zoom-in-95 duration-100 flex flex-col p-1" style={{
-                  zIndex: 10001
-                }}>
-                  <button className="w-full text-left px-4 py-2 text-sm text-sky-900 hover:bg-sky-200 transition-colors flex items-center gap-2" onClick={() => {
-                    setShowPreviewMenus(!showPreviewMenus);
-                    setIsMoreMenuOpen(false);
+              {/* Left Side (2 items evenly spaced) */}
+              <div className="flex-1 flex items-center justify-evenly h-full pr-4">
+                {/* 1. More Options / Settings Menu */}
+                <div className="relative flex items-center justify-center -translate-x-6">
+                  <button onClick={() => setIsMoreMenuOpen(!isMoreMenuOpen)} className="flex items-center justify-center group/tool" title={getInspectTitle('More options')}>
+                    <span style={ICON_WHITE_OUTLINE}>
+                      <MoreHorizontal size={Math.round(bottomIconSize * 0.5)} color="white" strokeWidth={3} />
+                    </span>
+                  </button>
+                  {isMoreMenuOpen && <div className="absolute top-full left-1/2 -translate-x-1/2 mt-3 w-56 bg-sky-50 border border-sky-300 rounded-lg shadow-xl overflow-hidden z-[10001] animate-in fade-in zoom-in-95 duration-100 flex flex-col p-1" style={{
+                    zIndex: 10001
                   }}>
-                    {showPreviewMenus ? <EyeOff size={14} /> : <Eye size={14} />}
-                    {showPreviewMenus ? 'Hide Preview Menus' : 'Show Preview Menus'}
+                    <button className="w-full text-left px-4 py-2 text-sm text-sky-900 hover:bg-sky-200 transition-colors flex items-center gap-2" onClick={() => {
+                      setShowPreviewMenus(!showPreviewMenus);
+                      setIsMoreMenuOpen(false);
+                    }}>
+                      {showPreviewMenus ? <EyeOff size={14} /> : <Eye size={14} />}
+                      {showPreviewMenus ? 'Hide Preview Menus' : 'Show Preview Menus'}
+                    </button>
+
+                    <button className="w-full text-left px-4 py-2 text-sm text-sky-900 hover:bg-sky-200 transition-colors flex items-center gap-2" onClick={() => {
+                      toggleDevToolbar();
+                      setIsMoreMenuOpen(false);
+                    }}>
+                      {showDevToolbar ? <EyeOff size={14} /> : <Eye size={14} />}
+                      {showDevToolbar ? 'Hide Dev Toolbar' : 'Show Dev Toolbar'}
+                    </button>
+
+                    <button className="w-full text-left px-4 py-2 text-sm text-sky-900 hover:bg-sky-200 transition-colors flex items-center gap-2" onClick={() => {
+                      document.getElementById('banner-upload').click();
+                      setIsMoreMenuOpen(false);
+                    }}>
+                      <Upload size={14} />
+                      Change Banner
+                    </button>
+
+                    <button className="w-full text-left px-4 py-2 text-sm text-sky-900 hover:bg-sky-200 transition-colors flex items-center gap-2" onClick={() => {
+                      setIsVisualizerEnabled(!isVisualizerEnabled);
+                      setIsMoreMenuOpen(false);
+                    }}>
+                      {isVisualizerEnabled ? <EyeOff size={14} /> : <Eye size={14} />}
+                      {isVisualizerEnabled ? 'Hide Audio Visualizer' : 'Show Audio Visualizer'}
+                    </button>
+                    <input type="file" id="banner-upload" className="hidden" accept="image/*" onChange={handleBannerUpload} />
+                  </div>}
+                </div>
+
+                {/* 2. History Clock Icon */}
+                <div className="relative flex items-center justify-center h-full -translate-x-[5px]">
+                  <div className="absolute -left-6 opacity-100 pointer-events-auto">
+                    <button onClick={handleHistoryBack} className="p-0.5 text-black hover:scale-110 active:scale-95 transition-transform" title="History Back (Older)">
+                      <ChevronLeft size={navChevronSize} strokeWidth={3} />
+                    </button>
+                  </div>
+
+                  <button onClick={() => console.log('History button clicked')} className={`flex items-center justify-center group/tool transition-all ${historyIndex >= Math.min(historyStack.length - 1, 5) || historyStack.length <= 1 ? historyIndex === 0 ? 'opacity-30' : '' : ''}`} title={getInspectTitle('History')}>
+                    <span style={ICON_WHITE_OUTLINE}>
+                      <Clock size={Math.round(bottomIconSize * 0.5)} color="white" strokeWidth={3} />
+                    </span>
                   </button>
 
-                  <button className="w-full text-left px-4 py-2 text-sm text-sky-900 hover:bg-sky-200 transition-colors flex items-center gap-2" onClick={() => {
-                    toggleDevToolbar();
-                    setIsMoreMenuOpen(false);
-                  }}>
-                    {showDevToolbar ? <EyeOff size={14} /> : <Eye size={14} />}
-                    {showDevToolbar ? 'Hide Dev Toolbar' : 'Show Dev Toolbar'}
-                  </button>
-
-                  <button className="w-full text-left px-4 py-2 text-sm text-sky-900 hover:bg-sky-200 transition-colors flex items-center gap-2" onClick={() => {
-                    document.getElementById('banner-upload').click();
-                    setIsMoreMenuOpen(false);
-                  }}>
-                    <Upload size={14} />
-                    Change Banner
-                  </button>
-
-                  <button className="w-full text-left px-4 py-2 text-sm text-sky-900 hover:bg-sky-200 transition-colors flex items-center gap-2" onClick={() => {
-                    setIsVisualizerEnabled(!isVisualizerEnabled);
-                    setIsMoreMenuOpen(false);
-                  }}>
-                    {isVisualizerEnabled ? <EyeOff size={14} /> : <Eye size={14} />}
-                    {isVisualizerEnabled ? 'Hide Audio Visualizer' : 'Show Audio Visualizer'}
-                  </button>
-                  <input type="file" id="banner-upload" className="hidden" accept="image/*" onChange={handleBannerUpload} />
-                </div>}
+                  <div className="absolute -right-6 opacity-100 pointer-events-auto">
+                    <button onClick={handleHistoryForward} className="p-0.5 text-black hover:scale-110 active:scale-95 transition-transform" title="History Forward (Newer)">
+                      <ChevronRight size={navChevronSize} strokeWidth={3} />
+                    </button>
+                  </div>
+                </div>
               </div>
 
-              {/* Plus Button */}
-              <div className="absolute left-1/2 top-1/2" style={{
-                transform: `translate(calc(-50% - 100px), -50%)`
-              }}>
+              {/* 3. Plus Button - Absolute Centered */}
+              <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center justify-center z-10 w-10">
                 <button onClick={() => setIsAddMenuOpen(!isAddMenuOpen)} className="flex items-center justify-center group/tool" title={getInspectTitle('Add to Playlist')}>
                   <span style={ICON_WHITE_OUTLINE}>
                     <Plus size={Math.round(bottomIconSize * 0.5)} color="white" strokeWidth={3} />
                   </span>
                 </button>
-                {isAddMenuOpen && <div className="absolute top-full left-1/2 -translate-x-1/2 mt-3 w-56 bg-sky-50 border border-sky-300 rounded-lg shadow-xl overflow-hidden z-[10001] animate-in fade-in zoom-in-95 duration-100 flex flex-col p-1" style={{
+                {isAddMenuOpen && <div className="absolute top-full left-1/2 -translate-x-1/2 mt-3 w-[260px] bg-sky-50 border border-sky-300 rounded-lg shadow-xl overflow-hidden z-[10001] animate-in fade-in zoom-in-95 duration-100 flex flex-col p-1" style={{
                   zIndex: 10001
                 }}>
-                  <button className="w-full text-left px-4 py-2 text-sm text-sky-900 border-b border-sky-200 hover:bg-sky-200 transition-colors flex items-center gap-2" onClick={handleAddClipboardToQuickVideos}>
-                    <Plus size={14} />
-                    Add clipboard to quick videos
-                  </button>
-                  <button className="w-full text-left px-4 py-2 text-sm text-sky-900 hover:bg-sky-200 transition-colors flex items-center gap-2" onClick={handleAddClipboardToCurrentPlaylist}>
-                    <Plus size={14} />
-                    Add clipboard to current playlist
-                  </button>
+                  <div className="flex border-b border-sky-200">
+                    <button className="flex-1 text-left px-4 py-2 text-sm text-sky-900 hover:bg-sky-200 transition-colors flex items-center gap-2" onClick={() => handleAddClipboardToQuickVideos(false)} title="Add clipboard to Quick Videos playlist">
+                      <Plus size={14} />
+                      Add to quick videos
+                    </button>
+                    <button className="px-4 hover:bg-sky-200 transition-colors flex items-center justify-center border-l border-sky-200 text-sky-900" onClick={() => handleAddClipboardToQuickVideos(true)} title="Add and Play immediately">
+                      <Play size={14} className="fill-current" />
+                    </button>
+                  </div>
+                  <div className="flex">
+                    <button className="flex-1 text-left px-4 py-2 text-sm text-sky-900 hover:bg-sky-200 transition-colors flex items-center gap-2" onClick={() => handleAddClipboardToCurrentPlaylist(false)} title="Add clipboard to Current Playlist">
+                      <Plus size={14} />
+                      Add to current playlist
+                    </button>
+                    <button className="px-4 hover:bg-sky-200 transition-colors flex items-center justify-center border-l border-sky-200 text-sky-900" onClick={() => handleAddClipboardToCurrentPlaylist(true)} title="Add and Play immediately">
+                      <Play size={14} className="fill-current" />
+                    </button>
+                  </div>
                 </div>}
               </div>
 
-              {/* Normal Action Controls */}
-              <>
-                {/* History Clock Icon */}
-                <div className="absolute left-1/2 top-1/2" style={{
-                  transform: `translate(calc(-50% + 10px), -50%)`
-                }}>
-                  <div className="relative flex items-center justify-center">
-                    <div className="absolute -left-6 opacity-100 pointer-events-auto">
-                      <button onClick={handleHistoryBack} className="p-0.5 text-black hover:scale-110 active:scale-95 transition-transform" title="History Back (Older)">
-                        <ChevronLeft size={navChevronSize} strokeWidth={3} />
-                      </button>
-                    </div>
-
-                    <button onClick={() => console.log('History button clicked')} className={`flex items-center justify-center group/tool transition-all ${historyIndex >= Math.min(historyStack.length - 1, 5) || historyStack.length <= 1 ? historyIndex === 0 ? 'opacity-30' : '' : ''}`} title={getInspectTitle('History')}>
-                      <span style={ICON_WHITE_OUTLINE}>
-                        <Clock size={Math.round(bottomIconSize * 0.5)} color="white" strokeWidth={3} />
-                      </span>
-                    </button>
-
-                    <div className="absolute -right-6 opacity-100 pointer-events-auto">
-                      <button onClick={handleHistoryForward} className="p-0.5 text-black hover:scale-110 active:scale-95 transition-transform" title="History Forward (Newer)">
-                        <ChevronRight size={navChevronSize} strokeWidth={3} />
-                      </button>
-                    </div>
-                  </div>
+              {/* Right Side (2 items evenly spaced) */}
+              <div className="flex-1 flex items-center justify-evenly h-full pl-4">
+                {/* 4. Priority Pin */}
+                <div className="relative flex items-center justify-center w-[52px] h-[39px]">
+                  {(() => {
+                    const priorityPinData = pins.find(pin => isPriorityPin(pin.video.id));
+                    if (!priorityPinData) return null;
+                    const thumbnailUrl = getThumbnailUrl(priorityPinData.video.video_id, 'default');
+                    return (
+                      <div className="pointer-events-auto group/pin z-40 relative w-full h-full">
+                        <button onClick={() => handlePinClick(priorityPinData.video)} className={`rounded-lg flex items-center justify-center transition-all shadow-md overflow-hidden ${activePin === priorityPinData.id ? 'ring-2 ring-sky-400' : ''}`} style={{
+                          width: '100%',
+                          height: '100%',
+                          border: '2px solid #000'
+                        }} title={`Priority Pin: ${priorityPinData.video.title || 'Untitled Video'}`}>
+                          {thumbnailUrl ? <img src={thumbnailUrl} alt={priorityPinData.video.title} className="w-full h-full object-cover" /> : <Pin size={24} fill="#fbbf24" strokeWidth={2} />}
+                        </button>
+                        <button className="absolute -top-2 -right-2 w-5 h-5 bg-rose-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover/pin:opacity-100 transition-opacity shadow-sm border border-white z-20" onClick={e => handleUnpin(e, priorityPinData.video)} title="Unpin video">
+                          <X size={12} strokeWidth={4} />
+                        </button>
+                      </div>
+                    );
+                  })()}
                 </div>
 
-                {/* Grid Button */}
-                <div className="absolute left-1/2 top-1/2" style={{
-                  transform: `translate(calc(-50% + 120px), -50%)`
-                }}>
-                  <div className="relative flex items-center justify-center">
-                    <div className="absolute -left-7 opacity-100 pointer-events-auto">
-                      <button onClick={() => navigatePlaylist('down')} className="p-0.5 text-black hover:scale-110 active:scale-95 transition-transform" title={getInspectTitle('Previous playlist')}>
-                        <ChevronLeft size={navChevronSize} strokeWidth={3} />
-                      </button>
-                    </div>
-
-                    <button onClick={handlePlaylistsGrid} className="flex items-center justify-center group/tool transition-all" title={getInspectTitle('View playlists grid')}>
-                      <span style={ICON_WHITE_OUTLINE}>
-                        <Library size={Math.round(bottomIconSize * 0.5)} color="white" strokeWidth={3} />
-                      </span>
+                {/* 5. Grid Button */}
+                <div className="relative flex items-center justify-center h-full translate-x-[14px]">
+                  <div className="absolute -left-6 opacity-100 pointer-events-auto">
+                    <button onClick={() => navigatePlaylist('down')} className="p-0.5 text-black hover:scale-110 active:scale-95 transition-transform" title={getInspectTitle('Previous playlist')}>
+                      <ChevronLeft size={navChevronSize} strokeWidth={3} />
                     </button>
+                  </div>
 
-                    <div className="absolute -right-7 opacity-100 pointer-events-auto">
-                      <button onClick={() => navigatePlaylist('up')} className="p-0.5 text-black hover:scale-110 active:scale-95 transition-transform" title={getInspectTitle('Next playlist')}>
-                        <ChevronRight size={navChevronSize} strokeWidth={3} />
-                      </button>
-                    </div>
+                  <button onClick={handlePlaylistsGrid} className="flex items-center justify-center group/tool transition-all" title={getInspectTitle('View playlists grid')}>
+                    <span style={ICON_WHITE_OUTLINE}>
+                      <Menu size={Math.round(bottomIconSize * 0.5)} color="white" strokeWidth={3} />
+                    </span>
+                  </button>
+
+                  <div className="absolute -right-6 opacity-100 pointer-events-auto">
+                    <button onClick={() => navigatePlaylist('up')} className="p-0.5 text-black hover:scale-110 active:scale-95 transition-transform" title={getInspectTitle('Next playlist')}>
+                      <ChevronRight size={navChevronSize} strokeWidth={3} />
+                    </button>
                   </div>
                 </div>
-              </>
+              </div>
             </div>
           </div>
 

@@ -26,15 +26,15 @@ Displays the current playlist's title, centered with contextual badges below it:
 
 ### Interactions
 - **Title Click**: Opens the playlists grid view.
-- **Priority Pin Display**: Overlaid at top-right if a priority pin is active.
 
 ### Action & Navigation Cluster
-A tightly grouped set of tool buttons positioned around the center-right of the menu. The History and Grid buttons feature permanent, always-visible flanking left/right navigational chevrons for rapid access to context-specific navigation.
+A horizontally evenly-spaced set of tool buttons positioned across the bottom of the menu. The layout adjusts perfectly to incorporate the Priority Pin at the center when active.
 
-1. **Three Dot Menu (More Options)**: Toggles advanced configurations (Preview Menus, Change Banner, Audio Visualizer).
-2. **Add (Plus)**: Functions as a dropdown menu ("Add clipboard to quick videos" and "Add clipboard to current playlist").
-3. **History**: Clock icon. Left-click to view History page (Placeholder). Left-clicking the flanking left/right arrows navigates Older/Newer in playback history.
-4. **Grid / Library**: Left-clicking the flanking left/right arrows navigates Previous/Next between playlists. Left-clicking the center button returns to the Playlists grid view.
+1. **Three Dot Menu (More Options)** (Left Half): Toggles advanced configurations (Preview Menus, Change Banner, Audio Visualizer). Visually nudged outwards (24px left) toward the container edge to improve peripheral balance.
+2. **History** (Left Half): Clock icon. Left-click to view History page (Placeholder). Left-clicking the flanking left/right arrows navigates Older/Newer in playback history. Visually nudged outwards (5px left) toward the container edge to improve peripheral balance.
+3. **Add (Plus)** (Absolute Center): Perfect dead-center anchor of the bar. Functions as a dropdown menu ("Add clipboard to quick videos" and "Add clipboard to current playlist"). Each option features a Play button extension on its right side that not only adds the video but also seamlessly switches playback to it immediately.
+4. **Priority Pin** (Right Half): When active, the prominent Priority Pin thumbnail sits on the right half of the menu evenly distributed with the Grid icon.
+5. **Grid / Library** (Right Half): 3 horizontal lines stacked icon. Left-clicking the flanking left/right arrows navigates Previous/Next between playlists. Left-clicking the center button returns to the Playlists grid view. Visually nudged outwards (14px right) toward the container edge to improve peripheral balance.
 
 ## 3. Top Video Menu (Right)
 
