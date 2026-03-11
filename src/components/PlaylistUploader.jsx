@@ -1,8 +1,114 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { createPlaylist, addVideoToPlaylist, assignVideoToFolder, getAllPlaylists, getPlaylistItems, getVideosInFolder, addPlaylistSource } from '../api/playlistApi';
-import { extractPlaylistId, extractVideoId, parseYouTubeDuration } from '../utils/youtubeUtils';
+import { extractPlaylistId, extractVideoId, parseYouTubeDuration, extractChannelInfo, fetchChannelMetadata } from '../utils/youtubeUtils';
 import { FOLDER_COLORS } from '../utils/folderColors';
 import PlaylistFolderSelector from './PlaylistFolderSelector';
+
+const LinkBubbleInput = ({ value, onChange, placeholder, disabled, colorHex, minHeight = "8rem" }) => {
+  const links = value ? value.split('\n').filter(Boolean) : [];
+  const [inputValue, setInputValue] = useState('');
+  const [isFocused, setIsFocused] = useState(false);
+  const inputId = `bubble-input-${colorHex || 'all'}`;
+
+  const getBubbleType = (link) => {
+    if (link.includes('youtube.com/playlist') || (link.includes('youtube.com/watch') && link.includes('list='))) {
+      return { label: 'Playlist', color: 'bg-purple-100 text-purple-700 border-purple-200' };
+    } else if (link.includes('youtu.be') || link.includes('youtube.com/watch')) {
+      return { label: 'Video', color: 'bg-red-100 text-red-700 border-red-200' };
+    } else if (link.includes('youtube.com/channel/') || link.includes('youtube.com/@') || link.startsWith('@')) {
+      return { label: 'Channel', color: 'bg-orange-100 text-orange-700 border-orange-200' };
+    } else if (link.startsWith('local:playlist:')) {
+      return { label: 'Local List', color: 'bg-sky-100 text-sky-700 border-sky-200' };
+    } else if (link.startsWith('local:folder:')) {
+      return { label: 'Local Folder', color: 'bg-indigo-100 text-indigo-700 border-indigo-200' };
+    }
+    return { label: 'Link', color: 'bg-slate-100 text-slate-600 border-slate-200' };
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      if (inputValue.trim()) {
+        addLinks(inputValue);
+        setInputValue('');
+      }
+    } else if (e.key === 'Backspace' && inputValue === '') {
+      e.preventDefault();
+      removeLink(links.length - 1);
+    }
+  };
+
+  const handlePaste = (e) => {
+    e.preventDefault();
+    const paste = e.clipboardData.getData('text');
+    addLinks(paste);
+  };
+
+  const addLinks = (text) => {
+    const newParts = text.split(/[\s,;|]+/).filter(Boolean);
+    if (newParts.length > 0) {
+      const updated = [...links];
+      newParts.forEach(part => {
+        if (!updated.includes(part)) updated.push(part);
+      });
+      onChange(updated.join('\n'));
+    }
+  };
+
+  const removeLink = (index) => {
+    if (index < 0 || index >= links.length) return;
+    const updated = [...links];
+    updated.splice(index, 1);
+    onChange(updated.join('\n'));
+  };
+
+  const focusStyle = isFocused ? 'border-sky-500 ring-1 ring-sky-500' : 'border-slate-200';
+  const customBorderStyle = colorHex ? { borderLeft: `3px solid ${colorHex}` } : {};
+
+  return (
+    <div
+      className={`w-full overflow-y-auto bg-slate-50 border rounded-lg p-2 flex flex-wrap gap-2 items-start transition-colors cursor-text ${focusStyle}`}
+      style={{ minHeight, maxHeight: "16rem", ...customBorderStyle }}
+      onClick={() => document.getElementById(inputId)?.focus()}
+    >
+      {links.map((link, i) => {
+        const typeInfo = getBubbleType(link);
+        return (
+          <div key={i} className={`flex items-center gap-1.5 px-2 py-1 rounded-full border text-xs font-medium ${typeInfo.color} break-all max-w-full animate-in zoom-in-95 duration-100`} title={link}>
+            <span className="opacity-75">{typeInfo.label}:</span>
+            <span className="truncate max-w-[200px]">{link}</span>
+            <button
+              onClick={(e) => { e.stopPropagation(); removeLink(i); }}
+              className="ml-1 opacity-50 hover:opacity-100 hover:bg-black/10 rounded-full p-0.5 transition-all"
+              disabled={disabled}
+            >
+              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+            </button>
+          </div>
+        );
+      })}
+      <input
+        id={inputId}
+        type="text"
+        value={inputValue}
+        onChange={(e) => setInputValue(e.target.value)}
+        onKeyDown={handleKeyDown}
+        onPaste={handlePaste}
+        onFocus={() => setIsFocused(true)}
+        onBlur={() => {
+          setIsFocused(false);
+          if (inputValue.trim()) {
+            addLinks(inputValue);
+            setInputValue('');
+          }
+        }}
+        disabled={disabled}
+        placeholder={links.length === 0 ? placeholder : ''}
+        className="flex-1 min-w-[150px] bg-transparent outline-none text-sm text-slate-700 py-1"
+      />
+    </div>
+  );
+};
 
 const PlaylistUploader = ({ onUploadComplete, onCancel, initialPlaylistId }) => {
   // Main Tab State
@@ -32,7 +138,7 @@ const PlaylistUploader = ({ onUploadComplete, onCancel, initialPlaylistId }) => 
       return acc;
     }, {}),
   });
-  const [showFolderFields, setShowFolderFields] = useState(false);
+  const [activeSegment, setActiveSegment] = useState('all');
 
   // Selector Modal State (for adding existing playlists/folders to inputs)
   const [showSelector, setShowSelector] = useState(false);
@@ -105,8 +211,16 @@ const PlaylistUploader = ({ onUploadComplete, onCancel, initialPlaylistId }) => 
     // Actually, user might paste a single video.
 
     // Logic: 
+    // If it is a channel link, return channel card.
     // If it has "list=PL...", treat as playlist.
     // Else if it has "v=..." or "youtu.be/...", treat as single video.
+
+    const channelInfo = extractChannelInfo(playlistUrl);
+    if (channelInfo) {
+      const metadata = await fetchChannelMetadata(playlistUrl);
+      if (!metadata) throw new Error('Could not fetch channel metadata');
+      return metadata;
+    }
 
     if (playlistId) {
       // --- PLAYLIST IMPORT ---
@@ -187,26 +301,42 @@ const PlaylistUploader = ({ onUploadComplete, onCancel, initialPlaylistId }) => 
         }
       }
 
+      const playlistRef = {
+        videoId: targetListId,
+        videoUrl: `https://www.youtube.com/playlist?list=${targetListId}`,
+        title: sourcePlaylistName,
+        thumbnailUrl: allVideos[0]?.snippet?.thumbnails?.medium?.url || allVideos[0]?.snippet?.thumbnails?.default?.url || null,
+        author: 'Playlist Tracker',
+        viewCount: '0',
+        publishedAt: new Date().toISOString(),
+        durationSeconds: null,
+        description: 'Playlist Link Tracker',
+        tags: null,
+        isPlaylist: true
+      };
+
+      const extractedVideos = allVideos
+        .filter(item => item.snippet?.resourceId?.kind === 'youtube#video')
+        .map(item => {
+          const vid = item.snippet.resourceId.videoId;
+          const details = videoDetails[vid] || {};
+          return {
+            videoId: vid,
+            videoUrl: details.videoUrl || `https://www.youtube.com/watch?v=${vid}`,
+            title: details.title || item.snippet.title,
+            thumbnailUrl: details.thumbnailUrl || item.snippet.thumbnails?.medium?.url,
+            author: details.author || item.snippet.videoOwnerChannelTitle || 'Unknown',
+            viewCount: details.viewCount || '0',
+            publishedAt: details.publishedAt || item.snippet.publishedAt,
+            durationSeconds: details.durationSeconds,
+            description: details.description,
+            tags: details.tags
+          };
+        });
+
       return {
         sourcePlaylistName,
-        videos: allVideos
-          .filter(item => item.snippet?.resourceId?.kind === 'youtube#video')
-          .map(item => {
-            const vid = item.snippet.resourceId.videoId;
-            const details = videoDetails[vid] || {};
-            return {
-              videoId: vid,
-              videoUrl: details.videoUrl || `https://www.youtube.com/watch?v=${vid}`,
-              title: details.title || item.snippet.title,
-              thumbnailUrl: details.thumbnailUrl || item.snippet.thumbnails?.medium?.url,
-              author: details.author || item.snippet.videoOwnerChannelTitle || 'Unknown',
-              viewCount: details.viewCount || '0',
-              publishedAt: details.publishedAt || item.snippet.publishedAt,
-              durationSeconds: details.durationSeconds,
-              description: details.description,
-              tags: details.tags
-            };
-          })
+        videos: [playlistRef, ...extractedVideos]
       };
     } else if (singleVideoId) {
       // --- SINGLE VIDEO IMPORT ---
@@ -255,28 +385,8 @@ const PlaylistUploader = ({ onUploadComplete, onCancel, initialPlaylistId }) => 
           tags
         }]
       };
-    } else if (playlistUrl.includes('@')) {
-      // --- HANDLE IMPORT ---
-      const handleMatch = playlistUrl.match(/@([\w\.\-_]+)/);
-      if (!handleMatch) throw new Error('Invalid handle URL');
-
-      const handle = handleMatch[1];
-      // Need to resolve handle to channel ID
-      const searchUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=@${handle}&type=channel&maxResults=1&key=${API_KEY}`;
-      const searchRes = await fetch(searchUrl);
-      const searchData = await searchRes.json();
-
-      if (!searchData.items?.length) throw new Error('Channel not found for handle: ' + handle);
-
-      const channelId = searchData.items[0].snippet.channelId; // UC...
-      const targetListId = 'UU' + channelId.substring(2); // Convert to Uploads
-
-      // Recurse or reuse logic? Let's just call fetchPlaylistVideos recursively with the uploads specific URL?
-      // Or inline the logic? Inlining is safer to avoid loop.
-      // Actually, just calling recursively with the NEW list ID (which will be caught by the first block) involves minimal overhead.
-      // We construct a fake URL for the recursion
-      return await fetchPlaylistVideos(`https://www.youtube.com/playlist?list=${targetListId}`);
-
+      // Should be handled by channelInfo block now.
+      return null;
     } else {
       throw new Error(`Invalid URL: ${playlistUrl}`);
     }
@@ -830,38 +940,38 @@ const PlaylistUploader = ({ onUploadComplete, onCancel, initialPlaylistId }) => 
         />
       )}
 
-      <div className="w-full max-w-4xl mx-auto p-0 bg-slate-800 rounded-lg border border-slate-700 flex flex-col h-[80vh] max-h-[800px]">
+      <div className="w-full max-w-4xl mx-auto p-0 bg-white rounded-lg border border-slate-200 flex flex-col h-[80vh] max-h-[800px]">
 
         {/* HEADER & TABS */}
-        <div className="flex items-center justify-between p-4 border-b border-slate-700 bg-slate-800/50 rounded-t-lg">
+        <div className="flex items-center justify-between p-4 border-b border-slate-200 bg-slate-100/80 rounded-t-lg">
           <div className="flex space-x-4">
             <button
               onClick={() => setActiveTab('add')}
-              className={`px-4 py-2 font-bold rounded-lg transition-colors ${activeTab === 'add' ? 'bg-sky-500 text-white' : 'text-slate-400 hover:text-white hover:bg-slate-700'}`}
+              className={`px-4 py-2 font-bold rounded-lg transition-colors ${activeTab === 'add' ? 'bg-sky-500 text-white' : 'text-slate-500 hover:text-slate-900 hover:bg-slate-200'}`}
             >
               Add
             </button>
             <button
               onClick={() => setActiveTab('modify')}
-              className={`px-4 py-2 font-bold rounded-lg transition-colors ${activeTab === 'modify' ? 'bg-sky-500 text-white' : 'text-slate-400 hover:text-white hover:bg-slate-700'}`}
+              className={`px-4 py-2 font-bold rounded-lg transition-colors ${activeTab === 'modify' ? 'bg-sky-500 text-white' : 'text-slate-500 hover:text-slate-900 hover:bg-slate-200'}`}
             >
               Modify
             </button>
             <button
               onClick={() => setActiveTab('json')}
-              className={`px-4 py-2 font-bold rounded-lg transition-colors ${activeTab === 'json' ? 'bg-sky-500 text-white' : 'text-slate-400 hover:text-white hover:bg-slate-700'}`}
+              className={`px-4 py-2 font-bold rounded-lg transition-colors ${activeTab === 'json' ? 'bg-sky-500 text-white' : 'text-slate-500 hover:text-slate-900 hover:bg-slate-200'}`}
             >
               JSON
             </button>
             <button
               onClick={() => setActiveTab('twitterJson')}
-              className={`px-4 py-2 font-bold rounded-lg transition-colors ${activeTab === 'twitterJson' ? 'bg-sky-500 text-white' : 'text-slate-400 hover:text-white hover:bg-slate-700'}`}
+              className={`px-4 py-2 font-bold rounded-lg transition-colors ${activeTab === 'twitterJson' ? 'bg-sky-500 text-white' : 'text-slate-500 hover:text-slate-900 hover:bg-slate-200'}`}
             >
               Twitter JSON
             </button>
           </div>
 
-          <button onClick={onCancel} className="text-slate-400 hover:text-white">
+          <button onClick={onCancel} className="text-slate-500 hover:text-slate-900">
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
           </button>
         </div>
@@ -873,15 +983,15 @@ const PlaylistUploader = ({ onUploadComplete, onCancel, initialPlaylistId }) => 
           {activeTab === 'add' && (
             <div className="space-y-6">
               {/* 1. Target Playlist Bar */}
-              <div className="bg-slate-900/50 p-4 rounded-xl border border-slate-700 flex flex-wrap gap-4 items-center">
-                <div className="flex-shrink-0 text-slate-300 font-medium">Add to:</div>
+              <div className="bg-slate-50/80 p-4 rounded-xl border border-slate-200 flex flex-wrap gap-4 items-center">
+                <div className="flex-shrink-0 text-slate-700 font-medium">Add to:</div>
 
                 {targetMode === 'existing' ? (
                   <div className="flex-1 flex gap-2">
                     <select
                       value={selectedPlaylistId}
                       onChange={(e) => setSelectedPlaylistId(e.target.value)}
-                      className="flex-1 bg-slate-800 border border-slate-600 text-white text-sm rounded-lg focus:ring-sky-500 focus:border-sky-500 block p-2.5"
+                      className="flex-1 bg-white border border-slate-300 text-slate-900 text-sm rounded-lg focus:ring-sky-500 focus:border-sky-500 block p-2.5"
                       disabled={loading}
                     >
                       <option value="">Default (Unsorted)</option>
@@ -905,7 +1015,7 @@ const PlaylistUploader = ({ onUploadComplete, onCancel, initialPlaylistId }) => 
                       placeholder="New Playlist Name"
                       value={newPlaylistName}
                       onChange={(e) => setNewPlaylistName(e.target.value)}
-                      className="w-full bg-slate-800 border border-slate-600 text-white text-sm rounded-lg p-2.5 focus:border-green-500 focus:outline-none"
+                      className="w-full bg-white border border-slate-300 text-slate-900 text-sm rounded-lg p-2.5 focus:border-green-500 focus:outline-none"
                       autoFocus
                       disabled={loading}
                     />
@@ -915,12 +1025,12 @@ const PlaylistUploader = ({ onUploadComplete, onCancel, initialPlaylistId }) => 
                         placeholder="Description (Optional)"
                         value={newPlaylistDescription}
                         onChange={(e) => setNewPlaylistDescription(e.target.value)}
-                        className="flex-1 bg-slate-800 border border-slate-600 text-white text-sm rounded-lg p-2.5 focus:border-green-500 focus:outline-none"
+                        className="flex-1 bg-white border border-slate-300 text-slate-900 text-sm rounded-lg p-2.5 focus:border-green-500 focus:outline-none"
                         disabled={loading}
                       />
                       <button
                         onClick={() => setTargetMode('existing')}
-                        className="bg-slate-700 hover:bg-slate-600 text-white px-4 py-2 rounded-lg text-sm"
+                        className="bg-slate-200 hover:bg-slate-300 text-white px-4 py-2 rounded-lg text-sm"
                         disabled={loading}
                       >
                         Cancel
@@ -931,46 +1041,88 @@ const PlaylistUploader = ({ onUploadComplete, onCancel, initialPlaylistId }) => 
               </div>
 
               {/* 2. All Links Input */}
+              {/* 2. Links Input with Folder Prism */}
               <div className="space-y-2">
-                <div className="flex justify-between items-center">
-                  <label className="text-sm font-medium text-slate-300">Links (YouTube Playlists, Videos, or Local Refs)</label>
+                <div className="flex justify-between items-center mb-1">
+                  <label className="text-sm font-medium text-slate-700">Assign Links to Folder</label>
                   <button
-                    onClick={() => handleAddSelectorClick('all')}
-                    className="text-xs text-sky-400 hover:text-sky-300 flex items-center gap-1"
+                    onClick={() => handleAddSelectorClick(activeSegment)}
+                    className="text-xs text-sky-500 hover:text-sky-600 flex items-center gap-1 font-medium"
                     disabled={loading}
                   >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
                     Add Existing
                   </button>
                 </div>
-                <textarea
-                  value={playlistLinks.all}
-                  onChange={(e) => handleLinkChange('all', e.target.value)}
-                  className="w-full h-32 bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-slate-300 font-mono focus:border-sky-500 focus:outline-none resize-none"
-                  placeholder="Paste links here..."
+
+                <div className="flex items-center h-8 mb-2 border border-slate-300 rounded-lg overflow-hidden bg-slate-100/50">
+                  <button
+                    onClick={() => setActiveSegment('all')}
+                    className={`h-full min-w-[3.5rem] flex-1 flex items-center justify-center transition-all tabular-nums text-[10px] font-bold leading-none ${activeSegment === 'all'
+                      ? 'opacity-100 z-10 relative after:content-[""] after:absolute after:inset-0 after:ring-2 after:ring-inset after:ring-black/10 bg-white text-black'
+                      : 'opacity-60 hover:opacity-100 bg-white text-black'
+                      }`}
+                    title="No Folder Assignment"
+                  >
+                    {playlistLinks['all'] ? (
+                      <span className="text-black drop-shadow-sm">
+                        {playlistLinks['all'].split('\n').filter(Boolean).length} All
+                      </span>
+                    ) : 'All'}
+                  </button>
+                  {FOLDER_COLORS.map((color) => {
+                    const isSelected = activeSegment === color.id;
+                    const count = playlistLinks[color.id] ? playlistLinks[color.id].split('\n').filter(Boolean).length : 0;
+                    return (
+                      <button
+                        key={color.id}
+                        onClick={() => setActiveSegment(color.id)}
+                        className={`h-full flex-1 min-w-0 flex items-center justify-center transition-all tabular-nums ${isSelected
+                          ? 'opacity-100 z-10 relative after:content-[""] after:absolute after:inset-0 after:ring-2 after:ring-inset after:ring-white/50'
+                          : 'opacity-60 hover:opacity-100'
+                          }`}
+                        style={{ backgroundColor: color.hex }}
+                        title={`${color.name} Folder`}
+                      >
+                        {count > 0 && (
+                          <span className="text-[10px] font-bold text-white/90 drop-shadow-md">
+                            {count}
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <LinkBubbleInput
+                  value={playlistLinks[activeSegment]}
+                  onChange={(val) => handleLinkChange(activeSegment, val)}
+                  placeholder={activeSegment === 'all' ? "Paste links here (No folder assignment)... (Space or Enter to add)" : `Paste links to assign to ${FOLDER_COLORS.find(c => c.id === activeSegment)?.name} folder... (Space or Enter to add)`}
+                  colorHex={activeSegment === 'all' ? null : FOLDER_COLORS.find(c => c.id === activeSegment)?.hex}
                   disabled={loading}
+                  minHeight="10rem"
                 />
               </div>
 
               {/* Subscription Options */}
-              <div className="flex items-center gap-4 bg-slate-800/50 p-3 rounded-lg border border-slate-700">
-                <label className="flex items-center space-x-2 text-sm text-slate-300 cursor-pointer">
+              <div className="flex items-center gap-4 bg-slate-100/80 p-3 rounded-lg border border-slate-200">
+                <label className="flex items-center space-x-2 text-sm text-slate-700 cursor-pointer">
                   <input
                     type="checkbox"
                     checked={subscribeToChannels}
                     onChange={(e) => setSubscribeToChannels(e.target.checked)}
-                    className="w-4 h-4 text-sky-500 rounded border-slate-600 focus:ring-sky-500 bg-slate-700"
+                    className="w-4 h-4 text-sky-500 rounded border-slate-300 focus:ring-sky-500 bg-slate-200"
                   />
                   <span>Subscribe (Auto-update)</span>
                 </label>
 
                 {subscribeToChannels && (
                   <div className="flex items-center gap-2 animate-in fade-in slide-in-from-left-2">
-                    <span className="text-xs text-slate-400">Limit:</span>
+                    <span className="text-xs text-slate-500">Limit:</span>
                     <select
                       value={maxVideosPerSource}
                       onChange={(e) => setMaxVideosPerSource(Number(e.target.value))}
-                      className="bg-slate-900 border border-slate-600 text-white text-xs rounded p-1"
+                      className="bg-slate-50 border border-slate-300 text-slate-900 text-xs rounded p-1"
                     >
                       <option value={10}>10 videos</option>
                       <option value={20}>20 videos</option>
@@ -980,43 +1132,7 @@ const PlaylistUploader = ({ onUploadComplete, onCancel, initialPlaylistId }) => 
                 )}
               </div>
 
-              {/* 3. Colored Folders Toggle */}
-              <div className="space-y-4">
-                <button
-                  onClick={() => setShowFolderFields(!showFolderFields)}
-                  className="w-full flex items-center justify-between p-3 bg-slate-800 border border-slate-700 rounded-lg hover:bg-slate-750 transition-colors"
-                  disabled={loading}
-                >
-                  <span className="font-medium text-slate-300 text-sm">Colored Folder Assignments</span>
-                  <svg className={`w-5 h-5 text-slate-400 transform transition-transform ${showFolderFields ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
-                </button>
 
-                {showFolderFields && (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 animate-in fade-in slide-in-from-top-2">
-                    {FOLDER_COLORS.map(color => (
-                      <div key={color.id} className="space-y-1">
-                        <div className="flex items-center justify-between text-xs text-slate-400 px-1">
-                          <div className="flex items-center gap-2">
-                            <div className="w-2 h-2 rounded-full" style={{ backgroundColor: color.hex }}></div>
-                            <span>{color.name}</span>
-                          </div>
-                          <button onClick={() => handleAddSelectorClick(color.id)} className="hover:text-white" disabled={loading}>+</button>
-                        </div>
-                        <textarea
-                          value={playlistLinks[color.id]}
-                          onChange={(e) => handleLinkChange(color.id, e.target.value)}
-                          className="w-full h-20 bg-slate-900 border border-slate-700/50 rounded-md p-2 text-xs font-mono focus:outline-none resize-none"
-                          style={{ borderLeft: `3px solid ${color.hex}` }}
-                          placeholder="Links..."
-                          disabled={loading}
-                        />
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
 
             </div>
           )}
@@ -1034,12 +1150,12 @@ const PlaylistUploader = ({ onUploadComplete, onCancel, initialPlaylistId }) => 
           {activeTab === 'json' && (
             <div className="space-y-4 h-full flex flex-col">
               <div className="flex justify-between items-center">
-                <label className="text-sm font-medium text-slate-300">Paste Configuration or Upload File</label>
+                <label className="text-sm font-medium text-slate-700">Paste Configuration or Upload File</label>
                 <div>
                   <input type="file" ref={fileInputRef} accept=".json" onChange={handleFileSelect} className="hidden" />
                   <button
                     onClick={() => fileInputRef.current?.click()}
-                    className="text-xs bg-slate-700 hover:bg-slate-600 text-white px-3 py-1.5 rounded-md transition-colors"
+                    className="text-xs bg-slate-200 hover:bg-slate-300 text-white px-3 py-1.5 rounded-md transition-colors"
                     disabled={loading}
                   >
                     Upload File
@@ -1049,7 +1165,7 @@ const PlaylistUploader = ({ onUploadComplete, onCancel, initialPlaylistId }) => 
               <textarea
                 value={jsonInput}
                 onChange={(e) => setJsonInput(e.target.value)}
-                className="flex-1 w-full bg-slate-900 border border-slate-700 rounded-lg p-4 font-mono text-sm text-slate-300 focus:border-sky-500 focus:outline-none resize-none"
+                className="flex-1 w-full bg-slate-50 border border-slate-200 rounded-lg p-4 font-mono text-sm text-slate-700 focus:border-sky-500 focus:outline-none resize-none"
                 placeholder="{ 'playlist': ... }"
                 disabled={loading}
               />
@@ -1060,12 +1176,12 @@ const PlaylistUploader = ({ onUploadComplete, onCancel, initialPlaylistId }) => 
           {activeTab === 'twitterJson' && (
             <div className="space-y-4 h-full flex flex-col">
               {/* Playlist Selector */}
-              <div className="bg-slate-900/50 p-4 rounded-xl border border-slate-700">
-                <label className="text-sm font-medium text-slate-300 block mb-2">Add to Playlist:</label>
+              <div className="bg-slate-50/80 p-4 rounded-xl border border-slate-200">
+                <label className="text-sm font-medium text-slate-700 block mb-2">Add to Playlist:</label>
                 <select
                   value={twitterTargetPlaylistId}
                   onChange={(e) => setTwitterTargetPlaylistId(e.target.value)}
-                  className="w-full bg-slate-800 border border-slate-600 text-white text-sm rounded-lg focus:ring-sky-500 focus:border-sky-500 block p-2.5"
+                  className="w-full bg-white border border-slate-300 text-slate-900 text-sm rounded-lg focus:ring-sky-500 focus:border-sky-500 block p-2.5"
                   disabled={loading}
                 >
                   <option value="">Default (Unsorted)</option>
@@ -1077,12 +1193,12 @@ const PlaylistUploader = ({ onUploadComplete, onCancel, initialPlaylistId }) => 
 
               {/* File Upload / Paste Area */}
               <div className="flex justify-between items-center">
-                <label className="text-sm font-medium text-slate-300">Twitter Bookmarks JSON</label>
+                <label className="text-sm font-medium text-slate-700">Twitter Bookmarks JSON</label>
                 <div>
                   <input type="file" ref={twitterFileInputRef} accept=".json" onChange={handleTwitterFileSelect} className="hidden" />
                   <button
                     onClick={() => twitterFileInputRef.current?.click()}
-                    className="text-xs bg-slate-700 hover:bg-slate-600 text-white px-3 py-1.5 rounded-md transition-colors"
+                    className="text-xs bg-slate-200 hover:bg-slate-300 text-white px-3 py-1.5 rounded-md transition-colors"
                     disabled={loading}
                   >
                     Upload File
@@ -1092,11 +1208,11 @@ const PlaylistUploader = ({ onUploadComplete, onCancel, initialPlaylistId }) => 
               <textarea
                 value={twitterJsonInput}
                 onChange={(e) => setTwitterJsonInput(e.target.value)}
-                className="flex-1 w-full bg-slate-900 border border-slate-700 rounded-lg p-4 font-mono text-sm text-slate-300 focus:border-sky-500 focus:outline-none resize-none"
+                className="flex-1 w-full bg-slate-50 border border-slate-200 rounded-lg p-4 font-mono text-sm text-slate-700 focus:border-sky-500 focus:outline-none resize-none"
                 placeholder='[{"id": "...", "full_text": "...", "media": [...], ...}]'
                 disabled={loading}
               />
-              <p className="text-xs text-slate-400">
+              <p className="text-xs text-slate-500">
                 Upload Twitter bookmarks JSON. Only tweets with media (videos, photos, GIFs) will be imported.
               </p>
             </div>
@@ -1105,7 +1221,7 @@ const PlaylistUploader = ({ onUploadComplete, onCancel, initialPlaylistId }) => 
         </div>
 
         {/* FOOTER & STATUS */}
-        <div className="p-4 border-t border-slate-700 bg-slate-800/50 rounded-b-lg space-y-4">
+        <div className="p-4 border-t border-slate-200 bg-slate-100/80 rounded-b-lg space-y-4">
           {/* Error Display */}
           {error && (
             <div className="p-3 bg-red-500/10 border border-red-500/20 text-red-400 rounded-lg text-sm">
@@ -1116,11 +1232,11 @@ const PlaylistUploader = ({ onUploadComplete, onCancel, initialPlaylistId }) => 
           {/* Progress Bar */}
           {loading && (
             <div className="space-y-2">
-              <div className="flex justify-between text-xs text-slate-400">
+              <div className="flex justify-between text-xs text-slate-500">
                 <span>{progress.message}</span>
                 <span>{progress.current} / {progress.total}</span>
               </div>
-              <div className="w-full h-1.5 bg-slate-700 rounded-full overflow-hidden">
+              <div className="w-full h-1.5 bg-slate-200 rounded-full overflow-hidden">
                 <div className="h-full bg-sky-500 transition-all duration-300" style={{ width: `${(progress.total ? (progress.current / progress.total * 100) : 0)}%` }}></div>
               </div>
             </div>
@@ -1130,7 +1246,7 @@ const PlaylistUploader = ({ onUploadComplete, onCancel, initialPlaylistId }) => 
           <div className="flex items-center justify-end gap-3">
             <button
               onClick={onCancel}
-              className="px-4 py-2 text-slate-400 hover:text-white transition-colors"
+              className="px-4 py-2 text-slate-500 hover:text-slate-900 transition-colors"
               disabled={loading}
             >
               Cancel
@@ -1143,7 +1259,7 @@ const PlaylistUploader = ({ onUploadComplete, onCancel, initialPlaylistId }) => 
                       () => { }
               }
               disabled={loading || activeTab === 'modify'}
-              className={`px-6 py-2 rounded-lg font-medium text-white transition-colors ${loading || activeTab === 'modify' ? 'bg-slate-600 cursor-not-allowed opacity-50' : 'bg-sky-500 hover:bg-sky-600'}`}
+              className={`px-6 py-2 rounded-lg font-medium text-white transition-colors ${loading || activeTab === 'modify' ? 'bg-slate-300 cursor-not-allowed opacity-50' : 'bg-sky-500 hover:bg-sky-600'}`}
             >
               {loading ? 'Processing...' : (
                 activeTab === 'add' ? 'Import to Playlist' :

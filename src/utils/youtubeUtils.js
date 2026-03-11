@@ -167,6 +167,72 @@ export const resolveHandleToChannelId = async (handle) => {
   }
 };
 
+export const extractChannelInfo = (url) => {
+  if (!url) return null;
+  if (url.includes('youtube.com/channel/')) {
+    const match = url.match(/channel\/(UC[\w-]+)/);
+    if (match) return { type: 'id', value: match[1] };
+  } else if (url.includes('youtube.com/@')) {
+    const match = url.match(/@([\w.-]+)/);
+    if (match) return { type: 'handle', value: match[1] };
+  } else if (url.match(/^@[\w.-]+$/)) {
+    return { type: 'handle', value: url.replace('@', '') };
+  }
+  return null;
+};
+
+export const fetchChannelMetadata = async (url) => {
+  const info = extractChannelInfo(url);
+  if (!info) return null;
+
+  try {
+    let actualChannelId = null;
+    let snippet = null;
+
+    if (info.type === 'handle') {
+      const searchUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=@${info.value}&type=channel&maxResults=1&key=${API_KEY}`;
+      const response = await fetch(searchUrl);
+      const data = await response.json();
+      if (!data.items?.length) return null;
+      actualChannelId = data.items[0].snippet.channelId;
+    } else {
+      actualChannelId = info.value;
+    }
+
+    // Now get the full channel snippet and statistics (for high res avatar)
+    const detailUrl = `https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics&id=${actualChannelId}&key=${API_KEY}`;
+    const detailRes = await fetch(detailUrl);
+    const detailData = await detailRes.json();
+
+    if (detailData.items?.length) {
+      snippet = detailData.items[0].snippet;
+      const stats = detailData.items[0].statistics;
+
+      return {
+        sourcePlaylistName: 'Channel Link',
+        videos: [{
+          videoId: actualChannelId,
+          videoUrl: `https://www.youtube.com/channel/${actualChannelId}`,
+          title: snippet.title,
+          thumbnailUrl: snippet.thumbnails?.high?.url || snippet.thumbnails?.medium?.url || snippet.thumbnails?.default?.url,
+          author: snippet.title,
+          viewCount: stats?.subscriberCount || '0',
+          publishedAt: snippet.publishedAt,
+          durationSeconds: null,
+          description: snippet.description || null,
+          tags: null,
+          isChannel: true
+        }]
+      };
+    }
+
+    return null;
+  } catch (error) {
+    console.error('fetchChannelMetadata Error:', error);
+    return null;
+  }
+};
+
 export const fetchChannelUploads = async (channelId, limit = 50) => {
   if (!channelId || !channelId.startsWith('UC')) return [];
 
@@ -208,6 +274,50 @@ export const fetchChannelUploads = async (channelId, limit = 50) => {
     return allVideos;
   } catch (error) {
     console.error('Error fetching channel uploads:', error);
+    return [];
+  }
+};
+
+export const fetchPlaylistVideos = async (playlistId, limit = 50) => {
+  if (!playlistId) return [];
+
+  let allVideos = [];
+  let nextPageToken = null;
+
+  try {
+    do {
+      const remaining = limit - allVideos.length;
+      if (remaining <= 0) break;
+      const fetchSize = Math.min(50, remaining);
+
+      const url = `https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&playlistId=${playlistId}&maxResults=${fetchSize}&key=${API_KEY}${nextPageToken ? `&pageToken=${nextPageToken}` : ''}`;
+
+      const response = await fetch(url);
+      if (!response.ok) break;
+
+      const data = await response.json();
+      if (!data.items) break;
+
+      const formattedVideos = data.items.filter(item => item.snippet?.resourceId?.kind === 'youtube#video').map(item => ({
+        video_id: item.snippet.resourceId.videoId,
+        title: item.snippet.title,
+        thumbnail_url: item.snippet.thumbnails?.high?.url || item.snippet.thumbnails?.medium?.url || item.snippet.thumbnails?.default?.url,
+        author: item.snippet.videoOwnerChannelTitle,
+        published_at: item.snippet.publishedAt,
+        video_url: `https://www.youtube.com/watch?v=${item.snippet.resourceId.videoId}`,
+        is_local: false,
+        view_count: null,
+        profile_image_url: null
+      }));
+
+      allVideos = allVideos.concat(formattedVideos);
+      nextPageToken = data.nextPageToken;
+
+    } while (nextPageToken && allVideos.length < limit);
+
+    return allVideos;
+  } catch (error) {
+    console.error('Error fetching playlist videos:', error);
     return [];
   }
 };

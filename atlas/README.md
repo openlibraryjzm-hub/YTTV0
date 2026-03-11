@@ -174,11 +174,13 @@ yttv2/
 │   ├── card-playlist.md          # Playlist & Folder card components
 │   ├── card-video.md             # Video card components
 │   ├── card-tweet.md             # Tweet card components
+│   ├── card-subscription.md      # Channel & Playlist Tracker Card components
 │   ├── group-carousel.md         # Group carousel system (colored folders, 16 colors, PlaylistBar prism, assign/rename/delete)
 │   ├── playlist-bar.md           # PlaylistBar: Playlists page sticky toolbar and folder prism
 │   ├── playlist-pagination.md    # Pagination systems for Playlists page (All/Unsorted list & Folder prism pages)
 │   ├── group-badge-player-controller.md  # Group badge + arrow cycling (all carousels) + playlist nav restricted to group
 │   ├── ui-modals.md              # Modal components
+│   ├── modal-addcontent.md       # Add Content (Playlist Uploader) Modal documentation
 │   ├── drumstick-rating-system.md
 │   ├── videoplayer.md
 │   ├── local-videos.md
@@ -240,12 +242,14 @@ yttv2/
 | **App Banner** | `app-banner.md` | `player-controller-unified.md`, `ui-layout.md`, `state-management.md` |
 | **Page Banner** | `page-banner.md` | `page-videos.md`, `page-playlists.md`, `ui-layout.md`, `state-management.md` |
 | **Playlist Cards** | `card-playlist.md` | `playlist&tab.md`, `ui.md`, `api-bridge.md` |
+| **Tracker Cards** | `card-subscription.md` | `card-playlist.md`, `page-videos.md`, `subscription-manager.md` |
 | **Group Carousel (Playlists Page)** | `group-carousel.md` | `playlist-bar.md`, `card-playlist.md`, `state-management.md`, `page-playlists.md`, `page-banner.md` (TopNavigation) |
 | **Playlist Pagination System** | `playlist-pagination.md` | `playlist-bar.md`, `group-carousel.md`, `page-playlists.md` |
 | **PlaylistBar** | `playlist-bar.md` | `group-carousel.md`, `video-sort-filters.md`, `state-management.md` |
 | **Group Badge & Playlist Nav** | `group-badge-player-controller.md` | `group-carousel.md`, `player-controller-top-menus.md` |
 | **Bottom Navigation Bar** | `bottom-navigation.md` | `top-navigation.md`, `page-videos.md` |
-| **Subscription Manager** | `subscription-manager.md` | `api-bridge.md`, `database-schema.md` |
+| **Subscription Manager** | `subscription-manager.md` | `card-subscription.md`, `api-bridge.md`, `database-schema.md` |
+| **Add Content Modal** | `modal-addcontent.md` | `subscription-manager.md`, `ui-modals.md`, `page-videos.md` |
 | **Pokedex System** | `pokedex-system.md` | `gen1-pokemon-reference.md`, `state-management.md`, `database-schema.md` |
 | **Tasks Page** | `tasks-page.md` | `page-pins.md`, `state-management.md` (pinsPageChecklistStore) |
 | **Debug/Testing** | `debug.md` | `ui.md` (inspect mode, debug bounds) |

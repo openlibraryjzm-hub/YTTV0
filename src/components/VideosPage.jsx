@@ -28,6 +28,8 @@ import { usePaginationStore } from '../store/paginationStore';
 import TweetCard from './TweetCard';
 import OrbCard from './OrbCard';
 import BannerPresetCard from './BannerPresetCard';
+import ChannelCard from './ChannelCard';
+import PlaylistLinkCard from './PlaylistLinkCard';
 import AutoTagModal from './AutoTagModal';
 import FolderPrismContextMenu from './FolderPrismContextMenu';
 import SubscriptionManagerModal from './SubscriptionManagerModal';
@@ -1976,6 +1978,41 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
                                 setSelectedTweet(video);
                                 setCurrentNavTab('tweet');
                               }}
+                            />
+                          </div>
+                        );
+                      }
+
+                      const isChannel = video.video_url?.includes('youtube.com/channel/') ||
+                        video.video_url?.includes('youtube.com/@') ||
+                        video.video_url?.startsWith('@');
+
+                      if (isChannel || video.isChannel) {
+                        return (
+                          <div key={video.id} className="h-full">
+                            <ChannelCard
+                              video={video}
+                              onClick={() => {
+                                // Keep raw channel URL available for extraction modals
+                                console.log('Channel card clicked:', video.video_url);
+                              }}
+                              onRemove={() => handleMenuOptionClick({ action: 'remove' }, video)}
+                            />
+                          </div>
+                        );
+                      }
+
+                      const isPlaylistTracker = video.isPlaylist || video.video_url?.includes('youtube.com/playlist?list=');
+
+                      if (isPlaylistTracker) {
+                        return (
+                          <div key={video.id} className="h-full flex items-center justify-center">
+                            <PlaylistLinkCard
+                              video={video}
+                              onClick={() => {
+                                console.log('Playlist Tracker clicked:', video.video_url);
+                              }}
+                              onRemove={() => handleMenuOptionClick({ action: 'remove' }, video)}
                             />
                           </div>
                         );
