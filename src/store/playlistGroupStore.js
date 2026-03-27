@@ -18,6 +18,46 @@ export const usePlaylistGroupStore = create(
                 // Array of { id, name, playlistIds, folderColorId } — folderColorId ties group to prism color
                 groups: [],
 
+                /** Persistent overall page count (allows blank pages) */
+                totalPages: 1,
+                setTotalPages: (n) => set({ totalPages: Math.max(1, n) }),
+
+                /** Which page is currently being viewed */
+                activePage: 1,
+                setActivePage: (p) => set({ activePage: Math.max(1, p) }),
+
+                /** Deletes a page > 1, removing its groups and shifting subsequent pages */
+                deletePage: (pageToDelete) => {
+                    const page = Number(pageToDelete);
+                    if (page <= 1) return; // Prevent deleting Page 1
+
+                    set((state) => {
+                        const remainingGroups = state.groups
+                            .filter((g) => (g.page || 1) !== page)
+                            .map((g) => {
+                                const currentGroupPage = g.page || 1;
+                                if (currentGroupPage > page) {
+                                    return { ...g, page: currentGroupPage - 1 };
+                                }
+                                return g;
+                            });
+
+                        const newTotalPages = Math.max(1, state.totalPages - 1);
+                        let newActivePage = state.activePage;
+                        if (newActivePage === page) {
+                            newActivePage = Math.max(1, page - 1);
+                        } else if (newActivePage > page) {
+                            newActivePage -= 1;
+                        }
+
+                        return {
+                            groups: remainingGroups,
+                            totalPages: newTotalPages,
+                            activePage: newActivePage
+                        };
+                    });
+                },
+
                 /** Per-group carousel display mode: { [groupId]: 'large' | 'small' | 'bar' }. Defaults to 'large' when missing. */
                 groupCarouselModes: {},
                 setGroupCarouselMode: (groupId, mode) => {
@@ -118,6 +158,8 @@ export const usePlaylistGroupStore = create(
                     groups: state.groups || [],
                     activeGroupId: state.activeGroupId ?? null,
                     groupCarouselModes: state.groupCarouselModes && typeof state.groupCarouselModes === 'object' ? state.groupCarouselModes : {},
+                    totalPages: state.totalPages || 1,
+                    activePage: state.activePage || 1,
                 };
                 if (!Array.isArray(next.groups)) {
                     const legacy = state.groupPlaylistIds;

@@ -185,42 +185,6 @@ const PlaylistBar = ({
               >
                 <Tag size={20} strokeWidth={2.5} />
               </button>
-
-              {/* Pagination Controls */}
-              {totalPages >= 1 && (
-                <div className="flex items-center shrink-0 mr-2 ml-1">
-                  <button
-                    type="button"
-                    onClick={onPrevPage}
-                    disabled={currentPage <= 1}
-                    className={`transition-all flex items-center justify-center ${currentPage <= 1 ? 'opacity-30 cursor-not-allowed' : 'opacity-85 hover:opacity-100 hover:scale-110'}`}
-                    style={ICON_WHITE_OUTLINE}
-                    title="Previous page"
-                  >
-                    <ChevronLeft size={20} strokeWidth={2.5} />
-                  </button>
-
-                  <span
-                    onDoubleClick={onAddPage}
-                    className="text-xs font-bold min-w-[1.5rem] text-center cursor-pointer hover:scale-110 transition-transform select-none"
-                    style={ICON_WHITE_OUTLINE}
-                    title="Double click to add new page"
-                  >
-                    {currentPage}
-                  </span>
-
-                  <button
-                    type="button"
-                    onClick={onNextPage}
-                    disabled={currentPage >= totalPages}
-                    className={`transition-all flex items-center justify-center ${currentPage >= totalPages ? 'opacity-30 cursor-not-allowed' : 'opacity-85 hover:opacity-100 hover:scale-110'}`}
-                    style={ICON_WHITE_OUTLINE}
-                    title="Next page"
-                  >
-                    <ChevronRight size={20} strokeWidth={2.5} />
-                  </button>
-                </div>
-              )}
             </div>
           </div>
 

@@ -20,6 +20,7 @@ import TweetPage from './components/TweetPage';
 import MainSettingsPage from './components/MainSettingsPage';
 import InlineBannerCropMode from './components/InlineBannerCropMode';
 import HomeHub from './components/HomeHub';
+import ExplorerPage from './components/ExplorerPage';
 import { AnimatePresence } from 'framer-motion';
 
 import YouTubePlayer from './components/YouTubePlayer';
@@ -585,6 +586,8 @@ function App() {
                 <div className="flex items-center justify-center w-full h-full">
                   <p className="text-black">Initializing database...</p>
                 </div>
+              ) : !showPlaylists && currentPage === 'explorer' ? (
+                <ExplorerPage onVideoSelect={handleVideoSelect} />
               ) : !showPlaylists && currentPage === 'playlists' ? (
                 <PlaylistsPage onVideoSelect={handleVideoSelect} />
               ) : !showPlaylists && currentPage === 'videos' ? (

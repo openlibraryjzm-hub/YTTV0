@@ -73,12 +73,14 @@ const PlaylistsPage = ({ onVideoSelect }) => {
   // Prism folder selection: null = All carousels, color id = single carousel by index (one group per color)
   const [selectedPrismFolder, setSelectedPrismFolder] = useState(null);
 
-  // State for the grouped folder pages
-  const [prismPage, setPrismPage] = useState(1);
-
   // Store Hooks (Moved up to prevent 'cannot access before initialization' errors)
   const { showColoredFolders, setShowColoredFolders, setHoveredFolder } = useFolderStore();
-  const { groups: playlistGroups, getGroupIdsForPlaylist, getGroupByColorId, getNextAvailableColorId, addGroup, renameGroup, removeGroup, setActiveGroupId } = usePlaylistGroupStore();
+  const { groups: playlistGroups, getGroupIdsForPlaylist, getGroupByColorId, getNextAvailableColorId, addGroup, renameGroup, removeGroup, setActiveGroupId, totalPages: globalTotalPages, setTotalPages: setGlobalTotalPages, activePage: globalActivePage, setActivePage: setGlobalActivePage } = usePlaylistGroupStore();
+  
+  // Using global state for PrismPage to sync with ExplorerPage Hub
+  const prismPage = globalActivePage;
+  const setPrismPage = setGlobalActivePage;
+  const storeTotalPages = globalTotalPages;
   const { setViewMode, viewMode, inspectMode, setFullscreenInfoBlanked } = useLayoutStore();
   const { customPageBannerImage, bannerHeight, bannerBgSize } = useConfigStore();
   const { setCurrentPage: setCurrentNavPage } = useNavigationStore();
@@ -210,13 +212,28 @@ const PlaylistsPage = ({ onVideoSelect }) => {
   );
 
   const currentPlaylistsToRender = useMemo(() => {
-    if (selectedPrismFolder === null) return allPlaylistsFiltered;
+    if (selectedPrismFolder === null) {
+      if (prismPage === 1) {
+        return allPlaylistsFiltered;
+      } else {
+        // Return only playlists that are in a group on the current prismPage
+        return allPlaylistsFiltered.filter(p => {
+          const groupIds = getGroupIdsForPlaylist(p.id);
+          return groupIds.some(gid => {
+            const group = playlistGroups.find(g => g.id === gid);
+            return group && (group.page || 1) === prismPage;
+          });
+        });
+      }
+    }
     if (selectedPrismFolder === 'unsorted') return unsortedPlaylistsFiltered;
     return [];
-  }, [selectedPrismFolder, allPlaylistsFiltered, unsortedPlaylistsFiltered]);
+  }, [selectedPrismFolder, allPlaylistsFiltered, unsortedPlaylistsFiltered, prismPage, getGroupIdsForPlaylist, playlistGroups]);
 
   const totalPages = Math.max(1, Math.ceil(currentPlaylistsToRender.length / itemsPerPage));
-  const totalPrismPages = playlistGroups.length > 0 ? Math.max(1, ...playlistGroups.map(g => g.page || 1)) : 1;
+  
+  const derivedTotalPages = playlistGroups.length > 0 ? Math.max(1, ...playlistGroups.map(g => g.page || 1)) : 1;
+  const totalPrismPages = Math.max(storeTotalPages, derivedTotalPages);
 
   const displayPlaylists = useMemo(() => {
     const startIndex = (currentPage - 1) * itemsPerPage;
@@ -843,7 +860,7 @@ const PlaylistsPage = ({ onVideoSelect }) => {
               totalPages={totalPrismPages}
               onPrevPage={() => setPrismPage(p => Math.max(1, p - 1))}
               onNextPage={() => setPrismPage(p => Math.min(totalPrismPages, p + 1))}
-              onAddPage={() => setPrismPage(totalPrismPages + 1)}
+              onAddPage={() => { setGlobalTotalPages(totalPrismPages + 1); setPrismPage(totalPrismPages + 1); }}
               sortBy={playlistSortBy}
               setSortBy={setPlaylistSortBy}
               sortDirection={playlistSortDirection}

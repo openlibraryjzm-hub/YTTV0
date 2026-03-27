@@ -223,6 +223,7 @@ yttv2/
 | **Asset Manager** | `asset-manager-page.md` | `orb-page.md`, `page-page.md`, `state-management.md` |
 | **App Banner & Borders** | `app-page.md` | `state-management.md` (configStore), `app-banner.md` |
 | **Support Hub** | `ui.md` | `navigation-routing.md`, `playlistStore.js` |
+| **Hub (Explorer Page)** | `page-hub.md` | `group-carousel.md`, `state-management.md` |
 | **Playlists & Tabs** | `playlist&tab.md` | `database-schema.md`, `api-bridge.md`, `state-management.md` |
 | **Import/Export** | `importexport.md` | `api-bridge.md`, `database-schema.md` |
 | **Twitter/X Integration** | `twitter-integration.md` | `importexport.md`, `database-schema.md`, `ui.md` |
@@ -266,6 +267,11 @@ yttv2/
 ## Document Descriptions
 
 ### Feature Documentation
+
+#### `page-hub.md`
+**Covers**: The central Hub (ExplorerPage) grid for scaling and navigating Playlist Pages.
+**Key Topics**: Dynamic unified square grid, persistent blank layout pages, page deletion logic.
+**Cross-References**: See `group-carousel.md` for carousel groups, `state-management.md` (`playlistGroupStore`).
 
 #### `orb-navigation.md`
 **Covers**: Independent Orb navigation system within the Player Controller

@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
-import { Play, Home, Twitter, List, Shuffle, Grid3X3, Star, ChevronLeft, ChevronRight, ChevronUp, ChevronDown, Check, CheckCircle2, X, Settings2, Pin, Share2, Info, BarChart2, Bookmark, MoreHorizontal, Heart, ListMusic, Zap, Radio, Flame, ChevronsLeft, ChevronsRight, Upload, Palette, History as HistoryIcon, Layout, Layers, Compass, Library, Eye, EyeOff, RotateCcw, ThumbsUp, Plus, Anchor as AnchorIcon, Type, MousePointer2, ArrowLeftRight, Circle, Settings, Move, LayoutGrid, Clock, HelpCircle } from 'lucide-react';
+import { Folder, Play, Home, Twitter, List, Shuffle, Grid3X3, Star, ChevronLeft, ChevronRight, ChevronUp, ChevronDown, Check, CheckCircle2, X, Settings2, Pin, Share2, Info, BarChart2, Bookmark, MoreHorizontal, Heart, ListMusic, Zap, Radio, Flame, ChevronsLeft, ChevronsRight, Upload, Palette, History as HistoryIcon, Layout, Layers, Compass, Library, Eye, EyeOff, RotateCcw, ThumbsUp, Plus, Anchor as AnchorIcon, Type, MousePointer2, ArrowLeftRight, Circle, Settings, Move, LayoutGrid, Clock, HelpCircle } from 'lucide-react';
 import { usePlaylistStore } from '../store/playlistStore';
 import { useNavigationStore } from '../store/navigationStore';
 import { usePinStore } from '../store/pinStore';
@@ -160,15 +160,15 @@ export default function PlayerControllerOrbMenu(props) {
           <Settings size={14} className="text-black" strokeWidth={2.5} />
         </button>
 
-        {/* Home Hub Button (Bottom Center) */}
-        <button onClick={lockApp} className="absolute rounded-full flex items-center justify-center bg-white shadow-xl hover:scale-110 active:scale-95 group/btn z-50 border-2 border-black opacity-0 group-hover:opacity-100 transition-all duration-300" style={{
+        {/* Home Explorer Button (Bottom Center) */}
+        <button onClick={() => setCurrentPage('explorer')} className="absolute rounded-full flex items-center justify-center bg-white shadow-xl hover:scale-110 active:scale-95 group/btn z-50 border-2 border-black opacity-0 group-hover:opacity-100 transition-all duration-300" style={{
           left: '50%',
           top: '100%',
           transform: 'translate(-50%, -50%)',
           width: `28px`,
           height: `28px`
-        }} title="Home Hub">
-          <Home size={14} className="text-black" strokeWidth={2.5} />
+        }} title="Explorer">
+          <Folder size={14} className="text-black" strokeWidth={2.5} />
         </button>
 
         {/* Twitter Button (Bottom Left) */}
