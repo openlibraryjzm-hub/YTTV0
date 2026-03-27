@@ -35,6 +35,7 @@ import FolderPrismContextMenu from './FolderPrismContextMenu';
 import SubscriptionManagerModal from './SubscriptionManagerModal';
 import VideoSortFilters from './VideoSortFilters';
 
+const FILTER_FALLBACK = { sortBy: 'shuffle', sortDirection: 'desc', selectedRatings: [] };
 
 const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
   const {
@@ -144,7 +145,10 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
     setOrbNavOrbId,
     //banner navigation state setters
     setBannerNavPlaylistId,
-    setBannerNavBannerId
+    setBannerNavBannerId,
+    // playlist filters
+    playlistVideoFilters,
+    setPlaylistVideoFilter
   } = useConfigStore();
 
 
@@ -153,9 +157,40 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
   const getInspectTitle = (label) => inspectMode ? label : undefined;
   const [displayedVideos, setDisplayedVideos] = useState([]);
   const [loadingFolders, setLoadingFolders] = useState(true); // Start true to show skeletons immediately
-  const [sortBy, setSortBy] = useState('shuffle'); // 'shuffle', 'chronological', 'progress', 'lastViewed'
-  const [sortDirection, setSortDirection] = useState('desc'); // 'asc', 'desc'
-  const [selectedRatings, setSelectedRatings] = useState([]); // 1-5 multi-select for rating filter
+
+  // Use preview items if available, otherwise use current playlist items
+  const activePlaylistItems = previewPlaylistItems || currentPlaylistItems;
+  const activePlaylistId = previewPlaylistId || currentPlaylistId;
+
+  const currentFilters = activePlaylistId && playlistVideoFilters[activePlaylistId] 
+    ? playlistVideoFilters[activePlaylistId] 
+    : FILTER_FALLBACK;
+
+  const sortBy = currentFilters.sortBy || 'shuffle';
+  const sortDirection = currentFilters.sortDirection || 'desc';
+  const selectedRatings = currentFilters.selectedRatings || FILTER_FALLBACK.selectedRatings;
+
+  const updateFilters = (updates) => {
+    if (activePlaylistId) {
+      setPlaylistVideoFilter(activePlaylistId, updates);
+    }
+  };
+
+  const setSortBy = (val) => {
+    const newVal = typeof val === 'function' ? val(sortBy) : val;
+    updateFilters({ sortBy: newVal });
+  };
+
+  const setSortDirection = (val) => {
+    const newVal = typeof val === 'function' ? val(sortDirection) : val;
+    updateFilters({ sortDirection: newVal });
+  };
+
+  const setSelectedRatings = (val) => {
+    const newVal = typeof val === 'function' ? val(selectedRatings) : val;
+    updateFilters({ selectedRatings: newVal });
+  };
+
   const [prismOnlyPopulated, setPrismOnlyPopulated] = useState(true); // when true, prism shows only segments with ≥1 item, equal width; default on for Videos page
   const [prismMenuOpen, setPrismMenuOpen] = useState(false);
   const [prismMenuPosition, setPrismMenuPosition] = useState({ top: 0, left: 0 });
@@ -174,10 +209,6 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
   const [showEditModal, setShowEditModal] = useState(false);
   const [folderMetadata, setFolderMetadataState] = useState(null); // { custom_name, description }
   const { addToQueue } = useQueueStore();
-
-  // Use preview items if available, otherwise use current playlist items
-  const activePlaylistItems = previewPlaylistItems || currentPlaylistItems;
-  const activePlaylistId = previewPlaylistId || currentPlaylistId;
 
   // Reset point tracking for chevron navigation
   // Tracks the playlist to return to when clicking the return button
@@ -283,17 +314,19 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
   // Reset page when playlist, folder, or sort filters change
   useEffect(() => {
     resetPagination();
+    scrollToTop();
     if (horizontalScrollRef.current) {
       horizontalScrollRef.current.scrollTo({ left: 0, behavior: 'smooth' });
     }
   }, [activePlaylistId, selectedFolder, sortBy, sortDirection, selectedRatings, includeUnwatched, showOnlyCompleted, resetPagination]);
 
-  // Scroll to left when page changes (unless preserveScroll is set from TopNav)
+  // Scroll to left and top when page changes (unless preserveScroll is set from TopNav)
   useEffect(() => {
     if (preserveScroll) {
       // Clear the flag but don't scroll
       clearPreserveScroll();
     } else {
+      scrollToTop();
       if (horizontalScrollRef.current) {
         horizontalScrollRef.current.scrollTo({ left: 0, behavior: 'smooth' });
       }
@@ -1665,7 +1698,7 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
               />
 
               {/* Folder prism: full bar or "only populated" mode; right-click on prism toggles mode */}
-              <div className="flex items-center min-w-0 flex-1 mr-0">
+              <div className="flex items-center min-w-0 flex-1 mr-0 relative z-20">
                 <div
                   className="flex items-center h-7 min-w-0 flex-1 border-2 border-black rounded-lg overflow-hidden cursor-context-menu"
                   onContextMenu={(e) => {
@@ -1771,7 +1804,7 @@ const VideosPage = ({ onVideoSelect, onSecondPlayerSelect }) => {
               </div>
 
               {/* Right side: Back, Close */}
-              <div className="flex items-center gap-1.5 shrink-0 ml-auto">
+              <div className="flex items-center gap-1.5 shrink-0 ml-auto relative z-20">
                 {(history.length > 0 || previewPlaylistId) && (
                   <button
                     type="button"

@@ -10,12 +10,13 @@ This document describes the **Playlists page sticky toolbar** (`PlaylistBar.jsx`
 
 **Layout (left to right)**:
 
-1. **Hover-Reveal Container** – The left side of the bar acts as a group container. Usually, it displays a **Glowing Title** corresponding to the selected folder/playlist. On hover (or when the filter dropdown is open), the title fades out and reveals the action buttons.
-2. **PlaylistSortFilters** – The first button in the hover reveal group. The Home command (default / shuffle order) was moved inside the Funnel dropdown as the first sort. The sort and filter states (`playlistSortBy`, `showHiddenPlaylists`, `playlistContentFilter`) are managed in `PlaylistsPage.jsx` and passed down. Playlists can be sorted by item count, date created, or alphabetically.
-3. **Action buttons (Plus & Tag)** – Located inside the hover reveal group next to the Funnel. A Plus button opens the playlist uploader; a Tag button serves as a UI placeholder for future bulk tagging capability on playlists.
-4. **Pagination Controls** – Located inside the hover reveal group if multiple pages exist. Left/Right chevrons to navigate, with current page number between them.
-5. **Folder prism** – Fills the remaining width. Segments: **All** (white), **Unsorted** (black, if any playlists are unassigned), and **one segment per folder color that has a group carousel**. Clicking a segment sets the selected folder; PlaylistsPage shows either the full grid (All/Unsorted) or the single carousel for that color.
-6. **Right side** – Back (when navigation history or playlist preview exists), Close (fullscreen / close menu via `layoutStore.setViewMode('full')`).
+1. **Full Bar Glow Context** – The toolbar background features a dynamically colored atmospheric layer providing a full-width glow based on the active selection (White for All Playlists, Black for Unsorted, Hex for Folder Groups).
+2. **Hover-Reveal Container** – The left side of the bar acts as a group container. Usually, it displays the **Glowing Title** ( playlist/folder name) on top of the background glow. On hover (or when the filter dropdown is open), the title fades out and reveals the action buttons.
+3. **PlaylistSortFilters** – The first button in the hover reveal group. The Home command (default / shuffle order) was moved inside the Funnel dropdown as the first sort. The sort and filter states (`playlistSortBy`, `showHiddenPlaylists`, `playlistContentFilter`) are managed in `PlaylistsPage.jsx` and passed down. Playlists can be sorted by item count, date created, or alphabetically.
+4. **Action buttons (Plus & Tag)** – Located inside the hover reveal group next to the Funnel. A Plus button opens the playlist uploader; a Tag button serves as a UI placeholder for future bulk tagging capability on playlists.
+5. **Pagination Controls** – Located inside the hover reveal group if multiple pages exist. Left/Right chevrons to navigate, with current page number between them.
+6. **Folder prism** – Fills the remaining width. Segments: **All** (white), **Unsorted** (black, if any playlists are unassigned), and **one segment per folder color that has a group carousel**. Clicking a segment sets the selected folder; PlaylistsPage shows either the full grid (All/Unsorted) or the single carousel for that color. Includes context menu (right-click) to toggle populated-only mode.
+7. **Right side** – Back (when navigation history or playlist preview exists), Close (fullscreen / close menu via `layoutStore.setViewMode('full')`). Elements are lifted to `z-20` to stay on top of the bar's background glow.
 
 **Data flow**: PlaylistsPage passes `groupColorIds` (array of folder color ids that have a group), `allPlaylistCount`, `unsortedCount`, `selectedFolder`, and `onFolderSelect`. The prism shows only colors that have a group in populated-only mode; right-click toggles to all 16 segments.
 
@@ -61,6 +62,10 @@ This document describes the **Playlists page sticky toolbar** (`PlaylistBar.jsx`
 - A **sentinel** div (1px, invisible) above the bar is observed with `IntersectionObserver`. When it leaves the viewport upward (`intersectionRatio < 1` and `boundingClientRect.top < 0`), the bar is considered **stuck**.
 - **Not stuck**: Lighter border/blur, transparent background, compact padding.
 - **Stuck**: Stronger backdrop blur (`backdrop-blur-xl`), border-y, shadow, `bg-slate-900/70`, slightly taller row (`h-[52px]`).
+- **Full Bar Glow**: Replaces localized title glows with an absolute background layer (z-0) spanning the entire bar width. Uses dual-blur effects (20px/10px) to emit an atmospheric glow matching the selected context.
+- **Unsorted Display**: When the Unsorted folder is selected, the display title changes to **"All Playlists"** and triggers a black background glow.
+- **All Selection**: Displays **"All Playlists"** and triggers a bright white background glow. Title text uses white fill with a solid black outline for contrast.
+- **Z-Index**: Action buttons and prism segments are lifted to `z-20` to ensure they remain reliably on top of the atmospheric background glow.
 
 ---
 

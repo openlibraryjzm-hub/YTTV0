@@ -71,6 +71,8 @@ Users see the main YouTube player as the primary video playback area:
 - `src/App.jsx` (local state):
   - `currentVideoUrl`: Computed from `currentPlaylistItems[currentVideoIndex]`
 - `src/components/YouTubePlayer.jsx` (local state):
+  - `containerRef`: Isolated DOM container ref preventing React `NotFoundError` crashes during DOM manipulation
+  - `uniquePlayerId`: Static randomized ID that persists across rapid video switches
   - `apiReady`: Boolean for YouTube IFrame API readiness
   - `playerRef`: Reference to YouTube player instance
   - `saveIntervalRef`: Interval reference for periodic progress saves
@@ -98,7 +100,8 @@ Users see the main YouTube player as the primary video playback area:
    - If not loaded → Creates script tag → Loads `https://www.youtube.com/iframe_api`
    - Sets up callback → `window.onYouTubeIframeAPIReady` → Sets `apiReady: true`
    - When API ready and video ID available → `useEffect` (line 90) initializes player
-   - Creates unique player ID → `youtube-player-${playerId}-${videoId}` (e.g., `youtube-player-main-abc123`)
+   - Manually resets `containerRef` and builds a fresh `div` to host the player, strictly isolating DOM manipulation from React
+   - Creates unique static player ID → `youtube-player-${playerId}-${rAnd0m}` generated once upon mount to silence React reconciliation crashes
    - Gets stored playback time → `getStoredPlaybackTime(id)` from localStorage
    - **Smart Resume Check**: Checks if time is near end (within threshold) → Resets to 0 if true
    - Creates player instance → `new window.YT.Player(uniquePlayerId, {...})`
@@ -108,8 +111,8 @@ Users see the main YouTube player as the primary video playback area:
 2. **Video Load Flow:**
    - `currentVideoUrl` changes → `App.jsx` passes new URL to `YouTubePlayer`
    - Component re-renders → `useEffect` (line 90) detects `id` change
-   - Old player destroyed → Cleanup function saves final progress
-   - New player initialized → Creates new YouTube player instance
+   - Old player destroyed → Cleanup function saves final progress and natively wipes the container div
+   - New player initialized → Creates new YouTube player instance inside a freshly appended DOM node
    - Video loads → `onReady` event fires (line 103)
    - Gets duration → `event.target.getDuration()` stored in `durationRef`
    - Seeks to stored time → `event.target.seekTo(storedTime, true)` if > 0 (and not reset by Smart Resume)

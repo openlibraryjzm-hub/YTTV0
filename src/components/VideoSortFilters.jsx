@@ -61,7 +61,7 @@ const VideoSortFilters = ({
     : ((activePlaylistId === currentPlaylistId ? currentPlaylistTitle : null)
       || (activePlaylist ? activePlaylist.name : 'Select a Playlist'));
 
-  let bannerHex = 'rgba(255, 255, 255, 0.95)';
+  let bannerHex = '#ffffff';
   let isUnsorted = false;
   let isColoredFolder = false;
 
@@ -70,7 +70,7 @@ const VideoSortFilters = ({
   if (effectiveFolder !== null && effectiveFolder !== undefined) {
     isColoredFolder = true;
     if (effectiveFolder === 'unsorted') {
-      displayTitle = `${displayTitle} - Unsorted`;
+      // Don't append " - Unsorted", just keep the playlist name
       bannerHex = '#000000';
       isUnsorted = true;
     } else {
@@ -97,20 +97,18 @@ const VideoSortFilters = ({
       }
     }
   } else if (activePlaylist) {
-    bannerHex = 'rgba(255, 255, 255, 0.95)';
+    bannerHex = '#ffffff';
   }
 
-  let floatingTitleStyle = { color: '#052F4A' };
+  let floatingTitleStyle = {
+    color: 'white',
+    textShadow: '-1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000'
+  };
   if (isColoredFolder) {
     if (isUnsorted) {
       floatingTitleStyle = {
         color: 'black',
         textShadow: '-1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff, 1px 1px 0 #fff'
-      };
-    } else {
-      floatingTitleStyle = {
-        color: 'white',
-        textShadow: '-1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000'
       };
     }
   }
@@ -169,19 +167,23 @@ const VideoSortFilters = ({
   return (
     <div className={`flex items-center gap-1 ${className}`}>
 
-      {/* Title + Buttons Wrapper */}
-      <div className={`relative flex items-center min-h-[32px] pl-1 pr-1 ${isDropdownActive ? '' : 'group'}`}>
+      {/* Full Bar Glow */}
+      <div className={`absolute -inset-x-4 inset-y-0 z-0 pointer-events-none transition-opacity duration-300 ${isDropdownActive ? 'opacity-0' : 'opacity-100'}`}>
+        <div
+          className="absolute inset-0 pointer-events-none blur-[20px] opacity-70 transition-colors duration-300"
+          style={{ backgroundColor: bannerHex }}
+        />
+        <div
+          className="absolute inset-0 pointer-events-none blur-[10px] opacity-85 transition-colors duration-300"
+          style={{ backgroundColor: bannerHex }}
+        />
+      </div>
 
-        {/* The Glowing Title */}
+      {/* Title + Buttons Wrapper */}
+      <div className={`relative flex items-center min-h-[32px] pl-1 pr-1 w-full ${isDropdownActive ? '' : 'group'}`}>
+
+        {/* The Title Text */}
         <div className={`absolute left-0 z-10 w-max max-w-[40vw] transition-opacity duration-300 pointer-events-none flex flex-col items-start justify-center pl-1 ${isDropdownActive ? 'opacity-0' : 'opacity-100 group-hover:opacity-0'}`}>
-          <div
-            className="absolute inset-x-[-10%] inset-y-[-20%] pointer-events-none rounded-full blur-[20px] opacity-70 transition-colors duration-300"
-            style={{ backgroundColor: bannerHex, transform: 'scale(1.4)' }}
-          />
-          <div
-            className="absolute inset-0 pointer-events-none rounded-full blur-[10px] opacity-85 transition-colors duration-300"
-            style={{ backgroundColor: bannerHex, transform: 'scale(1.1)' }}
-          />
           <h1
             className="relative z-10 text-[24px] font-black tracking-tight truncate w-full text-left drop-shadow-xl"
             style={floatingTitleStyle}

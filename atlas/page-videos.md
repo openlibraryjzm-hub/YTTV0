@@ -47,6 +47,7 @@ The "Stickied" video area pins critical or user-promoted videos identically to t
 ### Pagination
 Located beneath the grid output (though effectively right-bound due to horizontal scroll mapping):
 - Loads pages in 50-video chunks for maximum browser efficiency.
+- **Auto-Scroll**: Switching pages automatically scrolls the main content window back to the top, ensuring the new page starts at the first video.
 - Prev/Next arrows increment by 1 page (single click), jump by quarter (double click), or charge up to jump to first/last pages directly (long-press ~500ms).
 
 ## 3. Data Flow & Logic
@@ -54,6 +55,7 @@ Located beneath the grid output (though effectively right-bound due to horizonta
 ### Folder Filtering 
 - Driven by `FolderSelector` clicking. 
 - Calling `setSelectedFolder(folderColor)` immediately trips `filterVideos()`.
+- **Auto-Scroll**: Applying a new folder filter or resetting to "All" automatically scrolls the view back to the top.
 - Unsorted dynamically screens `videoFolderAssignments` returning items absent from any other folder bucket. 
 - View updates are instant — if assignments are bulk-changed, the new view recalculates reactively without manual refreshes.
 

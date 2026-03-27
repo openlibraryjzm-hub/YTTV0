@@ -43,7 +43,7 @@ const PlaylistBar = ({
   const isDropdownActive = filterDropdownOpen;
 
   let displayTitle = 'All Playlists';
-  let bannerHex = 'rgba(255, 255, 255, 0.95)';
+  let bannerHex = '#ffffff';
   let isUnsorted = false;
   let isColoredFolder = false;
 
@@ -52,7 +52,7 @@ const PlaylistBar = ({
   if (effectiveFolder !== null && effectiveFolder !== undefined) {
     isColoredFolder = true;
     if (effectiveFolder === 'unsorted') {
-      displayTitle = 'Unsorted Playlists';
+      displayTitle = 'All Playlists';
       bannerHex = '#000000';
       isUnsorted = true;
     } else {
@@ -67,17 +67,15 @@ const PlaylistBar = ({
     }
   }
 
-  let floatingTitleStyle = { color: '#052F4A' };
+  let floatingTitleStyle = {
+    color: 'white',
+    textShadow: '-1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000'
+  };
   if (isColoredFolder) {
     if (isUnsorted) {
       floatingTitleStyle = {
         color: 'black',
         textShadow: '-1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff, 1px 1px 0 #fff'
-      };
-    } else {
-      floatingTitleStyle = {
-        color: 'white',
-        textShadow: '-1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000'
       };
     }
   }
@@ -129,18 +127,22 @@ const PlaylistBar = ({
       >
         <div className={`px-4 flex items-center justify-between transition-all duration-300 relative z-10 ${isStuck ? 'h-[52px]' : 'py-0.5'}`}>
 
+          {/* Full Bar Glow */}
+          <div className={`absolute -inset-x-4 inset-y-0 z-0 pointer-events-none transition-opacity duration-300 ${isDropdownActive ? 'opacity-0' : 'opacity-100'}`}>
+            <div
+              className="absolute inset-0 pointer-events-none blur-[20px] opacity-70 transition-colors duration-300"
+              style={{ backgroundColor: bannerHex }}
+            />
+            <div
+              className="absolute inset-0 pointer-events-none blur-[10px] opacity-85 transition-colors duration-300"
+              style={{ backgroundColor: bannerHex }}
+            />
+          </div>
+
           <div className={`relative flex items-center min-h-[32px] pl-1 pr-1 ${isDropdownActive ? '' : 'group'} shrink-0 mr-2`}>
 
-            {/* The Glowing Title */}
+            {/* The Title Text */}
             <div className={`absolute left-0 z-10 w-max max-w-[30vw] transition-opacity duration-300 pointer-events-none flex flex-col items-start justify-center pl-1 ${isDropdownActive ? 'opacity-0' : 'opacity-100 group-hover:opacity-0'}`}>
-              <div
-                className="absolute inset-x-[-10%] inset-y-[-20%] pointer-events-none rounded-full blur-[20px] opacity-70 transition-colors duration-300"
-                style={{ backgroundColor: bannerHex, transform: 'scale(1.4)' }}
-              />
-              <div
-                className="absolute inset-0 pointer-events-none rounded-full blur-[10px] opacity-85 transition-colors duration-300"
-                style={{ backgroundColor: bannerHex, transform: 'scale(1.1)' }}
-              />
               <h1
                 className="relative z-10 text-[24px] font-black tracking-tight truncate w-full text-left drop-shadow-xl"
                 style={floatingTitleStyle}
@@ -222,7 +224,7 @@ const PlaylistBar = ({
             </div>
           </div>
 
-          <div className="flex items-center min-w-0 flex-1 mr-0">
+          <div className="flex items-center min-w-0 flex-1 mr-0 relative z-20">
             <div
               className="flex items-center h-7 min-w-0 flex-1 border-2 border-black rounded-lg overflow-hidden cursor-context-menu"
               onContextMenu={(e) => {
@@ -320,7 +322,7 @@ const PlaylistBar = ({
           </div>
 
           {/* Right side: Back, Close */}
-          <div className="flex items-center gap-1.5 shrink-0 ml-auto">
+          <div className="flex items-center gap-1.5 shrink-0 ml-auto relative z-20">
             {(history.length > 0 || previewPlaylistId) && (
               <button
                 type="button"

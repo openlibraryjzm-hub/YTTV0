@@ -447,6 +447,18 @@ export const useConfigStore = create(
                 hiddenPlaylists: state.hiddenPlaylists.filter(pid => pid !== id)
             })),
 
+            // Playlist Video Filters (per-playlist sort, direction, ratings)
+            playlistVideoFilters: {},
+            setPlaylistVideoFilter: (id, updates) => set((state) => {
+                const existing = state.playlistVideoFilters[id] || { sortBy: 'shuffle', sortDirection: 'desc', selectedRatings: [] };
+                return {
+                    playlistVideoFilters: {
+                        ...state.playlistVideoFilters,
+                        [id]: { ...existing, ...updates }
+                    }
+                };
+            }),
+
             // Layer 2 Image Folders System
             // playlistIds: [] means show on ALL playlists, specific IDs means show only on those playlists
             // isThemeFolder: true means this folder's images apply app-wide as the theme

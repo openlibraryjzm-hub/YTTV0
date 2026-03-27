@@ -53,6 +53,7 @@ const saveVideoProgress = async (videoId, videoUrl, duration, currentTime, handl
 const YouTubePlayer = ({ videoUrl, videoId, playerId = 'default', onEnded, playlistItems = [], ...props }) => {
   const id = videoId || extractVideoId(videoUrl);
   const iframeRef = useRef(null);
+  const containerRef = useRef(null);
   const playerRef = useRef(null);
   const saveIntervalRef = useRef(null);
   const durationRef = useRef(null); // Store video duration
@@ -66,8 +67,8 @@ const YouTubePlayer = ({ videoUrl, videoId, playerId = 'default', onEnded, playl
     playlistItemsRef.current = playlistItems;
   }, [playlistItems]);
 
-  // Create unique player ID using both video ID and player instance ID
-  const uniquePlayerId = `youtube-player-${playerId}-${id}`;
+  // Create unique player ID using only player instance ID and a static random tag to prevent React DOM manipulation errors
+  const [uniquePlayerId] = useState(() => `youtube-player-${playerId}-${Math.random().toString(36).substr(2, 9)}`);
 
   // Load YouTube IFrame API
   useEffect(() => {
@@ -117,16 +118,26 @@ const YouTubePlayer = ({ videoUrl, videoId, playerId = 'default', onEnded, playl
 
   // Initialize player when API is ready and we have a video ID
   useEffect(() => {
-    if (!apiReady || !id) return;
+    if (!apiReady || !id || !containerRef.current) return;
+
+    // Reset container and insert a fresh div for the player to hijack
+    containerRef.current.innerHTML = '';
+    const tempDiv = document.createElement('div');
+    tempDiv.id = uniquePlayerId;
+    tempDiv.style.width = '100%';
+    tempDiv.style.height = '100%';
+    containerRef.current.appendChild(tempDiv);
 
     const storedTime = getStoredPlaybackTime(id);
 
-    playerRef.current = new window.YT.Player(uniquePlayerId, {
+    const playerConfig = {
       videoId: id,
+      host: 'https://www.youtube.com',
       playerVars: {
         autoplay: 1,
         start: Math.floor(storedTime),
         enablejsapi: 1,
+        origin: window.location.origin,
       },
       events: {
         onReady: (event) => {
@@ -140,17 +151,16 @@ const YouTubePlayer = ({ videoUrl, videoId, playerId = 'default', onEnded, playl
             console.error('Failed to get video duration:', e);
           }
 
-          // Simple resize - just set iframe to 100%
+          // Optional: Verify iframe CSS is locked just in case
           setTimeout(() => {
-            const container = document.getElementById(uniquePlayerId);
-            if (container) {
-              const iframe = container.querySelector('iframe');
+            if (containerRef.current) {
+              const iframe = containerRef.current.tagName.toLowerCase() === 'iframe' ? containerRef.current : containerRef.current.querySelector('iframe');
               if (iframe) {
                 iframe.style.width = '100%';
                 iframe.style.height = '100%';
               }
             }
-          }, 200);
+          }, 50);
 
           // Seek to stored time if available
           if (storedTime > 0) {
@@ -223,7 +233,9 @@ const YouTubePlayer = ({ videoUrl, videoId, playerId = 'default', onEnded, playl
           }
         },
       },
-    });
+    };
+
+    playerRef.current = new window.YT.Player(uniquePlayerId, playerConfig);
 
     return () => {
       // Cleanup: save final time and clear interval
@@ -242,6 +254,9 @@ const YouTubePlayer = ({ videoUrl, videoId, playerId = 'default', onEnded, playl
           if (playerRef.current.destroy) {
             playerRef.current.destroy();
           }
+          if (containerRef.current) {
+            containerRef.current.innerHTML = '';
+          }
         } catch (e) {
           // Ignore errors during cleanup
         }
@@ -250,7 +265,7 @@ const YouTubePlayer = ({ videoUrl, videoId, playerId = 'default', onEnded, playl
         clearInterval(saveIntervalRef.current);
       }
     };
-  }, [apiReady, id, videoUrl, handleFollowerPinCompletion]);
+  }, [apiReady, id, videoUrl, handleFollowerPinCompletion, uniquePlayerId]);
 
   if (!id) {
     return (
@@ -261,16 +276,8 @@ const YouTubePlayer = ({ videoUrl, videoId, playerId = 'default', onEnded, playl
   }
 
   return (
-    <div className="w-full h-full bg-black" style={{ overflow: 'hidden' }}>
-      <div
-        id={uniquePlayerId}
-        style={{
-          width: '100%',
-          height: '100%',
-          border: 'none',
-          boxSizing: 'border-box'
-        }}
-      />
+    <div className="w-full h-full bg-black" style={{ overflow: 'hidden' }} ref={containerRef}>
+      {/* Player injects here without reacting seeing the iframe manipulation */}
     </div>
   );
 };
