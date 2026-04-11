@@ -13,6 +13,10 @@ export const useLayoutStore = create((set) => ({
   fullscreenInfoBlanked: false,
   setFullscreenInfoBlanked: (v) => set({ fullscreenInfoBlanked: !!v }),
 
+  // When true, a transparent shield blocks pointer events over the YouTube player to prevent its UI from showing
+  screenProtectorActive: true,
+  toggleScreenProtector: () => set((state) => ({ screenProtectorActive: !state.screenProtectorActive })),
+
   setViewMode: (mode) => {
     if (['full', 'half', 'quarter'].includes(mode)) {
       set((state) => ({

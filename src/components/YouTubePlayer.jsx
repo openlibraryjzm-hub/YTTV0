@@ -58,7 +58,7 @@ const YouTubePlayer = ({ videoUrl, videoId, playerId = 'default', onEnded, playl
   const saveIntervalRef = useRef(null);
   const durationRef = useRef(null); // Store video duration
   const [apiReady, setApiReady] = useState(false);
-  const { viewMode } = useLayoutStore();
+  const { viewMode, screenProtectorActive } = useLayoutStore();
   const { handleFollowerPinCompletion } = usePinStore();
 
   // Store playlistItems in a ref so the interval callback has access to latest value
@@ -69,6 +69,43 @@ const YouTubePlayer = ({ videoUrl, videoId, playerId = 'default', onEnded, playl
 
   // Create unique player ID using only player instance ID and a static random tag to prevent React DOM manipulation errors
   const [uniquePlayerId] = useState(() => `youtube-player-${playerId}-${Math.random().toString(36).substr(2, 9)}`);
+
+  // VLC Style Volume Indicator State
+  const [volumeIndicator, setVolumeIndicator] = useState({ show: false, val: 0 });
+  const hideVolumeTimerRef = useRef(null);
+
+  // Allow clicking the shield to toggle play/pause
+  const handleShieldClick = useCallback(() => {
+    if (playerRef.current && typeof playerRef.current.getPlayerState === 'function') {
+      const state = playerRef.current.getPlayerState();
+      if (window.YT && window.YT.PlayerState && state === window.YT.PlayerState.PLAYING) {
+        playerRef.current.pauseVideo();
+      } else {
+        playerRef.current.playVideo();
+      }
+    }
+  }, []);
+
+  const handleShieldWheel = useCallback((e) => {
+    if (playerRef.current && typeof playerRef.current.getVolume === 'function') {
+      const currentVol = playerRef.current.getVolume();
+      const change = e.deltaY < 0 ? 5 : -5;
+      const newVol = Math.max(0, Math.min(100, currentVol + change));
+      
+      playerRef.current.setVolume(newVol);
+      
+      setVolumeIndicator({ show: true, val: newVol });
+      
+      if (hideVolumeTimerRef.current) {
+        clearTimeout(hideVolumeTimerRef.current);
+      }
+      hideVolumeTimerRef.current = setTimeout(() => {
+        setVolumeIndicator(prev => ({ ...prev, show: false }));
+      }, 1000);
+
+      window.dispatchEvent(new CustomEvent('youtube-player-volume-change', { detail: { volume: newVol } }));
+    }
+  }, []);
 
   // Load YouTube IFrame API
   useEffect(() => {
@@ -178,6 +215,11 @@ const YouTubePlayer = ({ videoUrl, videoId, playerId = 'default', onEnded, playl
           }
         },
         onStateChange: (event) => {
+          // Dispatch global event so external control bars can sync their play/pause buttons
+          window.dispatchEvent(new CustomEvent('youtube-player-state-change', { 
+            detail: { isPlaying: event.data === window.YT.PlayerState.PLAYING } 
+          }));
+
           // Video ended
           if (event.data === window.YT.PlayerState.ENDED) {
             // Reset progress
@@ -264,6 +306,9 @@ const YouTubePlayer = ({ videoUrl, videoId, playerId = 'default', onEnded, playl
       if (saveIntervalRef.current) {
         clearInterval(saveIntervalRef.current);
       }
+      if (hideVolumeTimerRef.current) {
+        clearTimeout(hideVolumeTimerRef.current);
+      }
     };
   }, [apiReady, id, videoUrl, handleFollowerPinCompletion, uniquePlayerId]);
 
@@ -276,8 +321,30 @@ const YouTubePlayer = ({ videoUrl, videoId, playerId = 'default', onEnded, playl
   }
 
   return (
-    <div className="w-full h-full bg-black" style={{ overflow: 'hidden' }} ref={containerRef}>
-      {/* Player injects here without reacting seeing the iframe manipulation */}
+    <div className="relative w-full h-full bg-black overflow-hidden">
+      <div className="w-full h-full" ref={containerRef}>
+        {/* Player injects here without reacting seeing the iframe manipulation */}
+      </div>
+      {/* Transparent overlay that blocks pointer events when active */}
+      {screenProtectorActive && (
+        <div 
+          className="absolute inset-0 z-10 bg-transparent cursor-pointer"
+          onClick={handleShieldClick}
+          onWheel={handleShieldWheel}
+        ></div>
+      )}
+
+      {/* VLC Style Volume Indicator */}
+      {volumeIndicator.show && (
+        <div className="absolute top-6 right-8 z-20 pointer-events-none animate-in fade-in zoom-in duration-200">
+          <div className="text-7xl font-black text-white" style={{
+            WebkitTextStroke: '2px #000',
+            textShadow: '-2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 2px 2px 0 #000, 0px 8px 16px rgba(0,0,0,0.8)'
+          }}>
+            {volumeIndicator.val}%
+          </div>
+        </div>
+      )}
     </div>
   );
 };
